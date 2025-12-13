@@ -294,18 +294,48 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       registerAllCatalogBlocks(editor);
     }
 
-    // Center the canvas
+    // Center the canvas - wait for canvas iframe to be fully ready
     editor.on('load', () => {
-      const canvasEl = editor.Canvas.getFrameEl();
-      const canvasWrapper = editor.Canvas.getWrapperEl();
-      if (canvasWrapper) {
-        // Center canvas horizontally
-        canvasWrapper.style.display = 'flex';
-        canvasWrapper.style.justifyContent = 'center';
-        canvasWrapper.style.alignItems = 'flex-start';
-        canvasWrapper.style.minHeight = '100%';
-        canvasWrapper.style.paddingTop = '20px';
-      }
+      // Wrap in setTimeout to ensure canvas iframe is fully initialized
+      setTimeout(() => {
+        // Check if canvas frame is ready before accessing it
+        const frame = editor.Canvas.getFrameEl();
+        const canvasWrapper = editor.Canvas.getWrapperEl();
+        
+        if (!frame || !frame.contentDocument) {
+          console.error('Canvas frame not ready yet, retrying...');
+          // Retry after a bit more time
+          setTimeout(() => {
+            const retryFrame = editor.Canvas.getFrameEl();
+            const retryWrapper = editor.Canvas.getWrapperEl();
+            if (retryFrame && retryFrame.contentDocument && retryWrapper) {
+              // Center canvas horizontally
+              retryWrapper.style.display = 'flex';
+              retryWrapper.style.justifyContent = 'center';
+              retryWrapper.style.alignItems = 'flex-start';
+              retryWrapper.style.minHeight = '100%';
+              retryWrapper.style.paddingTop = '20px';
+              setIsReady(true);
+            } else {
+              console.error('Canvas frame still not ready after retry');
+              setIsReady(true); // Set ready anyway to prevent infinite waiting
+            }
+          }, 200);
+          return;
+        }
+        
+        if (canvasWrapper) {
+          // Center canvas horizontally
+          canvasWrapper.style.display = 'flex';
+          canvasWrapper.style.justifyContent = 'center';
+          canvasWrapper.style.alignItems = 'flex-start';
+          canvasWrapper.style.minHeight = '100%';
+          canvasWrapper.style.paddingTop = '20px';
+        }
+        
+        // Mark editor as ready only after canvas is confirmed ready
+        setIsReady(true);
+      }, 100);
     });
 
     // Load initial content if provided
@@ -344,7 +374,8 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       onUpdate?.(html, css);
     });
 
-    setIsReady(true);
+    // Note: setIsReady(true) is now called inside editor.on('load') callback
+    // after canvas frame is confirmed ready
 
     // Cleanup
     return () => {
