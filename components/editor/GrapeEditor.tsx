@@ -286,18 +286,28 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     // Save editor reference (matching legacy pattern)
     grapesEditorRef.current = editor;
 
-    // Register components as custom blocks
-    if (components && components.length > 0) {
-      // Use Supabase components if provided
-      registerSupabaseBlocks(editor, components);
-    } else {
-      // Fallback to static catalog
-      registerAllCatalogBlocks(editor);
-    }
-
     // Use canvas:frame:loaded event instead of load - this fires when canvas iframe is ACTUALLY ready
     // This is the correct event to use (not 'load' which fires too early)
+    // CRITICAL: Block registration must happen AFTER canvas is ready, otherwise GrapesJS tries to
+    // render block previews before the canvas iframe is initialized, causing ownerDocument errors
     let readySet = false;
+    let blocksRegistered = false;
+    
+    const registerBlocks = () => {
+      if (blocksRegistered) return; // Prevent double registration
+      try {
+        if (components && components.length > 0) {
+          // Use Supabase components if provided
+          registerSupabaseBlocks(editor, components);
+        } else {
+          // Fallback to static catalog
+          registerAllCatalogBlocks(editor);
+        }
+        blocksRegistered = true;
+      } catch (error) {
+        console.error('Failed to register blocks:', error);
+      }
+    };
     
     editor.on('canvas:frame:loaded', () => {
       // Canvas frame is now fully loaded and ready
@@ -310,6 +320,13 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         canvasWrapper.style.minHeight = '100%';
         canvasWrapper.style.paddingTop = '20px';
       }
+      
+      // Register components as custom blocks AFTER canvas is ready with a delay
+      // This prevents GrapesJS from trying to render block previews before canvas DOM is ready
+      setTimeout(() => {
+        registerBlocks();
+      }, 1000); // 1 second delay to ensure canvas is fully ready
+      
       // Mark editor as ready after canvas frame is confirmed loaded
       if (!readySet) {
         setIsReady(true);
@@ -317,14 +334,16 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       }
     });
 
-    // Fallback: if canvas:frame:loaded doesn't fire, set ready after a delay
+    // Fallback: if canvas:frame:loaded doesn't fire, set ready and register blocks after a delay
     // This matches legacy pattern where editor is ready immediately after init
     setTimeout(() => {
       if (!readySet) {
+        // Try to register blocks even if canvas:frame:loaded didn't fire
+        registerBlocks();
         setIsReady(true);
         readySet = true;
       }
-    }, 500);
+    }, 2000); // Longer delay for fallback - 2 seconds
 
     // Load initial content if provided
     if (initialHtml || initialCss) {
