@@ -15,7 +15,7 @@ import 'grapesjs/dist/css/grapes.min.css';
 import 'grapesjs-blocks-basic';
 import 'grapesjs-preset-webpage';
 import { useProjectStore } from '@/lib/store/project-store';
-import { registerAllCatalogBlocks, registerSupabaseBlocks } from '@/lib/grapesjs/catalog-blocks';
+import { getAllCatalogBlockDefinitions, getSupabaseBlockDefinitions, type BlockDefinition } from '@/lib/grapesjs/catalog-blocks';
 import { type SupabaseComponent } from '@/lib/components/supabase-catalog';
 
 export interface GrapeEditorRef {
@@ -114,7 +114,24 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
   useEffect(() => {
     if (!editorRef.current) return;
 
-    // Initialize Grape.js editor
+    console.log('1. Starting GrapesJS editor initialization');
+
+    // CRITICAL: Get block definitions BEFORE init (matching legacy pattern)
+    // Blocks must be defined IN the init config, not added after
+    let blockDefinitions: BlockDefinition[] = [];
+    
+    if (components && components.length > 0) {
+      console.log('2. Getting Supabase block definitions, count:', components.length);
+      blockDefinitions = getSupabaseBlockDefinitions(components);
+    } else {
+      console.log('2. Getting static catalog block definitions');
+      blockDefinitions = getAllCatalogBlockDefinitions();
+    }
+    
+    console.log('3. Block definitions prepared, count:', blockDefinitions.length);
+    console.log('4. Initializing GrapesJS with blocks in config...');
+
+    // Initialize Grape.js editor with blocks defined IN the config (matching legacy pattern)
     const editor = grapesjs.init({
       container: editorRef.current,
       height: '100%',
@@ -155,9 +172,10 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         stepsBeforeSave: 1,
       },
       
-      // Block manager configuration
+      // Block manager configuration - blocks defined HERE (matching legacy pattern)
       blockManager: {
         appendTo: '#blocks-container',
+        blocks: blockDefinitions, // Blocks passed into config, not added after
       },
       
       // Layer manager
@@ -283,33 +301,18 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       },
     });
 
+    console.log('5. GrapesJS editor initialized');
+
     // Save editor reference (matching legacy pattern)
     grapesEditorRef.current = editor;
 
-    // Use canvas:frame:loaded event instead of load - this fires when canvas iframe is ACTUALLY ready
-    // This is the correct event to use (not 'load' which fires too early)
-    // CRITICAL: Block registration must happen AFTER canvas is ready, otherwise GrapesJS tries to
-    // render block previews before the canvas iframe is initialized, causing ownerDocument errors
+    // Use canvas:frame:loaded event to handle canvas styling and mark as ready
+    // Blocks are already registered in the config above, so no need to register them here
     let readySet = false;
-    let blocksRegistered = false;
-    
-    const registerBlocks = () => {
-      if (blocksRegistered) return; // Prevent double registration
-      try {
-        if (components && components.length > 0) {
-          // Use Supabase components if provided
-          registerSupabaseBlocks(editor, components);
-        } else {
-          // Fallback to static catalog
-          registerAllCatalogBlocks(editor);
-        }
-        blocksRegistered = true;
-      } catch (error) {
-        console.error('Failed to register blocks:', error);
-      }
-    };
     
     editor.on('canvas:frame:loaded', () => {
+      console.log('6. Canvas frame loaded event fired');
+      
       // Canvas frame is now fully loaded and ready
       const canvasWrapper = editor.Canvas.getWrapperEl();
       if (canvasWrapper) {
@@ -319,31 +322,25 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         canvasWrapper.style.alignItems = 'flex-start';
         canvasWrapper.style.minHeight = '100%';
         canvasWrapper.style.paddingTop = '20px';
+        console.log('7. Canvas wrapper styled');
       }
-      
-      // Register components as custom blocks AFTER canvas is ready with a delay
-      // This prevents GrapesJS from trying to render block previews before canvas DOM is ready
-      setTimeout(() => {
-        registerBlocks();
-      }, 1000); // 1 second delay to ensure canvas is fully ready
       
       // Mark editor as ready after canvas frame is confirmed loaded
       if (!readySet) {
         setIsReady(true);
         readySet = true;
+        console.log('8. Editor marked as ready');
       }
     });
 
-    // Fallback: if canvas:frame:loaded doesn't fire, set ready and register blocks after a delay
-    // This matches legacy pattern where editor is ready immediately after init
+    // Fallback: if canvas:frame:loaded doesn't fire, set ready after a delay
     setTimeout(() => {
       if (!readySet) {
-        // Try to register blocks even if canvas:frame:loaded didn't fire
-        registerBlocks();
+        console.log('9. Fallback: Setting editor ready (canvas:frame:loaded did not fire)');
         setIsReady(true);
         readySet = true;
       }
-    }, 2000); // Longer delay for fallback - 2 seconds
+    }, 2000);
 
     // Load initial content if provided
     if (initialHtml || initialCss) {
