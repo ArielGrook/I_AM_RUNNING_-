@@ -129,257 +129,143 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     }
     
     console.log('3. Block definitions prepared, count:', blockDefinitions.length);
-    console.log('4. Initializing GrapesJS with blocks in config...');
-
-    // Initialize Grape.js editor with blocks defined IN the config (matching legacy pattern)
-    const editor = grapesjs.init({
-      container: editorRef.current,
-      height: '100%',
-      width: '100%',
-      
-      // RTL support
-      rtl: isRTL,
-      
-      // Critical settings from legacy code for ZIP import compatibility
-      allowScripts: 1,
-      dragMode: 'absolute',
-      dragAutoScroll: 1,
-      dragMultipleComponent: 1,
-      
-      // Canvas configuration with frame styles (legacy compatibility)
-      canvas: {
-        styles: [],
-        scripts: [],
-        frameStyle: `
-          body {
-            min-height: 5000px;
-            position: relative;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 0;
-          }
-          * {
-            box-sizing: border-box;
-          }
-        `
-      },
-      
-      // Storage configuration (localStorage for now, Supabase later)
-      storageManager: {
-        type: 'local',
-        autosave: true,
-        autoload: true,
-        stepsBeforeSave: 1,
-      },
-      
-      // Block manager configuration - blocks defined HERE (matching legacy pattern)
-      blockManager: {
-        appendTo: '#blocks-container',
-        blocks: blockDefinitions, // Blocks passed into config, not added after
-      },
-      
-      // Layer manager
-      layerManager: {
-        appendTo: '#layers-container',
-      },
-      
-      // Style manager
-      styleManager: {
-        appendTo: '#styles-container',
-        sectors: [
-          {
-            name: 'Dimension',
-            open: false,
-            buildProps: ['width', 'min-height', 'padding'],
-            properties: [
-              {
-                type: 'integer',
-                name: 'The width',
-                property: 'width',
-                units: ['px', '%'],
-                defaults: 'auto',
-                min: 0,
-              },
-            ],
-          },
-          {
-            name: 'Extra',
-            open: false,
-            buildProps: ['background-color', 'box-shadow', 'custom-prop'],
-            properties: [
-              {
-                id: 'custom-prop',
-                name: 'Custom Label',
-                property: 'font-size',
-                type: 'select',
-                defaults: '32px',
-                options: [
-                  { value: '12px', name: 'Tiny' },
-                  { value: '18px', name: 'Medium' },
-                  { value: '32px', name: 'Big' },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      
-      // Device manager
-      deviceManager: {
-        devices: [
-          {
-            name: 'Desktop',
-            width: '',
-          },
-          {
-            name: 'Tablet',
-            width: '768px',
-            widthMedia: '992px',
-          },
-          {
-            name: 'Mobile',
-            width: '320px',
-            widthMedia: '768px',
-          },
-        ],
-      },
-      
-      // Panels configuration
-      panels: {
-        defaults: [
-          {
-            id: 'layers',
-            el: '.panel__right',
-            resizable: {
-              maxDim: 350,
-              minDim: 200,
-              tc: 0,
-              cl: 1,
-              cr: 0,
-              bc: 0,
-              keyWidth: 'flex-basis',
-            },
-          },
-          {
-            id: 'panel-devices',
-            el: '.panel__devices',
-            buttons: [
-              {
-                id: 'device-desktop',
-                label: 'D',
-                command: 'set-device-desktop',
-                active: true,
-                togglable: false,
-              },
-              {
-                id: 'device-tablet',
-                label: 'T',
-                command: 'set-device-tablet',
-                togglable: false,
-              },
-              {
-                id: 'device-mobile',
-                label: 'M',
-                command: 'set-device-mobile',
-                togglable: false,
-              },
-            ],
-          },
-        ],
-      },
-      
-      // Plugins
-      plugins: ['gjs-blocks-basic', 'gjs-preset-webpage'],
-      pluginsOpts: {
-        'gjs-preset-webpage': {
-          modalImportTitle: 'Import Template',
-          modalImportLabel: '<div style="margin-bottom: 10px; font-size: 13px;">Paste here your HTML/CSS and click Import</div>',
-          modalImportContent: (editor: grapesjs.Editor) => {
-            return editor.getHtml() + '<style>' + editor.getCss() + '</style>';
-          },
-        },
-      },
-    });
-
-    console.log('5. GrapesJS editor initialized');
-
-    // Save editor reference (matching legacy pattern)
-    grapesEditorRef.current = editor;
-
-    // Use canvas:frame:loaded event to handle canvas styling and mark as ready
-    // Blocks are already registered in the config above, so no need to register them here
-    let readySet = false;
     
-    editor.on('canvas:frame:loaded', () => {
-      console.log('6. Canvas frame loaded event fired');
+    // Debug: Check container
+    console.log('4. Container element:', editorRef.current);
+    console.log('5. Is container in DOM?', editorRef.current ? document.body.contains(editorRef.current) : 'NO CONTAINER');
+    console.log('6. Block definitions sample (first 2):', JSON.stringify(blockDefinitions.slice(0, 2), null, 2));
+    
+    // STEP 1: Test with ABSOLUTE MINIMUM config (no blocks first)
+    console.log('7. Initializing GrapesJS with MINIMAL config (no blocks)...');
+    
+    let editor: grapesjs.Editor;
+    
+    try {
+      // Test with empty blocks first to isolate the problem
+      editor = grapesjs.init({
+        container: editorRef.current!,
+        height: '100%',
+        width: 'auto',
+        fromElement: false,
+        storageManager: false,
+        
+        blockManager: {
+          appendTo: '#blocks-container',
+          blocks: [], // EMPTY - test if basic init works
+        },
+      });
       
-      // Canvas frame is now fully loaded and ready
-      const canvasWrapper = editor.Canvas.getWrapperEl();
-      if (canvasWrapper) {
-        // Center canvas horizontally
-        canvasWrapper.style.display = 'flex';
-        canvasWrapper.style.justifyContent = 'center';
-        canvasWrapper.style.alignItems = 'flex-start';
-        canvasWrapper.style.minHeight = '100%';
-        canvasWrapper.style.paddingTop = '20px';
-        console.log('7. Canvas wrapper styled');
+      console.log('8. ✅ GrapesJS init SUCCEEDED with minimal config!');
+      
+      // STEP 2: Now add blocks AFTER init succeeds
+      console.log('9. Adding blocks after init...');
+      if (blockDefinitions.length > 0) {
+        const blocks = editor.BlockManager;
+        blockDefinitions.forEach((def, index) => {
+          try {
+            blocks.add(def.id, {
+              label: def.label,
+              category: def.category,
+              content: def.content,
+              media: def.media,
+              activate: def.activate,
+              select: def.select,
+            });
+            if (index < 3) {
+              console.log(`10. Added block ${index + 1}: ${def.id}`);
+            }
+          } catch (blockError) {
+            console.error(`Failed to add block ${def.id}:`, blockError);
+          }
+        });
+        console.log(`11. ✅ All ${blockDefinitions.length} blocks added successfully`);
       }
       
-      // Mark editor as ready after canvas frame is confirmed loaded
-      if (!readySet) {
-        setIsReady(true);
-        readySet = true;
-        console.log('8. Editor marked as ready');
-      }
-    });
-
-    // Fallback: if canvas:frame:loaded doesn't fire, set ready after a delay
-    setTimeout(() => {
-      if (!readySet) {
-        console.log('9. Fallback: Setting editor ready (canvas:frame:loaded did not fire)');
-        setIsReady(true);
-        readySet = true;
-      }
-    }, 2000);
-
-    // Load initial content if provided
-    if (initialHtml || initialCss) {
-      const sanitizedHtml = initialHtml ? sanitizeHtml(initialHtml) : '';
-      try {
-        editor.setComponents(sanitizedHtml);
-        editor.setStyle(initialCss);
-      } catch (error) {
-        console.error('Failed to set initial content:', error);
-      }
-    }
-
-    // Listen for changes
-    editor.on('update', () => {
-      const html = editor.getHtml();
-      const css = editor.getCss();
+      console.log('12. GrapesJS editor initialized successfully');
       
-      // Update project store
-      if (currentProject) {
-        const currentPage = currentProject.pages[0];
-        if (currentPage) {
-          updateProject({
-            pages: [
-              {
-                ...currentPage,
-                components: [], // TODO: Parse HTML to components
-                styles: css,
-              },
-            ],
-          });
+      // Save editor reference (matching legacy pattern)
+      grapesEditorRef.current = editor;
+
+      // Use canvas:frame:loaded event to handle canvas styling and mark as ready
+      let readySet = false;
+      
+      editor.on('canvas:frame:loaded', () => {
+        console.log('13. Canvas frame loaded event fired');
+        
+        // Canvas frame is now fully loaded and ready
+        const canvasWrapper = editor.Canvas.getWrapperEl();
+        if (canvasWrapper) {
+          // Center canvas horizontally
+          canvasWrapper.style.display = 'flex';
+          canvasWrapper.style.justifyContent = 'center';
+          canvasWrapper.style.alignItems = 'flex-start';
+          canvasWrapper.style.minHeight = '100%';
+          canvasWrapper.style.paddingTop = '20px';
+          console.log('14. Canvas wrapper styled');
+        }
+        
+        // Mark editor as ready after canvas frame is confirmed loaded
+        if (!readySet) {
+          setIsReady(true);
+          readySet = true;
+          console.log('15. Editor marked as ready');
+        }
+      });
+
+      // Fallback: if canvas:frame:loaded doesn't fire, set ready after a delay
+      setTimeout(() => {
+        if (!readySet) {
+          console.log('16. Fallback: Setting editor ready (canvas:frame:loaded did not fire)');
+          setIsReady(true);
+          readySet = true;
+        }
+      }, 2000);
+
+      // Load initial content if provided
+      if (initialHtml || initialCss) {
+        const sanitizedHtml = initialHtml ? sanitizeHtml(initialHtml) : '';
+        try {
+          editor.setComponents(sanitizedHtml);
+          editor.setStyle(initialCss);
+        } catch (error) {
+          console.error('Failed to set initial content:', error);
         }
       }
-      
-      // Call external update handler
-      onUpdate?.(html, css);
-    });
 
-    // Note: setIsReady(true) is now called inside editor.on('canvas:frame:loaded') callback
-    // after canvas frame is confirmed ready, with a fallback timeout
+      // Listen for changes
+      editor.on('update', () => {
+        const html = editor.getHtml();
+        const css = editor.getCss();
+        
+        // Update project store
+        if (currentProject) {
+          const currentPage = currentProject.pages[0];
+          if (currentPage) {
+            updateProject({
+              pages: [
+                {
+                  ...currentPage,
+                  components: [], // TODO: Parse HTML to components
+                  styles: css,
+                },
+              ],
+            });
+          }
+        }
+        
+        // Call external update handler
+        onUpdate?.(html, css);
+      });
+
+    } catch (initError) {
+      console.error('❌ GrapesJS init FAILED:', initError);
+      console.error('Error details:', {
+        message: initError instanceof Error ? initError.message : String(initError),
+        stack: initError instanceof Error ? initError.stack : undefined,
+      });
+      // Don't throw - let the component handle the error gracefully
+      setIsReady(true); // Set ready anyway to prevent infinite loading
+    }
 
     // Cleanup
     return () => {
