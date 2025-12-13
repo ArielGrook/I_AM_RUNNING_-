@@ -1,0 +1,131 @@
+{
+  "HomePage": {
+    "title": "I AM RUNNING",
+    "subtitle": "AI-Native Site Builder",
+    "description": "Build beautiful websites with AI assistance",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "hero": {
+      "title": "Build Stunning Websites",
+      "subtitle": "with AI",
+      "cta": "Start Building Free",
+      "demo": "Watch Demo"
+    },
+    "features": {
+      "title": "Everything You Need to Build",
+      "subtitle": "Powerful features that make website creation effortless",
+      "fast": {
+        "title": "AI-Powered Generation",
+        "description": "Describe your vision and watch AI create beautiful, responsive websites instantly."
+      },
+      "ai": {
+        "title": "Drag & Drop Editor",
+        "description": "Intuitive visual editor with professional components ready to use."
+      },
+      "professional": {
+        "title": "Fully Responsive",
+        "description": "Your websites look perfect on desktop, tablet, and mobile devices automatically."
+      }
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "subtitle": "Build your website in three simple steps",
+      "step1": {
+        "title": "Describe",
+        "description": "Tell our AI what you want to build. Be as detailed or as simple as you like."
+      },
+      "step2": {
+        "title": "Generate",
+        "description": "Watch as AI creates your website structure with beautiful components."
+      },
+      "step3": {
+        "title": "Customize",
+        "description": "Fine-tune every detail with our intuitive drag-and-drop editor."
+      }
+    },
+    "cta": {
+      "title": "Ready to Build Your Website?",
+      "subtitle": "Join thousands of creators building amazing websites with AI. Start free, no credit card required.",
+      "button": "Start Building Free"
+    }
+  },
+  "EditorPage": {
+    "title": "Editor",
+    "dashboard": "Dashboard",
+    "newProject": "New Project",
+    "save": "Save",
+    "saved": "Saved",
+    "saving": "Saving...",
+    "export": "Export",
+    "import": "Import",
+    "components": "Components",
+    "properties": "Properties",
+    "startBuilding": "Start Building",
+    "dragComponents": "Drag components from the left panel to start building your website",
+    "rename": "Rename Project",
+    "createProject": "Create New Project",
+    "all": "All",
+    "selectElement": "Select an element to edit its properties",
+    "saveComponent": "Save Component",
+    "chat": "Chat",
+    "upgrade": "Upgrade"
+  },
+  "Chat": {
+    "title": "AI Assistant",
+    "empty": "Start a conversation to get AI-powered suggestions",
+    "placeholder": "Describe what you want to build...",
+    "streaming": "AI is thinking...",
+    "error": "An error occurred. Please try again.",
+    "applyChanges": "Apply Changes"
+  },
+  "Admin": {
+    "title": "Admin Panel - Shadow Mode",
+    "loginTitle": "Admin Login",
+    "email": "Email",
+    "password": "Password",
+    "login": "Login",
+    "logout": "Logout",
+    "users": "Users",
+    "allUsers": "All Users",
+    "stats": "Statistics",
+    "totalProjects": "Total Projects",
+    "totalUsers": "Total Users",
+    "searchProjects": "Search projects...",
+    "refresh": "Refresh",
+    "generatePreview": "Generate Preview",
+    "noDescription": "No description"
+  },
+  "Errors": {
+    "rateLimitExceeded": "Rate limit exceeded. Please try again later.",
+    "invalidRequest": "Invalid request format",
+    "internalError": "Internal server error",
+    "fileSizeExceeded": "File size exceeds maximum allowed size",
+    "invalidZipFormat": "Invalid or corrupted ZIP file format",
+    "importFailed": "Failed to import project",
+    "exportFailed": "Failed to export project",
+    "saveFailed": "Failed to save project",
+    "demoLimitReached": "Demo mode limit reached. Please upgrade to continue.",
+    "demoTimeExpired": "Demo session expired. Please refresh to start a new session.",
+    "demoProjectLimit": "You can only create 1 project in demo mode.",
+    "authRequired": "Authentication required",
+    "adminRequired": "Admin access required",
+    "componentSaveFailed": "Failed to save component",
+    "screenshotFailed": "Failed to generate screenshot"
+  },
+  "Common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "create": "Create",
+    "update": "Update",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm",
+    "retry": "Retry"
+  }
+}
