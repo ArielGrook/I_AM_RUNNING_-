@@ -504,7 +504,166 @@ const footerTemplates: ComponentTemplate[] = [
 ];
 
 // Combine all templates
+// Real components extracted from ZIP files for testing
+const realZipComponents: ComponentTemplate[] = [
+  {
+    id: 'real-header-seo-dream',
+    name: 'SEO Dream Header',
+    category: 'header',
+    description: 'Real header component from ZIP template with logo and navigation',
+    variants: {
+      minimal: `
+        <header class="header-area header-sticky">
+          <div class="container">
+            <div class="row">
+              <div class="col-12">
+                <nav class="main-nav">
+                  <a href="index.html" class="logo">
+                    <h4>SEO Dream <img src="https://via.placeholder.com/40x40" alt=""></h4>
+                  </a>
+                  <ul class="nav">
+                    <li><a href="#top" class="active">Home</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#about">About Us</a></li>
+                    <li><a href="#services">Services</a></li>
+                    <li><a href="#portfolio">Portfolio</a></li>
+                    <li><a href="#contact">Contact Us</a></li>
+                    <li><div class="main-blue-button"><a href="#contact">Get Your Quote</a></div></li>
+                  </ul>
+                  <a class='menu-trigger'><span>Menu</span></a>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </header>
+        <style>
+          .header-area { background: #fff; padding: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          .main-nav { display: flex; justify-content: space-between; align-items: center; }
+          .logo h4 { margin: 0; font-size: 24px; color: #2a2a2a; }
+          .nav { display: flex; list-style: none; gap: 30px; margin: 0; padding: 0; }
+          .nav a { text-decoration: none; color: #2a2a2a; font-weight: 500; }
+          .main-blue-button a { background: #4a90e2; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; }
+        </style>`,
+      modern: '',
+      classic: '',
+      bold: '',
+      elegant: '',
+    },
+  },
+  {
+    id: 'real-hero-seo-dream',
+    name: 'SEO Dream Hero',
+    category: 'hero',
+    description: 'Real hero section from ZIP template with stats and CTA',
+    variants: {
+      minimal: `
+        <div class="main-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 100px 0; color: white;">
+          <div class="container">
+            <div class="row">
+              <div class="col-lg-6">
+                <div class="row">
+                  <div class="col-lg-4">
+                    <div class="info-stat">
+                      <h6>Agency Status:</h6>
+                      <h4>Ready Work</h4>
+                    </div>
+                  </div>
+                  <div class="col-lg-4">
+                    <div class="info-stat">
+                      <h6>Price:</h6>
+                      <h4>$720/Month</h4>
+                    </div>
+                  </div>
+                  <div class="col-lg-4">
+                    <div class="info-stat">
+                      <h6>Schedules</h6>
+                      <h4>$450/Meeting</h4>
+                    </div>
+                  </div>
+                  <div class="col-lg-12">
+                    <h2 style="font-size: 48px; margin: 30px 0;">SEO & Digital Marketing Agency</h2>
+                  </div>
+                  <div class="col-lg-12">
+                    <div class="main-green-button">
+                      <a href="#contact" style="background: #10b981; color: white; padding: 15px 30px; border-radius: 5px; text-decoration: none; display: inline-block; font-weight: bold;">Get Your Quote</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="right-image">
+                  <img src="https://via.placeholder.com/500x400" alt="" style="width: 100%; border-radius: 10px;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <style>
+          .info-stat { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+          .info-stat h6 { margin: 0 0 10px 0; font-size: 14px; opacity: 0.8; }
+          .info-stat h4 { margin: 0; font-size: 24px; font-weight: bold; }
+        </style>`,
+      modern: '',
+      classic: '',
+      bold: '',
+      elegant: '',
+    },
+  },
+  {
+    id: 'real-features-seo-dream',
+    name: 'SEO Dream Features',
+    category: 'section',
+    description: 'Real features section from ZIP template',
+    variants: {
+      minimal: `
+        <div class="features section" style="padding: 80px 0; background: #f8f9fa;">
+          <div class="container">
+            <div class="row">
+              <div class="col-lg-3">
+                <div class="features-item" style="background: white; padding: 30px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                  <div class="number" style="font-size: 48px; color: #4a90e2; font-weight: bold; margin-bottom: 20px;">01</div>
+                  <h4 style="margin: 20px 0 10px 0;">Reach Out</h4>
+                  <div style="width: 50px; height: 3px; background: #4a90e2; margin: 0 auto 15px;"></div>
+                  <p style="color: #666; line-height: 1.6;">This HTML5 template is based on Bootstrap 5 CSS. You are free to customize anything.</p>
+                </div>
+              </div>
+              <div class="col-lg-3">
+                <div class="features-item" style="background: white; padding: 30px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                  <div class="number" style="font-size: 48px; color: #4a90e2; font-weight: bold; margin-bottom: 20px;">02</div>
+                  <h4 style="margin: 20px 0 10px 0;">Develop a Strategy</h4>
+                  <div style="width: 50px; height: 3px; background: #4a90e2; margin: 0 auto 15px;"></div>
+                  <p style="color: #666; line-height: 1.6;">Lorem ipsum dolor sit ameter consectetur adipiscing li elit sed do eiusmod.</p>
+                </div>
+              </div>
+              <div class="col-lg-3">
+                <div class="features-item" style="background: white; padding: 30px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                  <div class="number" style="font-size: 48px; color: #4a90e2; font-weight: bold; margin-bottom: 20px;">03</div>
+                  <h4 style="margin: 20px 0 10px 0;">Implementation</h4>
+                  <div style="width: 50px; height: 3px; background: #4a90e2; margin: 0 auto 15px;"></div>
+                  <p style="color: #666; line-height: 1.6;">If this template is useful for your website, please consider to support us a little.</p>
+                </div>
+              </div>
+              <div class="col-lg-3">
+                <div class="features-item" style="background: white; padding: 30px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                  <div class="number" style="font-size: 48px; color: #4a90e2; font-weight: bold; margin-bottom: 20px;">04</div>
+                  <h4 style="margin: 20px 0 10px 0;">Analyze the result</h4>
+                  <div style="width: 50px; height: 3px; background: #4a90e2; margin: 0 auto 15px;"></div>
+                  <p style="color: #666; line-height: 1.6;">Below circular progress bar animation supports those CSS values 10, 20, 30, till 100.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`,
+      modern: '',
+      classic: '',
+      bold: '',
+      elegant: '',
+    },
+  },
+];
+
 export const componentCatalog: ComponentTemplate[] = [
+  ...realZipComponents, // Add real ZIP components first
   ...headerTemplates,
   ...heroTemplates,
   ...footerTemplates

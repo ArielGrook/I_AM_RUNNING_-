@@ -141,7 +141,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     let editor: grapesjs.Editor;
     
     try {
-      // Test with empty blocks first to isolate the problem
+      // Initialize with minimal config + critical settings from legacy
       editor = grapesjs.init({
         container: editorRef.current!,
         height: '100%',
@@ -149,9 +149,35 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         fromElement: false,
         storageManager: false,
         
+        // Critical settings from legacy code for ZIP import compatibility
+        allowScripts: 1,
+        dragMode: 'absolute',
+        dragAutoScroll: 1,
+        dragMultipleComponent: 1,
+        
+        // Canvas configuration - CRITICAL: Load Tailwind CSS so components render properly
+        canvas: {
+          styles: [
+            'https://cdn.tailwindcss.com', // Tailwind CSS for component styling
+          ],
+          scripts: [],
+          frameStyle: `
+            body {
+              min-height: 5000px;
+              position: relative;
+              background-color: #ffffff;
+              margin: 0;
+              padding: 0;
+            }
+            * {
+              box-sizing: border-box;
+            }
+          `
+        },
+        
         blockManager: {
           appendTo: '#blocks-container',
-          blocks: [], // EMPTY - test if basic init works
+          blocks: [], // EMPTY - blocks added after init succeeds
         },
       });
       
@@ -330,22 +356,37 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       // Sanitize HTML to fix malformed attributes before setting
       const sanitizedHtml = sanitizeHtml(htmlFromComponents);
       
-      // Use setTimeout to ensure editor is fully ready
+      console.log('Setting components from ZIP import, HTML length:', sanitizedHtml.length);
+      console.log('HTML preview (first 500 chars):', sanitizedHtml.substring(0, 500));
+      
+      // Wait for canvas to be ready before setting components
       // This prevents black canvas issues when setting components immediately after import
-      setTimeout(() => {
-        try {
-          editor.setComponents(sanitizedHtml);
-        } catch (error) {
-          console.error('Failed to set components in GrapesJS:', error);
-          // Try again with more aggressive sanitization
-          const moreSanitized = sanitizedHtml.replace(/[^\x20-\x7E\n\r\t]/g, '');
+      const setComponentsWhenReady = () => {
+        const frame = editor.Canvas.getFrameEl();
+        if (frame && frame.contentDocument && frame.contentDocument.body) {
+          console.log('Canvas frame is ready, setting components...');
           try {
-            editor.setComponents(moreSanitized);
-          } catch (retryError) {
-            console.error('Failed to set components even after aggressive sanitization:', retryError);
+            editor.setComponents(sanitizedHtml);
+            console.log('✅ Components set successfully');
+          } catch (error) {
+            console.error('Failed to set components in GrapesJS:', error);
+            // Try again with more aggressive sanitization
+            const moreSanitized = sanitizedHtml.replace(/[^\x20-\x7E\n\r\t]/g, '');
+            try {
+              editor.setComponents(moreSanitized);
+              console.log('✅ Components set after aggressive sanitization');
+            } catch (retryError) {
+              console.error('Failed to set components even after aggressive sanitization:', retryError);
+            }
           }
+        } else {
+          console.log('Canvas frame not ready yet, retrying in 200ms...');
+          setTimeout(setComponentsWhenReady, 200);
         }
-      }, 100);
+      };
+      
+      // Start trying to set components
+      setTimeout(setComponentsWhenReady, 100);
     }
 
     if (css) {

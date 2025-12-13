@@ -624,14 +624,31 @@ export default function EditorPage() {
               {t('export')}
             </Button>
             {currentProject && (
-              <Button 
-                size="sm"
-                variant="outline"
-                onClick={handleSaveComponent}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {t('saveComponent')}
-              </Button>
+              <>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const editor = grapeEditorRef.current?.getEditor();
+                    if (editor) {
+                      editor.setComponents('');
+                      editor.setStyle('');
+                      console.log('Canvas cleared');
+                    }
+                  }}
+                  title="Clear Canvas"
+                >
+                  🗑️ Clear
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSaveComponent}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {t('saveComponent')}
+                </Button>
+              </>
             )}
             <Button 
               size="sm"
