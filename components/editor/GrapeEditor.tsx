@@ -283,6 +283,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       },
     });
 
+    // Save editor reference (matching legacy pattern)
     grapesEditorRef.current = editor;
 
     // Register components as custom blocks
@@ -294,49 +295,36 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       registerAllCatalogBlocks(editor);
     }
 
-    // Center the canvas - wait for canvas iframe to be fully ready
-    editor.on('load', () => {
-      // Wrap in setTimeout to ensure canvas iframe is fully initialized
-      setTimeout(() => {
-        // Check if canvas frame is ready before accessing it
-        const frame = editor.Canvas.getFrameEl();
-        const canvasWrapper = editor.Canvas.getWrapperEl();
-        
-        if (!frame || !frame.contentDocument) {
-          console.error('Canvas frame not ready yet, retrying...');
-          // Retry after a bit more time
-          setTimeout(() => {
-            const retryFrame = editor.Canvas.getFrameEl();
-            const retryWrapper = editor.Canvas.getWrapperEl();
-            if (retryFrame && retryFrame.contentDocument && retryWrapper) {
-              // Center canvas horizontally
-              retryWrapper.style.display = 'flex';
-              retryWrapper.style.justifyContent = 'center';
-              retryWrapper.style.alignItems = 'flex-start';
-              retryWrapper.style.minHeight = '100%';
-              retryWrapper.style.paddingTop = '20px';
-              setIsReady(true);
-            } else {
-              console.error('Canvas frame still not ready after retry');
-              setIsReady(true); // Set ready anyway to prevent infinite waiting
-            }
-          }, 200);
-          return;
-        }
-        
-        if (canvasWrapper) {
-          // Center canvas horizontally
-          canvasWrapper.style.display = 'flex';
-          canvasWrapper.style.justifyContent = 'center';
-          canvasWrapper.style.alignItems = 'flex-start';
-          canvasWrapper.style.minHeight = '100%';
-          canvasWrapper.style.paddingTop = '20px';
-        }
-        
-        // Mark editor as ready only after canvas is confirmed ready
+    // Use canvas:frame:loaded event instead of load - this fires when canvas iframe is ACTUALLY ready
+    // This is the correct event to use (not 'load' which fires too early)
+    let readySet = false;
+    
+    editor.on('canvas:frame:loaded', () => {
+      // Canvas frame is now fully loaded and ready
+      const canvasWrapper = editor.Canvas.getWrapperEl();
+      if (canvasWrapper) {
+        // Center canvas horizontally
+        canvasWrapper.style.display = 'flex';
+        canvasWrapper.style.justifyContent = 'center';
+        canvasWrapper.style.alignItems = 'flex-start';
+        canvasWrapper.style.minHeight = '100%';
+        canvasWrapper.style.paddingTop = '20px';
+      }
+      // Mark editor as ready after canvas frame is confirmed loaded
+      if (!readySet) {
         setIsReady(true);
-      }, 100);
+        readySet = true;
+      }
     });
+
+    // Fallback: if canvas:frame:loaded doesn't fire, set ready after a delay
+    // This matches legacy pattern where editor is ready immediately after init
+    setTimeout(() => {
+      if (!readySet) {
+        setIsReady(true);
+        readySet = true;
+      }
+    }, 500);
 
     // Load initial content if provided
     if (initialHtml || initialCss) {
@@ -374,8 +362,8 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       onUpdate?.(html, css);
     });
 
-    // Note: setIsReady(true) is now called inside editor.on('load') callback
-    // after canvas frame is confirmed ready
+    // Note: setIsReady(true) is now called inside editor.on('canvas:frame:loaded') callback
+    // after canvas frame is confirmed ready, with a fallback timeout
 
     // Cleanup
     return () => {
