@@ -326,17 +326,37 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     }
 
     // Build HTML from parsed components (ZIP import, structured project)
+    console.log('[GrapeEditor] Building HTML from components, component count:', firstPage.components?.length || 0);
+    
     const htmlFromComponents =
       firstPage.components && firstPage.components.length > 0
         ? firstPage.components
-            .map((component) =>
-              component?.props && typeof component.props.html === 'string'
+            .map((component, idx) => {
+              const html = component?.props && typeof component.props.html === 'string'
                 ? component.props.html
-                : ''
-            )
+                : '';
+              
+              if (!html || html.trim().length === 0) {
+                console.warn(`[GrapeEditor] Component ${idx} has empty HTML:`, {
+                  type: component?.type,
+                  category: component?.category,
+                  props: component?.props
+                });
+              } else {
+                console.log(`[GrapeEditor] Component ${idx} HTML length: ${html.length}, preview: ${html.substring(0, 100)}`);
+              }
+              
+              return html;
+            })
             .filter(Boolean)
             .join('\n')
         : '';
+    
+    console.log('[GrapeEditor] Final HTML from components length:', htmlFromComponents.length);
+    if (htmlFromComponents.length === 0) {
+      console.error('[GrapeEditor] ⚠️ WARNING: No HTML content extracted from components!');
+      console.error('[GrapeEditor] Component structure:', JSON.stringify(firstPage.components?.slice(0, 2), null, 2));
+    }
 
     const cssParts: string[] = [];
     if (currentProject.globalStyles) cssParts.push(currentProject.globalStyles);

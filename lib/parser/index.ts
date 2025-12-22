@@ -64,12 +64,65 @@ function parseHtmlToComponents(html: string): Component[] {
     const category = getCategory(element);
     const tagName = element.tagName?.toLowerCase() || 'div';
     
+    // CRITICAL FIX: node-html-parser doesn't have outerHTML property
+    // Use toString() method or manually construct HTML
+    let elementHtml = '';
+    try {
+      // node-html-parser uses toString() to get HTML representation
+      // But it might only return innerHTML, so we need to construct the full tag
+      const innerHTML = element.innerHTML || element.textContent || '';
+      const attrs = element.attributes || {};
+      const classNames = element.classNames || [];
+      const styleAttr = element.getAttribute('style') || '';
+      const idAttr = element.getAttribute('id') || '';
+      
+      // Build attribute string
+      const attrParts: string[] = [];
+      
+      // Add ID if present
+      if (idAttr) {
+        attrParts.push(`id="${idAttr}"`);
+      }
+      
+      // Add class if present
+      if (classNames.length > 0) {
+        attrParts.push(`class="${classNames.join(' ')}"`);
+      }
+      
+      // Add style if present
+      if (styleAttr) {
+        attrParts.push(`style="${styleAttr}"`);
+      }
+      
+      // Add other attributes
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (key !== 'class' && key !== 'style' && key !== 'id') {
+          attrParts.push(`${key}="${value}"`);
+        }
+      });
+      
+      const allAttrs = attrParts.length > 0 ? ' ' + attrParts.join(' ') : '';
+      
+      // Construct full HTML element
+      elementHtml = `<${tagName}${allAttrs}>${innerHTML}</${tagName}>`;
+      
+      // Verify we got HTML
+      if (!elementHtml || elementHtml.trim().length === 0) {
+        console.warn(`[Parser] Empty HTML for element ${tagName}, using fallback`);
+        elementHtml = `<${tagName}${allAttrs}>Empty component</${tagName}>`;
+      }
+    } catch (error) {
+      console.error('[Parser] Error extracting HTML from element:', error);
+      // Last resort: use minimal HTML
+      elementHtml = `<${tagName}>Error parsing element</${tagName}>`;
+    }
+    
     return {
       id: uuidv4(),
       type: tagName,
       category,
       props: {
-        html: element.outerHTML,
+        html: elementHtml,
         className: element.classNames?.join(' ') || '',
         attributes: element.attributes || {}
       },
@@ -245,6 +298,8 @@ export async function parseZip(
         // Parse HTML file as a page
         const content = await zipEntry.async('string');
         
+        console.log(`[ZIP Parser] Processing HTML file: ${fileName}, content length: ${content.length}`);
+        
         // Extract title from HTML
         const titleMatch = content.match(/<title>([^<]+)<\/title>/i);
         const title = titleMatch ? titleMatch[1] : fileName.replace(/\.[^.]+$/, '');
@@ -253,8 +308,17 @@ export async function parseZip(
         const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
         const bodyContent = bodyMatch ? bodyMatch[1] : content;
         
+        console.log(`[ZIP Parser] Body content length: ${bodyContent.length}`);
+        console.log(`[ZIP Parser] Body preview (first 200 chars): ${bodyContent.substring(0, 200)}`);
+        
         // Parse components from body
         const components = parseHtmlToComponents(bodyContent);
+        
+        console.log(`[ZIP Parser] Parsed ${components.length} components`);
+        components.forEach((comp, idx) => {
+          const htmlLength = comp.props?.html?.length || 0;
+          console.log(`[ZIP Parser] Component ${idx}: type=${comp.type}, html length=${htmlLength}, preview=${comp.props?.html?.substring(0, 100) || 'EMPTY'}`);
+        });
         
         // Create page
         const page: Page = {
