@@ -378,7 +378,10 @@ export function validateProject(project: unknown): Project {
 }
 
 // Re-export types
-export type { ParseOptions, ParseResult, ZipParseError, ParseProgress } from './types';
+export type { ParseOptions, ParseResult, ParseProgress } from './types';
+
+// Re-export ZipParseError as a class (not just a type)
+export { ZipParseError } from './types';
 
 
 
