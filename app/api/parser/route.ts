@@ -126,12 +126,6 @@ export async function POST(request: NextRequest) {
           // Progress callback not used in API route (would need WebSockets/SSE)
           // Client-side parsing would provide better UX
         });
-      } finally {
-        // Always restore original console functions
-        console.log = originalConsoleLog;
-        console.warn = originalConsoleWarn;
-        console.error = originalConsoleError;
-      }
         
         const totalComponents = result.project.pages.reduce((sum, page) => sum + (page.components?.length || 0), 0);
         
@@ -153,7 +147,7 @@ export async function POST(request: NextRequest) {
         const debugInfo = {
           htmlFilesProcessed: result.project.pages.length,
           totalComponentsExtracted: totalComponents,
-          parserLogs: parserLogs, // All captured parser logs (visible in browser!)
+          parserLogs: parserLogs.slice(-50), // Last 50 parser logs (visible in browser!)
           parserLogsCount: parserLogs.length,
           componentsPerPage: result.project.pages.map(page => ({
             pageName: page.name,
@@ -210,7 +204,11 @@ export async function POST(request: NextRequest) {
             {
               error: errorMessages[error.code] || error.message,
               code: error.code,
-              details: error.details
+              details: error.details,
+              debug: {
+                parserLogs: parserLogs.slice(-50),
+                parserLogsCount: parserLogs.length
+              }
             },
             { status: 400 }
           );
@@ -218,6 +216,11 @@ export async function POST(request: NextRequest) {
         
         // Re-throw for generic error handling below
         throw error;
+      } finally {
+        // Always restore original console functions
+        console.log = originalConsoleLog;
+        console.warn = originalConsoleWarn;
+        console.error = originalConsoleError;
       }
       
     } else if (contentType?.includes('application/json')) {

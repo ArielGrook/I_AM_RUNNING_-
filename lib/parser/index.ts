@@ -45,24 +45,60 @@ function parseHtmlToComponents(html: string): Component[] {
   
   // Helper to determine component category
   const getCategory = (element: ReturnType<typeof parse>): Component['category'] => {
-    const tagName = element.tagName?.toLowerCase() || '';
-    const classList = element.classList || [];
-    
-    if (tagName === 'header' || classList.some((c: string) => c.includes('header'))) return 'header';
-    if (tagName === 'footer' || classList.some((c: string) => c.includes('footer'))) return 'footer';
-    if (tagName === 'nav' || classList.some((c: string) => c.includes('nav'))) return 'navigation';
-    if (classList.some((c: string) => c.includes('hero'))) return 'hero';
-    if (tagName === 'form' || classList.some((c: string) => c.includes('form'))) return 'form';
-    if (tagName === 'button' || element.querySelector('button')) return 'button';
-    if (tagName === 'section') return 'section';
-    
-    return 'custom';
+    try {
+      const tagName = element.tagName?.toLowerCase() || '';
+      // node-html-parser uses classNames, not classList
+      const classNames = (element as any).classNames || [];
+      const classList = Array.isArray(classNames) ? classNames : [];
+      
+      if (tagName === 'header' || classList.some((c: string) => c.includes('header'))) return 'header';
+      if (tagName === 'footer' || classList.some((c: string) => c.includes('footer'))) return 'footer';
+      if (tagName === 'nav' || classList.some((c: string) => c.includes('nav'))) return 'navigation';
+      if (classList.some((c: string) => c.includes('hero'))) return 'hero';
+      if (tagName === 'form' || classList.some((c: string) => c.includes('form'))) return 'form';
+      if (tagName === 'button' || (typeof element.querySelector === 'function' && element.querySelector('button'))) return 'button';
+      if (tagName === 'section') return 'section';
+      
+      return 'custom';
+    } catch (error) {
+      console.warn('[Parser] Error determining category, using custom:', error);
+      return 'custom';
+    }
   };
   
   // Helper to extract component from element
-  const extractComponent = (element: ReturnType<typeof parse>, index: number): Component => {
-    const category = getCategory(element);
-    const tagName = element.tagName?.toLowerCase() || 'div';
+  const extractComponent = (element: any, index: number): Component => {
+    // CRITICAL: Log immediately at function entry to catch any early errors
+    console.log(`[Parser] ✅ extractComponent() called for index ${index}`);
+    
+    try {
+      console.log(`[Parser] 📊 Element details:`, {
+        elementExists: !!element,
+        elementType: typeof element,
+        hasTagName: !!(element as any)?.tagName,
+        tagName: (element as any)?.tagName || 'NONE',
+        elementKeys: element && typeof element === 'object' ? Object.keys(element as object).slice(0, 10) : []
+      });
+    } catch (logError) {
+      console.warn(`[Parser] ⚠️ Error logging element details:`, {
+        error: logError instanceof Error ? logError.message : String(logError),
+        elementExists: !!element,
+        elementType: typeof element
+      });
+    }
+    
+    try {
+      let category: Component['category'] = 'custom';
+      let tagName = 'div';
+      
+      try {
+        category = getCategory(element);
+        tagName = element.tagName?.toLowerCase() || 'div';
+        console.log(`[Parser] ✅ Got category: ${category}, tagName: ${tagName}`);
+      } catch (error) {
+        console.warn(`[Parser] Error getting category/tagName for element ${index}:`, error);
+        // Use defaults above
+      }
     
     // CRITICAL FIX: Use toString() to get full HTML representation including nested elements
     // node-html-parser's toString() returns the full outerHTML of the element
@@ -70,7 +106,15 @@ function parseHtmlToComponents(html: string): Component[] {
     try {
       // Try toString() first - this should give us the full HTML including all nested children
       if (typeof element.toString === 'function') {
-        elementHtml = element.toString();
+        try {
+          elementHtml = element.toString();
+        } catch (toStringError) {
+          console.warn(`[Parser] toString() threw an error for ${tagName}:`, {
+            error: toStringError instanceof Error ? toStringError.message : String(toStringError),
+            stack: toStringError instanceof Error ? toStringError.stack : undefined
+          });
+          // Continue to fallback construction
+        }
       }
       
       // Fallback: manually construct if toString() doesn't work or returns empty
@@ -129,32 +173,91 @@ function parseHtmlToComponents(html: string): Component[] {
       elementHtml = `<${tagName}>Error parsing element</${tagName}>`;
     }
     
-    return {
-      id: uuidv4(),
-      type: tagName,
-      category,
-      props: {
-        html: elementHtml,
-        className: element.classNames?.join(' ') || '',
-        attributes: element.attributes || {}
-      },
-      styles: element.getAttribute('style') ? 
-        Object.fromEntries(
-          element.getAttribute('style')!
-            .split(';')
-            .filter(s => s.trim())
-            .map(s => {
-              const [key, value] = s.split(':').map(str => str.trim());
-              return [key, value];
-            })
-        ) : undefined,
-      position: {
-        x: 0,
-        y: index * 100,
-        width: 100,
-        height: 100
+    // Safely extract className and attributes
+    let className = '';
+    let attributes: Record<string, any> = {};
+    let styles: Record<string, string> | undefined = undefined;
+    
+    try {
+      const classNames = (element as any).classNames;
+      if (Array.isArray(classNames)) {
+        className = classNames.join(' ') || '';
       }
-    };
+    } catch (error) {
+      console.warn(`[Parser] Error extracting className:`, error);
+    }
+    
+    try {
+      attributes = (element as any).attributes || {};
+    } catch (error) {
+      console.warn(`[Parser] Error extracting attributes:`, error);
+    }
+    
+    try {
+      if (typeof element.getAttribute === 'function') {
+        const styleAttr = element.getAttribute('style');
+        if (styleAttr && typeof styleAttr === 'string') {
+          styles = Object.fromEntries(
+            styleAttr
+              .split(';')
+              .filter(s => s.trim())
+              .map(s => {
+                const [key, value] = s.split(':').map(str => str.trim());
+                return [key, value];
+              })
+              .filter(([key]) => key) // Filter out invalid entries
+          );
+          // If we couldn't parse any styles, set to undefined
+          if (styles && Object.keys(styles).length === 0) {
+            styles = undefined;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`[Parser] Error extracting styles:`, error);
+    }
+    
+      const component: Component = {
+        id: uuidv4(),
+        type: tagName,
+        category,
+        props: {
+          html: elementHtml,
+          className,
+          attributes
+        },
+        styles,
+        position: {
+          x: 0,
+          y: index * 100,
+          width: 100,
+          height: 100
+        }
+      };
+      
+      console.log(`[Parser] ✅ Successfully created component ${index}:`, {
+        type: component.type,
+        category: component.category,
+        htmlLength: component.props?.html?.length || 0
+      });
+      
+      return component;
+      
+    } catch (error) {
+      // CRITICAL: Catch ANY error that happens in extractComponent
+      console.error(`[Parser] ❌ FATAL ERROR in extractComponent ${index}:`, error);
+      console.error(`[Parser] Error type:`, typeof error);
+      console.error(`[Parser] Error constructor:`, error?.constructor?.name);
+      console.error(`[Parser] Error message:`, error instanceof Error ? error.message : String(error));
+      console.error(`[Parser] Error stack:`, error instanceof Error ? error.stack : 'No stack');
+      console.error(`[Parser] Full error object:`, {
+        error,
+        stringified: JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+      });
+      
+      // Re-throw to be caught by outer handler
+      throw error;
+    }
   };
   
   // Extract top-level components (direct children of body)
@@ -202,8 +305,34 @@ function parseHtmlToComponents(html: string): Component[] {
   
   mainElements.forEach((element, index) => {
     console.log(`[Parser] 🔄 Extracting component ${index}...`);
-    const component = extractComponent(element, index);
-    components.push(component);
+    try {
+      const component = extractComponent(element, index);
+      components.push(component);
+      console.log(`[Parser] ✅ Successfully extracted component ${index} (type: ${component.type}, htmlLength: ${component.props?.html?.length || 0})`);
+    } catch (error) {
+      // Log detailed error information
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      const errorDetails = {
+        message: errorMessage,
+        stack: errorStack,
+        elementType: typeof element,
+        elementTagName: (element as any)?.tagName,
+        elementKeys: element && typeof element === 'object' ? Object.keys(element as object) : [],
+        errorType: error?.constructor?.name || typeof error
+      };
+      
+      console.error(`[Parser] ❌ Error extracting component ${index}:`, errorDetails);
+      console.error(`[Parser] ❌ Error details (raw):`, {
+        message: errorMessage,
+        stack: errorStack,
+        error: error
+      });
+      
+      // Continue processing other components - don't fail the entire parse
+      // Optionally add a placeholder component
+      console.warn(`[Parser] ⚠️ Skipping component ${index} due to error, continuing with next component...`);
+    }
   });
   
   console.log(`[Parser] ✅ Extracted ${components.length} components total`);
@@ -451,7 +580,22 @@ export async function parseZip(
       }
     } catch (error) {
       // Log error but continue processing other files
-      console.warn(`Failed to process file ${fileName}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      const errorDetails = {
+        message: errorMessage,
+        stack: errorStack,
+        errorType: error?.constructor?.name || typeof error,
+        fileName
+      };
+      
+      console.warn(`Failed to process file ${fileName}:`, errorDetails);
+      console.warn(`Failed to process file ${fileName} (raw error):`, {
+        error,
+        message: errorMessage,
+        stack: errorStack
+      });
+      
       // Don't throw - allow other files to be processed
     }
   }
