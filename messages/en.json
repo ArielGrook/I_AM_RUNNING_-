@@ -68,6 +68,7 @@
     "selectElement": "Select an element to edit its properties",
     "saveComponent": "Save Component",
     "chat": "Chat",
+    "unsaved": "Unsaved",
     "upgrade": "Upgrade"
   },
   "Chat": {
