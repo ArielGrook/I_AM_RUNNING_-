@@ -344,10 +344,38 @@ export default function EditorPage() {
         
         console.log('[ZIP Import] ✅ Parsing response JSON...');
         const data = await response.json();
-        console.log('[ZIP Import] 📦 Response data:', {
+        
+        // Deep log the full response structure
+        console.log('[ZIP Import] 📊 Full response structure:', JSON.stringify(data, null, 2));
+        
+        // Detailed component analysis
+        if (data.project?.pages) {
+          data.project.pages.forEach((page: any, pageIndex: number) => {
+            console.log(`[ZIP Import] 📄 Page ${pageIndex}:`, {
+              name: page.name,
+              componentsCount: page.components?.length || 0,
+              components: page.components?.map((c: any, i: number) => ({
+                index: i,
+                type: c.type,
+                category: c.category,
+                hasHtml: !!c.props?.html,
+                htmlLength: c.props?.html?.length || 0,
+                htmlPreview: c.props?.html?.substring(0, 100) || 'EMPTY'
+              })) || []
+            });
+          });
+        }
+        
+        // Log debug info from API if available
+        if (data.debug) {
+          console.log('[ZIP Import] 🐛 API Debug Info:', data.debug);
+        }
+        
+        console.log('[ZIP Import] 📦 Response summary:', {
           success: data.success,
           hasProject: !!data.project,
           projectPages: data.project?.pages?.length || 0,
+          totalComponents: data.project?.pages?.reduce((sum: number, page: any) => sum + (page.components?.length || 0), 0) || 0,
           componentsCount: data.project?.pages?.[0]?.components?.length || 0
         });
         
@@ -362,7 +390,26 @@ export default function EditorPage() {
           // Small delay to show completion
           setTimeout(() => {
             console.log('[ZIP Import] 🔄 Calling loadProject()...');
+            console.log('[ZIP Import] 📦 Project being loaded:', {
+              id: data.project.id,
+              name: data.project.name,
+              pagesCount: data.project.pages?.length || 0,
+              firstPageComponents: data.project.pages?.[0]?.components?.length || 0
+            });
+            
             loadProject(data.project);
+            
+            // Verify project was loaded
+            setTimeout(() => {
+              const loadedProject = currentProject;
+              console.log('[ZIP Import] ✅ Project loaded verification:', {
+                hasProject: !!loadedProject,
+                projectId: loadedProject?.id,
+                pagesCount: loadedProject?.pages?.length || 0,
+                componentsCount: loadedProject?.pages?.[0]?.components?.length || 0
+              });
+            }, 100);
+            
             setShowImportProgress(false);
             setImportProgress(null);
             console.log('[ZIP Import] ✅ Import workflow complete!');

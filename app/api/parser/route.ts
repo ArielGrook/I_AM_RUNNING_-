@@ -69,20 +69,46 @@ export async function POST(request: NextRequest) {
           // Client-side parsing would provide better UX
         });
         
+        const totalComponents = result.project.pages.reduce((sum, page) => sum + (page.components?.length || 0), 0);
+        
         console.log('[API Parser] ✅ ZIP parsed successfully:', {
           pagesCount: result.project.pages.length,
-          componentsCount: result.project.pages.reduce((sum, page) => sum + (page.components?.length || 0), 0),
-          processingTime: result.metadata.processingTime
+          componentsCount: totalComponents,
+          processingTime: result.metadata.processingTime,
+          pagesDetails: result.project.pages.map((page, idx) => ({
+            index: idx,
+            name: page.name,
+            componentsCount: page.components?.length || 0
+          }))
         });
         
         // Update metadata with original filename
         result.metadata.originalFileName = file.name;
         
+        // Add debug info to response
+        const debugInfo = {
+          htmlFilesProcessed: result.project.pages.length,
+          totalComponentsExtracted: totalComponents,
+          componentsPerPage: result.project.pages.map(page => ({
+            pageName: page.name,
+            componentsCount: page.components?.length || 0,
+            componentsPreview: page.components?.slice(0, 3).map(c => ({
+              type: c.type,
+              category: c.category,
+              hasHtml: !!c.props?.html,
+              htmlLength: c.props?.html?.length || 0
+            })) || []
+          }))
+        };
+        
+        console.log('[API Parser] 📊 Debug info:', JSON.stringify(debugInfo, null, 2));
         console.log('[API Parser] ✅ Returning project to client...');
+        
         return NextResponse.json({
           success: true,
           project: result.project,
-          metadata: result.metadata
+          metadata: result.metadata,
+          debug: debugInfo // Include debug info for client-side logging
         });
       } catch (error) {
         console.error('[API Parser] ❌ parseZip() error:', error);

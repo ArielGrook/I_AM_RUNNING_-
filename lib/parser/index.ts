@@ -351,13 +351,27 @@ export async function parseZip(
         console.log(`[ZIP Parser] Body preview (first 200 chars): ${bodyContent.substring(0, 200)}`);
         
         // Parse components from body
+        console.log(`[ZIP Parser] 🔄 Calling parseHtmlToComponents() with body content length: ${bodyContent.length}`);
         const components = parseHtmlToComponents(bodyContent);
         
-        console.log(`[ZIP Parser] Parsed ${components.length} components`);
-        components.forEach((comp, idx) => {
-          const htmlLength = comp.props?.html?.length || 0;
-          console.log(`[ZIP Parser] Component ${idx}: type=${comp.type}, html length=${htmlLength}, preview=${comp.props?.html?.substring(0, 100) || 'EMPTY'}`);
-        });
+        console.log(`[ZIP Parser] ✅ Parsed ${components.length} components from ${fileName}`);
+        
+        // Detailed component logging
+        if (components.length === 0) {
+          console.warn(`[ZIP Parser] ⚠️ WARNING: No components extracted from ${fileName}!`);
+          console.warn(`[ZIP Parser] Body content preview: ${bodyContent.substring(0, 500)}`);
+        } else {
+          components.forEach((comp, idx) => {
+            const htmlLength = comp.props?.html?.length || 0;
+            console.log(`[ZIP Parser] Component ${idx}:`, {
+              type: comp.type,
+              category: comp.category,
+              htmlLength: htmlLength,
+              hasProps: !!comp.props,
+              htmlPreview: comp.props?.html?.substring(0, 100) || 'EMPTY'
+            });
+          });
+        }
         
         // Create page
         const page: Page = {
@@ -370,13 +384,17 @@ export async function parseZip(
           scripts: ''
         };
         
+        console.log(`[ZIP Parser] 📄 Created page with ${page.components.length} components`);
+        
         // Extract inline styles
         const styleMatches = content.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi);
         for (const match of styleMatches) {
           page.styles = (page.styles || '') + '\n' + parseCss(match[1]);
         }
         
+        console.log(`[ZIP Parser] ➕ Adding page to project. Total pages: ${project.pages.length + 1}`);
         project.pages.push(page);
+        console.log(`[ZIP Parser] ✅ Page added. Project now has ${project.pages.length} pages with ${project.pages.reduce((sum, p) => sum + p.components.length, 0)} total components`);
         
       } else if (extension === 'css') {
         // Add to global styles

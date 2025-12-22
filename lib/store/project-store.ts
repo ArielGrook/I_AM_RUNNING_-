@@ -101,11 +101,29 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       loadProject: (project: Project) => {
+        console.log('[Project Store] 🔄 loadProject() called');
+        console.log('[Project Store] 📦 Project being loaded:', {
+          id: project.id,
+          name: project.name,
+          pagesCount: project.pages?.length || 0,
+          firstPageComponents: project.pages?.[0]?.components?.length || 0,
+          componentsDetails: project.pages?.[0]?.components?.map((c, i) => ({
+            index: i,
+            type: c.type,
+            category: c.category,
+            hasProps: !!c.props,
+            hasHtml: !!c.props?.html,
+            htmlLength: c.props?.html?.length || 0
+          })) || []
+        });
+        
         set({
           currentProject: project,
           saveStatus: 'saved',
           lastSaved: new Date(),
         });
+        
+        console.log('[Project Store] ✅ Project loaded into store');
       },
 
       clearProject: () => {
