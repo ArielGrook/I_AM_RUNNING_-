@@ -25,7 +25,7 @@ export default function GrapesTestPage() {
           {
             id: 'simple-test',
             label: 'Simple Test',
-            content: 'SIMPLE TEST'
+            content: '<div style="padding: 20px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;">SIMPLE TEST</div>'
           },
           {
             id: 'class-test', 
