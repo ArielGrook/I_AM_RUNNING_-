@@ -30,18 +30,35 @@ export default function GrapesTestPage() {
           {
             id: 'class-test', 
             label: 'Class Test',
-            content: '<div class="test-class">CLASS TEST</div>'
+            // FIX: Use inline styles instead of canvas.styles array (which is for URLs only)
+            content: '<div class="test-class" style="background: blue; padding: 20px; color: white;">CLASS TEST</div>'
           }
         ]
       },
       
-      // Add CSS for class-test
+      // CRITICAL: canvas.styles is for EXTERNAL CSS URLs only, not CSS strings!
+      // Use inline styles in HTML content or editor.setStyle() after init
       canvas: {
-        styles: [
-          '.test-class { background: blue; padding: 20px; color: white; }'
-        ]
+        styles: [], // Empty - CSS should be inline in HTML or added via setStyle()
+        scripts: [],
+        frameStyle: `
+          body {
+            min-height: 5000px;
+            position: relative;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+          }
+          * {
+            box-sizing: border-box;
+          }
+        `
       }
     });
+
+    // FIX: If you need to add CSS classes, use editor.setStyle() after init
+    // Example: editor.setStyle('.test-class { background: blue; padding: 20px; color: white; }');
+    // But for this test, we're using inline styles which is the working approach
 
     // Log EVERYTHING
     editor.on('component:add', (component) => {
