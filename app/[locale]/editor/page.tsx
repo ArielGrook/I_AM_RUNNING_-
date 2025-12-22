@@ -369,6 +369,20 @@ export default function EditorPage() {
         // Log debug info from API if available
         if (data.debug) {
           console.log('[ZIP Import] 🐛 API Debug Info:', data.debug);
+          
+          // Display parser logs (server-side logs now visible in browser!)
+          if (data.debug.parserLogs && data.debug.parserLogs.length > 0) {
+            console.log('[ZIP Import] 📋 Parser Logs (Server-Side):');
+            data.debug.parserLogs.forEach((log: string, idx: number) => {
+              console.log(`  [${idx}] ${log}`);
+            });
+          }
+          
+          // Show component extraction summary
+          if (data.debug.totalComponentsExtracted === 0) {
+            console.warn('[ZIP Import] ⚠️ WARNING: Zero components extracted!');
+            console.warn('[ZIP Import] Check parserLogs above to see what happened during parsing.');
+          }
         }
         
         console.log('[ZIP Import] 📦 Response summary:', {

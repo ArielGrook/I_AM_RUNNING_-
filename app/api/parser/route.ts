@@ -61,13 +61,77 @@ export async function POST(request: NextRequest) {
       const buffer = await file.arrayBuffer();
       console.log('[API Parser] 📦 Buffer size:', buffer.byteLength);
       
+      // Capture parser logs for debugging (server logs visible in browser)
+      const parserLogs: string[] = [];
+      const originalConsoleLog = console.log;
+      const originalConsoleWarn = console.warn;
+      const originalConsoleError = console.error;
+      
+      // Intercept console logs to capture parser output
+      const interceptedLog = (...args: any[]) => {
+        const message = args.map(arg => {
+          if (typeof arg === 'object' && arg !== null) {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        }).join(' ');
+        parserLogs.push(`[LOG] ${message}`);
+        originalConsoleLog.apply(console, args);
+      };
+      
+      const interceptedWarn = (...args: any[]) => {
+        const message = args.map(arg => {
+          if (typeof arg === 'object' && arg !== null) {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        }).join(' ');
+        parserLogs.push(`[WARN] ${message}`);
+        originalConsoleWarn.apply(console, args);
+      };
+      
+      const interceptedError = (...args: any[]) => {
+        const message = args.map(arg => {
+          if (typeof arg === 'object' && arg !== null) {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        }).join(' ');
+        parserLogs.push(`[ERROR] ${message}`);
+        originalConsoleError.apply(console, args);
+      };
+      
+      // Replace console functions during parsing
+      console.log = interceptedLog;
+      console.warn = interceptedWarn;
+      console.error = interceptedError;
+      
+      let result;
       try {
         console.log('[API Parser] 🔄 Calling parseZip()...');
-        const result = await parseZip(buffer, {
+        result = await parseZip(buffer, {
           maxSize,
           // Progress callback not used in API route (would need WebSockets/SSE)
           // Client-side parsing would provide better UX
         });
+      } finally {
+        // Always restore original console functions
+        console.log = originalConsoleLog;
+        console.warn = originalConsoleWarn;
+        console.error = originalConsoleError;
+      }
         
         const totalComponents = result.project.pages.reduce((sum, page) => sum + (page.components?.length || 0), 0);
         
@@ -85,10 +149,12 @@ export async function POST(request: NextRequest) {
         // Update metadata with original filename
         result.metadata.originalFileName = file.name;
         
-        // Add debug info to response
+        // Collect detailed debug info with parser logs
         const debugInfo = {
           htmlFilesProcessed: result.project.pages.length,
           totalComponentsExtracted: totalComponents,
+          parserLogs: parserLogs, // All captured parser logs (visible in browser!)
+          parserLogsCount: parserLogs.length,
           componentsPerPage: result.project.pages.map(page => ({
             pageName: page.name,
             componentsCount: page.components?.length || 0,
@@ -96,9 +162,20 @@ export async function POST(request: NextRequest) {
               type: c.type,
               category: c.category,
               hasHtml: !!c.props?.html,
-              htmlLength: c.props?.html?.length || 0
+              htmlLength: c.props?.html?.length || 0,
+              htmlPreview: c.props?.html?.substring(0, 150) || 'EMPTY'
             })) || []
-          }))
+          })),
+          projectStructure: {
+            pages: result.project.pages.map((page, idx) => ({
+              index: idx,
+              name: page.name,
+              slug: page.slug,
+              componentsCount: page.components?.length || 0,
+              hasStyles: !!page.styles && page.styles.length > 0,
+              stylesLength: page.styles?.length || 0
+            }))
+          }
         };
         
         console.log('[API Parser] 📊 Debug info:', JSON.stringify(debugInfo, null, 2));
@@ -108,7 +185,7 @@ export async function POST(request: NextRequest) {
           success: true,
           project: result.project,
           metadata: result.metadata,
-          debug: debugInfo // Include debug info for client-side logging
+          debug: debugInfo // Include debug info with parser logs for client-side debugging
         });
       } catch (error) {
         console.error('[API Parser] ❌ parseZip() error:', error);
