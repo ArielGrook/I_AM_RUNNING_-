@@ -161,25 +161,52 @@ function parseHtmlToComponents(html: string): Component[] {
   // node-html-parser returns childNodes as an array
   const childNodes = body.childNodes || [];
   
+  console.log(`[Parser] 🔍 Analyzing HTML structure:`, {
+    totalChildNodes: childNodes.length,
+    bodyInnerHTML: body.innerHTML?.substring(0, 200) || 'EMPTY',
+    bodyTagName: body.tagName
+  });
+  
   // Filter to get only element nodes (not text nodes)
   const mainElements = childNodes.filter(
     (node): node is ReturnType<typeof parse> => {
-      return node && 
+      const isValid = node && 
              typeof node === 'object' && 
              'tagName' in node && 
              typeof (node as any).tagName === 'string' &&
              (node as any).tagName.length > 0; // Ensure it's a real element
+      
+      if (!isValid && node) {
+        console.log(`[Parser] ⚠️ Filtered out node:`, {
+          type: typeof node,
+          hasTagName: 'tagName' in node,
+          tagName: (node as any).tagName
+        });
+      }
+      
+      return isValid;
     }
   );
   
-  console.log(`[Parser] Found ${mainElements.length} top-level elements from ${childNodes.length} child nodes`);
+  console.log(`[Parser] 📊 Found ${mainElements.length} top-level elements from ${childNodes.length} child nodes`);
+  
+  if (mainElements.length === 0) {
+    console.warn(`[Parser] ⚠️ WARNING: No valid elements found in body!`);
+    console.warn(`[Parser] Body childNodes types:`, childNodes.map((node: any, idx: number) => ({
+      index: idx,
+      type: typeof node,
+      tagName: node?.tagName,
+      hasTagName: 'tagName' in (node || {})
+    })));
+  }
   
   mainElements.forEach((element, index) => {
+    console.log(`[Parser] 🔄 Extracting component ${index}...`);
     const component = extractComponent(element, index);
     components.push(component);
   });
   
-  console.log(`[Parser] Extracted ${components.length} components total`);
+  console.log(`[Parser] ✅ Extracted ${components.length} components total`);
   
   return components;
 }
