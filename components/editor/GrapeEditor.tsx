@@ -17,6 +17,7 @@ import 'grapesjs-preset-webpage';
 import { useProjectStore } from '@/lib/store/project-store';
 import { getAllCatalogBlockDefinitions, getSupabaseBlockDefinitions, type BlockDefinition } from '@/lib/grapesjs/catalog-blocks';
 import { type SupabaseComponent } from '@/lib/components/supabase-catalog';
+import { convertCssToInlineStyles } from '@/lib/utils/css-to-inline';
 
 export interface GrapeEditorRef {
   clear: () => void;
@@ -353,8 +354,19 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     }
 
     if (htmlFromComponents) {
+      // CRITICAL FIX: Convert CSS classes to inline styles before setting components
+      // This matches the working approach from LSB-REDACTOR.js where all styles are inline
+      // GrapesJS treats CSS strings in canvas.styles as URLs, so we must inline styles
+      let htmlWithInlineStyles = htmlFromComponents;
+      
+      if (css) {
+        console.log('Converting CSS classes to inline styles...');
+        htmlWithInlineStyles = convertCssToInlineStyles(htmlFromComponents, css);
+        console.log('✅ CSS converted to inline styles');
+      }
+      
       // Sanitize HTML to fix malformed attributes before setting
-      const sanitizedHtml = sanitizeHtml(htmlFromComponents);
+      const sanitizedHtml = sanitizeHtml(htmlWithInlineStyles);
       
       console.log('Setting components from ZIP import, HTML length:', sanitizedHtml.length);
       console.log('HTML preview (first 500 chars):', sanitizedHtml.substring(0, 500));
@@ -389,8 +401,16 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       setTimeout(setComponentsWhenReady, 100);
     }
 
+    // Note: We still call setStyle() for any CSS that couldn't be inlined
+    // (like @media queries, pseudo-selectors, etc.) but most styles are now inline
     if (css) {
-      editor.setStyle(css);
+      // Only set CSS that contains rules that can't be inlined (media queries, etc.)
+      // Most class-based styles are now inline in the HTML
+      const hasNonInlineableRules = css.includes('@media') || css.includes(':hover') || css.includes(':before') || css.includes(':after');
+      if (hasNonInlineableRules) {
+        editor.setStyle(css);
+        console.log('✅ Additional CSS rules (media queries, pseudo-selectors) added via setStyle()');
+      }
     }
 
     lastSyncedProjectRef.current = signature;
