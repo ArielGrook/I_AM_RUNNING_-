@@ -15,11 +15,12 @@ const intlMiddleware = createMiddleware({
 export default function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
-  // Skip middleware for static files and API routes
+  // Skip middleware for static files, API routes, and debug routes
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/static') ||
+    pathname.startsWith('/debug') ||
     pathname.includes('.') // Files with extensions
   ) {
     return NextResponse.next();
@@ -31,8 +32,8 @@ export default function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all pathnames except static files and API routes
-    '/((?!_next|api|static|.*\\..*).*)',
+    // Match all pathnames except static files, API routes, and debug routes
+    '/((?!_next|api|static|debug|.*\\..*).*)',
     // Include root path
     '/'
   ]
