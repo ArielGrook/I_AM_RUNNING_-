@@ -209,12 +209,20 @@ export async function parseZip(
   file: ArrayBuffer,
   options: ParseOptions = {}
 ): Promise<ParseResult> {
+  console.log('[Parser] 🚀 parseZip() called');
+  console.log('[Parser] 📦 Input:', {
+    fileSize: file.byteLength,
+    maxSize: options.maxSize || 50 * 1024 * 1024,
+    hasProgressCallback: !!options.onProgress
+  });
+  
   const startTime = Date.now();
   const maxSize = options.maxSize || 50 * 1024 * 1024; // 50MB default
   const onProgress = options.onProgress;
   
   // Check file size
   if (file.byteLength > maxSize) {
+    console.error('[Parser] ❌ File size exceeded');
     throw new ZipParseError(
       `File size (${(file.byteLength / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (${(maxSize / 1024 / 1024).toFixed(2)}MB)`,
       'SIZE_EXCEEDED',
@@ -244,12 +252,15 @@ export async function parseZip(
     message: 'Loading ZIP file...',
   });
   
+  console.log('[Parser] 🔄 Creating JSZip instance...');
   let zip: JSZip;
   let contents: JSZip;
   
   try {
     zip = new JSZip();
+    console.log('[Parser] 🔄 Loading ZIP file...');
     contents = await zip.loadAsync(file);
+    console.log('[Parser] ✅ ZIP file loaded successfully');
   } catch (error) {
     if (error instanceof JSZip.JSZipError) {
       throw new ZipParseError(
@@ -268,6 +279,11 @@ export async function parseZip(
   // Count total files for progress tracking
   const fileEntries = Object.entries(contents.files).filter(([, entry]) => !entry.dir);
   const totalFiles = fileEntries.length;
+  
+  console.log('[Parser] 📊 Found files:', {
+    totalFiles,
+    files: fileEntries.map(([path]) => path).slice(0, 10) // Log first 10 files
+  });
   
   onProgress?.({
     stage: 'parsing',
@@ -436,6 +452,12 @@ export async function parseZip(
     (sum, page) => sum + page.components.length,
     0
   );
+  
+  console.log('[Parser] ✅ ZIP parsing complete:', {
+    pagesCount: validatedProject.pages.length,
+    componentsCount,
+    processingTime: `${processingTime}ms`
+  });
   
   return {
     project: validatedProject,

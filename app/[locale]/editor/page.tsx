@@ -265,25 +265,40 @@ export default function EditorPage() {
   
   // Handle import with progress tracking and demo limits
   const handleImport = async () => {
+    console.log('[ZIP Import] 🚀 handleImport() called');
+    
     if (!canSave) {
+      console.warn('[ZIP Import] ❌ Demo mode limit reached');
       alert('Demo mode limit reached. Please upgrade to import projects.');
       return;
     }
     
+    console.log('[ZIP Import] ✅ Creating file input dialog...');
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.zip';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+      if (!file) {
+        console.warn('[ZIP Import] ❌ No file selected');
+        return;
+      }
+      
+      console.log('[ZIP Import] ✅ File selected:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
       
       // Check file size (50MB max)
       const maxSize = 50 * 1024 * 1024;
       if (file.size > maxSize) {
+        console.error('[ZIP Import] ❌ File size exceeded:', file.size);
         alert(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (${(maxSize / 1024 / 1024).toFixed(2)}MB)`);
         return;
       }
       
+      console.log('[ZIP Import] 📊 Showing progress dialog...');
       setShowImportProgress(true);
       setImportProgress({
         stage: 'loading',
@@ -293,35 +308,51 @@ export default function EditorPage() {
       
       try {
         // Clear canvas before import
+        console.log('[ZIP Import] 🧹 Clearing canvas...');
         if (grapeEditorRef.current) {
           grapeEditorRef.current.clear();
         }
         
         // Create progress callback
         const onProgress = (progress: ParseProgress) => {
+          console.log('[ZIP Import] 📈 Progress:', progress);
           setImportProgress(progress);
         };
         
         // Read file and parse with progress
-        const arrayBuffer = await file.arrayBuffer();
-        
-        // For now, use API route (will be enhanced to support progress)
-        // TODO: Implement client-side parsing with progress for better UX
+        console.log('[ZIP Import] 📦 Preparing FormData...');
         const formData = new FormData();
         formData.append('file', file);
         
+        console.log('[ZIP Import] 🌐 Sending request to /api/parser...');
         const response = await fetch('/api/parser', {
           method: 'POST',
           body: formData,
         });
         
+        console.log('[ZIP Import] 📥 Response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
+        });
+        
         if (!response.ok) {
           const error = await response.json();
+          console.error('[ZIP Import] ❌ API error:', error);
           throw new Error(error.error || 'Import failed');
         }
         
+        console.log('[ZIP Import] ✅ Parsing response JSON...');
         const data = await response.json();
+        console.log('[ZIP Import] 📦 Response data:', {
+          success: data.success,
+          hasProject: !!data.project,
+          projectPages: data.project?.pages?.length || 0,
+          componentsCount: data.project?.pages?.[0]?.components?.length || 0
+        });
+        
         if (data.project) {
+          console.log('[ZIP Import] ✅ Project received, loading into editor...');
           setImportProgress({
             stage: 'complete',
             progress: 100,
@@ -330,13 +361,21 @@ export default function EditorPage() {
           
           // Small delay to show completion
           setTimeout(() => {
+            console.log('[ZIP Import] 🔄 Calling loadProject()...');
             loadProject(data.project);
             setShowImportProgress(false);
             setImportProgress(null);
+            console.log('[ZIP Import] ✅ Import workflow complete!');
           }, 500);
+        } else {
+          console.error('[ZIP Import] ❌ No project in response data');
         }
       } catch (error) {
-        console.error('Import failed:', error);
+        console.error('[ZIP Import] ❌ Import failed:', error);
+        console.error('[ZIP Import] Error details:', {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
         setImportProgress({
           stage: 'complete',
           progress: 0,

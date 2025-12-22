@@ -5,16 +5,29 @@ import { ProjectSchema } from '@/lib/types/project';
 
 // Parse ZIP file endpoint
 export async function POST(request: NextRequest) {
+  console.log('[API Parser] 🚀 POST /api/parser called');
+  
   try {
     // Check content type
     const contentType = request.headers.get('content-type');
+    console.log('[API Parser] 📋 Content-Type:', contentType);
     
     if (contentType?.includes('multipart/form-data')) {
+      console.log('[API Parser] ✅ Processing multipart/form-data...');
+      
       // Handle file upload
       const formData = await request.formData();
       const file = formData.get('file') as File;
       
+      console.log('[API Parser] 📦 File extracted:', {
+        hasFile: !!file,
+        fileName: file?.name,
+        fileSize: file?.size,
+        fileType: file?.type
+      });
+      
       if (!file) {
+        console.error('[API Parser] ❌ No file provided');
         return NextResponse.json(
           { error: 'No file provided' },
           { status: 400 }
@@ -23,6 +36,7 @@ export async function POST(request: NextRequest) {
       
       // Check file type
       if (!file.name.endsWith('.zip')) {
+        console.error('[API Parser] ❌ Invalid file type:', file.name);
         return NextResponse.json(
           { error: 'File must be a ZIP archive' },
           { status: 400 }
@@ -32,6 +46,7 @@ export async function POST(request: NextRequest) {
       // Check file size (max 50MB - Stage 2 Module 4 enhancement)
       const maxSize = 50 * 1024 * 1024; // 50MB
       if (file.size > maxSize) {
+        console.error('[API Parser] ❌ File size exceeded:', file.size);
         return NextResponse.json(
           { 
             error: `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (${(maxSize / 1024 / 1024).toFixed(2)}MB)`,
@@ -41,27 +56,45 @@ export async function POST(request: NextRequest) {
         );
       }
       
+      console.log('[API Parser] ✅ File validation passed, converting to ArrayBuffer...');
       // Parse the ZIP file with enhanced error handling
       const buffer = await file.arrayBuffer();
+      console.log('[API Parser] 📦 Buffer size:', buffer.byteLength);
       
       try {
+        console.log('[API Parser] 🔄 Calling parseZip()...');
         const result = await parseZip(buffer, {
           maxSize,
           // Progress callback not used in API route (would need WebSockets/SSE)
           // Client-side parsing would provide better UX
         });
         
+        console.log('[API Parser] ✅ ZIP parsed successfully:', {
+          pagesCount: result.project.pages.length,
+          componentsCount: result.project.pages.reduce((sum, page) => sum + (page.components?.length || 0), 0),
+          processingTime: result.metadata.processingTime
+        });
+        
         // Update metadata with original filename
         result.metadata.originalFileName = file.name;
         
+        console.log('[API Parser] ✅ Returning project to client...');
         return NextResponse.json({
           success: true,
           project: result.project,
           metadata: result.metadata
         });
       } catch (error) {
+        console.error('[API Parser] ❌ parseZip() error:', error);
+        
         // Handle ZipParseError with specific error codes
         if (error instanceof ZipParseError) {
+          console.error('[API Parser] ❌ ZipParseError:', {
+            code: error.code,
+            message: error.message,
+            details: error.details
+          });
+          
           const errorMessages: Record<string, string> = {
             SIZE_EXCEEDED: 'File size exceeds maximum allowed size',
             INVALID_FORMAT: 'Invalid or corrupted ZIP file format',
@@ -110,7 +143,11 @@ export async function POST(request: NextRequest) {
     );
     
   } catch (error) {
-    console.error('Parser API error:', error);
+    console.error('[API Parser] ❌ Fatal error:', error);
+    console.error('[API Parser] Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     
     return NextResponse.json(
       { 

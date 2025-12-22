@@ -81,6 +81,19 @@ export async function getComponentCatalog(includePrivate: boolean = false): Prom
     
     if (error) {
       console.error('Failed to load components from Supabase:', error);
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      
+      // If table doesn't exist (code 42P01), log helpful message
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        console.error('❌ Components table does not exist in Supabase!');
+        console.error('Please run the schema SQL to create the table: lib/supabase/schema.sql');
+      }
+      
       // Fallback to static catalog
       return convertStaticCatalogToSupabase();
     }
@@ -160,6 +173,19 @@ export async function saveComponent(component: Omit<SupabaseComponent, 'id' | 'c
       .single();
     
     if (error) {
+      console.error('Failed to save component to Supabase:', error);
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      
+      // If table doesn't exist, provide helpful error message
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        throw new Error('Components table does not exist in Supabase. Please run the schema SQL to create it.');
+      }
+      
       throw new Error(`Failed to save component: ${error.message}`);
     }
     
