@@ -111,12 +111,26 @@ function applyStylesToElement(
  * @returns HTML with inline styles applied
  */
 export function convertCssToInlineStyles(html: string, css: string): string {
-  if (!html || !css) return html;
+  // CRITICAL: Always return HTML, never CSS only
+  if (!html || typeof html !== 'string') {
+    console.warn('[CSS-to-Inline] No HTML provided, returning empty string');
+    return '';
+  }
+  
+  if (!css || typeof css !== 'string') {
+    console.warn('[CSS-to-Inline] No CSS provided, returning HTML as-is');
+    return html;
+  }
   
   // Parse CSS into a map
   const styleMap = parseCssToMap(css);
   
-  if (styleMap.size === 0) return html;
+  if (styleMap.size === 0) {
+    console.log('[CSS-to-Inline] No CSS rules found, returning HTML as-is');
+    return html;
+  }
+  
+  console.log(`[CSS-to-Inline] Converting CSS to inline styles. HTML length: ${html.length}, CSS rules: ${styleMap.size}`);
   
   // Match all HTML elements with class attributes (case-insensitive)
   // Handles: <tag class="...">, <tag class='...'>, and self-closing tags
@@ -133,6 +147,19 @@ export function convertCssToInlineStyles(html: string, css: string): string {
     return applyStylesToElement(fullMatch, styleMap, className);
   });
   
+  // CRITICAL: Verify we still have HTML (not just CSS)
+  if (!result || result.trim().length === 0) {
+    console.error('[CSS-to-Inline] ERROR: Result is empty after conversion, returning original HTML');
+    return html;
+  }
+  
+  // Verify result contains HTML tags
+  if (!result.includes('<') || !result.includes('>')) {
+    console.error('[CSS-to-Inline] ERROR: Result does not contain HTML tags, returning original HTML');
+    return html;
+  }
+  
+  console.log(`[CSS-to-Inline] ✅ Conversion complete. Result HTML length: ${result.length}`);
   return result;
 }
 

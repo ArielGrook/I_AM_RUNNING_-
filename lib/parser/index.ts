@@ -64,52 +64,64 @@ function parseHtmlToComponents(html: string): Component[] {
     const category = getCategory(element);
     const tagName = element.tagName?.toLowerCase() || 'div';
     
-    // CRITICAL FIX: node-html-parser doesn't have outerHTML property
-    // Use toString() method or manually construct HTML
+    // CRITICAL FIX: Use toString() to get full HTML representation including nested elements
+    // node-html-parser's toString() returns the full outerHTML of the element
     let elementHtml = '';
     try {
-      // node-html-parser uses toString() to get HTML representation
-      // But it might only return innerHTML, so we need to construct the full tag
-      const innerHTML = element.innerHTML || element.textContent || '';
-      const attrs = element.attributes || {};
-      const classNames = element.classNames || [];
-      const styleAttr = element.getAttribute('style') || '';
-      const idAttr = element.getAttribute('id') || '';
-      
-      // Build attribute string
-      const attrParts: string[] = [];
-      
-      // Add ID if present
-      if (idAttr) {
-        attrParts.push(`id="${idAttr}"`);
+      // Try toString() first - this should give us the full HTML including all nested children
+      if (typeof element.toString === 'function') {
+        elementHtml = element.toString();
       }
       
-      // Add class if present
-      if (classNames.length > 0) {
-        attrParts.push(`class="${classNames.join(' ')}"`);
-      }
-      
-      // Add style if present
-      if (styleAttr) {
-        attrParts.push(`style="${styleAttr}"`);
-      }
-      
-      // Add other attributes
-      Object.entries(attrs).forEach(([key, value]) => {
-        if (key !== 'class' && key !== 'style' && key !== 'id') {
-          attrParts.push(`${key}="${value}"`);
+      // Fallback: manually construct if toString() doesn't work or returns empty
+      if (!elementHtml || elementHtml.trim().length === 0) {
+        console.warn(`[Parser] toString() returned empty, manually constructing HTML for ${tagName}`);
+        
+        // Get innerHTML which includes all nested HTML (not just text)
+        const innerHTML = (element as any).innerHTML || '';
+        const attrs = element.attributes || {};
+        const classNames = element.classNames || [];
+        const styleAttr = element.getAttribute('style') || '';
+        const idAttr = element.getAttribute('id') || '';
+        
+        // Build attribute string
+        const attrParts: string[] = [];
+        
+        // Add ID if present
+        if (idAttr) {
+          attrParts.push(`id="${idAttr}"`);
         }
-      });
-      
-      const allAttrs = attrParts.length > 0 ? ' ' + attrParts.join(' ') : '';
-      
-      // Construct full HTML element
-      elementHtml = `<${tagName}${allAttrs}>${innerHTML}</${tagName}>`;
+        
+        // Add class if present
+        if (classNames.length > 0) {
+          attrParts.push(`class="${classNames.join(' ')}"`);
+        }
+        
+        // Add style if present
+        if (styleAttr) {
+          attrParts.push(`style="${styleAttr}"`);
+        }
+        
+        // Add other attributes
+        Object.entries(attrs).forEach(([key, value]) => {
+          if (key !== 'class' && key !== 'style' && key !== 'id') {
+            attrParts.push(`${key}="${String(value)}"`);
+          }
+        });
+        
+        const allAttrs = attrParts.length > 0 ? ' ' + attrParts.join(' ') : '';
+        
+        // Construct full HTML element with innerHTML (preserves nested structure)
+        elementHtml = `<${tagName}${allAttrs}>${innerHTML}</${tagName}>`;
+      }
       
       // Verify we got HTML
       if (!elementHtml || elementHtml.trim().length === 0) {
-        console.warn(`[Parser] Empty HTML for element ${tagName}, using fallback`);
-        elementHtml = `<${tagName}${allAttrs}>Empty component</${tagName}>`;
+        console.warn(`[Parser] Empty HTML for element ${tagName} after all attempts, using fallback`);
+        elementHtml = `<${tagName}>Empty component</${tagName}>`;
+      } else {
+        // Log success for debugging
+        console.log(`[Parser] Extracted HTML for ${tagName}, length: ${elementHtml.length}, preview: ${elementHtml.substring(0, 100)}`);
       }
     } catch (error) {
       console.error('[Parser] Error extracting HTML from element:', error);
@@ -148,15 +160,26 @@ function parseHtmlToComponents(html: string): Component[] {
   // Extract top-level components (direct children of body)
   // node-html-parser returns childNodes as an array
   const childNodes = body.childNodes || [];
+  
+  // Filter to get only element nodes (not text nodes)
   const mainElements = childNodes.filter(
     (node): node is ReturnType<typeof parse> => {
-      return node && typeof node === 'object' && 'tagName' in node && typeof (node as any).tagName === 'string';
+      return node && 
+             typeof node === 'object' && 
+             'tagName' in node && 
+             typeof (node as any).tagName === 'string' &&
+             (node as any).tagName.length > 0; // Ensure it's a real element
     }
   );
   
+  console.log(`[Parser] Found ${mainElements.length} top-level elements from ${childNodes.length} child nodes`);
+  
   mainElements.forEach((element, index) => {
-    components.push(extractComponent(element, index));
+    const component = extractComponent(element, index);
+    components.push(component);
   });
+  
+  console.log(`[Parser] Extracted ${components.length} components total`);
   
   return components;
 }
