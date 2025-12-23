@@ -312,7 +312,13 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
   useEffect(() => {
     const editor = grapesEditorRef.current;
 
-    if (!isReady || !editor || !currentProject) {
+    if (!isReady || !editor) {
+      return;
+    }
+    
+    // Handle case where currentProject becomes null (e.g., after localStorage error)
+    if (!currentProject) {
+      console.warn('[GrapeEditor] ⚠️ currentProject is null - skipping sync. This may happen if project is too large for localStorage.');
       return;
     }
 

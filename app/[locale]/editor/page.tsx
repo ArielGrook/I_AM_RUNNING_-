@@ -395,6 +395,11 @@ export default function EditorPage() {
         
         if (data.project) {
           console.log('[ZIP Import] ✅ Project received, loading into editor...');
+          
+          // Calculate project size for logging
+          const projectSize = new Blob([JSON.stringify(data.project)]).size;
+          console.log('[ZIP Import] 📊 Project size:', `${(projectSize / 1024 / 1024).toFixed(2)}MB`);
+          
           setImportProgress({
             stage: 'complete',
             progress: 100,
@@ -408,28 +413,58 @@ export default function EditorPage() {
               id: data.project.id,
               name: data.project.name,
               pagesCount: data.project.pages?.length || 0,
-              firstPageComponents: data.project.pages?.[0]?.components?.length || 0
+              firstPageComponents: data.project.pages?.[0]?.components?.length || 0,
+              projectSize: `${(projectSize / 1024 / 1024).toFixed(2)}MB`
             });
             
-            loadProject(data.project);
-            
-            // Verify project was loaded
-            setTimeout(() => {
-              const loadedProject = currentProject;
-              console.log('[ZIP Import] ✅ Project loaded verification:', {
-                hasProject: !!loadedProject,
-                projectId: loadedProject?.id,
-                pagesCount: loadedProject?.pages?.length || 0,
-                componentsCount: loadedProject?.pages?.[0]?.components?.length || 0
+            try {
+              loadProject(data.project);
+              
+              // Verify project was loaded
+              setTimeout(() => {
+                const loadedProject = currentProject;
+                console.log('[ZIP Import] ✅ Project loaded verification:', {
+                  hasProject: !!loadedProject,
+                  projectId: loadedProject?.id,
+                  pagesCount: loadedProject?.pages?.length || 0,
+                  componentsCount: loadedProject?.pages?.[0]?.components?.length || 0
+                });
+                
+                // Warn if project is large and might not be persisted
+                if (projectSize > 3 * 1024 * 1024) {
+                  console.warn('[ZIP Import] ⚠️ Large project detected. It may not be persisted to localStorage due to size limits.');
+                }
+              }, 100);
+            } catch (loadError) {
+              console.error('[ZIP Import] ❌ Error loading project into store:', loadError);
+              setImportProgress({
+                stage: 'error',
+                progress: 0,
+                message: `Failed to load project: ${loadError instanceof Error ? loadError.message : 'Unknown error'}`,
               });
-            }, 100);
+              setTimeout(() => {
+                setShowImportProgress(false);
+                setImportProgress(null);
+              }, 3000);
+              return;
+            }
             
+            // Cleanup progress dialog
             setShowImportProgress(false);
             setImportProgress(null);
             console.log('[ZIP Import] ✅ Import workflow complete!');
           }, 500);
         } else {
           console.error('[ZIP Import] ❌ No project in response data');
+          setImportProgress({
+            stage: 'error',
+            progress: 0,
+            message: 'No project data received from server',
+          });
+          setTimeout(() => {
+            setShowImportProgress(false);
+            setImportProgress(null);
+          }, 2000);
         }
       } catch (error) {
         console.error('[ZIP Import] ❌ Import failed:', error);
