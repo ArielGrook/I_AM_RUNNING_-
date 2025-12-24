@@ -32,22 +32,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Category, StyleVariant } from '@/lib/types/project';
+import { Category } from '@/lib/types/project';
+import { ComponentStyle } from '@/lib/constants/styles';
+import { ComponentTag } from '@/lib/constants/tags';
 import { saveComponent } from '@/lib/components/supabase-catalog';
 import { useToast } from '@/components/ui/use-toast';
 import { AddScreenshotButton } from './AddScreenshotButton';
 import { type GrapeEditorRef } from './GrapeEditor';
+import { StyleSelector } from './StyleSelector';
+import { TagSelector } from './TagSelector';
+import { detectSmartNavigation } from '@/lib/utils/smart-navigation';
+import { ComponentSaveFormSchema, type ComponentSaveFormData } from '@/lib/schemas/validation';
 
-const componentSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
-  category: z.enum(['header', 'hero', 'footer', 'section', 'button', 'form', 'navigation', 'custom']),
-  style: z.enum(['minimal', 'modern', 'classic', 'bold', 'elegant', 'playful']).optional(),
-  description: z.string().max(500, 'Description too long').optional(),
-  html: z.string().min(1, 'HTML content is required'),
-  tags: z.string().optional(), // Comma-separated tags
-});
+const componentSchema = ComponentSaveFormSchema;
 
-type ComponentFormData = z.infer<typeof componentSchema>;
+type ComponentFormData = ComponentSaveFormData;
 
 interface SaveComponentDialogProps {
   open: boolean;
@@ -84,10 +83,10 @@ export function SaveComponentDialog({
     defaultValues: {
       name: '',
       category: initialCategory,
-      style: undefined,
+      style: undefined as ComponentStyle | undefined, // Required but undefined initially
       description: '',
       html: '',
-      tags: '',
+      tags: [],
     },
   });
 
@@ -126,6 +125,19 @@ export function SaveComponentDialog({
       
       // Set form value
       setValue('html', combinedHtml);
+      
+      // Auto-detect smart navigation tags
+      const smartTags = detectSmartNavigation(combinedHtml);
+      if (smartTags.length > 0) {
+        const currentTags = watch('tags') || [];
+        const newTags = [...new Set([...currentTags, ...smartTags])] as ComponentTag[];
+        setValue('tags', newTags);
+        
+        toast({
+          title: 'Smart navigation detected',
+          description: `Found ${smartTags.length} navigation link(s). Tags added automatically.`,
+        });
+      }
 
       // Auto-generate preview using html2canvas
       setIsGeneratingPreview(true);
@@ -175,10 +187,10 @@ export function SaveComponentDialog({
   const onSubmit = async (data: ComponentFormData) => {
     setIsSubmitting(true);
     try {
-      // Parse tags
-      const tags = data.tags
-        ? data.tags.split(',').map(t => t.trim()).filter(Boolean)
-        : [];
+      // Validate style is selected (required)
+      if (!data.style) {
+        throw new Error('Style is required. Please select a style.');
+      }
 
       // Ensure we have extracted HTML/CSS
       if (!extractedHtml || !extractedCss) {
@@ -191,10 +203,13 @@ export function SaveComponentDialog({
       const saved = await saveComponent({
         name: data.name,
         category: data.category,
-        style: data.style,
+        style: data.style, // Now required
+        type: data.type,
         description: data.description,
         html: combinedHtml, // Save combined HTML (legacy format)
-        tags,
+        css: extractedCss,
+        js: data.js,
+        tags: data.tags || [], // Now array of ComponentTag
         thumbnail: thumbnail || undefined,
         is_public: false, // Default to private
       });
@@ -273,26 +288,13 @@ export function SaveComponentDialog({
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="style">Style (Optional)</Label>
-            <Select
-              value={watch('style') || ''}
-              onValueChange={(value) => setValue('style', value as StyleVariant)}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger id="style">
-                <SelectValue placeholder="Select style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="minimal">Minimal</SelectItem>
-                <SelectItem value="modern">Modern</SelectItem>
-                <SelectItem value="classic">Classic</SelectItem>
-                <SelectItem value="bold">Bold</SelectItem>
-                <SelectItem value="elegant">Elegant</SelectItem>
-                <SelectItem value="playful">Playful</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <StyleSelector
+            value={watch('style')}
+            onChange={(style) => setValue('style', style)}
+            disabled={isSubmitting}
+            required={true}
+            error={errors.style?.message}
+          />
 
           <div>
             <Label htmlFor="description">Description (Optional)</Label>
@@ -308,15 +310,12 @@ export function SaveComponentDialog({
             )}
           </div>
 
-          <div>
-            <Label htmlFor="tags">Tags (Optional, comma-separated)</Label>
-            <Input
-              id="tags"
-              {...register('tags')}
-              placeholder="responsive, modern, dark"
-              disabled={isSubmitting}
-            />
-          </div>
+          <TagSelector
+            value={watch('tags') || []}
+            onChange={(tags) => setValue('tags', tags)}
+            disabled={isSubmitting}
+            maxTags={10}
+          />
 
           <div>
             <Label htmlFor="html">HTML Content</Label>

@@ -8,18 +8,23 @@
 
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { getRedisClient } from '@/lib/redis/client';
-import { Component, Category, StyleVariant } from '@/lib/types/project';
+import { Component, Category } from '@/lib/types/project';
+import { ComponentStyle } from '@/lib/constants/styles';
+import { ComponentTag } from '@/lib/constants/tags';
 import { componentCatalog } from './catalog'; // Fallback to static catalog
 
 export interface SupabaseComponent {
   id: string;
   name: string;
   category: Category;
-  style?: StyleVariant;
+  style?: ComponentStyle; // Updated to use ComponentStyle
+  type?: string;
   html: string;
+  css?: string;
+  js?: string;
   description?: string;
   thumbnail?: string;
-  tags?: string[];
+  tags?: ComponentTag[]; // Updated to use ComponentTag array
   user_id?: string;
   is_public: boolean;
   usage_count: number;
@@ -151,7 +156,19 @@ function convertStaticCatalogToSupabase(): SupabaseComponent[] {
  * @param component - Component data to save
  * @returns Saved component with ID
  */
-export async function saveComponent(component: Omit<SupabaseComponent, 'id' | 'created_at' | 'updated_at' | 'usage_count'>): Promise<SupabaseComponent> {
+export async function saveComponent(component: {
+  name: string;
+  category: Category;
+  style: ComponentStyle; // Now required
+  type?: string;
+  html: string;
+  css?: string;
+  js?: string;
+  description?: string;
+  tags?: ComponentTag[]; // Array of ComponentTag
+  thumbnail?: string;
+  is_public?: boolean;
+}): Promise<SupabaseComponent> {
   try {
     const supabase = getSupabaseClient();
     
@@ -162,11 +179,26 @@ export async function saveComponent(component: Omit<SupabaseComponent, 'id' | 'c
       throw new Error('Authentication required to save components');
     }
     
+    // Validate style and tags
+    if (!component.style) {
+      throw new Error('Style is required');
+    }
+    
     // Insert component
     const { data, error } = await supabase
       .from('components')
       .insert({
-        ...component,
+        name: component.name,
+        category: component.category,
+        style: component.style,
+        type: component.type,
+        html: component.html,
+        css: component.css,
+        js: component.js,
+        description: component.description,
+        tags: component.tags || [],
+        preview_img: component.thumbnail,
+        is_public: component.is_public ?? false,
         user_id: user.id,
       })
       .select()
