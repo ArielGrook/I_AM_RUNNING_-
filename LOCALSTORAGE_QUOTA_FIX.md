@@ -124,3 +124,4 @@ The fix includes comprehensive logging:
 - 3MB provides safe margin for other app data
 - Can be adjusted in `MAX_LOCALSTORAGE_SIZE` constant if needed
 
+

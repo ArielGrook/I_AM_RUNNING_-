@@ -42,6 +42,7 @@ import {
 import { getUserPackage, hasFeatureAccess } from '@/lib/utils/user-package';
 import { shouldApplyWatermark } from '@/lib/utils/watermark';
 import dynamic from 'next/dynamic';
+import JSZip from 'jszip';
 
 // Lazy load heavy components for better performance
 const ChatPanel = dynamic(() => import('@/components/editor/ChatPanel').then(mod => ({ default: mod.ChatPanel })), {
@@ -263,13 +264,20 @@ export default function EditorPage() {
     }
   }, [currentProject, updateProject]);
   
-  // Handle import with progress tracking and demo limits
+  // Handle import with client-side ZIP parsing (browser-only, no server)
   const handleImport = async () => {
-    console.log('[ZIP Import] 🚀 handleImport() called');
+    console.log('[ZIP Import] 🚀 handleImport() called - CLIENT-SIDE MODE');
     
     if (!canSave) {
       console.warn('[ZIP Import] ❌ Demo mode limit reached');
       alert('Demo mode limit reached. Please upgrade to import projects.');
+      return;
+    }
+    
+    // Check if FileReader is available (browser-only API)
+    if (typeof window === 'undefined' || typeof FileReader === 'undefined') {
+      console.error('[ZIP Import] ❌ FileReader not available - must run in browser');
+      alert('Import requires browser environment. FileReader API not available.');
       return;
     }
     
@@ -303,7 +311,7 @@ export default function EditorPage() {
       setImportProgress({
         stage: 'loading',
         progress: 0,
-        message: 'Preparing import...',
+        message: 'Loading ZIP file...',
       });
       
       try {
@@ -313,159 +321,171 @@ export default function EditorPage() {
           grapeEditorRef.current.clear();
         }
         
-        // Create progress callback
-        const onProgress = (progress: ParseProgress) => {
-          console.log('[ZIP Import] 📈 Progress:', progress);
-          setImportProgress(progress);
-        };
-        
-        // Read file and parse with progress
-        console.log('[ZIP Import] 📦 Preparing FormData...');
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        console.log('[ZIP Import] 🌐 Sending request to /api/parser...');
-        const response = await fetch('/api/parser', {
-          method: 'POST',
-          body: formData,
-        });
-        
-        console.log('[ZIP Import] 📥 Response received:', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok
-        });
-        
-        if (!response.ok) {
-          const error = await response.json();
-          console.error('[ZIP Import] ❌ API error:', error);
-          throw new Error(error.error || 'Import failed');
+        // Ensure editor is ready
+        const editor = grapeEditorRef.current?.getEditor();
+        if (!editor) {
+          throw new Error('Editor not ready. Please wait for editor to initialize.');
         }
         
-        console.log('[ZIP Import] ✅ Parsing response JSON...');
-        const data = await response.json();
+        setImportProgress({
+          stage: 'parsing',
+          progress: 10,
+          message: 'Parsing ZIP file...',
+        });
         
-        // Deep log the full response structure
-        console.log('[ZIP Import] 📊 Full response structure:', JSON.stringify(data, null, 2));
+        // CLIENT-SIDE: Load ZIP with JSZip (browser-only)
+        console.log('[ZIP Import] 📦 Loading ZIP with JSZip (client-side)...');
+        const zip = new JSZip();
+        const zipContent = await zip.loadAsync(file);
         
-        // Detailed component analysis
-        if (data.project?.pages) {
-          data.project.pages.forEach((page: any, pageIndex: number) => {
-            console.log(`[ZIP Import] 📄 Page ${pageIndex}:`, {
-              name: page.name,
-              componentsCount: page.components?.length || 0,
-              components: page.components?.map((c: any, i: number) => ({
-                index: i,
-                type: c.type,
-                category: c.category,
-                hasHtml: !!c.props?.html,
-                htmlLength: c.props?.html?.length || 0,
-                htmlPreview: c.props?.html?.substring(0, 100) || 'EMPTY'
-              })) || []
-            });
-          });
-        }
+        console.log('[ZIP Import] ✅ ZIP loaded, files count:', Object.keys(zipContent.files).length);
         
-        // Log debug info from API if available
-        if (data.debug) {
-          console.log('[ZIP Import] 🐛 API Debug Info:', data.debug);
+        setImportProgress({
+          stage: 'parsing',
+          progress: 30,
+          message: 'Extracting HTML and CSS...',
+        });
+        
+        // Extract HTML files
+        const htmlFiles: Array<{ filename: string; content: string; pageName: string }> = [];
+        let globalCss = '';
+        const assets: Array<{ original: string; data: string }> = [];
+        
+        // Process all files in ZIP
+        for (const [filename, zipFile] of Object.entries(zipContent.files)) {
+          if (zipFile.dir) continue;
           
-          // Display parser logs (server-side logs now visible in browser!)
-          if (data.debug.parserLogs && data.debug.parserLogs.length > 0) {
-            console.log('[ZIP Import] 📋 Parser Logs (Server-Side):');
-            data.debug.parserLogs.forEach((log: string, idx: number) => {
-              console.log(`  [${idx}] ${log}`);
+          if (filename.endsWith('.html') || filename.endsWith('.htm')) {
+            console.log('[ZIP Import] 📄 Found HTML file:', filename);
+            const content = await zipFile.async('string');
+            const pageName = filename.replace(/\.html?$/, '').replace(/^.*\//, '');
+            htmlFiles.push({ filename, content, pageName });
+            
+          } else if (filename.endsWith('.css')) {
+            console.log('[ZIP Import] 🎨 Found CSS file:', filename);
+            const content = await zipFile.async('string');
+            globalCss += `\n/* From ${filename} */\n${content}\n`;
+            
+          } else if (filename.match(/\.(jpg|jpeg|png|gif|svg|webp)$/i)) {
+            console.log('[ZIP Import] 🖼️ Found image file:', filename);
+            // Process image with FileReader in browser
+            const blob = await zipFile.async('blob');
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const result = reader.result as string;
+                resolve(result);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
             });
-          }
-          
-          // Show component extraction summary
-          if (data.debug.totalComponentsExtracted === 0) {
-            console.warn('[ZIP Import] ⚠️ WARNING: Zero components extracted!');
-            console.warn('[ZIP Import] Check parserLogs above to see what happened during parsing.');
+            
+            assets.push({
+              original: filename,
+              data: base64
+            });
           }
         }
         
-        console.log('[ZIP Import] 📦 Response summary:', {
-          success: data.success,
-          hasProject: !!data.project,
-          projectPages: data.project?.pages?.length || 0,
-          totalComponents: data.project?.pages?.reduce((sum: number, page: any) => sum + (page.components?.length || 0), 0) || 0,
-          componentsCount: data.project?.pages?.[0]?.components?.length || 0
+        if (htmlFiles.length === 0) {
+          throw new Error('No HTML files found in ZIP archive');
+        }
+        
+        console.log('[ZIP Import] ✅ Extracted:', {
+          htmlFiles: htmlFiles.length,
+          cssLength: globalCss.length,
+          images: assets.length
         });
         
-        if (data.project) {
-          console.log('[ZIP Import] ✅ Project received, loading into editor...');
-          
-          // Calculate project size for logging
-          const projectSize = new Blob([JSON.stringify(data.project)]).size;
-          console.log('[ZIP Import] 📊 Project size:', `${(projectSize / 1024 / 1024).toFixed(2)}MB`);
-          
-          setImportProgress({
-            stage: 'complete',
-            progress: 100,
-            message: 'Import complete!',
-          });
-          
-          // Small delay to show completion
-          setTimeout(() => {
-            console.log('[ZIP Import] 🔄 Calling loadProject()...');
-            console.log('[ZIP Import] 📦 Project being loaded:', {
-              id: data.project.id,
-              name: data.project.name,
-              pagesCount: data.project.pages?.length || 0,
-              firstPageComponents: data.project.pages?.[0]?.components?.length || 0,
-              projectSize: `${(projectSize / 1024 / 1024).toFixed(2)}MB`
-            });
-            
-            try {
-              loadProject(data.project);
-              
-              // Verify project was loaded
-              setTimeout(() => {
-                const loadedProject = currentProject;
-                console.log('[ZIP Import] ✅ Project loaded verification:', {
-                  hasProject: !!loadedProject,
-                  projectId: loadedProject?.id,
-                  pagesCount: loadedProject?.pages?.length || 0,
-                  componentsCount: loadedProject?.pages?.[0]?.components?.length || 0
-                });
-                
-                // Warn if project is large and might not be persisted
-                if (projectSize > 3 * 1024 * 1024) {
-                  console.warn('[ZIP Import] ⚠️ Large project detected. It may not be persisted to localStorage due to size limits.');
-                }
-              }, 100);
-            } catch (loadError) {
-              console.error('[ZIP Import] ❌ Error loading project into store:', loadError);
-              setImportProgress({
-                stage: 'error',
-                progress: 0,
-                message: `Failed to load project: ${loadError instanceof Error ? loadError.message : 'Unknown error'}`,
-              });
-              setTimeout(() => {
-                setShowImportProgress(false);
-                setImportProgress(null);
-              }, 3000);
-              return;
-            }
-            
-            // Cleanup progress dialog
-            setShowImportProgress(false);
-            setImportProgress(null);
-            console.log('[ZIP Import] ✅ Import workflow complete!');
-          }, 500);
+        setImportProgress({
+          stage: 'processing',
+          progress: 60,
+          message: 'Processing HTML content...',
+        });
+        
+        // Sort HTML files (index.html first)
+        htmlFiles.sort((a, b) => a.filename.includes('index') ? -1 : 1);
+        
+        // Process first HTML file (main page)
+        const mainHtmlFile = htmlFiles[0];
+        console.log('[ZIP Import] 📄 Processing main HTML:', mainHtmlFile.pageName);
+        
+        // Extract body content
+        let pageHtml = '';
+        const bodyMatch = mainHtmlFile.content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        if (bodyMatch) {
+          pageHtml = bodyMatch[1]
+            // Remove script tags (we'll handle JS separately if needed)
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
         } else {
-          console.error('[ZIP Import] ❌ No project in response data');
-          setImportProgress({
-            stage: 'error',
-            progress: 0,
-            message: 'No project data received from server',
+          // No body tag, use entire content
+          pageHtml = mainHtmlFile.content
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '');
+        }
+        
+        // Replace image paths with base64 data URLs
+        console.log('[ZIP Import] 🔄 Replacing image paths with base64...');
+        assets.forEach(asset => {
+          const fileName = asset.original.split('/').pop() || asset.original;
+          const patterns = [
+            new RegExp(`src=["']([^"']*${fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})["']`, 'gi'),
+            new RegExp(`href=["']([^"']*${fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})["']`, 'gi'),
+            new RegExp(`url\\(["']?([^"')]*${fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})["']?\\)`, 'gi')
+          ];
+          
+          patterns.forEach(pattern => {
+            pageHtml = pageHtml.replace(pattern, (match) => {
+              if (match.includes('url(')) {
+                return `url("${asset.data}")`;
+              } else if (match.includes('src=')) {
+                return `src="${asset.data}"`;
+              } else {
+                return `href="${asset.data}"`;
+              }
+            });
+            globalCss = globalCss.replace(pattern, `url("${asset.data}")`);
           });
+        });
+        
+        console.log('[ZIP Import] ✅ HTML processed, length:', pageHtml.length);
+        
+        setImportProgress({
+          stage: 'loading',
+          progress: 90,
+          message: 'Loading into editor...',
+        });
+        
+        // DIRECT EDITOR SET: No project store, no loadProject()
+        console.log('[ZIP Import] 🎯 Setting components directly in editor...');
+        console.log('[ZIP Import] HTML preview (first 500 chars):', pageHtml.substring(0, 500));
+        
+        // Wait a bit for canvas to be ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Set HTML directly in editor
+        grapeEditorRef.current?.setComponents(pageHtml);
+        
+        // Set CSS directly in editor
+        if (globalCss.trim()) {
+          grapeEditorRef.current?.setStyle(globalCss);
+        }
+        
+        console.log('[ZIP Import] ✅ Components and styles set in editor');
+        
+          setImportProgress({
+          stage: 'complete',
+          progress: 100,
+          message: `✅ Imported ${htmlFiles.length} page(s), ${assets.length} image(s)!`,
+        });
+        
+        // Close progress dialog after a delay
           setTimeout(() => {
             setShowImportProgress(false);
             setImportProgress(null);
+          console.log('[ZIP Import] ✅ Import workflow complete!');
           }, 2000);
-        }
+        
       } catch (error) {
         console.error('[ZIP Import] ❌ Import failed:', error);
         console.error('[ZIP Import] Error details:', {
@@ -473,14 +493,14 @@ export default function EditorPage() {
           stack: error instanceof Error ? error.stack : undefined
         });
         setImportProgress({
-          stage: 'complete',
+          stage: 'error',
           progress: 0,
           message: error instanceof Error ? error.message : 'Import failed',
         });
         setTimeout(() => {
           setShowImportProgress(false);
           setImportProgress(null);
-        }, 2000);
+        }, 3000);
       }
     };
     input.click();

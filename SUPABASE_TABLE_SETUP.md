@@ -154,3 +154,5 @@ After creating the table, refresh your application. You should:
 
 The code uses `components` which matches the schema, so the table name in Supabase must be `components`.
 
+
+
