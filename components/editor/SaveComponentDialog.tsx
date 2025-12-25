@@ -37,7 +37,6 @@ import { ComponentStyle } from '@/lib/constants/styles';
 import { ComponentTag } from '@/lib/constants/tags';
 import { saveComponent } from '@/lib/components/supabase-catalog';
 import { useToast } from '@/components/ui/use-toast';
-import { AddScreenshotButton } from './AddScreenshotButton';
 import { type GrapeEditorRef } from './GrapeEditor';
 import { StyleSelector } from './StyleSelector';
 import { TagSelector } from './TagSelector';
@@ -64,11 +63,9 @@ export function SaveComponentDialog({
   onSaved,
 }: SaveComponentDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [savedComponentId, setSavedComponentId] = useState<string | null>(null);
   const [thumbnail, setThumbnail] = useState<string | undefined>(undefined);
   const [extractedHtml, setExtractedHtml] = useState<string>('');
   const [extractedCss, setExtractedCss] = useState<string>('');
-  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const { toast } = useToast();
 
   const {
@@ -139,19 +136,16 @@ export function SaveComponentDialog({
         });
       }
 
-      // Auto-generate preview using html2canvas
-      setIsGeneratingPreview(true);
+      // Auto-generate preview using html2canvas (optional, non-blocking)
       generatePreview(selected.getEl(), combinedHtml)
         .then((preview) => {
           if (preview) {
             setThumbnail(preview);
           }
-          setIsGeneratingPreview(false);
         })
         .catch((err) => {
           console.warn('Failed to generate preview:', err);
           // Not critical, continue without preview
-          setIsGeneratingPreview(false);
         });
     } catch (error) {
       console.error('Failed to extract component data:', error);
@@ -200,7 +194,7 @@ export function SaveComponentDialog({
       // Combined HTML with style tag (matches legacy format)
       const combinedHtml = `${extractedHtml}<style>${extractedCss}</style>`;
 
-      const saved = await saveComponent({
+      await saveComponent({
         name: data.name,
         category: data.category,
         style: data.style, // Now required
@@ -211,24 +205,39 @@ export function SaveComponentDialog({
         js: data.js,
         tags: data.tags || [], // Now array of ComponentTag
         thumbnail: thumbnail || undefined,
-        is_public: false, // Default to private
+        is_public: true, // Public by default for anonymous saves
       });
-
-      setSavedComponentId(saved.id);
 
       toast({
-        title: 'Component saved',
-        description: 'Your component has been saved successfully.',
+        title: '✅ Component saved successfully!',
+        description: `"${data.name}" has been added to your component library.`,
       });
 
-      // Don't close dialog yet - allow user to add screenshot
-      // onSaved?.();
-      // onOpenChange(false);
+      // Close dialog and refresh component list
+      onSaved?.();
+      onOpenChange(false);
+      reset();
     } catch (error) {
       console.error('Failed to save component:', error);
+      
+      // User-friendly error messages
+      let errorMessage = 'Failed to save component. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('required')) {
+          errorMessage = 'Please fill in all required fields (name, category, style).';
+        } else if (error.message.includes('table') || error.message.includes('does not exist')) {
+          errorMessage = 'Database table not found. Please contact support.';
+        } else if (error.message.includes('duplicate') || error.message.includes('unique')) {
+          errorMessage = 'A component with this name already exists. Please choose a different name.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to save component',
+        title: '❌ Save failed',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -317,79 +326,22 @@ export function SaveComponentDialog({
             maxTags={10}
           />
 
-          <div>
-            <Label htmlFor="html">HTML Content</Label>
-            {isGeneratingPreview && (
-              <p className="text-xs text-gray-500 mb-2">Generating preview...</p>
-            )}
-            <Textarea
-              id="html"
-              {...register('html')}
-              rows={8}
-              className="font-mono text-sm"
-              disabled={isSubmitting || isGeneratingPreview}
-              readOnly
-            />
-            {errors.html && (
-              <p className="text-sm text-red-500 mt-1">{errors.html.message}</p>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              HTML and CSS extracted from selected component. This content is read-only.
-            </p>
-          </div>
-
-          {savedComponentId && (
-            <div className="border-t pt-4">
-              <Label>Add Screenshot (Optional)</Label>
-              <p className="text-sm text-gray-500 mb-2">
-                Generate a screenshot preview for this component.
-              </p>
-              <AddScreenshotButton
-                componentId={savedComponentId}
-                componentHtml={watch('html')}
-                onScreenshotAdded={(thumb) => {
-                  setThumbnail(thumb);
-                  toast({
-                    title: 'Screenshot added',
-                    description: 'Screenshot has been generated and saved.',
-                  });
-                }}
-              />
-            </div>
-          )}
-
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => {
                 reset();
-                setSavedComponentId(null);
                 setThumbnail(undefined);
                 onOpenChange(false);
               }}
               disabled={isSubmitting}
             >
-              {savedComponentId ? 'Close' : 'Cancel'}
+              Cancel
             </Button>
-            {!savedComponentId ? (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Component'}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={() => {
-                  reset();
-                  setSavedComponentId(null);
-                  setThumbnail(undefined);
-                  onSaved?.();
-                  onOpenChange(false);
-                }}
-              >
-                Done
-              </Button>
-            )}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save Component'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

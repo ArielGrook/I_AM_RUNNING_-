@@ -207,3 +207,4 @@ export function getSmartNavigationRoute(tag: SmartNavigationTag): string {
   return routeMap[tag] || '/';
 }
 
+

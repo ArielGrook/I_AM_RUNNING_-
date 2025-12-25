@@ -202,3 +202,4 @@ export function areStylesCompatible(style1: ComponentStyle, style2: ComponentSty
   return STYLE_METADATA[style1]?.compatibleStyles.includes(style2) ?? false;
 }
 
+

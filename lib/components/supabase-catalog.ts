@@ -104,22 +104,55 @@ export async function getComponentCatalog(includePrivate: boolean = false): Prom
     }
     
     if (!data || data.length === 0) {
-      // No components in DB, use static catalog
-      return convertStaticCatalogToSupabase();
+      // No components in DB, return empty array (don't use static catalog)
+      return [];
     }
+    
+    // Filter out poor quality components
+    // Remove components with names like "SEO Dream" or other low-quality indicators
+    const filteredData = data.filter((component: SupabaseComponent) => {
+      const name = component.name?.toLowerCase() || '';
+      // Filter out components with these indicators of poor quality
+      const poorQualityIndicators = [
+        'seo dream',
+        'dream header',
+        'test component',
+        'placeholder',
+        'example',
+        'demo',
+      ];
+      
+      // Skip if name contains any poor quality indicators
+      if (poorQualityIndicators.some(indicator => name.includes(indicator))) {
+        return false;
+      }
+      
+      // Only include components with valid structure
+      if (!component.html || component.html.trim().length === 0) {
+        return false;
+      }
+      
+      // Only include components with valid style (from our predefined list)
+      const validStyles = ['modern_dark', 'modern_light', 'modern_gradient', 'classic_white', 'classic_elegant', 'minimal_dark', 'minimal_light', 'corporate_blue', 'corporate_gray', 'creative_colorful', 'creative_artistic', 'vintage_retro', 'tech_neon', 'medical_clean', 'restaurant_warm', 'fashion_elegant', 'ecommerce_modern', 'blog_readable', 'portfolio_showcase', 'custom_authored'];
+      if (component.style && !validStyles.includes(component.style)) {
+        return false;
+      }
+      
+      return true;
+    }) as SupabaseComponent[];
     
     // Cache in Redis (only on server-side)
     if (typeof window === 'undefined') {
       try {
         const redis = getRedisClient();
-        await redis.setex(CACHE_KEY, CACHE_TTL, JSON.stringify(data));
+        await redis.setex(CACHE_KEY, CACHE_TTL, JSON.stringify(filteredData));
       } catch (cacheError) {
         console.warn('Failed to cache components in Redis:', cacheError);
         // Continue without cache
       }
     }
     
-    return data as SupabaseComponent[];
+    return filteredData;
     
   } catch (error) {
     console.error('Error loading component catalog:', error);
@@ -172,19 +205,15 @@ export async function saveComponent(component: {
   try {
     const supabase = getSupabaseClient();
     
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      throw new Error('Authentication required to save components');
-    }
+    // Try to get current user (optional - allow anonymous saves)
+    const { data: { user } } = await supabase.auth.getUser();
     
     // Validate style and tags
     if (!component.style) {
       throw new Error('Style is required');
     }
     
-    // Insert component
+    // Insert component (allow anonymous saves for demo mode)
     const { data, error } = await supabase
       .from('components')
       .insert({
@@ -198,8 +227,8 @@ export async function saveComponent(component: {
         description: component.description,
         tags: component.tags || [],
         preview_img: component.thumbnail,
-        is_public: component.is_public ?? false,
-        user_id: user.id,
+        is_public: component.is_public ?? true, // Default to public for anonymous saves
+        user_id: user?.id || null, // Allow null for anonymous saves
       })
       .select()
       .single();
