@@ -186,13 +186,33 @@ export function SaveComponentDialog({
         throw new Error('Style is required. Please select a style.');
       }
 
-      // Ensure we have extracted HTML/CSS
-      if (!extractedHtml || !extractedCss) {
+      // Ensure we have extracted HTML
+      if (!extractedHtml || extractedHtml.trim().length === 0) {
         throw new Error('No component data extracted. Please close and try again.');
       }
 
-      // Combined HTML with style tag (matches legacy format)
-      const combinedHtml = `${extractedHtml}<style>${extractedCss}</style>`;
+      // CRITICAL FIX: Get fresh CSS from editor (don't rely on extractedCss state)
+      // The editor might have been updated since extraction, or CSS might be added via style manager
+      const editor = editorRef.current?.getEditor();
+      if (!editor) {
+        throw new Error('Editor not available. Please try again.');
+      }
+
+      // Get fresh CSS from editor - this captures ALL CSS rules from the style manager
+      const currentCss = editor.getCss() || '';
+      
+      // Clean HTML - remove any inline style tags since CSS is saved separately
+      // This ensures clean separation: html = structure, css = styling
+      const cleanHtml = extractedHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').trim();
+
+      // Log for debugging
+      console.log('[SaveComponentDialog] Saving component:', {
+        name: data.name,
+        htmlLength: cleanHtml.length,
+        cssLength: currentCss.length,
+        cssPreview: currentCss.substring(0, 100),
+        hasCss: currentCss.length > 0,
+      });
 
       await saveComponent({
         name: data.name,
@@ -200,9 +220,9 @@ export function SaveComponentDialog({
         style: data.style, // Now required
         type: data.type,
         description: data.description,
-        html: combinedHtml, // Save combined HTML (legacy format)
-        css: extractedCss,
-        js: data.js,
+        html: cleanHtml, // Clean HTML structure (CSS saved separately)
+        css: currentCss || '', // Always save CSS (even if empty string, not null)
+        js: data.js || '',
         tags: data.tags || [], // Now array of ComponentTag
         thumbnail: thumbnail || undefined,
         is_public: true, // Public by default for anonymous saves

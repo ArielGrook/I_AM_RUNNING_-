@@ -204,3 +204,4 @@ return filteredData;
 - `lib/components/supabase-catalog.ts`
 - `components/editor/SaveComponentDialog.tsx`
 
+

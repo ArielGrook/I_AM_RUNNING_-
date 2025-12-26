@@ -213,6 +213,18 @@ export async function saveComponent(component: {
       throw new Error('Style is required');
     }
     
+    // CRITICAL FIX: Ensure CSS is never null (use empty string if undefined)
+    const cssContent = component.css || '';
+    
+    // Log for debugging
+    console.log('[saveComponent] Saving to database:', {
+      name: component.name,
+      htmlLength: component.html?.length || 0,
+      cssLength: cssContent.length,
+      cssPreview: cssContent.substring(0, 100),
+      hasCss: cssContent.length > 0,
+    });
+
     // Insert component (allow anonymous saves for demo mode)
     const { data, error } = await supabase
       .from('components')
@@ -222,8 +234,8 @@ export async function saveComponent(component: {
         style: component.style,
         type: component.type,
         html: component.html,
-        css: component.css,
-        js: component.js,
+        css: cssContent, // Always save CSS (empty string if none, never null)
+        js: component.js || '',
         description: component.description,
         tags: component.tags || [],
         preview_img: component.thumbnail,
