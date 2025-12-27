@@ -158,6 +158,9 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         dragAutoScroll: 1,
         dragMultipleComponent: 1,
         showOffsets: 1,
+        showGrid: false,
+        snapGrid: 1,
+        undoManager: { trackSelection: 1, stepsBeforeSave: 1 }, // keep undo but minimal
         resizer: {
           tl: 1,
           tr: 1,
@@ -167,8 +170,8 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           bc: 1,
           cl: 1,
           cr: 1,
-          ratioDefault: true,
-          preserveAspectRatio: true,
+          ratioDefault: false,
+          preserveAspectRatio: false,
         },
 
         deviceManager: {
@@ -192,6 +195,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
               background-color: #ffffff;
               margin: 0;
               padding: 0;
+              transform: translateZ(0);
             }
             * {
               box-sizing: border-box;
@@ -267,6 +271,9 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         } catch (cssError) {
           console.warn('[GrapeEditor] Failed to inject CSS on block drag:', cssError);
         }
+        // Remove drag ghost if any
+        const ghost = document.querySelector('.drag-ghost');
+        if (ghost) ghost.remove();
       });
       
       // Also listen for component:add event (when block is actually added to canvas)
@@ -290,6 +297,20 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
           // Apply responsive defaults to the newly added component
           addResponsiveClasses(component);
+
+          // Ensure resizable + selectable
+          component.set({
+            resizable: {
+              tl: 0, tc: 0, tr: 0,
+              cl: 0, cr: 1,
+              bl: 0, bc: 0, br: 1,
+              ratioDefault: false,
+              preserveAspectRatio: false,
+            },
+            selectable: true,
+            hoverable: true,
+            removable: true,
+          });
         } catch (cssError) {
           console.warn('[GrapeEditor] Failed to inject CSS on component add:', cssError);
         }
@@ -297,6 +318,115 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       
       // Set default device to Desktop for consistent preview
       editor.setDevice('Desktop');
+
+      // Drag smoothness: ghost + highlight + pointer optimizations
+      let dragGhost: HTMLDivElement | null = null;
+
+      editor.on('block:drag:start', (block: any) => {
+        if (dragGhost) {
+          dragGhost.remove();
+        }
+        dragGhost = document.createElement('div');
+        dragGhost.className = 'drag-ghost';
+        dragGhost.style.cssText = `
+          position: fixed;
+          background: rgba(255, 107, 53, 0.82);
+          border: 2px dashed #FF6B35;
+          border-radius: 6px;
+          pointer-events: none;
+          z-index: 10000;
+          padding: 10px 14px;
+          color: #fff;
+          font-weight: 700;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        `;
+        dragGhost.textContent = block?.getLabel?.() || 'Component';
+        document.body.appendChild(dragGhost);
+      });
+
+      editor.on('block:drag', (block: any, ev: any) => {
+        if (dragGhost && ev?.clientX !== undefined && ev?.clientY !== undefined) {
+          dragGhost.style.transform = `translate(${ev.clientX + 12}px, ${ev.clientY + 12}px)`;
+        }
+      });
+
+      editor.on('block:drag:stop', () => {
+        if (dragGhost) {
+          dragGhost.remove();
+          dragGhost = null;
+        }
+      });
+
+      // Drop zone highlighting
+      editor.on('canvas:dragenter', (e: any) => {
+        const doc = editor.Canvas.getDocument();
+        if (doc?.body) {
+          doc.body.style.outline = '2px solid #FF6B35';
+          doc.body.style.pointerEvents = 'none';
+        }
+      });
+
+      editor.on('canvas:dragleave', (e: any) => {
+        const doc = editor.Canvas.getDocument();
+        if (doc?.body) {
+          doc.body.style.outline = '';
+        }
+      });
+
+      editor.on('canvas:drop', () => {
+        const doc = editor.Canvas.getDocument();
+        if (doc?.body) {
+          doc.body.style.outline = '';
+          doc.body.style.pointerEvents = 'auto';
+        }
+      });
+
+      // Resizer options for functional handles
+      const resizerOpts = {
+        ratioDefault: false,
+        keyHeight: 'min-height',
+        keyWidth: 'min-width',
+        currentUnit: 1,
+        unit: 'px',
+        step: 1,
+        minDim: 20,
+        maxDim: '',
+        updateTarget: function (el: HTMLElement, rect: any) {
+          el.style.width = rect.w + 'px';
+          el.style.height = rect.h + 'px';
+          const wrapper = editor.getWrapper();
+          const target = wrapper && wrapper.find?.('#' + el.id)?.[0];
+          if (target) {
+            target.addStyle({
+              width: rect.w + 'px',
+              height: rect.h + 'px',
+            });
+          }
+        },
+        onEnd: function () {
+          try {
+            editor.store();
+          } catch (e) {
+            console.warn('Store after resize failed:', e);
+          }
+        },
+      };
+
+      editor.setCustomRte?.(null);
+      editor.getConfig().resizerOpts = resizerOpts;
+
+      // Throttle heavy refresh during drag
+      let dragTimeout: any;
+      editor.on('component:drag', () => {
+        clearTimeout(dragTimeout);
+        dragTimeout = setTimeout(() => {
+          try {
+            editor.refresh();
+          } catch (e) {
+            /* ignore */
+          }
+        }, 16);
+      });
 
       // Save editor reference (matching legacy pattern)
       grapesEditorRef.current = editor;
