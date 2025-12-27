@@ -1,48 +1,60 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useMemo } from 'react';
+import { useLocale } from 'next-intl';
+import { usePathname, useRouter } from 'next/navigation';
+import { Globe } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
-const locales = ['en', 'he', 'ru'] as const;
-
-function replaceLocale(pathname: string, locale: string) {
-  const parts = pathname.split('/');
-  parts[1] = locale;
-  return parts.join('/') || `/${locale}`;
-}
+const languages = [
+  { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
+  { code: 'he', label: 'עברית', flag: '🇮🇱' },
+];
 
 export function LanguageSwitcher() {
-  const pathname = usePathname() || '/en';
-  const currentLocale = pathname.split('/')[1] || 'en';
+  const locale = useLocale();
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const links = useMemo(
-    () =>
-      locales.map((locale) => ({
-        locale,
-        href: replaceLocale(pathname, locale),
-        active: locale === currentLocale,
-      })),
-    [pathname, currentLocale]
-  );
+  const switchLocale = (newLocale: string) => {
+    // Remove current locale from path and add new one
+    const pathWithoutLocale = pathname.replace(/^\/(en|ru|he)/, '');
+    const newPath = `/${newLocale}${pathWithoutLocale || ''}`;
+    router.push(newPath);
+  };
+
+  const currentLang = languages.find(l => l.code === locale) || languages[0];
 
   return (
-    <div className="flex items-center gap-2 text-sm">
-      {links.map((link) => (
-        <Link
-          key={link.locale}
-          href={link.href}
-          className={`px-2 py-1 rounded-md transition ${
-            link.active ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
-          }`}
-          hrefLang={link.locale}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white/90 hover:text-white hover:bg-white/10 gap-2"
         >
-          {link.locale.toUpperCase()}
-        </Link>
-      ))}
-    </div>
+          <Globe className="h-4 w-4" />
+          <span className="hidden sm:inline">{currentLang.flag}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[140px]">
+        {languages.map((lang) => (
+          <DropdownMenuItem
+            key={lang.code}
+            onClick={() => switchLocale(lang.code)}
+            className={`cursor-pointer ${locale === lang.code ? 'bg-orange-50 text-orange-600' : ''}`}
+          >
+            <span className="mr-2">{lang.flag}</span>
+            {lang.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
-
-
-

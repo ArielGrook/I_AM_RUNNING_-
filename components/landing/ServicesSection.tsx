@@ -1,118 +1,92 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { useTranslations } from 'next-intl';
-import { Globe, Rocket, Shield, Users, Brain, Headphones, ArrowRight } from 'lucide-react';
-import { Reveal } from '@/components/motion/Reveal';
-import { Floating } from '@/components/motion/Floating';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
+import { useTranslations, useLocale } from 'next-intl';
+import { ArrowRight } from 'lucide-react';
 
 export function ServicesSection() {
   const t = useTranslations('Landing.services');
+  const locale = useLocale();
+  const isRTL = locale === 'he';
 
-  const features = [
-    { icon: Globe, key: 'assembly' },
-    { icon: Rocket, key: 'deployment' },
-    { icon: Shield, key: 'ssl' },
-    { icon: Users, key: 'freelancer' },
-    { icon: Brain, key: 'ai' },
-    { icon: Headphones, key: 'support' },
+  const services = [
+    { icon: '🌐', title: t('service1'), desc: t('service1Desc') },
+    { icon: '🚀', title: t('service2'), desc: t('service2Desc') },
+    { icon: '🔒', title: t('service3'), desc: t('service3Desc') },
+    { icon: '👥', title: t('service4'), desc: t('service4Desc') },
+    { icon: '🧠', title: t('service5'), desc: t('service5Desc') },
+    { icon: '🎧', title: t('service6'), desc: t('service6Desc') },
   ];
 
   return (
-    <section className="py-24 bg-white dark:bg-black relative overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-orange-50/50 to-transparent dark:via-orange-900/10 pointer-events-none" />
+    <section 
+      className="py-24 bg-white dark:bg-black"
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
+      <div className="max-w-6xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <span className="inline-block text-sm font-semibold text-[#FF6B35] uppercase tracking-widest mb-4">
+            {t('eyebrow')}
+          </span>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 dark:text-white mb-6">
+            {t('title')}
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            {t('content')}
+          </p>
+        </motion.div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <Reveal>
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="inline-block text-sm font-semibold text-orange-500 uppercase tracking-wider mb-4">
-              {t('eyebrow')}
-            </span>
-            <h2 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-white mb-6">
-              {t('title')}
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300">
-              {t('content')}
-            </p>
-          </div>
-        </Reveal>
-
-        {/* Features grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-          {features.map((feature, idx) => (
-            <Reveal key={feature.key} delay={idx * 0.1}>
-              <Floating delay={idx * 0.2} amplitude={3}>
-                <motion.div
-                  className="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden"
-                  whileHover={{ y: -5 }}
-                >
-                  {/* Background glow on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400/0 to-red-500/0 group-hover:from-orange-400/5 group-hover:to-red-500/5 transition-all duration-300" />
-
-                  <div className="relative z-10 flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                      <feature.icon className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                        {t(`features.${feature.key}.title`)}
-                        {feature.key === 'ssl' && (
-                          <span className="text-xs font-semibold px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full">
-                            FREE
-                          </span>
-                        )}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {t(`features.${feature.key}.desc`)}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              </Floating>
-            </Reveal>
+        {/* Services Grid */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          {services.map((service, i) => (
+            <motion.div
+              key={service.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08 }}
+              className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-800 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+            >
+              <div className="text-3xl mb-3">{service.icon}</div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{service.title}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{service.desc}</p>
+            </motion.div>
           ))}
         </div>
 
         {/* Freelancer CTA */}
-        <Reveal>
-          <div className="bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden">
-            {/* Animated background */}
-            <div className="absolute inset-0 opacity-20">
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0"
-                animate={{ x: ['-100%', '100%'] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-              />
-            </div>
-
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="text-center md:text-left">
-                <Users className="w-12 h-12 mb-4 mx-auto md:mx-0 opacity-90" />
-                <p className="text-xl md:text-2xl font-medium mb-2">
-                  {t('freelancerCta')}
-                </p>
-                <p className="text-3xl md:text-4xl font-black">
-                  {t('freelancerPrice')}
-                </p>
-              </div>
-              <Button
-                asChild
-                size="lg"
-                className="bg-white text-orange-500 hover:bg-white/90 font-bold px-8 py-6 text-lg shadow-lg"
-              >
-                <Link href="/editor">
-                  Get Access
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Link>
-              </Button>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="relative bg-gradient-to-r from-[#FF6B35] via-[#FF4500] to-[#FF6B35] rounded-2xl p-8 flex flex-col md:flex-row justify-between items-center gap-6 text-white overflow-hidden"
+        >
+          {/* Shimmer effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_3s_infinite] pointer-events-none" />
+          
+          <div className={`flex items-center gap-4 relative z-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <span className="text-5xl opacity-90">👥</span>
+            <div className={isRTL ? 'text-right' : ''}>
+              <p className="text-lg mb-1">{t('freelancerCta')}</p>
+              <div className="text-3xl font-black">{t('freelancerPrice')}</div>
             </div>
           </div>
-        </Reveal>
+          
+          <Link
+            href="/editor"
+            className={`relative z-10 bg-white text-[#FF6B35] px-8 py-4 rounded-full font-bold hover:scale-105 hover:shadow-xl transition-all duration-300 inline-flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+          >
+            {t('getAccess')}
+            <ArrowRight className={`w-5 h-5 ${isRTL ? 'rotate-180' : ''}`} />
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
 }
-

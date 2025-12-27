@@ -9,9 +9,9 @@ import { ServicesSection } from '@/components/landing/ServicesSection';
 import { ShowcaseSection } from '@/components/landing/ShowcaseSection';
 import { Footer } from '@/components/landing/Footer';
 
-export default function HomePage() {
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground scroll-smooth">
+    <main className="min-h-screen">
       <HeroSection />
       <OriginStory />
       <TechnologySection />
@@ -20,6 +20,6 @@ export default function HomePage() {
       <ServicesSection />
       <ShowcaseSection />
       <Footer />
-    </div>
+    </main>
   );
 }

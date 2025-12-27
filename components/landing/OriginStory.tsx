@@ -1,84 +1,82 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useTranslations } from 'next-intl';
-import { Lightbulb, Rocket, Target, Zap } from 'lucide-react';
-import { Reveal } from '@/components/motion/Reveal';
+import { useTranslations, useLocale } from 'next-intl';
 
 export function OriginStory() {
   const t = useTranslations('Landing.origin');
-
-  const timeline = [
-    { icon: Lightbulb, label: 'Vision', year: '2022' },
-    { icon: Target, label: 'Research', year: '2023' },
-    { icon: Zap, label: 'Development', year: '2024' },
-    { icon: Rocket, label: 'Launch', year: '2025' },
-  ];
+  const locale = useLocale();
+  const isRTL = locale === 'he';
 
   return (
-    <section className="py-24 bg-white dark:bg-black relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-orange-100 to-transparent dark:from-orange-900/20 rounded-full blur-3xl opacity-50" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+    <section 
+      className="py-24 bg-white dark:bg-black"
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Content */}
-          <Reveal direction="left">
-            <div className="space-y-6">
-              <span className="inline-block text-sm font-semibold text-orange-500 uppercase tracking-wider">
-                {t('eyebrow')}
-              </span>
-              <h2 className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-white leading-tight">
-                {t('title')}
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
-                {t('content')}
+          <motion.div
+            initial={{ opacity: 0, x: isRTL ? 30 : -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="inline-block text-sm font-semibold text-[#FF6B35] uppercase tracking-widest mb-4">
+              {t('eyebrow')}
+            </span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 dark:text-white mb-6">
+              {t('title')}
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
+              {t('content')}
+            </p>
+            <div className={`p-6 bg-gradient-to-r ${isRTL ? 'from-orange-50 border-r-4' : 'from-orange-50 border-l-4'} dark:from-orange-950/30 border-[#FF6B35] rounded-r-xl`}>
+              <p className="text-lg italic text-gray-700 dark:text-gray-200">
+                "{t('highlight')}"
               </p>
-              <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-2xl border-l-4 border-orange-500">
-                <p className="text-lg font-medium text-gray-800 dark:text-gray-200 italic">
-                  "{t('highlight')}"
-                </p>
-              </div>
             </div>
-          </Reveal>
+          </motion.div>
 
-          {/* Timeline visualization */}
-          <Reveal direction="right">
-            <div className="relative">
-              {/* Founder placeholder */}
-              <div className="aspect-square max-w-md mx-auto rounded-3xl bg-gradient-to-br from-orange-400 to-red-500 p-1 shadow-2xl">
-                <div className="w-full h-full rounded-3xl bg-gradient-to-br from-orange-100 to-red-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <div className="text-8xl mb-4">🏃‍♂️</div>
-                    <div className="text-2xl font-bold text-gray-800 dark:text-white">Ariel Shein</div>
-                    <div className="text-orange-500 font-medium">Founder & Developer</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Timeline dots */}
-              <div className="absolute -bottom-8 left-0 right-0 flex justify-center gap-4">
-                {timeline.map((item, idx) => (
-                  <motion.div
-                    key={item.label}
-                    className="flex flex-col items-center"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.15 }}
-                  >
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-lg">
-                      <item.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-xs font-bold text-gray-600 dark:text-gray-400 mt-2">{item.year}</span>
-                  </motion.div>
-                ))}
-              </div>
+          {/* Visual */}
+          <motion.div
+            initial={{ opacity: 0, x: isRTL ? -30 : 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="space-y-6"
+          >
+            {/* Founder Card */}
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30 rounded-3xl p-10 text-center border-2 border-[#FF6B35] shadow-xl">
+              <div className="text-7xl mb-4">🏃‍♂️</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{t('founderName')}</div>
+              <div className="text-[#FF6B35] font-semibold">{t('founderTitle')}</div>
             </div>
-          </Reveal>
+
+            {/* Timeline */}
+            <div className="flex justify-center gap-3 flex-wrap">
+              {[
+                { year: '2022', label: t('year2022') },
+                { year: '2023', label: t('year2023') },
+                { year: '2024', label: t('year2024') },
+                { year: '2025', label: t('year2025') },
+              ].map((item, i) => (
+                <motion.div
+                  key={item.year}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 + i * 0.1 }}
+                  className="flex flex-col items-center px-4 py-3 bg-gradient-to-br from-[#FF6B35] to-[#FF4500] rounded-xl text-white shadow-lg"
+                >
+                  <span className="font-bold text-sm">{item.year}</span>
+                  <span className="text-xs opacity-90">{item.label}</span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </div>
     </section>
   );
 }
-

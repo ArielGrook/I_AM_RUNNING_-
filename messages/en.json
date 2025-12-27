@@ -2,155 +2,123 @@
   "Landing": {
     "hero": {
       "intro": "In our time, people are constantly chasing speed, quality, and price",
-      "headline": "STOP CHASING, START RUNNING",
-      "subheadline": "towards progress with iamrunning.online - modern, experimental website builder combining {quality} elements, development {speed}, and affordable {price} for any level websites",
+      "headline": "STOP CHASING,",
+      "headlineHighlight": "START RUNNING",
+      "subheadline": "towards progress with iamrunning.online - modern, experimental website builder combining",
       "quality": "QUALITY",
       "speed": "SPEED",
       "price": "PRICE",
-      "cta": "Enter Editor",
-      "stats": {
-        "websites": "1000+",
-        "websitesLabel": "Websites Built",
-        "time": "<30min",
-        "timeLabel": "Average Build Time",
-        "savings": "$500+",
-        "savingsLabel": "Average Savings"
-      }
+      "subheadlineEnd": "elements, development speed, and affordable price for any level websites",
+      "cta": "Enter Editor"
     },
     "origin": {
       "eyebrow": "Our Story",
       "title": "The Innovation Story",
       "content": "At 17, our founder had a revolutionary idea to elevate the website building market to a new level. Through innovative approach and determination, I AM RUNNING was born - changing how websites are created forever.",
-      "highlight": "What started as a teenage vision became a platform that challenges industry giants with breakthrough technology."
+      "highlight": "What started as a teenage vision became a platform that challenges industry giants with breakthrough technology.",
+      "founderName": "Ariel Shein",
+      "founderTitle": "Founder & Developer",
+      "year2022": "Vision",
+      "year2023": "Research",
+      "year2024": "Development",
+      "year2025": "Launch"
     },
     "technology": {
       "eyebrow": "Our Technology",
       "title": "Cutting-Edge Technology",
       "content": "We utilize our proprietary library of high-quality components combined with the latest website security protocols, preventing any type of attacks.",
       "highlight": "Our custom-built component system ensures your website is not just beautiful, but fortress-secure.",
-      "comparison": "While competitors like Wix, Squarespace, Webflow, WordPress provide beautiful but limited functionality, we combine stunning design with ALL necessary backend elements - perfect for both e-commerce organizations and landing page needs.",
-      "features": {
-        "components": "Proprietary Components",
-        "security": "Enterprise Security",
-        "backend": "Full Backend Support"
-      }
+      "feature1": "Proprietary Components",
+      "feature2": "Enterprise Security",
+      "feature3": "Full Backend Support",
+      "comparisonIntro": "While competitors like Wix, Squarespace, Webflow, WordPress provide beautiful but limited functionality, we combine stunning design with ALL necessary backend elements - perfect for both e-commerce organizations and landing page needs."
     },
     "speed": {
       "eyebrow": "Lightning Fast",
       "title": "Speed That Amazes",
       "content": "With our approach, you can build your dream website at incredible speed. The assembly time depends only on how quickly you provide us with information about your vision.",
-      "highlight": "From concept to live website - faster than you ever imagined possible.",
-      "metrics": {
-        "concept": "Concept",
-        "design": "Design",
-        "launch": "Launch",
-        "time": "< 30 minutes"
-      }
+      "concept": "Concept",
+      "design": "Design",
+      "launch": "Launch",
+      "time": "< 30 minutes",
+      "timeLabel": "Average Build Time",
+      "quote": "From concept to live website - faster than you ever imagined possible."
     },
     "pricing": {
       "eyebrow": "Smart Pricing",
       "title": "No Overpaying Policy",
       "content": "Thanks to our pricing model, you never pay for features you don't need. From landing pages to full e-commerce solutions - all at reasonable prices.",
-      "highlight": "Pay for what you use, get exactly what you need.",
-      "comparison": {
-        "feature": "Feature",
-        "us": "I AM RUNNING",
-        "others": "Competitors",
-        "speed": "Build Speed",
-        "speedUs": "< 30 min",
-        "speedOthers": "2-4 weeks",
-        "cost": "Average Cost",
-        "costUs": "$20-200",
-        "costOthers": "$500+",
-        "ai": "AI Generation",
-        "aiUs": "Included",
-        "aiOthers": "Extra Cost",
-        "components": "Component Library",
-        "componentsUs": "980+ combinations",
-        "componentsOthers": "Limited"
-      }
+      "savings": "$500+",
+      "savingsLabel": "Average Savings",
+      "featureLabel": "Feature",
+      "us": "I AM RUNNING",
+      "competitors": "Competitors",
+      "buildSpeed": "Build Speed",
+      "buildSpeedUs": "< 30 min",
+      "buildSpeedThem": "2-4 weeks",
+      "avgCost": "Average Cost",
+      "avgCostUs": "$20-200",
+      "avgCostThem": "$500+",
+      "aiGen": "AI Generation",
+      "aiGenUs": "Included",
+      "aiGenThem": "Extra Cost",
+      "components": "Component Library",
+      "componentsUs": "980+ combinations",
+      "componentsThem": "Limited",
+      "highlight": "Pay for what you use, get exactly what you need."
     },
     "services": {
       "eyebrow": "Complete Solution",
       "title": "Complete Solution Package",
       "content": "Everything you need to succeed online, all in one place.",
-      "features": {
-        "assembly": {
-          "title": "Website Assembly",
-          "desc": "Professional development"
-        },
-        "deployment": {
-          "title": "Instant Deployment",
-          "desc": "Through our platform"
-        },
-        "ssl": {
-          "title": "FREE SSL Certificate",
-          "desc": "With platform deployment"
-        },
-        "freelancer": {
-          "title": "Freelancer Access",
-          "desc": "Full editor + library access"
-        },
-        "ai": {
-          "title": "AI Generation",
-          "desc": "Specially tuned neural network"
-        },
-        "support": {
-          "title": "Professional Support",
-          "desc": "Expert assistance included"
-        }
-      },
+      "service1": "Website Assembly",
+      "service1Desc": "Professional development",
+      "service2": "Instant Deployment",
+      "service2Desc": "Through our platform",
+      "service3": "FREE SSL Certificate",
+      "service3Desc": "With platform deployment",
+      "service4": "Freelancer Access",
+      "service4Desc": "Full editor + library access",
+      "service5": "AI Generation",
+      "service5Desc": "Specially tuned neural network",
+      "service6": "Professional Support",
+      "service6Desc": "Expert assistance included",
       "freelancerCta": "Get full access to our proprietary editor with complete component library access + AI generation",
-      "freelancerPrice": "only $50/month"
+      "freelancerPrice": "only $50/month",
+      "getAccess": "Get Access"
     },
     "showcase": {
       "eyebrow": "Why Choose Us",
       "title": "What Makes Us Different",
-      "features": {
-        "ai": {
-          "title": "AI-Powered Generation",
-          "desc": "Smart component matching"
-        },
-        "styles": {
-          "title": "20 Styles × 49 Tags",
-          "desc": "980+ combinations"
-        },
-        "deploy": {
-          "title": "Instant Deployment",
-          "desc": "One-click publishing"
-        },
-        "backend": {
-          "title": "Custom Backend",
-          "desc": "Full functionality"
-        },
-        "mobile": {
-          "title": "Mobile-First Design",
-          "desc": "Perfect responsiveness"
-        },
-        "seo": {
-          "title": "SEO Optimization",
-          "desc": "Built-in best practices"
-        }
-      }
+      "styles": "Professional Styles",
+      "tags": "Smart Tags",
+      "combinations": "Combinations",
+      "feature1": "AI-Powered Generation",
+      "feature1Desc": "Smart component matching",
+      "feature2": "20 Styles × 49 Tags",
+      "feature2Desc": "980+ combinations",
+      "feature3": "Instant Deployment",
+      "feature3Desc": "One-click publishing",
+      "feature4": "Custom Backend",
+      "feature4Desc": "Full functionality",
+      "feature5": "Mobile-First Design",
+      "feature5Desc": "Perfect responsiveness",
+      "feature6": "SEO Optimization",
+      "feature6Desc": "Built-in best practices"
     },
     "footer": {
       "brand": "I AM RUNNING",
       "tagline": "Modern AI-Powered Website Builder",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "contact": "Contact",
       "copyright": "© 2025 All Rights Reserved",
-      "author": "Created by Ariel Shein",
-      "links": {
-        "privacy": "Privacy Policy",
-        "terms": "Terms of Service",
-        "contact": "Contact"
-      }
+      "author": "Created by Ariel Shein"
     }
   },
   "Common": {
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success",
-    "cancel": "Cancel",
-    "save": "Save",
-    "close": "Close"
+    "success": "Success"
   }
 }

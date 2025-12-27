@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
@@ -11,31 +11,21 @@ import { ParticleField } from '@/components/motion/Particles';
 
 export function HeroSection() {
   const t = useTranslations('Landing.hero');
-
-  // Get values directly
-  const intro = t('intro');
-  const headline = t('headline');
-  const quality = t('quality');
-  const speed = t('speed');
-  const price = t('price');
-  const cta = t('cta');
-  
-  // Build subheadline with highlighted words inline
-  const subRaw = t('subheadline');
-  const subParts = subRaw
-    .replace('{quality}', `<span class="text-[#FFA500] font-bold">${quality}</span>`)
-    .replace('{speed}', `<span class="text-[#FFA500] font-bold">${speed}</span>`)
-    .replace('{price}', `<span class="text-[#FFA500] font-bold">${price}</span>`);
+  const locale = useLocale();
+  const isRTL = locale === 'he';
 
   return (
-    <header className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-[#FF4500] via-[#FF6B35] to-[#FF4500] text-white flex flex-col">
-      {/* Animated background layers */}
+    <header 
+      className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-[#FF4500] via-[#FF6B35] to-[#FF4500] text-white flex flex-col"
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
+      {/* Animated background */}
       <div className="absolute inset-0 pointer-events-none">
         <ParticleField />
         <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.3),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.2),transparent_40%)]" />
       </div>
 
-      {/* Header Nav - Clean text only */}
+      {/* Header Nav */}
       <nav className="relative z-20 w-full px-6 py-6 flex items-center justify-between">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -51,11 +41,11 @@ export function HeroSection() {
           <ThemeToggle />
           <Button
             asChild
-            className="hidden sm:inline-flex bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-semibold"
+            className="hidden sm:inline-flex bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-semibold rounded-full"
           >
             <Link href="/editor">
-              {cta}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {t('cta')}
+              <ArrowRight className={`h-4 w-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
             </Link>
           </Button>
         </div>
@@ -71,7 +61,7 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {intro}
+            {t('intro')}
           </motion.p>
 
           {/* Main headline */}
@@ -81,7 +71,7 @@ export function HeroSection() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
           >
-            {headline}
+            {t('headline')} <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)]">{t('headlineHighlight')}</span>
           </motion.h1>
 
           {/* Subheadline with highlighted keywords */}
@@ -90,8 +80,19 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            dangerouslySetInnerHTML={{ __html: subParts }}
-          />
+          >
+            {t('subheadline')}{' '}
+            <span className="text-[#FFA500] font-bold">{t('quality')}</span>{' '}
+            {t('subheadlineEnd').split(t('speed'))[0]}
+            <span className="text-[#FFA500] font-bold">{t('speed')}</span>
+            {t('subheadlineEnd').includes(t('price')) && (
+              <>
+                {t('subheadlineEnd').split(t('speed'))[1]?.split(t('price'))[0]}
+                <span className="text-[#FFA500] font-bold">{t('price')}</span>
+                {t('subheadlineEnd').split(t('price'))[1]}
+              </>
+            )}
+          </motion.p>
 
           {/* CTA Button */}
           <motion.div
@@ -103,18 +104,18 @@ export function HeroSection() {
             <Button
               asChild
               size="lg"
-              className="px-10 py-7 text-xl font-bold bg-white/20 backdrop-blur-sm text-white border-2 border-[#FFA500] hover:bg-[#FFA500] hover:text-white shadow-lg hover:shadow-[0_0_30px_rgba(255,165,0,0.5)] transition-all duration-300 rounded-full"
+              className="px-10 py-7 text-xl font-bold bg-white/20 backdrop-blur-sm text-white border-2 border-[#FFA500] hover:bg-[#FFA500] hover:text-white shadow-lg hover:shadow-[0_0_30px_rgba(255,165,0,0.5)] transition-all duration-300 rounded-full animate-[breathing_3s_ease-in-out_infinite]"
             >
               <Link href="/editor">
-                {cta}
-                <ArrowRight className="ml-3 h-6 w-6" />
+                {t('cta')}
+                <ArrowRight className={`h-6 w-6 ${isRTL ? 'mr-3 rotate-180' : 'ml-3'}`} />
               </Link>
             </Button>
           </motion.div>
         </div>
       </div>
 
-      {/* Bottom fade */}
+      {/* Bottom fade to white/black */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white dark:from-black to-transparent pointer-events-none" />
     </header>
   );
