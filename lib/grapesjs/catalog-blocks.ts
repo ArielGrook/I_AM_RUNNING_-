@@ -17,12 +17,15 @@ import { Category } from '@/lib/types/project';
 
 /**
  * Block definition type matching GrapesJS block format
+ * 
+ * CRITICAL: content can be a string or a function that returns a string
+ * Function receives (block, editor) and can inject CSS
  */
 export type BlockDefinition = {
   id: string;
   label: string;
   category: string;
-  content: string;
+  content: string | ((block: any, editor: any) => string);
   media?: string | null;
   activate?: boolean;
   select?: boolean;
@@ -33,19 +36,79 @@ export type BlockDefinition = {
  * Get block definitions from Supabase components
  * Returns array of block definitions to be passed into grapesjs.init() config
  * 
+ * CRITICAL FIX: Ensure HTML is a string and inject CSS when block is added
+ * 
  * @param components - Array of Supabase components
  * @returns Array of block definitions
  */
 export function getSupabaseBlockDefinitions(components: SupabaseComponent[]): BlockDefinition[] {
-  return components.map((component) => ({
-    id: component.id,
-    label: component.name,
-    category: component.category.charAt(0).toUpperCase() + component.category.slice(1),
-    content: component.html,
-    media: component.thumbnail || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/></svg>`,
-    activate: true,
-    select: true,
-  }));
+  return components.map((component) => {
+    // CRITICAL: Ensure HTML is a string, not JSON or object
+    let htmlContent = '';
+    if (typeof component.html === 'string') {
+      htmlContent = component.html;
+    } else if (component.html) {
+      // If it's an object or JSON string, try to extract HTML
+      try {
+        const parsed = typeof component.html === 'string' ? JSON.parse(component.html) : component.html;
+        htmlContent = parsed.html || parsed.content || String(component.html);
+      } catch {
+        htmlContent = String(component.html);
+      }
+    }
+    
+    // CRITICAL: Store CSS separately for injection
+    const componentCss = component.css || '';
+    
+    return {
+      id: component.id,
+      label: component.name,
+      category: component.category.charAt(0).toUpperCase() + component.category.slice(1),
+      // CRITICAL: Content must be a STRING, not JSON or object
+      // Use function to inject CSS when block is dragged
+      content: (block: any, editor: any) => {
+        // Inject CSS if component has CSS
+        if (componentCss && editor) {
+          try {
+            const currentCss = editor.getCss() || '';
+            // Only add CSS if it's not already present (check first 50 chars to avoid duplicates)
+            const cssPreview = componentCss.substring(0, 50).trim();
+            if (cssPreview && !currentCss.includes(cssPreview)) {
+              const newCss = currentCss ? currentCss + '\n\n/* Component: ' + component.name + ' */\n' + componentCss : componentCss;
+              editor.setStyle(newCss);
+            }
+          } catch (cssError) {
+            console.warn('[Block] Failed to inject CSS for component:', component.name, cssError);
+          }
+        }
+        // CRITICAL: Return HTML as string (not JSON, not object)
+        // Validate it's actually HTML, not JSON
+        if (htmlContent.trim().startsWith('{') || htmlContent.trim().startsWith('[')) {
+          console.error('[Block] ERROR: Component HTML appears to be JSON instead of HTML:', component.name);
+          console.error('[Block] HTML content:', htmlContent.substring(0, 200));
+          // Try to extract HTML from JSON if it's a JSON string
+          try {
+            const parsed = JSON.parse(htmlContent);
+            if (parsed.html) {
+              return parsed.html;
+            } else if (parsed.content) {
+              return parsed.content;
+            }
+          } catch {
+            // Not valid JSON, return as-is but log warning
+          }
+        }
+        return htmlContent;
+      },
+      media: component.thumbnail || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/></svg>`,
+      activate: true,
+      select: true,
+      // Store CSS for reference
+      attributes: {
+        'data-component-css': componentCss,
+      },
+    };
+  });
 }
 
 /**
