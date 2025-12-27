@@ -874,12 +874,16 @@ export default function EditorPage() {
                           className="border rounded-lg p-3 hover:border-primary cursor-move transition group"
                           draggable
                           onDragStart={(e) => {
-                            e.dataTransfer.setData('text/plain', JSON.stringify({
-                              type: 'component',
-                              id: component.id,
-                              category: component.category,
-                              html: component.html,
-                            }));
+                            // CRITICAL: Provide actual HTML to GrapesJS, not JSON
+                            // Previous implementation set JSON which rendered as text on canvas
+                            const htmlContent = typeof component.html === 'string' ? component.html : String(component.html || '');
+                            const cssContent = component.css || '';
+                            const payload = cssContent
+                              ? `<style>${cssContent}</style>\n${htmlContent}`
+                              : htmlContent;
+                            // Set both text/html and text/plain so GrapesJS can pick up the HTML
+                            e.dataTransfer.setData('text/html', payload);
+                            e.dataTransfer.setData('text/plain', payload);
                           }}
                         >
                           <div className="aspect-video bg-gray-50 rounded mb-2 flex items-center justify-center overflow-hidden relative">
