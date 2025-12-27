@@ -199,87 +199,26 @@ export function SaveComponentDialog({
         throw new Error('No component selected. Please select a component in the editor.');
       }
 
-      // CRITICAL FIX: Extract HTML using DOM outerHTML to preserve all attributes correctly
-      // This prevents attribute corruption (e.g., viewBox="0 0 40 40" staying intact)
-      // Reference: lsb-redactor-fixed.js uses selected.toHTML() which works, but outerHTML is more reliable
+      // CRITICAL FIX: Use EXACT method from working reference (lsb-redactor-fixed.js)
+      // Reference uses: const html = selected.toHTML() - simple and works correctly
+      // The corruption happens BEFORE extraction (during component loading), not during extraction
       let componentHtml = '';
       
       try {
-        // Method 1: Use outerHTML directly from DOM element (PRESERVES ALL ATTRIBUTES)
-        // This is the most reliable method as it gets the raw HTML from the browser
-        // outerHTML preserves exact attribute values including spaces (viewBox="0 0 40 40")
-        const element = selected.getEl();
-        if (element && element.outerHTML) {
-          componentHtml = element.outerHTML;
-          console.log('[SaveComponentDialog] ✅ Using outerHTML from DOM element (preserves all attributes)');
-        }
+        // PRIMARY METHOD: Use toHTML() exactly like working reference
+        // This is what lsb-redactor-fixed.js uses and it works correctly
+        componentHtml = selected.toHTML();
         
-        // Method 2: Fallback to toHTML() if outerHTML not available
-        // This matches the working reference implementation
+        // Validate HTML was extracted
         if (!componentHtml || componentHtml.trim().length === 0) {
-          console.warn('[SaveComponentDialog] outerHTML not available, trying toHTML()...');
-          componentHtml = selected.toHTML();
+          throw new Error('Component HTML is empty. Please ensure the component has content.');
         }
         
-        // Method 3: Fallback to innerHTML if toHTML() fails
-        if (!componentHtml || componentHtml.trim().length === 0) {
-          console.warn('[SaveComponentDialog] toHTML() returned empty, trying innerHTML...');
-          if (element) {
-            componentHtml = element.innerHTML || '';
-          }
-        }
-        
-        // Method 4: Build HTML from component structure (LAST RESORT)
-        // Only use this if all other methods fail, and properly escape attribute values
-        if (!componentHtml || componentHtml.trim().length === 0) {
-          console.warn('[SaveComponentDialog] Building HTML from component structure...');
-          const tagName = selected.get('tagName') || 'div';
-          const attributes = selected.getAttributes();
-          
-          // CRITICAL: Properly escape attribute values to preserve spaces and special characters
-          // This ensures viewBox="0 0 40 40" stays intact, not split into multiple attributes
-          const attrsString = Object.entries(attributes)
-            .map(([key, value]) => {
-              // Escape quotes in value and preserve spaces
-              const escapedValue = String(value)
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-              return `${key}="${escapedValue}"`;
-            })
-            .join(' ');
-          
-          const children = selected.components();
-          const childrenHtml = children.length > 0
-            ? children.map((child: any) => {
-                try {
-                  // Try outerHTML first for children too
-                  const childEl = child.getEl();
-                  return childEl?.outerHTML || child.toHTML() || '';
-                } catch {
-                  return child.toHTML() || '';
-                }
-              }).join('')
-            : selected.get('content') || '';
-          
-          componentHtml = `<${tagName}${attrsString ? ' ' + attrsString : ''}>${childrenHtml}</${tagName}>`;
-        }
-        
-        // Validate HTML contains valid markup and check for attribute corruption
-        if (componentHtml) {
-          // Check for common SVG attributes that should have spaces
-          const svgAttributes = ['viewBox', 'points', 'd', 'transform'];
-          for (const attr of svgAttributes) {
-            const regex = new RegExp(`${attr}="([^"]*)"`, 'i');
-            const match = componentHtml.match(regex);
-            if (match && match[1]) {
-              const value = match[1];
-              // Check if attribute value looks corrupted (has unexpected quotes or = signs)
-              if (value.includes('"') || value.includes('=') || value.split(' ').length === 1 && attr === 'viewBox') {
-                console.warn(`[SaveComponentDialog] ⚠️ WARNING: ${attr} attribute may be corrupted:`, value);
-                console.warn(`[SaveComponentDialog] Full HTML preview:`, componentHtml.substring(0, 500));
-              }
-            }
-          }
+        // Log for debugging - check if HTML is already corrupted
+        if (componentHtml.includes('""=""') || componentHtml.includes('"=""')) {
+          console.warn('[SaveComponentDialog] ⚠️ WARNING: HTML appears to be corrupted before extraction!');
+          console.warn('[SaveComponentDialog] This suggests corruption happened during component loading, not extraction.');
+          console.warn('[SaveComponentDialog] HTML preview:', componentHtml.substring(0, 500));
         }
         
       } catch (htmlError) {

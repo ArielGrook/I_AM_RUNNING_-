@@ -42,64 +42,34 @@ interface GrapeEditorProps {
  * - Missing spaces: widthclass= → width class=
  * - Invalid attribute patterns
  */
+/**
+ * CRITICAL FIX: Simplified sanitization - only fix truly broken HTML
+ * The previous aggressive sanitization was CORRUPTING valid HTML attributes
+ * Reference implementation (lsb-redactor-fixed.js) doesn't sanitize at all
+ * 
+ * This function now only fixes:
+ * 1. Unclosed tags (basic safety)
+ * 2. Truly malformed attributes (quotes in attribute names)
+ * 
+ * It does NOT modify valid HTML attributes with spaces (like viewBox="0 0 40 40")
+ */
 function sanitizeHtml(html: string): string {
   if (!html || typeof html !== 'string') return html;
 
   let sanitized = html;
 
-  // CRITICAL: Fix quotes in attribute NAMES first (this causes InvalidCharacterError)
-  // Pattern: attribute-name-with-quote"=value or attribute-name-with-quote'=value
-  // Example: border-gray-200"= → border-gray-200=
+  // ONLY fix quotes in attribute NAMES (this is a real error that breaks parsing)
+  // Pattern: attribute-name-with-quote"=value
+  // Example: hero-btn-order"="" → hero-btn-order=""
   sanitized = sanitized.replace(/([a-zA-Z0-9_-]+)["']=/g, '$1=');
 
-  // Fix double quotes at the end of attribute values: class="x"" → class="x"
-  // Matches: attribute="value"" (double quote at end)
+  // ONLY fix double quotes at the end of attribute values (real corruption)
+  // Pattern: class="value"" → class="value"
   sanitized = sanitized.replace(/(\w+)=(["'])([^"']*?)\2\2/gi, '$1=$2$3$2');
 
-  // Fix single quotes at the end of attribute values: class='x'' → class='x'
-  sanitized = sanitized.replace(/(\w+)=(['"])([^'"]*?)\2\2/gi, '$1=$2$3$2');
-
-  // Fix missing spaces between attributes: widthclass= → width class=
-  // Common patterns where attributes are merged
-  sanitized = sanitized.replace(/(\w+)(class|id|style|href|src|alt|width|height|type|name|value|data-[\w-]+)=/gi, '$1 $2=');
-
-  // Fix attributes where value has trailing quote before next attribute or closing tag
-  // Pattern: class="value" attribute= or class="value">
-  sanitized = sanitized.replace(/(\w+)=(["'])([^"']*?)\2\s*([>"'])/g, (match, attr, quote, value, end) => {
-    // If end is a quote (double quote), it's likely a malformed attribute
-    if (end === quote) {
-      return `${attr}=${quote}${value}${quote}`;
-    }
-    return match;
-  });
-
-  // Fix unclosed attribute values: class="x → class="x"
-  // Look for attributes that start with quote but don't have closing quote before > or space
-  sanitized = sanitized.replace(/(\w+)=(["'])([^"'>]*?)([>"\s])/g, (match, attr, quote, value, end) => {
-    // If we hit > or space without closing quote, add the closing quote
-    if (end !== quote && end !== '>') {
-      return `${attr}=${quote}${value}${quote}${end}`;
-    }
-    return match;
-  });
-
-  // Fix attributes with invalid characters in names (keep only alphanumeric, dash, underscore, colon)
-  // This is a safety net for any remaining malformed attribute names
-  sanitized = sanitized.replace(/(<[a-zA-Z][^>]*?)\s+([^"'\s=]+["'])=/g, (match, tagStart, badAttr) => {
-    // Remove quotes from attribute name
-    const cleanAttr = badAttr.replace(/["']/g, '');
-    return `${tagStart} ${cleanAttr}=`;
-  });
-
-  // Final cleanup: ensure all attribute values are properly quoted if they contain spaces
-  // This helps with attributes like: class=border-gray-200 (should be class="border-gray-200")
-  sanitized = sanitized.replace(/(\w+)=([^"'\s>]+)(\s|>)/g, (match, attr, value, end) => {
-    // If value doesn't start with quote and contains special chars, quote it
-    if (!value.match(/^["']/) && (value.includes('-') || value.includes('_'))) {
-      return `${attr}="${value}"${end}`;
-    }
-    return match;
-  });
+  // REMOVED: All other aggressive sanitization that was corrupting valid HTML
+  // GrapesJS can handle clean HTML without aggressive sanitization
+  // The reference implementation doesn't sanitize at all
 
   return sanitized;
 }
@@ -249,13 +219,23 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       }, 2000);
 
       // Load initial content if provided
+      // CRITICAL: Don't sanitize initialHtml - it should already be clean
+      // Sanitization was corrupting valid HTML attributes
       if (initialHtml || initialCss) {
-        const sanitizedHtml = initialHtml ? sanitizeHtml(initialHtml) : '';
         try {
-          editor.setComponents(sanitizedHtml);
+          editor.setComponents(initialHtml || '');
           editor.setStyle(initialCss);
         } catch (error) {
           console.error('Failed to set initial content:', error);
+          // Only sanitize if setComponents fails (truly broken HTML)
+          try {
+            if (initialHtml) {
+              const sanitizedHtml = sanitizeHtml(initialHtml);
+              editor.setComponents(sanitizedHtml);
+            }
+          } catch (retryError) {
+            console.error('Failed even after sanitization:', retryError);
+          }
         }
       }
 
@@ -391,11 +371,10 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         console.log('✅ CSS converted to inline styles');
       }
       
-      // Sanitize HTML to fix malformed attributes before setting
-      const sanitizedHtml = sanitizeHtml(htmlWithInlineStyles);
-      
-      console.log('Setting components from ZIP import, HTML length:', sanitizedHtml.length);
-      console.log('HTML preview (first 500 chars):', sanitizedHtml.substring(0, 500));
+      // CRITICAL: Don't sanitize HTML by default - sanitization was corrupting valid HTML attributes
+      // Only sanitize if setComponents fails (truly broken HTML)
+      console.log('Setting components from ZIP import, HTML length:', htmlWithInlineStyles.length);
+      console.log('HTML preview (first 500 chars):', htmlWithInlineStyles.substring(0, 500));
       
       // Wait for canvas to be ready before setting components
       // This prevents black canvas issues when setting components immediately after import
@@ -404,17 +383,17 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         if (frame && frame.contentDocument && frame.contentDocument.body) {
           console.log('Canvas frame is ready, setting components...');
           try {
-            editor.setComponents(sanitizedHtml);
+            editor.setComponents(htmlWithInlineStyles);
             console.log('✅ Components set successfully');
           } catch (error) {
-            console.error('Failed to set components in GrapesJS:', error);
-            // Try again with more aggressive sanitization
-            const moreSanitized = sanitizedHtml.replace(/[^\x20-\x7E\n\r\t]/g, '');
+            console.error('Failed to set components in GrapesJS, trying with sanitization:', error);
+            // Only sanitize if setComponents fails (truly broken HTML)
+            const sanitizedHtml = sanitizeHtml(htmlWithInlineStyles);
             try {
-              editor.setComponents(moreSanitized);
-              console.log('✅ Components set after aggressive sanitization');
+              editor.setComponents(sanitizedHtml);
+              console.log('✅ Components set after sanitization');
             } catch (retryError) {
-              console.error('Failed to set components even after aggressive sanitization:', retryError);
+              console.error('Failed to set components even after sanitization:', retryError);
             }
           }
         } else {
@@ -453,9 +432,15 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     getEditor: () => grapesEditorRef.current,
     setComponents: (html: string) => {
       if (grapesEditorRef.current) {
-        // Sanitize HTML before setting to fix malformed attributes
-        const sanitizedHtml = sanitizeHtml(html);
-        grapesEditorRef.current.setComponents(sanitizedHtml);
+        // CRITICAL: Don't sanitize by default - sanitization was corrupting valid HTML
+        // Only sanitize if setComponents fails (truly broken HTML)
+        try {
+          grapesEditorRef.current.setComponents(html);
+        } catch (error) {
+          console.warn('[GrapeEditor] setComponents failed, trying with sanitization:', error);
+          const sanitizedHtml = sanitizeHtml(html);
+          grapesEditorRef.current.setComponents(sanitizedHtml);
+        }
       }
     },
     setStyle: (css: string) => {
