@@ -60,52 +60,56 @@ export function getSupabaseBlockDefinitions(components: SupabaseComponent[]): Bl
     // CRITICAL: Store CSS separately for injection
     const componentCss = component.css || '';
     
+    // CRITICAL: Use STRING content directly, not a function
+    // Functions can cause serialization issues in GrapesJS
+    // CSS injection will be handled via block:add event listener in GrapeEditor
+    
+    // Final validation: Ensure HTML is a string, not JSON or object
+    let finalHtml = htmlContent;
+    
+    // Validate and fix HTML if it's JSON
+    if (!finalHtml || typeof finalHtml !== 'string') {
+      console.error('[Block] ERROR: HTML is not a string!', typeof finalHtml, finalHtml);
+      finalHtml = '<div>Error: Invalid component HTML</div>';
+    } else if (finalHtml.trim().startsWith('{') || finalHtml.trim().startsWith('[')) {
+      console.error('[Block] ERROR: Component HTML appears to be JSON instead of HTML:', component.name);
+      console.error('[Block] HTML content:', finalHtml.substring(0, 200));
+      // Try to extract HTML from JSON if it's a JSON string
+      try {
+        const parsed = JSON.parse(finalHtml);
+        if (parsed.html && typeof parsed.html === 'string') {
+          finalHtml = parsed.html;
+        } else if (parsed.content && typeof parsed.content === 'string') {
+          finalHtml = parsed.content;
+        } else {
+          console.error('[Block] ERROR: Could not extract HTML from JSON:', parsed);
+          finalHtml = '<div>Error: Component HTML is JSON, not HTML</div>';
+        }
+      } catch (parseError) {
+        console.error('[Block] ERROR: Failed to parse JSON:', parseError);
+        finalHtml = '<div>Error: Invalid component HTML format</div>';
+      }
+    }
+    
+    // CRITICAL: Store CSS in data attribute for later injection
+    // This avoids closure issues and ensures content is always a string
+    const blockId = component.id;
+    const blockCss = componentCss;
+    
     return {
-      id: component.id,
+      id: blockId,
       label: component.name,
       category: component.category.charAt(0).toUpperCase() + component.category.slice(1),
-      // CRITICAL: Content must be a STRING, not JSON or object
-      // Use function to inject CSS when block is dragged
-      content: (block: any, editor: any) => {
-        // Inject CSS if component has CSS
-        if (componentCss && editor) {
-          try {
-            const currentCss = editor.getCss() || '';
-            // Only add CSS if it's not already present (check first 50 chars to avoid duplicates)
-            const cssPreview = componentCss.substring(0, 50).trim();
-            if (cssPreview && !currentCss.includes(cssPreview)) {
-              const newCss = currentCss ? currentCss + '\n\n/* Component: ' + component.name + ' */\n' + componentCss : componentCss;
-              editor.setStyle(newCss);
-            }
-          } catch (cssError) {
-            console.warn('[Block] Failed to inject CSS for component:', component.name, cssError);
-          }
-        }
-        // CRITICAL: Return HTML as string (not JSON, not object)
-        // Validate it's actually HTML, not JSON
-        if (htmlContent.trim().startsWith('{') || htmlContent.trim().startsWith('[')) {
-          console.error('[Block] ERROR: Component HTML appears to be JSON instead of HTML:', component.name);
-          console.error('[Block] HTML content:', htmlContent.substring(0, 200));
-          // Try to extract HTML from JSON if it's a JSON string
-          try {
-            const parsed = JSON.parse(htmlContent);
-            if (parsed.html) {
-              return parsed.html;
-            } else if (parsed.content) {
-              return parsed.content;
-            }
-          } catch {
-            // Not valid JSON, return as-is but log warning
-          }
-        }
-        return htmlContent;
-      },
+      // CRITICAL: Content MUST be a STRING, not a function or object
+      // This prevents JSON serialization issues
+      content: finalHtml,
       media: component.thumbnail || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/></svg>`,
       activate: true,
       select: true,
-      // Store CSS for reference
+      // Store CSS in attributes for CSS injection via event listener
       attributes: {
-        'data-component-css': componentCss,
+        'data-component-css': blockCss,
+        'data-component-id': blockId,
       },
     };
   });

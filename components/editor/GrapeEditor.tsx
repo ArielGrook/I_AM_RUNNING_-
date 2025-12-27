@@ -180,6 +180,56 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       
       console.log('12. GrapesJS editor initialized successfully');
       
+      // CRITICAL: Add event listener to inject CSS when blocks are added
+      // This handles CSS injection for components dragged from sidebar
+      editor.on('block:drag:stop', (block: any) => {
+        try {
+          const blockModel = block;
+          if (blockModel && blockModel.get) {
+            const attributes = blockModel.get('attributes') || {};
+            const componentCss = attributes['data-component-css'];
+            const componentId = attributes['data-component-id'];
+            
+            if (componentCss && typeof componentCss === 'string') {
+              const currentCss = editor.getCss() || '';
+              const cssPreview = componentCss.substring(0, 50).trim();
+              
+              // Only add CSS if it's not already present
+              if (cssPreview && !currentCss.includes(cssPreview)) {
+                const newCss = currentCss ? currentCss + '\n\n/* Component: ' + (componentId || 'unknown') + ' */\n' + componentCss : componentCss;
+                editor.setStyle(newCss);
+                console.log('[GrapeEditor] Injected CSS for component:', componentId);
+              }
+            }
+          }
+        } catch (cssError) {
+          console.warn('[GrapeEditor] Failed to inject CSS on block drag:', cssError);
+        }
+      });
+      
+      // Also listen for component:add event (when block is actually added to canvas)
+      editor.on('component:add', (component: any) => {
+        try {
+          const attributes = component.getAttributes() || {};
+          const componentCss = attributes['data-component-css'];
+          const componentId = attributes['data-component-id'];
+          
+          if (componentCss && typeof componentCss === 'string') {
+            const currentCss = editor.getCss() || '';
+            const cssPreview = componentCss.substring(0, 50).trim();
+            
+            // Only add CSS if it's not already present
+            if (cssPreview && !currentCss.includes(cssPreview)) {
+              const newCss = currentCss ? currentCss + '\n\n/* Component: ' + (componentId || 'unknown') + ' */\n' + componentCss : componentCss;
+              editor.setStyle(newCss);
+              console.log('[GrapeEditor] Injected CSS for component on add:', componentId);
+            }
+          }
+        } catch (cssError) {
+          console.warn('[GrapeEditor] Failed to inject CSS on component add:', cssError);
+        }
+      });
+      
       // Save editor reference (matching legacy pattern)
       grapesEditorRef.current = editor;
 
