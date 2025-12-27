@@ -199,44 +199,89 @@ export function SaveComponentDialog({
         throw new Error('No component selected. Please select a component in the editor.');
       }
 
-      // CRITICAL FIX: Extract HTML using multiple methods to ensure we get complete content
+      // CRITICAL FIX: Extract HTML using DOM outerHTML to preserve all attributes correctly
+      // This prevents attribute corruption (e.g., viewBox="0 0 40 40" staying intact)
+      // Reference: lsb-redactor-fixed.js uses selected.toHTML() which works, but outerHTML is more reliable
       let componentHtml = '';
       
       try {
-        // Method 1: Use toHTML() - gets the component's HTML structure
-        componentHtml = selected.toHTML();
+        // Method 1: Use outerHTML directly from DOM element (PRESERVES ALL ATTRIBUTES)
+        // This is the most reliable method as it gets the raw HTML from the browser
+        // outerHTML preserves exact attribute values including spaces (viewBox="0 0 40 40")
+        const element = selected.getEl();
+        if (element && element.outerHTML) {
+          componentHtml = element.outerHTML;
+          console.log('[SaveComponentDialog] ✅ Using outerHTML from DOM element (preserves all attributes)');
+        }
         
-        // If toHTML() returns empty or seems incomplete, try alternative methods
+        // Method 2: Fallback to toHTML() if outerHTML not available
+        // This matches the working reference implementation
         if (!componentHtml || componentHtml.trim().length === 0) {
-          console.warn('[SaveComponentDialog] toHTML() returned empty, trying alternative methods...');
-          
-          // Method 2: Get innerHTML from the element
-          const element = selected.getEl();
+          console.warn('[SaveComponentDialog] outerHTML not available, trying toHTML()...');
+          componentHtml = selected.toHTML();
+        }
+        
+        // Method 3: Fallback to innerHTML if toHTML() fails
+        if (!componentHtml || componentHtml.trim().length === 0) {
+          console.warn('[SaveComponentDialog] toHTML() returned empty, trying innerHTML...');
           if (element) {
             componentHtml = element.innerHTML || '';
-            
-            // If innerHTML is also empty, try outerHTML
-            if (!componentHtml || componentHtml.trim().length === 0) {
-              componentHtml = element.outerHTML || '';
-            }
-          }
-          
-          // Method 3: Build HTML from component structure
-          if (!componentHtml || componentHtml.trim().length === 0) {
-            const tagName = selected.get('tagName') || 'div';
-            const attributes = selected.getAttributes();
-            const attrsString = Object.entries(attributes)
-              .map(([key, value]) => `${key}="${value}"`)
-              .join(' ');
-            
-            const children = selected.components();
-            const childrenHtml = children.length > 0
-              ? children.map((child: any) => child.toHTML()).join('')
-              : selected.get('content') || '';
-            
-            componentHtml = `<${tagName}${attrsString ? ' ' + attrsString : ''}>${childrenHtml}</${tagName}>`;
           }
         }
+        
+        // Method 4: Build HTML from component structure (LAST RESORT)
+        // Only use this if all other methods fail, and properly escape attribute values
+        if (!componentHtml || componentHtml.trim().length === 0) {
+          console.warn('[SaveComponentDialog] Building HTML from component structure...');
+          const tagName = selected.get('tagName') || 'div';
+          const attributes = selected.getAttributes();
+          
+          // CRITICAL: Properly escape attribute values to preserve spaces and special characters
+          // This ensures viewBox="0 0 40 40" stays intact, not split into multiple attributes
+          const attrsString = Object.entries(attributes)
+            .map(([key, value]) => {
+              // Escape quotes in value and preserve spaces
+              const escapedValue = String(value)
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+              return `${key}="${escapedValue}"`;
+            })
+            .join(' ');
+          
+          const children = selected.components();
+          const childrenHtml = children.length > 0
+            ? children.map((child: any) => {
+                try {
+                  // Try outerHTML first for children too
+                  const childEl = child.getEl();
+                  return childEl?.outerHTML || child.toHTML() || '';
+                } catch {
+                  return child.toHTML() || '';
+                }
+              }).join('')
+            : selected.get('content') || '';
+          
+          componentHtml = `<${tagName}${attrsString ? ' ' + attrsString : ''}>${childrenHtml}</${tagName}>`;
+        }
+        
+        // Validate HTML contains valid markup and check for attribute corruption
+        if (componentHtml) {
+          // Check for common SVG attributes that should have spaces
+          const svgAttributes = ['viewBox', 'points', 'd', 'transform'];
+          for (const attr of svgAttributes) {
+            const regex = new RegExp(`${attr}="([^"]*)"`, 'i');
+            const match = componentHtml.match(regex);
+            if (match && match[1]) {
+              const value = match[1];
+              // Check if attribute value looks corrupted (has unexpected quotes or = signs)
+              if (value.includes('"') || value.includes('=') || value.split(' ').length === 1 && attr === 'viewBox') {
+                console.warn(`[SaveComponentDialog] ⚠️ WARNING: ${attr} attribute may be corrupted:`, value);
+                console.warn(`[SaveComponentDialog] Full HTML preview:`, componentHtml.substring(0, 500));
+              }
+            }
+          }
+        }
+        
       } catch (htmlError) {
         console.error('[SaveComponentDialog] Error extracting HTML:', htmlError);
         throw new Error('Failed to extract component HTML. Please try selecting the component again.');
