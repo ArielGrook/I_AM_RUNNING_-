@@ -6,7 +6,7 @@ import { Evolution } from '@/components/landing/Evolution';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { ComponentShowcase } from '@/components/landing/ComponentShowcase';
 import { PricingComparison } from '@/components/landing/PricingComparison';
-import { JoinTheRace } from '@/components/landing/JoinTheRace';
+import { Footer } from '@/components/landing/Footer';
 
 export default function HomePage() {
   return (
@@ -17,7 +17,7 @@ export default function HomePage() {
       <HowItWorks />
       <ComponentShowcase />
       <PricingComparison />
-      <JoinTheRace />
+      <Footer />
     </div>
   );
 }

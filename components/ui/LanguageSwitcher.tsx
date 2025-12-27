@@ -35,6 +35,7 @@ export function LanguageSwitcher() {
           className={`px-2 py-1 rounded-md transition ${
             link.active ? 'bg-primary/10 text-primary' : 'hover:bg-muted'
           }`}
+          hrefLang={link.locale}
         >
           {link.locale.toUpperCase()}
         </Link>
@@ -42,5 +43,6 @@ export function LanguageSwitcher() {
     </div>
   );
 }
+
 
 

@@ -1,33 +1,59 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, PlayCircle, Zap, Rocket } from 'lucide-react';
+import { ArrowRight, PlayCircle, Rocket, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 
+const gradient = 'bg-gradient-to-br from-[#FF4500] via-[#FF6B35] to-[#FF4500]';
+
 export function HeroSection() {
+  const t = useTranslations('Landing.hero');
+  const [counts, setCounts] = useState({ price: 20, speed: 0, styles: 0 });
+
+  useEffect(() => {
+    // Simple count-up animation
+    let frame: number;
+    const start = performance.now();
+    const duration = 1200;
+    const animate = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      setCounts({
+        price: Math.round(20 + p * 180), // up to 200
+        speed: Math.round(p * 30),
+        styles: Math.round(p * 20),
+      });
+      if (p < 1) frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
-    <header className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white">
-      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.3),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.25),transparent_30%)]" />
+    <header className={`relative overflow-hidden ${gradient} text-white`}>
+      <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.3),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.25),transparent_30%)]" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-white/15 flex items-center justify-center text-lg font-bold shadow-lg">
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center text-lg font-bold shadow-lg">
             🏃‍♂️
           </div>
           <div>
             <div className="text-sm uppercase tracking-widest text-white/80">I AM RUNNING</div>
-            <div className="text-xs text-white/70">Price. Quality. Speed.</div>
+            <div className="text-xs text-white/70">{t('triple')}</div>
           </div>
-        </div>
+        </motion.div>
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
           <ThemeToggle />
           <Link
             href="/editor"
-            className="hidden sm:inline-flex items-center gap-2 rounded-full bg-white text-indigo-700 px-4 py-2 text-sm font-semibold shadow-md hover:shadow-lg transition"
+            className="hidden sm:inline-flex items-center gap-2 rounded-full bg-white text-[#2D2D2D] px-4 py-2 text-sm font-semibold shadow-md hover:shadow-lg transition"
           >
-            Launch Editor
+            {t('ctaHeader')}
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -35,24 +61,38 @@ export function HeroSection() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-20 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow">
-              <Zap className="h-4 w-4" /> Stop chasing. Start running.
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
-              Stop chasing expensive solutions.
-              <span className="block text-orange-200">
-                I AM RUNNING towards your perfect website.
-              </span>
-            </h1>
-            <p className="text-lg text-white/80 max-w-2xl">
-              While others make you wait weeks and charge $500+, people run to us for PRICE, QUALITY, and
-              SPEED — delivered in under 30 minutes with AI-orchestrated components.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button asChild size="lg" className="px-8 py-6 text-lg shadow-lg hover:shadow-xl">
+          <motion.div
+            className="space-y-6"
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+          >
+            <motion.div
+              className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow"
+              variants={{ hidden: { opacity: 0, y: -10 }, show: { opacity: 1, y: 0 } }}
+            >
+              <Zap className="h-4 w-4" /> {t('badge')}
+            </motion.div>
+            <motion.h1
+              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight"
+              variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+            >
+              {t('headline1')}
+              <span className="block text-orange-200">{t('headline2')}</span>
+            </motion.h1>
+            <motion.p
+              className="text-lg text-white/80 max-w-2xl"
+              variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+            >
+              {t('sub')}
+            </motion.p>
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4"
+              variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+            >
+              <Button asChild size="lg" className="px-8 py-6 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02]">
                 <Link href="/editor">
-                  Start Building Free
+                  {t('ctaPrimary')}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
@@ -64,52 +104,66 @@ export function HeroSection() {
               >
                 <Link href="#demo">
                   <PlayCircle className="mr-2 h-5 w-5" />
-                  Watch Demo
+                  {t('ctaSecondary')}
                 </Link>
               </Button>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm text-white/80">
-              <Stat label="Price" value="$20-200" detail="vs $500+ competitors" />
-              <Stat label="Speed" value="<30 min" detail="from idea to live draft" />
-              <Stat label="Quality" value="AI + Pro" detail="20 styles, 49 tags" />
-            </div>
-          </div>
-          <div className="relative">
-            <div className="absolute -left-6 -top-6 h-16 w-16 rounded-full bg-orange-400 blur-3xl opacity-60" />
-            <div className="absolute -right-8 bottom-8 h-20 w-20 rounded-full bg-cyan-400 blur-3xl opacity-60" />
+            </motion.div>
+            <motion.div
+              className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm text-white/80"
+              variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+            >
+              <Stat label={t('statPrice.label')} value={`$${counts.price}`} detail={t('statPrice.detail')} />
+              <Stat label={t('statSpeed.label')} value={`<${Math.max(counts.speed, 1)} min`} detail={t('statSpeed.detail')} />
+              <Stat label={t('statQuality.label')} value={`${counts.styles} styles`} detail={t('statQuality.detail')} />
+            </motion.div>
+          </motion.div>
+          <motion.div
+            className="relative"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ type: 'spring', stiffness: 70, damping: 18 }}
+          >
+            <div className="absolute -left-6 -top-6 h-16 w-16 rounded-full bg-[#FFA500] blur-3xl opacity-60" />
+            <div className="absolute -right-8 bottom-8 h-20 w-20 rounded-full bg-white blur-3xl opacity-20" />
             <div className="relative rounded-3xl bg-white/10 border border-white/20 shadow-2xl p-6 backdrop-blur">
               <div className="flex items-center justify-between mb-4 text-sm text-white/80">
-                <span>Components assembling...</span>
+                <span>{t('assembly')}</span>
                 <Rocket className="h-5 w-5 text-orange-200" />
               </div>
               <div className="space-y-3 text-sm">
-                {['Header (modern_gradient)', 'Hero (creative_colorful)', 'CTA (tech_neon)', 'Footer (classic_elegant)'].map(
-                  (item, idx) => (
-                    <div
-                      key={item}
-                      className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-3 border border-white/10"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center text-xs font-bold">
-                          {idx + 1}
-                        </span>
-                        <div>
-                          <div className="font-semibold text-white">{item}</div>
-                          <div className="text-white/60 text-xs">running into place...</div>
-                        </div>
-                      </div>
-                      <div className="h-2 w-16 rounded-full bg-white/20 overflow-hidden">
-                        <div className="h-full w-2/3 bg-white/80 animate-pulse" />
+                {['modern_gradient', 'creative_colorful', 'tech_neon', 'classic_elegant'].map((item, idx) => (
+                  <motion.div
+                    key={item}
+                    className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-3 border border-white/10"
+                    initial={{ opacity: 0, x: 10 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.08 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center text-xs font-bold">
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <div className="font-semibold text-white">{t('component', { style: item })}</div>
+                        <div className="text-white/60 text-xs">{t('running')}</div>
                       </div>
                     </div>
-                  )
-                )}
+                    <div className="h-2 w-16 rounded-full bg-white/20 overflow-hidden">
+                      <motion.div
+                        className="h-full w-full bg-white/80"
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 0.7 }}
+                        transition={{ duration: 1.2, repeat: Infinity, repeatType: 'reverse' }}
+                        style={{ originX: 0 }}
+                      />
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-              <div className="mt-6 text-center text-sm text-white/80">
-                Components are “running” together to form your site.
-              </div>
+              <div className="mt-6 text-center text-sm text-white/80">{t('footer')}</div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </header>
@@ -118,12 +172,13 @@ export function HeroSection() {
 
 function Stat({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-2xl bg-white/10 border border-white/10 px-4 py-3">
+    <div className="rounded-2xl bg-white/10 border border-white/10 px-4 py-3 shadow-sm">
       <div className="text-xs uppercase tracking-wide text-white/70">{label}</div>
       <div className="text-xl font-semibold text-white">{value}</div>
       <div className="text-xs text-white/70">{detail}</div>
     </div>
   );
 }
+
 
 
