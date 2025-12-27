@@ -102,6 +102,11 @@ html::-webkit-scrollbar {
   50% { box-shadow: 0 0 38px rgba(255, 107, 53, 0.7); }
 }
 
+@keyframes typewriter-cursor {
+  0%, 45% { opacity: 1; }
+  60%, 100% { opacity: 0; }
+}
+
 @keyframes particle-float {
   0% { transform: translate(0, 0) rotate(0deg); }
   33% { transform: translate(24px, -24px) rotate(120deg); }
@@ -168,6 +173,31 @@ html::-webkit-scrollbar {
 /* Dark mode glow tweaks */
 .dark .glow-ring {
   box-shadow: 0 0 24px rgba(255, 107, 53, 0.6);
+}
+
+.tilt-card {
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+  will-change: transform, box-shadow;
+}
+
+.tilt-card:hover {
+  transform: translateY(-8px) rotateX(5deg) rotateY(-5deg);
+  box-shadow: 0 20px 40px rgba(255, 107, 53, 0.25);
+  border-color: rgba(255, 107, 53, 0.35);
+}
+
+.hover-glow {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.hover-glow:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 28px rgba(255, 107, 53, 0.35);
+}
+
+.text-glow-hover:hover {
+  text-shadow: 0 0 12px rgba(255, 107, 53, 0.85);
+  color: #ffdda0;
 }
 
 /* Respect reduced motion */

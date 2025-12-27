@@ -10,6 +10,9 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { ParticleField } from '@/components/motion/Particles';
 import { DevFpsCounter } from '@/components/motion/DevFpsCounter';
+import { TypewriterText } from '@/components/motion/TypewriterText';
+import { AnimatedCounter } from '@/components/motion/AnimatedCounter';
+import { ComponentAssembly } from '@/components/motion/ComponentAssembly';
 
 const gradient = 'bg-gradient-to-br from-[#FF4500] via-[#FF6B35] to-[#FF4500]';
 
@@ -96,11 +99,18 @@ export function HeroSection() {
               <Zap className="h-4 w-4" /> {t('badge')}
             </motion.div>
             <motion.h1
-              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight shimmer-text"
+              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight"
               variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
             >
-              {t('headline1')}
-              <span className="block text-orange-200">{t('headline2')}</span>
+              <TypewriterText
+                text={t('headline1')}
+                speed={55}
+                highlightWords={['Stop', 'Running']}
+                className="block shimmer-text"
+              />
+              <span className="block text-orange-200 mt-1">
+                <TypewriterText text={t('headline2')} speed={65} startDelay={400} />
+              </span>
             </motion.h1>
             <motion.p
               className="text-lg text-white/80 max-w-2xl"
@@ -138,9 +148,21 @@ export function HeroSection() {
               className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm text-white/80"
               variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
             >
-              <Stat label={t('statPrice.label')} value={`$${counts.price}`} detail={t('statPrice.detail')} />
-              <Stat label={t('statSpeed.label')} value={`<${Math.max(counts.speed, 1)} min`} detail={t('statSpeed.detail')} />
-              <Stat label={t('statQuality.label')} value={`${counts.styles} styles`} detail={t('statQuality.detail')} />
+              <Stat
+                label={t('statPrice.label')}
+                detail={t('statPrice.detail')}
+                value={<AnimatedCounter from={20} to={200} prefix="$" duration={1400} onInView progressBar progressColor="#FF6B35" />}
+              />
+              <Stat
+                label={t('statSpeed.label')}
+                detail={t('statSpeed.detail')}
+                value={<AnimatedCounter from={60} to={30} suffix=" min" duration={1400} onInView />}
+              />
+              <Stat
+                label={t('statQuality.label')}
+                detail={t('statQuality.detail')}
+                value={<AnimatedCounter from={0} to={20} suffix=" styles" duration={1400} onInView />}
+              />
             </motion.div>
           </motion.div>
           <motion.div
@@ -156,37 +178,15 @@ export function HeroSection() {
                 <span>{t('assembly')}</span>
                 <Rocket className="h-5 w-5 text-orange-200" />
               </div>
-              <div className="space-y-3 text-sm">
-                {['modern_gradient', 'creative_colorful', 'tech_neon', 'classic_elegant'].map((item, idx) => (
-                  <motion.div
-                    key={item}
-                    className="flex items-center justify-between rounded-xl bg-white/10 px-4 py-3 border border-white/10"
-                    initial={{ opacity: 0, x: 10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.08 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center text-xs font-bold">
-                        {idx + 1}
-                      </span>
-                      <div>
-                        <div className="font-semibold text-white">{t('component', { style: item })}</div>
-                        <div className="text-white/60 text-xs">{t('running')}</div>
-                      </div>
-                    </div>
-                    <div className="h-2 w-16 rounded-full bg-white/20 overflow-hidden">
-                      <motion.div
-                        className="h-full w-full bg-white/80"
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: 0.7 }}
-                        transition={{ duration: 1.2, repeat: Infinity, repeatType: 'reverse' }}
-                        style={{ originX: 0 }}
-                      />
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+              <ComponentAssembly
+                items={[
+                  { label: 'Hero block' },
+                  { label: 'Navigation' },
+                  { label: 'Features' },
+                  { label: 'CTA strip' },
+                  { label: 'Footer' },
+                ]}
+              />
               <div className="mt-6 text-center text-sm text-white/80">{t('footer')}</div>
             </div>
           </motion.div>
@@ -197,7 +197,7 @@ export function HeroSection() {
   );
 }
 
-function Stat({ label, value, detail }: { label: string; value: string; detail: string }) {
+function Stat({ label, value, detail }: { label: string; value: React.ReactNode; detail: string }) {
   return (
     <div className="rounded-2xl bg-white/10 border border-white/10 px-4 py-3 shadow-sm">
       <div className="text-xs uppercase tracking-wide text-white/70">{label}</div>
