@@ -6,7 +6,15 @@
       "headline2": "I AM RUNNING towards your perfect website.",
       "subheadline": "While others chase expensive solutions, people run to us for PRICE, QUALITY, and SPEED - delivered in under 30 minutes.",
       "cta_primary": "Start Building Free",
-      "cta_secondary": "Watch Demo"
+      "cta_secondary": "Watch Demo",
+      "triple": "Price. Quality. Speed.",
+      "statPrice": { "label": "Price", "detail": "vs $500+ competitors" },
+      "statSpeed": { "label": "Speed", "detail": "Idea to draft" },
+      "statQuality": { "label": "Quality", "detail": "20 styles, 49 tags" },
+      "assembly": "Components assembling...",
+      "component": "Component: {style}",
+      "running": "running into place...",
+      "footer": "Components are running together to form your site."
     },
     "why": {
       "title": "Why People Run To Us",

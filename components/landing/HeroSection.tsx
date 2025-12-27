@@ -2,40 +2,62 @@
 
 import Link from 'next/link';
 import { ArrowRight, PlayCircle, Rocket, Zap } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { ParticleField } from '@/components/motion/Particles';
+import { DevFpsCounter } from '@/components/motion/DevFpsCounter';
 
 const gradient = 'bg-gradient-to-br from-[#FF4500] via-[#FF6B35] to-[#FF4500]';
 
 export function HeroSection() {
   const t = useTranslations('Landing.hero');
   const [counts, setCounts] = useState({ price: 20, speed: 0, styles: 0 });
+  const prefersReducedMotion = useReducedMotion();
+  const heroRef = useRef<HTMLElement>(null);
+  const inView = useInView(heroRef, { once: true, margin: '-20% 0px' });
+  const [particleDensity, setParticleDensity] = useState({ desktop: 90, mobile: 30 });
 
   useEffect(() => {
-    // Simple count-up animation
+    if (!inView || prefersReducedMotion) return;
     let frame: number;
     const start = performance.now();
-    const duration = 1200;
+    const duration = 1400;
     const animate = (now: number) => {
       const p = Math.min(1, (now - start) / duration);
       setCounts({
-        price: Math.round(20 + p * 180), // up to 200
-        speed: Math.round(p * 30),
+        price: Math.round(20 + p * 180), // to 200
+        speed: Math.max(1, Math.round(p * 30)),
         styles: Math.round(p * 20),
       });
       if (p < 1) frame = requestAnimationFrame(animate);
     };
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
+  }, [inView, prefersReducedMotion]);
+
+  useEffect(() => {
+    const updateDensity = () => {
+      const mobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      setParticleDensity({ desktop: 100, mobile: mobile ? 30 : 100 });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Hero] particle density set', mobile ? 'mobile' : 'desktop');
+      }
+    };
+    updateDensity();
+    window.addEventListener('resize', updateDensity);
+    return () => window.removeEventListener('resize', updateDensity);
   }, []);
 
   return (
-    <header className={`relative overflow-hidden ${gradient} text-white`}>
-      <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.3),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.25),transparent_30%)]" />
+    <header ref={heroRef} className={`relative overflow-hidden ${gradient} text-white`}>
+      <ParticleField countDesktop={particleDensity.desktop} countMobile={particleDensity.mobile} className="z-0" />
+      <div className="wave-layer fast" />
+      <div className="wave-layer" />
+      <div className="wave-layer slow" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between relative z-10">
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center text-lg font-bold shadow-lg">
@@ -74,7 +96,7 @@ export function HeroSection() {
               <Zap className="h-4 w-4" /> {t('badge')}
             </motion.div>
             <motion.h1
-              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight"
+              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight shimmer-text"
               variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
             >
               {t('headline1')}
@@ -84,13 +106,17 @@ export function HeroSection() {
               className="text-lg text-white/80 max-w-2xl"
               variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
             >
-              {t('sub')}
+              {t('subheadline')}
             </motion.p>
             <motion.div
               className="flex flex-col sm:flex-row gap-4"
               variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
             >
-              <Button asChild size="lg" className="px-8 py-6 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02]">
+              <Button
+                asChild
+                size="lg"
+                className="px-8 py-6 text-lg shadow-lg hover:shadow-xl hover:scale-[1.02] breathing glow-ring"
+              >
                 <Link href="/editor">
                   {t('ctaPrimary')}
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -166,6 +192,7 @@ export function HeroSection() {
           </motion.div>
         </div>
       </div>
+      {process.env.NODE_ENV !== 'production' && <DevFpsCounter />}
     </header>
   );
 }
