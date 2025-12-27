@@ -186,16 +186,65 @@ export function SaveComponentDialog({
         throw new Error('Style is required. Please select a style.');
       }
 
-      // Ensure we have extracted HTML
-      if (!extractedHtml || extractedHtml.trim().length === 0) {
-        throw new Error('No component data extracted. Please close and try again.');
-      }
-
-      // CRITICAL FIX: Get fresh CSS from editor (don't rely on extractedCss state)
-      // The editor might have been updated since extraction, or CSS might be added via style manager
+      // CRITICAL FIX: Get fresh HTML and CSS from editor at save time
+      // Don't rely on state - get directly from editor to ensure we have the latest content
       const editor = editorRef.current?.getEditor();
       if (!editor) {
         throw new Error('Editor not available. Please try again.');
+      }
+
+      // Get the selected component
+      const selected = editor.getSelected();
+      if (!selected) {
+        throw new Error('No component selected. Please select a component in the editor.');
+      }
+
+      // CRITICAL FIX: Extract HTML using multiple methods to ensure we get complete content
+      let componentHtml = '';
+      
+      try {
+        // Method 1: Use toHTML() - gets the component's HTML structure
+        componentHtml = selected.toHTML();
+        
+        // If toHTML() returns empty or seems incomplete, try alternative methods
+        if (!componentHtml || componentHtml.trim().length === 0) {
+          console.warn('[SaveComponentDialog] toHTML() returned empty, trying alternative methods...');
+          
+          // Method 2: Get innerHTML from the element
+          const element = selected.getEl();
+          if (element) {
+            componentHtml = element.innerHTML || '';
+            
+            // If innerHTML is also empty, try outerHTML
+            if (!componentHtml || componentHtml.trim().length === 0) {
+              componentHtml = element.outerHTML || '';
+            }
+          }
+          
+          // Method 3: Build HTML from component structure
+          if (!componentHtml || componentHtml.trim().length === 0) {
+            const tagName = selected.get('tagName') || 'div';
+            const attributes = selected.getAttributes();
+            const attrsString = Object.entries(attributes)
+              .map(([key, value]) => `${key}="${value}"`)
+              .join(' ');
+            
+            const children = selected.components();
+            const childrenHtml = children.length > 0
+              ? children.map((child: any) => child.toHTML()).join('')
+              : selected.get('content') || '';
+            
+            componentHtml = `<${tagName}${attrsString ? ' ' + attrsString : ''}>${childrenHtml}</${tagName}>`;
+          }
+        }
+      } catch (htmlError) {
+        console.error('[SaveComponentDialog] Error extracting HTML:', htmlError);
+        throw new Error('Failed to extract component HTML. Please try selecting the component again.');
+      }
+
+      // Validate HTML was extracted
+      if (!componentHtml || componentHtml.trim().length === 0) {
+        throw new Error('Component HTML is empty. Please ensure the component has content.');
       }
 
       // Get fresh CSS from editor - this captures ALL CSS rules from the style manager
@@ -203,15 +252,22 @@ export function SaveComponentDialog({
       
       // Clean HTML - remove any inline style tags since CSS is saved separately
       // This ensures clean separation: html = structure, css = styling
-      const cleanHtml = extractedHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').trim();
+      const cleanHtml = componentHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').trim();
+
+      // Final validation
+      if (!cleanHtml || cleanHtml.length === 0) {
+        throw new Error('Component HTML is empty after processing. Please check the component content.');
+      }
 
       // Log for debugging
       console.log('[SaveComponentDialog] Saving component:', {
         name: data.name,
         htmlLength: cleanHtml.length,
+        htmlPreview: cleanHtml.substring(0, 200),
         cssLength: currentCss.length,
         cssPreview: currentCss.substring(0, 100),
         hasCss: currentCss.length > 0,
+        hasHtml: cleanHtml.length > 0,
       });
 
       await saveComponent({

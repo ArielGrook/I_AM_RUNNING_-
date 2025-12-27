@@ -216,13 +216,21 @@ export async function saveComponent(component: {
     // CRITICAL FIX: Ensure CSS is never null (use empty string if undefined)
     const cssContent = component.css || '';
     
+    // CRITICAL FIX: Ensure HTML is valid and not empty
+    const htmlContent = component.html || '';
+    if (!htmlContent || htmlContent.trim().length === 0) {
+      throw new Error('Component HTML is empty. Cannot save component without HTML content.');
+    }
+    
     // Log for debugging
     console.log('[saveComponent] Saving to database:', {
       name: component.name,
-      htmlLength: component.html?.length || 0,
+      htmlLength: htmlContent.length,
+      htmlPreview: htmlContent.substring(0, 200),
       cssLength: cssContent.length,
       cssPreview: cssContent.substring(0, 100),
       hasCss: cssContent.length > 0,
+      hasHtml: htmlContent.length > 0,
     });
 
     // Insert component (allow anonymous saves for demo mode)
@@ -233,7 +241,7 @@ export async function saveComponent(component: {
         category: component.category,
         style: component.style,
         type: component.type,
-        html: component.html,
+        html: htmlContent, // Use validated HTML content
         css: cssContent, // Always save CSS (empty string if none, never null)
         js: component.js || '',
         description: component.description,
@@ -244,6 +252,26 @@ export async function saveComponent(component: {
       })
       .select()
       .single();
+    
+    // Verify the saved data
+    if (data) {
+      console.log('[saveComponent] Component saved successfully:', {
+        id: data.id,
+        name: data.name,
+        savedHtmlLength: data.html?.length || 0,
+        savedCssLength: data.css?.length || 0,
+        htmlMatches: data.html === htmlContent,
+      });
+      
+      // Warn if HTML was truncated
+      if (data.html && data.html.length < htmlContent.length) {
+        console.warn('[saveComponent] WARNING: HTML may have been truncated!', {
+          originalLength: htmlContent.length,
+          savedLength: data.html.length,
+          difference: htmlContent.length - data.html.length,
+        });
+      }
+    }
     
     if (error) {
       console.error('Failed to save component to Supabase:', error);
