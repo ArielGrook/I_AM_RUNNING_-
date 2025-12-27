@@ -154,13 +154,10 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         
         // Critical settings from legacy code for ZIP import compatibility
         allowScripts: 1,
-        dragMode: 'absolute',
+        dragMode: 'translate', // simpler, stable drag mode
         dragAutoScroll: 1,
         dragMultipleComponent: 1,
         showOffsets: 1,
-        showGrid: false,
-        snapGrid: 1,
-        undoManager: { trackSelection: 1, stepsBeforeSave: 1 }, // keep undo but minimal
         resizer: {
           tl: 1,
           tr: 1,
@@ -300,6 +297,12 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
           // Ensure resizable + selectable
           component.set({
+            draggable: true,
+            droppable: true,
+            selectable: true,
+            hoverable: true,
+            removable: true,
+            copyable: true,
             resizable: {
               tl: 0, tc: 0, tr: 0,
               cl: 0, cr: 1,
@@ -319,65 +322,21 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       // Set default device to Desktop for consistent preview
       editor.setDevice('Desktop');
 
-      // Drag smoothness: ghost + highlight + pointer optimizations
-      let dragGhost: HTMLDivElement | null = null;
-
-      editor.on('block:drag:start', (block: any) => {
-        if (dragGhost) {
-          dragGhost.remove();
-        }
-        dragGhost = document.createElement('div');
-        dragGhost.className = 'drag-ghost';
-        dragGhost.style.cssText = `
-          position: fixed;
-          background: rgba(255, 107, 53, 0.82);
-          border: 2px dashed #FF6B35;
-          border-radius: 6px;
-          pointer-events: none;
-          z-index: 10000;
-          padding: 10px 14px;
-          color: #fff;
-          font-weight: 700;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        `;
-        dragGhost.textContent = block?.getLabel?.() || 'Component';
-        document.body.appendChild(dragGhost);
-      });
-
-      editor.on('block:drag', (block: any, ev: any) => {
-        if (dragGhost && ev?.clientX !== undefined && ev?.clientY !== undefined) {
-          dragGhost.style.transform = `translate(${ev.clientX + 12}px, ${ev.clientY + 12}px)`;
-        }
-      });
-
-      editor.on('block:drag:stop', () => {
-        if (dragGhost) {
-          dragGhost.remove();
-          dragGhost = null;
-        }
-      });
-
-      // Drop zone highlighting
-      editor.on('canvas:dragenter', (e: any) => {
-        const doc = editor.Canvas.getDocument();
-        if (doc?.body) {
-          doc.body.style.outline = '2px solid #FF6B35';
-          doc.body.style.pointerEvents = 'none';
-        }
-      });
-
-      editor.on('canvas:dragleave', (e: any) => {
-        const doc = editor.Canvas.getDocument();
-        if (doc?.body) {
-          doc.body.style.outline = '';
-        }
-      });
-
-      editor.on('canvas:drop', () => {
-        const doc = editor.Canvas.getDocument();
-        if (doc?.body) {
-          doc.body.style.outline = '';
-          doc.body.style.pointerEvents = 'auto';
+      // Ensure existing components are draggable/selectable after load
+      editor.on('load', () => {
+        try {
+          editor.getComponents().each((cmp: any) => {
+            cmp.set({
+              draggable: true,
+              droppable: true,
+              selectable: true,
+              hoverable: true,
+              removable: true,
+              copyable: true,
+            });
+          });
+        } catch (e) {
+          console.warn('Failed to set draggable defaults on load', e);
         }
       });
 
@@ -414,19 +373,6 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
       editor.setCustomRte?.(null);
       editor.getConfig().resizerOpts = resizerOpts;
-
-      // Throttle heavy refresh during drag
-      let dragTimeout: any;
-      editor.on('component:drag', () => {
-        clearTimeout(dragTimeout);
-        dragTimeout = setTimeout(() => {
-          try {
-            editor.refresh();
-          } catch (e) {
-            /* ignore */
-          }
-        }, 16);
-      });
 
       // Save editor reference (matching legacy pattern)
       grapesEditorRef.current = editor;
