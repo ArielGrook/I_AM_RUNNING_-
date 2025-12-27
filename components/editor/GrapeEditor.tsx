@@ -74,6 +74,38 @@ function sanitizeHtml(html: string): string {
   return sanitized;
 }
 
+// Apply basic responsive defaults to any component tree
+function addResponsiveClasses(component: any) {
+  if (!component || typeof component.addClass !== 'function') return;
+
+  const ensureClass = (cls: string) => {
+    const classes = component.getClasses?.() || [];
+    if (!classes.includes(cls)) {
+      component.addClass(cls);
+    }
+  };
+
+  // Base responsive width
+  ensureClass('w-full');
+  ensureClass('max-w-full');
+
+  const tag = component.get?.('tagName');
+  if (tag === 'img' || tag === 'video' || tag === 'iframe' || tag === 'canvas') {
+    component.setStyle?.({
+      width: '100%',
+      maxWidth: '100%',
+      height: 'auto',
+      display: 'block',
+    });
+  }
+
+  // Recurse into children
+  const children = component.components?.();
+  if (children && typeof children.forEach === 'function') {
+    children.forEach((child: any) => addResponsiveClasses(child));
+  }
+}
+
 export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
   ({ onUpdate, initialHtml = '', initialCss = '', isRTL = false, components }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -125,6 +157,27 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         dragMode: 'absolute',
         dragAutoScroll: 1,
         dragMultipleComponent: 1,
+        showOffsets: 1,
+        resizer: {
+          tl: 1,
+          tr: 1,
+          bl: 1,
+          br: 1,
+          tc: 1,
+          bc: 1,
+          cl: 1,
+          cr: 1,
+          ratioDefault: true,
+          preserveAspectRatio: true,
+        },
+
+        deviceManager: {
+          devices: [
+            { name: 'Desktop', width: '1200px', widthMedia: '' },
+            { name: 'Tablet', width: '768px', widthMedia: '991px' },
+            { name: 'Mobile', width: '320px', widthMedia: '767px' },
+          ],
+        },
         
         // Canvas configuration - CRITICAL: Load Tailwind CSS so components render properly
         canvas: {
@@ -142,6 +195,15 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
             }
             * {
               box-sizing: border-box;
+            }
+            img, video, iframe, canvas { max-width: 100%; height: auto; display: block; }
+            section, div, header, footer { max-width: 100%; }
+            @media (max-width: 1199px) {
+              .gjs-row, .row { flex-wrap: wrap; }
+            }
+            @media (max-width: 767px) {
+              .gjs-row > * { width: 100% !important; }
+              section, div { padding-left: 12px; padding-right: 12px; }
             }
           `
         },
@@ -225,11 +287,17 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
               console.log('[GrapeEditor] Injected CSS for component on add:', componentId);
             }
           }
+
+          // Apply responsive defaults to the newly added component
+          addResponsiveClasses(component);
         } catch (cssError) {
           console.warn('[GrapeEditor] Failed to inject CSS on component add:', cssError);
         }
       });
       
+      // Set default device to Desktop for consistent preview
+      editor.setDevice('Desktop');
+
       // Save editor reference (matching legacy pattern)
       grapesEditorRef.current = editor;
 
@@ -282,11 +350,15 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
             if (initialHtml) {
               const sanitizedHtml = sanitizeHtml(initialHtml);
               editor.setComponents(sanitizedHtml);
+              addResponsiveClasses(editor.getWrapper());
             }
           } catch (retryError) {
             console.error('Failed even after sanitization:', retryError);
           }
         }
+      } else {
+        // Ensure base wrapper is responsive even if empty to start
+        addResponsiveClasses(editor.getWrapper());
       }
 
       // Listen for changes

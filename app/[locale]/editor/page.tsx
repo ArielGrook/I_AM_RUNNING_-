@@ -40,7 +40,6 @@ import {
   incrementDemoProjectCount,
 } from '@/lib/utils/demo-mode';
 import { getUserPackage, hasFeatureAccess } from '@/lib/utils/user-package';
-import { shouldApplyWatermark } from '@/lib/utils/watermark';
 import dynamic from 'next/dynamic';
 import JSZip from 'jszip';
 
@@ -508,39 +507,36 @@ export default function EditorPage() {
   
   // Handle preview generation
   const handlePreview = async () => {
-    if (!currentProject) return;
-    
     try {
-      // Check if watermark should be applied
-      const applyWatermark = await shouldApplyWatermark();
-      setPreviewWatermarked(applyWatermark);
-      
-      // Generate preview via API
-      const response = await fetch('/api/preview', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          project: currentProject,
-          pageIndex: 0,
-          locale,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate preview');
-      }
-      
-      const data = await response.json();
-      if (data.html) {
-        // Create blob URL from HTML on client side
-        const blob = new Blob([data.html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl(url);
-        setPreviewWatermarked(data.watermarked || false);
-        setShowPreview(true);
-      }
+      const editor = grapeEditorRef.current?.getEditor();
+      if (!editor) throw new Error('Editor not ready');
+
+      const html = editor.getHtml();
+      const css = editor.getCss();
+
+      const baseResponsiveCss = `
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow-x: hidden; }
+        img, video, iframe, canvas { max-width: 100%; height: auto; display: block; }
+        section, div, header, footer { max-width: 100%; }
+        @media (max-width: 1199px) { .gjs-row, .row { flex-wrap: wrap; } }
+        @media (max-width: 767px) { .gjs-row > *, .row > * { width: 100% !important; } }
+      `;
+
+      const doc = `<!doctype html>
+      <html lang=\"${locale}\">
+      <head>
+        <meta charset=\"UTF-8\" />
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
+        <style>${baseResponsiveCss}${css}</style>
+      </head>
+      <body>${html}</body>
+      </html>`;
+
+      const blob = new Blob([doc], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setPreviewWatermarked(false);
+      setShowPreview(true);
     } catch (error) {
       console.error('Preview generation failed:', error);
       alert('Failed to generate preview. Please try again.');
