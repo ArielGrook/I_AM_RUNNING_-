@@ -64,8 +64,71 @@
     }
   }
 }
-
 {
+  "Landing": {
+    "hero": {
+      "badge": "Stop chasing. Start running.",
+      "headline1": "Stop chasing expensive solutions.",
+      "headline2": "I AM RUNNING towards your perfect website.",
+      "sub": "People are constantly running after PRICE, QUALITY, and SPEED - they run to us. Under 30 minutes, $20-200, professional results.",
+      "ctaPrimary": "Start Building Free",
+      "ctaSecondary": "Watch Demo",
+      "ctaHeader": "Launch Editor",
+      "statPrice": { "label": "Price", "detail": "vs $500+ competitors" },
+      "statSpeed": { "label": "Speed", "detail": "Idea to draft" },
+      "statQuality": { "label": "Quality", "detail": "20 styles, 49 tags" },
+      "triple": "Price. Quality. Speed.",
+      "assembly": "Components assembling...",
+      "component": "Component: {style}",
+      "running": "running into place...",
+      "footer": "Components are running together to form your site."
+    },
+    "why": {
+      "eyebrow": "Why people run to us",
+      "headline": "Price. Quality. Speed. No compromises.",
+      "phrase": "People are constantly running after better solutions — they run here because we deliver all three without the usual trade-offs.",
+      "price": { "title": "Price Advantage", "desc": "$20–200 vs $500+ agencies. Keep your budget running lean." },
+      "speed": { "title": "Speed Advantage", "desc": "Under 30 minutes from idea to first draft. Sprint past the competition." },
+      "quality": { "title": "Quality Advantage", "desc": "AI-orchestrated components curated for pro results. No shortcuts." }
+    },
+    "evolution": {
+      "eyebrow": "The evolution",
+      "headline": "Running forward without stopping",
+      "phrase": "A sprint from inspiration to execution. Every milestone keeps us running faster toward effortless web development.",
+      "step": "Step {index}",
+      "genesis": { "title": "Genesis", "detail": "Inspired by Bolt.ai to democratize site building." },
+      "lego": { "title": "Lego System", "detail": "20 styles, 49 tags to keep components consistent." },
+      "ai": { "title": "AI Orchestration", "detail": "ChatGPT + Claude planning for component matching." },
+      "breakthrough": { "title": "Breakthrough", "detail": "Resolved JSON serialization & drag-drop pipeline." }
+    },
+    "how": {
+      "eyebrow": "How it works",
+      "headline": "Run through your build in 3 steps",
+      "describe": { "title": "Describe", "detail": "Tell us what you need. Plain language, no jargon." },
+      "generate": { "title": "Generate", "detail": "AI assembles components that fit your style and goal." },
+      "customize": { "title": "Customize", "detail": "Drag, drop, and tweak. Ship in under 30 minutes." }
+    },
+    "showcase": {
+      "eyebrow": "Component showcase",
+      "headline": "A catalog that keeps running",
+      "sub": "20 style variants and 49 curated tags keep your builds consistent and discoverable. Components are ready to sprint onto the canvas without breaking the pace.",
+      "styles": "{count} styles",
+      "tags": "{count} tags",
+      "tagline": "Styled to run with any layout.",
+      "tagsSub": "Smart filtering and AI matching ready."
+    },
+    "pricing": {
+      "eyebrow": "Pricing that makes sense",
+      "headline": "Run faster, spend less",
+      "sub": "Keep budgets lean without sacrificing quality. Our triple advantage wins the race.",
+      "col": { "criteria": "Criteria", "ours": "I AM RUNNING", "theirs": "Typical agency" },
+      "time": { "label": "Delivery time", "ours": "< 30 minutes (draft)", "theirs": "2-4 weeks" },
+      "cost": { "label": "Cost", "ours": "$20–200", "theirs": "$500+" },
+      "ai": { "label": "AI orchestration", "ours": "Built-in", "theirs": "Rare" },
+      "system": { "label": "Component system", "ours": "20 styles / 49 tags", "theirs": "Often ad-hoc" },
+      "export": { "label": "Export options", "ours": "Yes (planned)", "theirs": "Varies" }
+    }
+  },
   "HomePage": {
     "title": "I AM RUNNING",
     "subtitle": "AI-Native Site Builder",
