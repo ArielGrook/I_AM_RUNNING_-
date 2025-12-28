@@ -469,6 +469,57 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       // Save editor reference (matching legacy pattern)
       grapesEditorRef.current = editor;
 
+      // CRITICAL: Enable dropping HTML from external sources (sidebar components)
+      // Listen for external drop events on the canvas
+      const canvasEl = editor.Canvas.getElement();
+      if (canvasEl) {
+        canvasEl.addEventListener('dragover', (e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = 'copy';
+          }
+        });
+
+        canvasEl.addEventListener('drop', (e: DragEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const htmlData = e.dataTransfer?.getData('text/html') || e.dataTransfer?.getData('text/plain');
+          
+          if (htmlData && htmlData.trim()) {
+            console.log('[GrapeEditor] External drop detected, HTML length:', htmlData.length);
+            
+            // Add the component to the canvas
+            try {
+              const wrapper = editor.getWrapper();
+              if (wrapper) {
+                // Extract style tag if present
+                const styleMatch = htmlData.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+                let componentHtml = htmlData;
+                
+                if (styleMatch) {
+                  // Inject CSS separately
+                  const cssContent = styleMatch[1];
+                  componentHtml = htmlData.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+                  
+                  const currentCss = editor.getCss() || '';
+                  if (!currentCss.includes(cssContent.substring(0, 50))) {
+                    editor.setStyle(currentCss + '\n' + cssContent);
+                  }
+                }
+                
+                // Append component HTML
+                wrapper.append(componentHtml);
+                console.log('[GrapeEditor] ✅ Component added from external drop');
+              }
+            } catch (dropError) {
+              console.error('[GrapeEditor] Failed to add component from drop:', dropError);
+            }
+          }
+        });
+      }
+
       // Use canvas:frame:loaded event to handle canvas styling and mark as ready
       let readySet = false;
       
@@ -752,7 +803,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           justify-content: center;
           align-items: flex-start;
           min-height: 100%;
-          padding-top: 60px; /* Account for undo/redo toolbar */
+          padding-top: 20px;
         }
         
         .gjs-frame {
@@ -781,37 +832,46 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           width: 10px !important;
           height: 10px !important;
         }
+        
+        /* Ensure editor container accepts drops */
+        .gjs-editor {
+          pointer-events: auto;
+        }
+        
+        /* Style the drop placeholder */
+        .gjs-placeholder {
+          border: 2px dashed #ff6b35 !important;
+          background-color: rgba(255, 107, 53, 0.08) !important;
+          min-height: 50px;
+        }
       `}</style>
       
-      {/* Undo/Redo Toolbar */}
+      {/* Undo/Redo Toolbar - Top Left, Icons Only */}
       {isReady && (
-        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20 flex items-center gap-1 bg-white rounded-lg shadow-md border border-gray-200 px-2 py-1">
+        <div className="absolute top-2 left-2 z-20 flex items-center gap-0.5 bg-white/90 backdrop-blur-sm rounded-md shadow-sm border border-gray-200 p-0.5">
           <button
             onClick={handleUndo}
             disabled={!canUndo}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+            className={`p-1.5 rounded transition-colors ${
               canUndo 
-                ? 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' 
+                ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' 
                 : 'text-gray-300 cursor-not-allowed'
             }`}
             title="Undo (Ctrl+Z)"
           >
             <Undo2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Undo</span>
           </button>
-          <div className="w-px h-6 bg-gray-200" />
           <button
             onClick={handleRedo}
             disabled={!canRedo}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+            className={`p-1.5 rounded transition-colors ${
               canRedo 
-                ? 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' 
+                ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' 
                 : 'text-gray-300 cursor-not-allowed'
             }`}
             title="Redo (Ctrl+Y)"
           >
             <Redo2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Redo</span>
           </button>
         </div>
       )}

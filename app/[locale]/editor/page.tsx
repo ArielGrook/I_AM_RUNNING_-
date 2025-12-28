@@ -14,7 +14,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2 } from 'lucide-react';
 import Link from 'next/link';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GrapeEditor, type GrapeEditorRef } from '@/components/editor/GrapeEditor';
@@ -28,6 +28,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ParseProgress, ZipParseError } from '@/lib/parser/types';
 import { SaveComponentDialog } from '@/components/editor/SaveComponentDialog';
 import { SearchInput } from '@/components/ui/search-input';
+import { StyleManager } from '@/components/editor/StyleManager';
 import { Category } from '@/lib/types/project';
 import { supabase } from '@/lib/supabase/client';
 import { JsonContract } from '@/lib/types/chat';
@@ -949,16 +950,17 @@ export default function EditorPage() {
               {isRTL ? (rightPanelOpen ? '←' : '→') : (rightPanelOpen ? '→' : '←')}
             </button>
             
-            {/* Right Panel - Properties (Grape.js will handle this) */}
+            {/* Right Panel - Style Manager */}
             <div className={`transition-all duration-300 ${rightPanelOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
-              <div className="h-full bg-white border-l">
+              <div className="h-full bg-white border-l flex flex-col">
                 <div className="p-4 border-b">
-                  <h3 className="font-semibold text-lg">{t('properties')}</h3>
+                  <h3 className="font-semibold text-lg text-gray-900">{t('properties')}</h3>
                 </div>
-                <div className="p-4">
-                  <p className="text-sm text-gray-500">
-                    {t('selectElement')}
-                  </p>
+                <div className="flex-1 overflow-hidden">
+                  <StyleManager 
+                    editor={grapeEditorRef.current?.getEditor()} 
+                    className="h-full"
+                  />
                 </div>
               </div>
             </div>

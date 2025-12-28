@@ -276,9 +276,15 @@ html::-webkit-scrollbar {
   border-color: #3b82f6;
 }
 
-/* ===== EDITOR UI FIXES ===== */
+/* ===== EDITOR UI FIXES - TEXT CONTRAST ===== */
 
-/* Fix GrapesJS top panel text visibility - make text dark on white background */
+/* 
+ * CONTRAST RULES:
+ * - Light backgrounds (#fff, #f5f5f5, etc.) → dark text (#1f2937, #111827)
+ * - Dark backgrounds (#000, #333, etc.) → white text (#ffffff)
+ */
+
+/* GrapesJS panels - white background, dark text */
 .gjs-pn-panel,
 .gjs-pn-panels {
   background-color: #ffffff !important;
@@ -337,12 +343,267 @@ html::-webkit-scrollbar {
   color: #1f2937 !important;
 }
 
-/* Fix style manager labels and inputs */
+/* Fix style manager labels and inputs - LIGHT BACKGROUND */
+.gjs-sm-sector,
+.gjs-sm-properties,
+.gjs-trt-traits {
+  background-color: #ffffff !important;
+}
+
 .gjs-sm-sector-title,
 .gjs-sm-label,
 .gjs-sm-properties .gjs-sm-property label,
-.gjs-trt-trait .gjs-label {
+.gjs-trt-trait .gjs-label,
+.gjs-sm-title,
+.gjs-sm-property__label,
+.gjs-sm-sector .gjs-sm-sector-title {
+  color: #1f2937 !important;
+  font-weight: 500 !important;
+}
+
+/* Style manager inputs - white background, dark text */
+.gjs-sm-input,
+.gjs-sm-input input,
+.gjs-sm-field input,
+.gjs-sm-field select,
+.gjs-sm-unit,
+.gjs-clm-tags .gjs-clm-tag {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+}
+
+/* Block manager - light background */
+.gjs-block-category,
+.gjs-blocks-c {
+  background-color: #f9fafb !important;
+}
+
+.gjs-block-category .gjs-title,
+.gjs-block-label {
+  color: #1f2937 !important;
+}
+
+.gjs-block {
+  background-color: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
   color: #374151 !important;
+}
+
+.gjs-block:hover {
+  border-color: #ff6b35 !important;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.15) !important;
+}
+
+/* Traits panel - white background, dark text */
+.gjs-trt-trait {
+  background-color: #ffffff !important;
+}
+
+.gjs-trt-trait input,
+.gjs-trt-trait select {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+}
+
+/* Component toolbar - white background */
+.gjs-toolbar {
+  background-color: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.gjs-toolbar-item {
+  color: #374151 !important;
+}
+
+.gjs-toolbar-item:hover {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+/* Selection badge */
+.gjs-badge {
+  background-color: #ff6b35 !important;
+  color: #ffffff !important;
+}
+
+/* Modal dialogs - white background, dark text */
+.gjs-mdl-dialog {
+  background-color: #ffffff !important;
+}
+
+.gjs-mdl-title {
+  color: #111827 !important;
+}
+
+.gjs-mdl-content {
+  color: #374151 !important;
+}
+
+/* Rich text editor toolbar */
+.gjs-rte-toolbar {
+  background-color: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.gjs-rte-action {
+  color: #374151 !important;
+}
+
+.gjs-rte-action:hover {
+  background-color: #f3f4f6 !important;
+}
+
+/* Commands bar */
+.gjs-com-badge {
+  background-color: #ff6b35 !important;
+  color: #ffffff !important;
+}
+
+/* Selector manager */
+.gjs-clm-sels-info,
+.gjs-clm-sel {
+  color: #374151 !important;
+}
+
+.gjs-clm-sel {
+  background-color: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+/* Color picker fix */
+.gjs-field-color-picker {
+  border: 1px solid #d1d5db !important;
+}
+
+/* DARK THEME OVERRIDES - for dark mode elements */
+.dark-panel,
+[data-theme="dark"] {
+  background-color: #1f2937 !important;
+}
+
+.dark-panel *,
+[data-theme="dark"] * {
+  color: #f9fafb !important;
+}
+
+/* Drag and drop indicator */
+.gjs-placeholder {
+  border: 2px dashed #ff6b35 !important;
+  background-color: rgba(255, 107, 53, 0.1) !important;
+}
+
+/* Drag ghost styling */
+.gjs-drag-helper {
+  background-color: #ffffff !important;
+  border: 2px solid #ff6b35 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  opacity: 0.9 !important;
+}
+
+/* Sorter drop indicator */
+.gjs-sorter-valid {
+  border: 2px solid #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+/* Enable drag from external sources */
+.gjs-cv-canvas {
+  pointer-events: auto !important;
+}
+
+/* ===== STYLE MANAGER MODERN UI ===== */
+
+/* Slider styling */
+.style-manager [role="slider"] {
+  background-color: #ff6b35 !important;
+}
+
+.style-manager [data-radix-collection-item] {
+  background-color: #ff6b35 !important;
+}
+
+/* Slider track */
+.style-manager .relative.flex.w-full {
+  height: 6px !important;
+  background-color: #e5e7eb !important;
+  border-radius: 3px !important;
+}
+
+/* Slider range (filled part) */
+.style-manager .absolute.h-full {
+  background-color: #ff6b35 !important;
+  border-radius: 3px !important;
+}
+
+/* Slider thumb */
+.style-manager [role="slider"] {
+  width: 16px !important;
+  height: 16px !important;
+  background-color: #ff6b35 !important;
+  border: 2px solid white !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+  cursor: grab !important;
+}
+
+.style-manager [role="slider"]:hover {
+  transform: scale(1.1) !important;
+}
+
+.style-manager [role="slider"]:active {
+  cursor: grabbing !important;
+}
+
+/* Color input styling */
+.style-manager input[type="color"] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+}
+
+.style-manager input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 2px !important;
+}
+
+.style-manager input[type="color"]::-webkit-color-swatch {
+  border: none !important;
+  border-radius: 4px !important;
+}
+
+/* Section headers */
+.style-manager button:hover {
+  background-color: #f9fafb !important;
+}
+
+/* Input fields */
+.style-manager input[type="text"] {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+}
+
+.style-manager input[type="text"]:focus {
+  border-color: #ff6b35 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.15) !important;
+}
+
+/* Preset color buttons */
+.style-manager button[title]:not(:empty) {
+  transition: transform 0.15s ease !important;
+}
+
+/* Labels */
+.style-manager label {
+  color: #4b5563 !important;
+  font-weight: 500 !important;
 }
 
 /* ===== CHAT PANEL STYLING ===== */
