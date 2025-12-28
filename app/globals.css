@@ -276,6 +276,134 @@ html::-webkit-scrollbar {
   border-color: #3b82f6;
 }
 
+/* ===== EDITOR UI FIXES ===== */
+
+/* Fix GrapesJS top panel text visibility - make text dark on white background */
+.gjs-pn-panel,
+.gjs-pn-panels {
+  background-color: #ffffff !important;
+}
+
+.gjs-pn-btn,
+.gjs-pn-panel *,
+.gjs-pn-views-container *,
+.gjs-pn-commands,
+.gjs-pn-devices-c {
+  color: #1f2937 !important;
+}
+
+/* Fix device manager buttons and icons */
+.gjs-pn-devices-c .gjs-pn-btn {
+  background-color: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+}
+
+.gjs-pn-devices-c .gjs-pn-btn:hover {
+  background-color: #e5e7eb !important;
+}
+
+.gjs-pn-devices-c .gjs-pn-btn.gjs-pn-active {
+  background-color: #ff6b35 !important;
+  color: white !important;
+  border-color: #ff6b35 !important;
+}
+
+/* Fix canvas size/format icons visibility */
+.gjs-field-select option,
+.gjs-field input,
+.gjs-field select {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+}
+
+/* Hide duplicate canvas dropdown from top-left */
+.gjs-pn-panel.gjs-pn-devices-c,
+.gjs-pn-devices-buttons,
+.gjs-cv-canvas .gjs-pn-panel:first-child {
+  display: none !important;
+}
+
+/* Ensure all panel buttons have visible icons */
+.gjs-pn-btn svg,
+.gjs-pn-btn i {
+  color: inherit !important;
+  fill: currentColor !important;
+}
+
+/* Fix layer manager text visibility */
+.gjs-layer-name,
+.gjs-layer-title {
+  color: #1f2937 !important;
+}
+
+/* Fix style manager labels and inputs */
+.gjs-sm-sector-title,
+.gjs-sm-label,
+.gjs-sm-properties .gjs-sm-property label,
+.gjs-trt-trait .gjs-label {
+  color: #374151 !important;
+}
+
+/* ===== CHAT PANEL STYLING ===== */
+
+/* Chat panel - white background, black text, orange accents */
+.chat-panel {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+.chat-panel-header {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  color: #111827 !important;
+}
+
+.chat-panel-header h2,
+.chat-panel-header svg {
+  color: #111827 !important;
+}
+
+.chat-message-user {
+  background-color: #ff6b35 !important;
+  color: #ffffff !important;
+}
+
+.chat-message-assistant {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.chat-input-area {
+  border-top: 1px solid #e5e7eb !important;
+  background-color: #ffffff !important;
+}
+
+.chat-input-field {
+  border: 1px solid #d1d5db !important;
+  color: #111827 !important;
+  background-color: #ffffff !important;
+}
+
+.chat-input-field::placeholder {
+  color: #9ca3af !important;
+}
+
+.chat-send-button {
+  background-color: #ff6b35 !important;
+  color: #ffffff !important;
+}
+
+.chat-send-button:hover {
+  background-color: #e55a28 !important;
+}
+
+.chat-send-button:disabled {
+  background-color: #fed7aa !important;
+  color: #fdba74 !important;
+}
+
 
 
 

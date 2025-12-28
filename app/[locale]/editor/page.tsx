@@ -648,16 +648,16 @@ export default function EditorPage() {
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Header */}
-        <header className="bg-white border-b px-4 py-3 flex items-center justify-between">
+        <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild className="text-gray-700 hover:text-gray-900 hover:bg-gray-100">
               <Link href="/">
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                {t('dashboard')}
+                <ArrowLeft className="w-4 h-4 mr-1 text-gray-700" />
+                <span className="text-gray-700">{t('dashboard')}</span>
               </Link>
             </Button>
             <div className="h-6 w-px bg-gray-300" />
-            <h1 className="font-semibold text-lg">
+            <h1 className="font-semibold text-lg text-gray-900">
               {currentProject?.name || t('newProject')}
             </h1>
             {getSaveStatusDisplay()}
@@ -689,7 +689,7 @@ export default function EditorPage() {
                         setCurrentDevice('desktop');
                       }
                     }}
-                    className="h-8 px-3"
+                    className={`h-8 px-3 ${currentDevice === 'desktop' ? 'bg-orange-500 text-white hover:bg-orange-600' : 'text-gray-700 hover:bg-gray-200'}`}
                     title="Desktop View"
                   >
                     <Monitor className="w-4 h-4" />
@@ -704,7 +704,7 @@ export default function EditorPage() {
                         setCurrentDevice('tablet');
                       }
                     }}
-                    className="h-8 px-3"
+                    className={`h-8 px-3 ${currentDevice === 'tablet' ? 'bg-orange-500 text-white hover:bg-orange-600' : 'text-gray-700 hover:bg-gray-200'}`}
                     title="Tablet View"
                   >
                     <Tablet className="w-4 h-4" />
@@ -719,7 +719,7 @@ export default function EditorPage() {
                         setCurrentDevice('mobile');
                       }
                     }}
-                    className="h-8 px-3"
+                    className={`h-8 px-3 ${currentDevice === 'mobile' ? 'bg-orange-500 text-white hover:bg-orange-600' : 'text-gray-700 hover:bg-gray-200'}`}
                     title="Mobile View"
                   >
                     <Smartphone className="w-4 h-4" />
@@ -734,6 +734,7 @@ export default function EditorPage() {
                 size="sm" 
                 variant="default"
                 onClick={() => setShowPackageSelector(true)}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
               >
                 {t('upgrade')}
               </Button>
@@ -742,6 +743,7 @@ export default function EditorPage() {
               size="sm" 
               variant="outline"
               onClick={() => setChatOpen(!chatOpen)}
+              className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
             >
               <MessageSquare className="w-4 h-4 mr-2" />
               {t('chat')}
@@ -751,6 +753,7 @@ export default function EditorPage() {
                 size="sm" 
                 variant="outline"
                 onClick={handlePreview}
+                className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               >
                 <Eye className="w-4 h-4 mr-2" />
                 {t('preview') || 'Preview'}
@@ -760,6 +763,7 @@ export default function EditorPage() {
               size="sm" 
               variant="outline"
               onClick={handleImport}
+              className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
             >
               <Upload className="w-4 h-4 mr-2" />
               {t('import')}
@@ -770,6 +774,7 @@ export default function EditorPage() {
               onClick={handleExport}
               disabled={!currentProject || !canSave}
               title={!canSave ? 'Demo mode limit reached' : ''}
+              className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 disabled:text-gray-400 disabled:bg-gray-50"
             >
               <Download className="w-4 h-4 mr-2" />
               {t('export')}
@@ -788,6 +793,7 @@ export default function EditorPage() {
                     }
                   }}
                   title="Clear Canvas"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                 >
                   🗑️ Clear
                 </Button>
@@ -795,6 +801,7 @@ export default function EditorPage() {
                   size="sm"
                   variant="outline"
                   onClick={handleSaveComponent}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {t('saveComponent')}
@@ -804,6 +811,7 @@ export default function EditorPage() {
             <Button 
               size="sm"
               onClick={() => setShowProjectForm(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
               {currentProject ? t('rename') : t('newProject')}

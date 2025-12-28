@@ -183,30 +183,30 @@ export function ChatPanel({
   return (
     <div
       className={cn(
-        'fixed right-0 top-0 h-full w-96 bg-white border-l shadow-lg flex flex-col z-50',
+        'chat-panel fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-lg flex flex-col z-50',
         isRTL && 'right-auto left-0 border-l-0 border-r',
         className
       )}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="chat-panel-header flex items-center justify-between p-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-2">
-          <MessageSquare className="w-5 h-5" />
-          <h2 className="font-semibold">{t('title')}</h2>
+          <MessageSquare className="w-5 h-5 text-gray-900" />
+          <h2 className="font-semibold text-gray-900">{t('title')}</h2>
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose}>
+        <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-600 hover:text-gray-900">
           <X className="w-4 h-4" />
         </Button>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 bg-white">
         <div className="space-y-4">
           {messages.length === 0 && (
             <div className="text-center text-gray-500 py-8">
-              <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>{t('empty')}</p>
+              <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50 text-gray-400" />
+              <p className="text-gray-500">{t('empty')}</p>
             </div>
           )}
           
@@ -222,8 +222,8 @@ export function ChatPanel({
                 className={cn(
                   'max-w-[80%] rounded-lg p-3',
                   message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-gray-100 text-gray-900'
+                    ? 'chat-message-user bg-orange-500 text-white'
+                    : 'chat-message-assistant bg-gray-50 text-gray-900 border border-gray-200'
                 )}
               >
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -231,7 +231,7 @@ export function ChatPanel({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="mt-2"
+                    className="mt-2 border-orange-500 text-orange-500 hover:bg-orange-50"
                     onClick={() => onApplyContract(message.contract!)}
                   >
                     {t('applyChanges')}
@@ -243,10 +243,10 @@ export function ChatPanel({
           
           {isStreaming && currentStream && (
             <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-lg p-3 bg-gray-100">
-                <p className="text-sm whitespace-pre-wrap">
+              <div className="max-w-[80%] rounded-lg p-3 bg-gray-50 border border-gray-200">
+                <p className="text-sm whitespace-pre-wrap text-gray-900">
                   {currentStream}
-                  <span className="animate-pulse">▋</span>
+                  <span className="animate-pulse text-orange-500">▋</span>
                 </p>
               </div>
             </div>
@@ -257,7 +257,7 @@ export function ChatPanel({
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t">
+      <div className="chat-input-area p-4 border-t border-gray-200 bg-white">
         <div className="flex gap-2">
           <Input
             value={input}
@@ -265,21 +265,25 @@ export function ChatPanel({
             onKeyPress={handleKeyPress}
             placeholder={t('placeholder')}
             disabled={isStreaming}
-            className="flex-1"
+            className="chat-input-field flex-1 border-gray-300 text-gray-900 bg-white placeholder:text-gray-400"
           />
           {isStreaming ? (
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} className="border-gray-300 text-gray-600 hover:bg-gray-50">
               <X className="w-4 h-4" />
             </Button>
           ) : (
-            <Button onClick={handleSend} disabled={!input.trim()}>
+            <Button 
+              onClick={handleSend} 
+              disabled={!input.trim()}
+              className="chat-send-button bg-orange-500 hover:bg-orange-600 text-white disabled:bg-orange-200 disabled:text-orange-300"
+            >
               <Send className="w-4 h-4" />
             </Button>
           )}
         </div>
         {isStreaming && (
           <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-            <Loader2 className="w-3 h-3 animate-spin" />
+            <Loader2 className="w-3 h-3 animate-spin text-orange-500" />
             <span>{t('streaming')}</span>
           </div>
         )}

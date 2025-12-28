@@ -18,12 +18,15 @@ import { useProjectStore } from '@/lib/store/project-store';
 import { getAllCatalogBlockDefinitions, getSupabaseBlockDefinitions, type BlockDefinition } from '@/lib/grapesjs/catalog-blocks';
 import { type SupabaseComponent } from '@/lib/components/supabase-catalog';
 import { convertCssToInlineStyles } from '@/lib/utils/css-to-inline';
+import { Undo2, Redo2 } from 'lucide-react';
 
 export interface GrapeEditorRef {
   clear: () => void;
   getEditor: () => grapesjs.Editor | null;
   setComponents: (html: string) => void;
   setStyle: (css: string) => void;
+  undo: () => void;
+  redo: () => void;
 }
 
 interface GrapeEditorProps {
@@ -111,8 +114,48 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
   const editorRef = useRef<HTMLDivElement>(null);
   const grapesEditorRef = useRef<grapesjs.Editor | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const lastSyncedProjectRef = useRef<string | null>(null);
   const { currentProject, updateProject } = useProjectStore();
+
+  // Undo/Redo handlers
+  const handleUndo = useCallback(() => {
+    const editor = grapesEditorRef.current;
+    if (editor) {
+      const um = editor.UndoManager;
+      if (um.hasUndo()) {
+        um.undo();
+      }
+    }
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    const editor = grapesEditorRef.current;
+    if (editor) {
+      const um = editor.UndoManager;
+      if (um.hasRedo()) {
+        um.redo();
+      }
+    }
+  }, []);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -153,11 +196,11 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         storageManager: false,
         
         // Critical settings from legacy code for ZIP import compatibility
-        allowScripts: 1,
+        allowScripts: true,
         dragMode: 'translate', // simpler, stable drag mode
-        dragAutoScroll: 1,
-        dragMultipleComponent: 1,
-        showOffsets: 1,
+        dragAutoScroll: true,
+        dragMultipleComponent: true,
+        showOffsets: true,
         resizer: {
           tl: 1,
           tr: 1,
@@ -177,6 +220,11 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
             { name: 'Tablet', width: '768px', widthMedia: '991px' },
             { name: 'Mobile', width: '320px', widthMedia: '767px' },
           ],
+        },
+        
+        // UndoManager configuration for undo/redo functionality
+        undoManager: {
+          trackSelection: false,
         },
         
         // Canvas configuration - CRITICAL: Load Tailwind CSS so components render properly
@@ -295,25 +343,56 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           // Apply responsive defaults to the newly added component
           addResponsiveClasses(component);
 
-          // Ensure resizable + selectable
-          component.set({
-            draggable: true,
-            droppable: true,
-            selectable: true,
-            hoverable: true,
-            removable: true,
-            copyable: true,
-            resizable: {
-              tl: 0, tc: 0, tr: 0,
-              cl: 0, cr: 1,
-              bl: 0, bc: 0, br: 1,
-              ratioDefault: false,
-              preserveAspectRatio: false,
-            },
-            selectable: true,
-            hoverable: true,
-            removable: true,
-          });
+          const tag = component.get?.('tagName')?.toLowerCase();
+          
+          // Special handling for images - proper resize constraints
+          if (tag === 'img') {
+            component.set({
+              draggable: true,
+              droppable: false,
+              selectable: true,
+              hoverable: true,
+              removable: true,
+              copyable: true,
+              resizable: {
+                tl: 1, tc: 0, tr: 1,
+                cl: 1, cr: 1,
+                bl: 1, bc: 0, br: 1,
+                ratioDefault: true, // Preserve aspect ratio by default for images
+                keepAutoHeight: false,
+                keepAutoWidth: false,
+                minDim: 50,
+                maxDim: 2000,
+                step: 1,
+                currentUnit: 1,
+                unitWidth: 'px',
+                unitHeight: 'px',
+              },
+            });
+            // Set reasonable default styles for images
+            component.setStyle({
+              'max-width': '100%',
+              'height': 'auto',
+              'display': 'block',
+            });
+          } else {
+            // Default resizable settings for other components
+            component.set({
+              draggable: true,
+              droppable: true,
+              selectable: true,
+              hoverable: true,
+              removable: true,
+              copyable: true,
+              resizable: {
+                tl: 0, tc: 0, tr: 0,
+                cl: 1, cr: 1,
+                bl: 0, bc: 0, br: 1,
+                ratioDefault: false,
+                preserveAspectRatio: false,
+              },
+            });
+          }
         } catch (cssError) {
           console.warn('[GrapeEditor] Failed to inject CSS on component add:', cssError);
         }
@@ -321,6 +400,19 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       
       // Set default device to Desktop for consistent preview
       editor.setDevice('Desktop');
+
+      // Update undo/redo state whenever changes occur
+      const updateUndoRedoState = () => {
+        const um = editor.UndoManager;
+        setCanUndo(um.hasUndo());
+        setCanRedo(um.hasRedo());
+      };
+
+      // Listen to undo manager changes
+      editor.on('change:canUndo', updateUndoRedoState);
+      editor.on('change:canRedo', updateUndoRedoState);
+      editor.on('undo', updateUndoRedoState);
+      editor.on('redo', updateUndoRedoState);
 
       // Ensure existing components are draggable/selectable after load
       editor.on('load', () => {
@@ -646,7 +738,9 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         grapesEditorRef.current.setStyle(css);
       }
     },
-  }), []);
+    undo: handleUndo,
+    redo: handleRedo,
+  }), [handleUndo, handleRedo]);
 
   return (
     <div className="h-full w-full relative" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -658,7 +752,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           justify-content: center;
           align-items: flex-start;
           min-height: 100%;
-          padding-top: 20px;
+          padding-top: 60px; /* Account for undo/redo toolbar */
         }
         
         .gjs-frame {
@@ -673,7 +767,55 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           justify-content: center;
           width: 100%;
         }
+        
+        /* Hide default GrapesJS panels that duplicate our UI */
+        .gjs-pn-panels .gjs-pn-devices-c {
+          display: none !important;
+        }
+        
+        /* Image resize handles styling */
+        .gjs-resizer-h {
+          background-color: #ff6b35 !important;
+          border: 2px solid white !important;
+          border-radius: 50% !important;
+          width: 10px !important;
+          height: 10px !important;
+        }
       `}</style>
+      
+      {/* Undo/Redo Toolbar */}
+      {isReady && (
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20 flex items-center gap-1 bg-white rounded-lg shadow-md border border-gray-200 px-2 py-1">
+          <button
+            onClick={handleUndo}
+            disabled={!canUndo}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              canUndo 
+                ? 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' 
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Undo</span>
+          </button>
+          <div className="w-px h-6 bg-gray-200" />
+          <button
+            onClick={handleRedo}
+            disabled={!canRedo}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+              canRedo 
+                ? 'text-gray-700 hover:bg-gray-100 hover:text-gray-900' 
+                : 'text-gray-300 cursor-not-allowed'
+            }`}
+            title="Redo (Ctrl+Y)"
+          >
+            <Redo2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Redo</span>
+          </button>
+        </div>
+      )}
+      
       <div ref={editorRef} className="h-full w-full" />
       {!isReady && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-50">

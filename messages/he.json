@@ -1,4 +1,34 @@
 {
+  "EditorPage": {
+    "dashboard": "לוח בקרה",
+    "newProject": "פרויקט חדש",
+    "saving": "שומר...",
+    "saved": "נשמר",
+    "error": "שגיאה",
+    "unsaved": "לא נשמר",
+    "components": "רכיבים",
+    "all": "הכל",
+    "properties": "מאפיינים",
+    "selectElement": "בחר אלמנט לעריכת המאפיינים שלו",
+    "startBuilding": "התחל לבנות",
+    "dragComponents": "גרור רכיבים מהפאנל השמאלי כדי לבנות את הדף שלך",
+    "createProject": "צור פרויקט",
+    "upgrade": "שדרג",
+    "chat": "צ'אט",
+    "preview": "תצוגה מקדימה",
+    "import": "ייבוא",
+    "export": "ייצוא",
+    "saveComponent": "שמור רכיב",
+    "rename": "שנה שם"
+  },
+  "Chat": {
+    "title": "עוזר AI",
+    "empty": "התחל שיחה כדי לקבל עזרה בבניית האתר שלך",
+    "placeholder": "הקלד הודעה...",
+    "error": "מצטערים, הייתה שגיאה. נסה שוב.",
+    "streaming": "AI חושב...",
+    "applyChanges": "החל שינויים"
+  },
   "Landing": {
     "hero": {
       "intro": "בזמננו אנשים רודפים כל הזמן אחרי מהירות, איכות ומחיר",
