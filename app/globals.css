@@ -330,6 +330,51 @@ html::-webkit-scrollbar {
   display: none !important;
 }
 
+/* ===== HIDE DEFAULT GRAPESJS RIGHT PANEL TOOLS ===== */
+/* Remove all default GrapesJS tools - we use custom StyleManager */
+
+/* Hide the entire views container (brush, gear, layers icons) */
+.gjs-pn-views-container,
+.gjs-pn-views,
+.gjs-pn-options {
+  display: none !important;
+}
+
+/* Hide default style manager */
+.gjs-sm-sectors,
+.gjs-sm-sector,
+.gjs-clm-tags,
+.gjs-clm-sels {
+  display: none !important;
+}
+
+/* Hide default trait manager */
+.gjs-trt-traits {
+  display: none !important;
+}
+
+/* Hide layer manager sidebar */
+.gjs-layers {
+  display: none !important;
+}
+
+/* Hide default right panel buttons/tabs */
+.gjs-pn-panel .gjs-pn-buttons,
+.gjs-pn-panel.gjs-pn-views-container {
+  display: none !important;
+}
+
+/* Hide all default GrapesJS panels except canvas */
+.gjs-editor-cont .gjs-pn-panels {
+  display: none !important;
+}
+
+/* Ensure our custom panels are visible */
+.custom-style-panel,
+.style-manager {
+  display: block !important;
+}
+
 /* Ensure all panel buttons have visible icons */
 .gjs-pn-btn svg,
 .gjs-pn-btn i {
@@ -604,6 +649,62 @@ html::-webkit-scrollbar {
 .style-manager label {
   color: #4b5563 !important;
   font-weight: 500 !important;
+}
+
+/* ===== GRADIENT BUILDER STYLING ===== */
+
+.gradient-builder {
+  background-color: #ffffff;
+}
+
+/* Gradient preview */
+.gradient-builder > div:first-child {
+  transition: background 0.2s ease;
+}
+
+/* Color stop cards */
+.gradient-builder .bg-gray-50 {
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb;
+  transition: border-color 0.2s ease;
+}
+
+.gradient-builder .bg-gray-50:hover {
+  border-color: #ff6b35;
+}
+
+/* Vertical slider for opacity */
+.gradient-builder [data-orientation="vertical"] {
+  width: 6px !important;
+  height: 40px !important;
+}
+
+/* Preset gradient buttons */
+.gradient-builder .grid button > div {
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+/* CSS output box */
+.gradient-builder .bg-gray-900 {
+  background-color: #111827 !important;
+}
+
+.gradient-builder .bg-gray-900 code {
+  color: #34d399 !important;
+}
+
+/* Action buttons */
+.gradient-builder button.bg-orange-500 {
+  background-color: #ff6b35 !important;
+}
+
+.gradient-builder button.bg-orange-500:hover {
+  background-color: #e55a28 !important;
+}
+
+/* Direction preset buttons */
+.gradient-builder .flex.gap-1.flex-wrap button {
+  font-family: system-ui, sans-serif;
 }
 
 /* ===== CHAT PANEL STYLING ===== */

@@ -24,7 +24,9 @@ import {
   Italic,
   ChevronDown,
   ChevronUp,
+  Blend,
 } from 'lucide-react';
+import { GradientBuilder } from './GradientBuilder';
 
 interface StyleManagerProps {
   editor: any; // GrapesJS Editor instance
@@ -50,9 +52,10 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
   const [styles, setStyles] = useState<Record<string, string>>({});
   const [sections, setSections] = useState<StyleSection[]>([
     { id: 'dimensions', title: 'Dimensions', icon: <Maximize2 className="w-4 h-4" />, expanded: true },
-    { id: 'spacing', title: 'Spacing', icon: <Box className="w-4 h-4" />, expanded: true },
+    { id: 'spacing', title: 'Spacing', icon: <Box className="w-4 h-4" />, expanded: false },
     { id: 'typography', title: 'Typography', icon: <Type className="w-4 h-4" />, expanded: false },
     { id: 'colors', title: 'Colors & Background', icon: <Palette className="w-4 h-4" />, expanded: true },
+    { id: 'gradient', title: 'Gradient Builder', icon: <Blend className="w-4 h-4" />, expanded: false },
     { id: 'borders', title: 'Borders & Radius', icon: <Square className="w-4 h-4" />, expanded: false },
   ]);
 
@@ -420,6 +423,14 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                     />
                   </div>
                 </>
+              )}
+
+              {/* GRADIENT SECTION */}
+              {section.id === 'gradient' && (
+                <GradientBuilder
+                  value={styles.background || styles['background-image'] || ''}
+                  onChange={(gradient) => updateStyle('background', gradient)}
+                />
               )}
 
               {/* BORDERS SECTION */}
