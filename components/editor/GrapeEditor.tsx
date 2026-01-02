@@ -36,7 +36,6 @@ interface GrapeEditorProps {
   initialCss?: string;
   isRTL?: boolean;
   components?: SupabaseComponent[]; // Supabase components to register as blocks
-  onSaveTrigger?: () => void; // Callback to trigger auto-save
 }
 
 /**
@@ -112,7 +111,7 @@ function addResponsiveClasses(component: any) {
 }
 
 export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
-  ({ onUpdate, initialHtml = '', initialCss = '', isRTL = false, components, onSaveTrigger }, ref) => {
+  ({ onUpdate, initialHtml = '', initialCss = '', isRTL = false, components }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const grapesEditorRef = useRef<grapesjs.Editor | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -612,9 +611,6 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
             });
           }
         }
-        
-        // Trigger auto-save (debounced)
-        onSaveTrigger?.();
         
         // Call external update handler
         onUpdate?.(html, css);

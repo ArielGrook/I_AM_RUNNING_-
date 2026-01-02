@@ -13,6 +13,7 @@ interface SliderProps {
 export function Slider({ value, onValueChange, min, max, step = 1, className, orientation }: SliderProps) {
   const [localValue, setLocalValue] = useState(value[0] || 0);
   const isDraggingRef = useRef(false);
+  const lastCallRef = useRef(0);
   const isVertical = orientation === 'vertical';
   
   // Sync local value when prop value changes externally (only when not dragging)
@@ -22,20 +23,32 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
     }
   }, [value]);
   
-  // Handle input change - only update local state (no parent callback during drag)
+  // Throttled call to parent - max 30fps during drag for performance
+  const throttledUpdate = useCallback((newValue: number) => {
+    const now = Date.now();
+    if (now - lastCallRef.current >= 33) { // ~30fps throttle
+      lastCallRef.current = now;
+      onValueChange([newValue]);
+    }
+  }, [onValueChange]);
+  
+  // Handle input change - update local state + throttled parent update
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value);
     setLocalValue(newValue);
-  }, []);
+    // Call parent with throttling for real-time visual feedback
+    throttledUpdate(newValue);
+  }, [throttledUpdate]);
   
   // On mouse/touch down - mark dragging start
   const handleDragStart = useCallback(() => {
     isDraggingRef.current = true;
   }, []);
   
-  // On mouse/touch up - commit value to parent
+  // On mouse/touch up - commit final value to parent
   const handleDragEnd = useCallback(() => {
     isDraggingRef.current = false;
+    // Always commit final value on release
     onValueChange([localValue]);
   }, [localValue, onValueChange]);
   

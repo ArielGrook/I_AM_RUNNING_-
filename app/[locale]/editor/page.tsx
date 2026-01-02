@@ -21,7 +21,7 @@ import { GrapeEditor, type GrapeEditorRef } from '@/components/editor/GrapeEdito
 import { ProjectNameForm } from '@/components/editor/ProjectNameForm';
 import { ImportProgressDialog } from '@/components/editor/ImportProgressDialog';
 import { useProjectStore } from '@/lib/store/project-store';
-import { useAutoSave } from '@/lib/hooks/useAutoSave';
+// Manual save replaces auto-save - see handleManualSave function
 import { componentCatalog, getAllCategories } from '@/lib/components/catalog';
 import { getComponentCatalog, type SupabaseComponent } from '@/lib/components/supabase-catalog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -102,8 +102,43 @@ export default function EditorPage() {
     loadProject,
   } = useProjectStore();
   
-  // Auto-save hook (2.5s debounce on changes)
-  const { triggerSave } = useAutoSave(!!currentProject);
+  // Manual save state
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  // Manual save function
+  const handleManualSave = useCallback(async () => {
+    if (!currentProject || isSaving) return;
+    
+    setIsSaving(true);
+    setSaveSuccess(false);
+    setSaveStatus('saving');
+    
+    try {
+      // Force Zustand to persist by updating timestamp
+      updateProject({
+        metadata: {
+          ...currentProject.metadata,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+      
+      // Brief delay to ensure persist completes
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      setSaveStatus('saved');
+      setSaveSuccess(true);
+      console.log('[Manual Save] ✅ Project saved to localStorage');
+      
+      // Reset success indicator after 2 seconds
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      console.error('[Manual Save] ❌ Failed:', error);
+      setSaveStatus('error');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [currentProject, isSaving, setSaveStatus, updateProject]);
   
   // Sync undo/redo state from editor
   useEffect(() => {
@@ -668,29 +703,6 @@ export default function EditorPage() {
     incrementDemoProjectCount();
   };
   
-  // Get save status display
-  const getSaveStatusDisplay = () => {
-    switch (saveStatus) {
-      case 'saving':
-        return <span className="text-sm text-yellow-600">● {t('saving')}</span>;
-      case 'saved':
-        return (
-          <span className="text-sm text-green-600 flex items-center gap-1">
-            <Check className="w-3 h-3" />
-            {t('saved')}
-            {lastSaved && (
-              <span className="text-xs text-gray-400">
-                ({new Date(lastSaved).toLocaleTimeString()})
-              </span>
-            )}
-          </span>
-        );
-      case 'error':
-        return <span className="text-sm text-red-600">● {t('error')}</span>;
-      default:
-        return <span className="text-sm text-gray-500">● {t('unsaved')}</span>;
-    }
-  };
   
   return (
     <ErrorBoundary>
@@ -711,11 +723,37 @@ export default function EditorPage() {
             <h1 className="font-semibold text-lg text-gray-900">
               {currentProject?.name || t('newProject')}
             </h1>
-            {getSaveStatusDisplay()}
-            {isDemo && !userPackage && (
-              <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                Demo: {demoRemainingTime} left
-              </div>
+            {currentProject && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleManualSave}
+                disabled={isSaving}
+                className={`h-8 px-3 transition-all ${
+                  saveSuccess 
+                    ? 'bg-green-50 border-green-400 text-green-700' 
+                    : isSaving 
+                      ? 'bg-orange-50 border-orange-300 text-orange-600'
+                      : 'border-gray-300 text-gray-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600'
+                }`}
+              >
+                {isSaving ? (
+                  <>
+                    <span className="w-3 h-3 mr-2 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></span>
+                    Saving...
+                  </>
+                ) : saveSuccess ? (
+                  <>
+                    <Check className="w-4 h-4 mr-1" />
+                    Saved
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-1" />
+                    Save Project
+                  </>
+                )}
+              </Button>
             )}
             {userPackage && (
               <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
@@ -1023,7 +1061,6 @@ export default function EditorPage() {
                 initialCss={currentProject.pages[0]?.styles || ''}
                 isRTL={isRTL}
                 components={components}
-                onSaveTrigger={triggerSave}
               />
             </div>
             
