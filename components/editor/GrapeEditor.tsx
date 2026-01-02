@@ -36,6 +36,7 @@ interface GrapeEditorProps {
   initialCss?: string;
   isRTL?: boolean;
   components?: SupabaseComponent[]; // Supabase components to register as blocks
+  onSaveTrigger?: () => void; // Callback to trigger auto-save
 }
 
 /**
@@ -111,7 +112,7 @@ function addResponsiveClasses(component: any) {
 }
 
 export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
-  ({ onUpdate, initialHtml = '', initialCss = '', isRTL = false, components }, ref) => {
+  ({ onUpdate, initialHtml = '', initialCss = '', isRTL = false, components, onSaveTrigger }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const grapesEditorRef = useRef<grapesjs.Editor | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -402,18 +403,28 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       // Set default device to Desktop for consistent preview
       editor.setDevice('Desktop');
 
+      // CRITICAL: Initialize UndoManager immediately so undo/redo buttons work from start
+      const um = editor.UndoManager;
+      if (um && typeof um.start === 'function') {
+        um.start();
+      }
+
       // Update undo/redo state whenever changes occur
       const updateUndoRedoState = () => {
-        const um = editor.UndoManager;
         setCanUndo(um.hasUndo());
         setCanRedo(um.hasRedo());
       };
+
+      // Initial state check
+      updateUndoRedoState();
 
       // Listen to undo manager changes
       editor.on('change:canUndo', updateUndoRedoState);
       editor.on('change:canRedo', updateUndoRedoState);
       editor.on('undo', updateUndoRedoState);
       editor.on('redo', updateUndoRedoState);
+      editor.on('component:add', updateUndoRedoState);
+      editor.on('component:remove', updateUndoRedoState);
 
       // Ensure existing components are draggable/selectable after load
       editor.on('load', () => {
@@ -581,7 +592,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         addResponsiveClasses(editor.getWrapper());
       }
 
-      // Listen for changes
+      // Listen for changes and trigger auto-save
       editor.on('update', () => {
         const html = editor.getHtml();
         const css = editor.getCss();
@@ -601,6 +612,9 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
             });
           }
         }
+        
+        // Trigger auto-save (debounced)
+        onSaveTrigger?.();
         
         // Call external update handler
         onUpdate?.(html, css);

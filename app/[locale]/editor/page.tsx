@@ -102,8 +102,8 @@ export default function EditorPage() {
     loadProject,
   } = useProjectStore();
   
-  // Auto-save hook (60s debounce)
-  useAutoSave(!!currentProject);
+  // Auto-save hook (2.5s debounce on changes)
+  const { triggerSave } = useAutoSave(!!currentProject);
   
   // Sync undo/redo state from editor
   useEffect(() => {
@@ -1023,6 +1023,7 @@ export default function EditorPage() {
                 initialCss={currentProject.pages[0]?.styles || ''}
                 isRTL={isRTL}
                 components={components}
+                onSaveTrigger={triggerSave}
               />
             </div>
             

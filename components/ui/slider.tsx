@@ -12,46 +12,32 @@ interface SliderProps {
 
 export function Slider({ value, onValueChange, min, max, step = 1, className, orientation }: SliderProps) {
   const [localValue, setLocalValue] = useState(value[0] || 0);
-  const rafRef = useRef<number | null>(null);
-  const pendingValueRef = useRef<number | null>(null);
+  const isDraggingRef = useRef(false);
   const isVertical = orientation === 'vertical';
   
-  // Sync local value when prop value changes externally
+  // Sync local value when prop value changes externally (only when not dragging)
   useEffect(() => {
-    setLocalValue(value[0] || 0);
+    if (!isDraggingRef.current) {
+      setLocalValue(value[0] || 0);
+    }
   }, [value]);
   
-  // Throttled callback using requestAnimationFrame for smooth 60fps updates
-  const throttledOnChange = useCallback((newValue: number) => {
-    pendingValueRef.current = newValue;
-    
-    if (rafRef.current === null) {
-      rafRef.current = requestAnimationFrame(() => {
-        if (pendingValueRef.current !== null) {
-          onValueChange([pendingValueRef.current]);
-          pendingValueRef.current = null;
-        }
-        rafRef.current = null;
-      });
-    }
-  }, [onValueChange]);
-  
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-      }
-    };
+  // Handle input change - only update local state (no parent callback during drag)
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = parseFloat(e.target.value);
+    setLocalValue(newValue);
   }, []);
   
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseInt(e.target.value);
-    // Update local state immediately for smooth visual feedback
-    setLocalValue(newValue);
-    // Throttle the callback to reduce update frequency
-    throttledOnChange(newValue);
-  }, [throttledOnChange]);
+  // On mouse/touch down - mark dragging start
+  const handleDragStart = useCallback(() => {
+    isDraggingRef.current = true;
+  }, []);
+  
+  // On mouse/touch up - commit value to parent
+  const handleDragEnd = useCallback(() => {
+    isDraggingRef.current = false;
+    onValueChange([localValue]);
+  }, [localValue, onValueChange]);
   
   const percentage = ((localValue - min) / (max - min)) * 100;
   
@@ -70,6 +56,10 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
         step={step}
         value={localValue}
         onChange={handleChange}
+        onMouseDown={handleDragStart}
+        onMouseUp={handleDragEnd}
+        onTouchStart={handleDragStart}
+        onTouchEnd={handleDragEnd}
         className={`slider-input ${isVertical ? 'slider-vertical' : 'slider-horizontal'}`}
       />
     </div>
