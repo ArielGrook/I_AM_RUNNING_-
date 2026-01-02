@@ -84,6 +84,8 @@ export default function EditorPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewWatermarked, setPreviewWatermarked] = useState(false);
   const [currentDevice, setCurrentDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
   
   // Check demo mode
@@ -102,6 +104,54 @@ export default function EditorPage() {
   
   // Auto-save hook (60s debounce)
   useAutoSave(!!currentProject);
+  
+  // Sync undo/redo state from editor
+  useEffect(() => {
+    if (!currentProject || !grapeEditorRef.current) {
+      setCanUndo(false);
+      setCanRedo(false);
+      return;
+    }
+    
+    const updateUndoRedoState = () => {
+      if (grapeEditorRef.current) {
+        setCanUndo(grapeEditorRef.current.canUndo || false);
+        setCanRedo(grapeEditorRef.current.canRedo || false);
+      }
+    };
+    
+    // Update immediately
+    updateUndoRedoState();
+    
+    // Set up interval to check state periodically (editor updates state internally)
+    // Reduced frequency to 200ms for better performance
+    const interval = setInterval(updateUndoRedoState, 200);
+    
+    return () => clearInterval(interval);
+  }, [currentProject]);
+  
+  // Update state after undo/redo operations
+  const handleUndo = useCallback(() => {
+    grapeEditorRef.current?.undo();
+    // Small delay to allow editor state to update
+    setTimeout(() => {
+      if (grapeEditorRef.current) {
+        setCanUndo(grapeEditorRef.current.canUndo || false);
+        setCanRedo(grapeEditorRef.current.canRedo || false);
+      }
+    }, 50);
+  }, []);
+  
+  const handleRedo = useCallback(() => {
+    grapeEditorRef.current?.redo();
+    // Small delay to allow editor state to update
+    setTimeout(() => {
+      if (grapeEditorRef.current) {
+        setCanUndo(grapeEditorRef.current.canUndo || false);
+        setCanRedo(grapeEditorRef.current.canRedo || false);
+      }
+    }, 50);
+  }, []);
   
   // Load user package on mount
   useEffect(() => {
@@ -675,10 +725,45 @@ export default function EditorPage() {
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Undo/Redo Buttons */}
+            {currentProject && (
+              <>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleUndo}
+                    disabled={!canUndo}
+                    className={`h-8 px-2 transition-colors ${
+                      canUndo 
+                        ? 'text-gray-700 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50 border-gray-300' 
+                        : 'text-gray-300 cursor-not-allowed border-gray-200'
+                    }`}
+                    title="Undo (Ctrl+Z)"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleRedo}
+                    disabled={!canRedo}
+                    className={`h-8 px-2 transition-colors ${
+                      canRedo 
+                        ? 'text-gray-700 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50 border-gray-300' 
+                        : 'text-gray-300 cursor-not-allowed border-gray-200'
+                    }`}
+                    title="Redo (Ctrl+Y)"
+                  >
+                    <Redo2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="h-6 w-px bg-gray-300 mx-1" />
+              </>
+            )}
             {/* Device Selector Buttons */}
             {currentProject && (
               <>
-                <div className="h-6 w-px bg-gray-300 mx-1" />
                 <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                   <Button
                     size="sm"

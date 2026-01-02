@@ -18,7 +18,6 @@ import { useProjectStore } from '@/lib/store/project-store';
 import { getAllCatalogBlockDefinitions, getSupabaseBlockDefinitions, type BlockDefinition } from '@/lib/grapesjs/catalog-blocks';
 import { type SupabaseComponent } from '@/lib/components/supabase-catalog';
 import { convertCssToInlineStyles } from '@/lib/utils/css-to-inline';
-import { Undo2, Redo2 } from 'lucide-react';
 
 export interface GrapeEditorRef {
   clear: () => void;
@@ -27,6 +26,8 @@ export interface GrapeEditorRef {
   setStyle: (css: string) => void;
   undo: () => void;
   redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 interface GrapeEditorProps {
@@ -791,7 +792,9 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     },
     undo: handleUndo,
     redo: handleRedo,
-  }), [handleUndo, handleRedo]);
+    canUndo,
+    canRedo,
+  }), [handleUndo, handleRedo, canUndo, canRedo]);
 
   return (
     <div className="h-full w-full relative" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -845,36 +848,6 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           min-height: 50px;
         }
       `}</style>
-      
-      {/* Undo/Redo Toolbar - Top Left, Icons Only */}
-      {isReady && (
-        <div className="absolute top-2 left-2 z-20 flex items-center gap-0.5 bg-white/90 backdrop-blur-sm rounded-md shadow-sm border border-gray-200 p-0.5">
-          <button
-            onClick={handleUndo}
-            disabled={!canUndo}
-            className={`p-1.5 rounded transition-colors ${
-              canUndo 
-                ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' 
-                : 'text-gray-300 cursor-not-allowed'
-            }`}
-            title="Undo (Ctrl+Z)"
-          >
-            <Undo2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleRedo}
-            disabled={!canRedo}
-            className={`p-1.5 rounded transition-colors ${
-              canRedo 
-                ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' 
-                : 'text-gray-300 cursor-not-allowed'
-            }`}
-            title="Redo (Ctrl+Y)"
-          >
-            <Redo2 className="w-4 h-4" />
-          </button>
-        </div>
-      )}
       
       <div ref={editorRef} className="h-full w-full" />
       {!isReady && (
