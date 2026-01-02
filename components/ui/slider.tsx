@@ -11,15 +11,27 @@ interface SliderProps {
 }
 
 export function Slider({ value, onValueChange, min, max, step = 1, className, orientation }: SliderProps) {
+  const percentage = ((value[0] || 0) - min) / (max - min) * 100;
+  const isVertical = orientation === 'vertical';
+  
   return (
-    <input
-      type="range"
-      min={min}
-      max={max}
-      step={step}
-      value={value[0] || 0}
-      onChange={(e) => onValueChange([parseInt(e.target.value)])}
-      className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer ${className}`}
-    />
+    <div className={`slider-wrapper ${isVertical ? 'slider-wrapper-vertical' : 'slider-wrapper-horizontal'} ${className || ''}`}>
+      <div 
+        className="slider-fill"
+        style={{
+          [isVertical ? 'height' : 'width']: `${percentage}%`,
+        }}
+      />
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value[0] || 0}
+        onChange={(e) => onValueChange([parseInt(e.target.value)])}
+        className={`slider-input ${isVertical ? 'slider-vertical' : 'slider-horizontal'}`}
+      />
+    </div>
   )
 }
+

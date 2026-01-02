@@ -951,7 +951,7 @@ export default function EditorPage() {
             </button>
             
             {/* Right Panel - Style Manager */}
-            <div className={`transition-all duration-300 ${rightPanelOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
+            <div className={`transition-all duration-300 ${rightPanelOpen ? 'w-[450px]' : 'w-0'} overflow-hidden`}>
               <div className="h-full bg-white border-l flex flex-col">
                 <div className="p-4 border-b">
                   <h3 className="font-semibold text-lg text-gray-900">{t('properties')}</h3>
