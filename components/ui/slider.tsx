@@ -13,25 +13,38 @@ interface SliderProps {
 export function Slider({ value, onValueChange, min, max, step = 1, className, orientation }: SliderProps) {
   const [localValue, setLocalValue] = useState(value[0] || 0);
   const rafRef = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingValueRef = useRef<number | null>(null);
   const isVertical = orientation === 'vertical';
+  const isDraggingRef = useRef(false);
   
-  // Sync local value when prop value changes externally
+  // Sync local value when prop value changes externally (but not during drag)
   useEffect(() => {
-    setLocalValue(value[0] || 0);
+    if (!isDraggingRef.current) {
+      setLocalValue(value[0] || 0);
+    }
   }, [value]);
   
-  // Throttled callback using requestAnimationFrame for smooth 60fps updates
-  const throttledOnChange = useCallback((newValue: number) => {
+  // Debounced callback with requestAnimationFrame for ultra-smooth updates
+  const debouncedOnChange = useCallback((newValue: number) => {
     pendingValueRef.current = newValue;
     
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Use requestAnimationFrame for visual smoothness + debounce for callback
     if (rafRef.current === null) {
       rafRef.current = requestAnimationFrame(() => {
-        if (pendingValueRef.current !== null) {
-          onValueChange([pendingValueRef.current]);
-          pendingValueRef.current = null;
-        }
-        rafRef.current = null;
+        // Debounce the actual callback by 50ms to reduce update frequency
+        timeoutRef.current = setTimeout(() => {
+          if (pendingValueRef.current !== null) {
+            onValueChange([pendingValueRef.current]);
+            pendingValueRef.current = null;
+          }
+          rafRef.current = null;
+        }, 50);
       });
     }
   }, [onValueChange]);
@@ -42,16 +55,33 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
       }
+      if (timeoutRef.current !== null) {
+        clearTimeout(timeoutRef.current);
+      }
     };
   }, []);
   
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseInt(e.target.value);
-    // Update local state immediately for smooth visual feedback
+    // Update local state immediately for smooth visual feedback (CSS handles transition)
     setLocalValue(newValue);
-    // Throttle the callback to reduce update frequency
-    throttledOnChange(newValue);
-  }, [throttledOnChange]);
+    // Debounce the callback to reduce update frequency
+    debouncedOnChange(newValue);
+  }, [debouncedOnChange]);
+  
+  const handleMouseDown = useCallback(() => {
+    isDraggingRef.current = true;
+  }, []);
+  
+  const handleMouseUp = useCallback(() => {
+    isDraggingRef.current = false;
+    // Flush pending value on mouse up
+    if (pendingValueRef.current !== null && timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      onValueChange([pendingValueRef.current]);
+      pendingValueRef.current = null;
+    }
+  }, [onValueChange]);
   
   const percentage = ((localValue - min) / (max - min)) * 100;
   
@@ -70,6 +100,10 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
         step={step}
         value={localValue}
         onChange={handleChange}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onTouchStart={handleMouseDown}
+        onTouchEnd={handleMouseUp}
         className={`slider-input ${isVertical ? 'slider-vertical' : 'slider-horizontal'}`}
       />
     </div>

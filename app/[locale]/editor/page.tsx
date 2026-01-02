@@ -102,8 +102,8 @@ export default function EditorPage() {
     loadProject,
   } = useProjectStore();
   
-  // Auto-save hook (60s debounce)
-  useAutoSave(!!currentProject);
+  // Auto-save hook (1.5s debounce on every change)
+  const { triggerSave } = useAutoSave(!!currentProject);
   
   // Sync undo/redo state from editor
   useEffect(() => {
@@ -672,12 +672,17 @@ export default function EditorPage() {
   const getSaveStatusDisplay = () => {
     switch (saveStatus) {
       case 'saving':
-        return <span className="text-sm text-yellow-600">● {t('saving')}</span>;
+        return (
+          <span className="text-sm text-orange-600 flex items-center gap-1 animate-pulse">
+            <span className="w-2 h-2 bg-orange-600 rounded-full"></span>
+            {t('saving') || 'Saving...'}
+          </span>
+        );
       case 'saved':
         return (
           <span className="text-sm text-green-600 flex items-center gap-1">
             <Check className="w-3 h-3" />
-            {t('saved')}
+            {t('saved') || 'Saved'}
             {lastSaved && (
               <span className="text-xs text-gray-400">
                 ({new Date(lastSaved).toLocaleTimeString()})
@@ -686,9 +691,14 @@ export default function EditorPage() {
           </span>
         );
       case 'error':
-        return <span className="text-sm text-red-600">● {t('error')}</span>;
+        return (
+          <span className="text-sm text-red-600 flex items-center gap-1">
+            <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+            {t('error') || 'Save Error'}
+          </span>
+        );
       default:
-        return <span className="text-sm text-gray-500">● {t('unsaved')}</span>;
+        return <span className="text-sm text-gray-500">● {t('unsaved') || 'Unsaved'}</span>;
     }
   };
   
@@ -1023,6 +1033,7 @@ export default function EditorPage() {
                 initialCss={currentProject.pages[0]?.styles || ''}
                 isRTL={isRTL}
                 components={components}
+                onSaveTrigger={triggerSave}
               />
             </div>
             
