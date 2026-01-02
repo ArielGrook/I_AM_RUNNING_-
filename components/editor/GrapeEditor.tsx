@@ -597,8 +597,25 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         addResponsiveClasses(editor.getWrapper());
       }
 
-      // Listen for changes and trigger auto-save
+      // Track if we're in a drag operation to prevent auto-save spam
+      let isDragging = false;
+      let dragTimeout: NodeJS.Timeout | null = null;
+      
+      editor.on('component:drag', () => {
+        isDragging = true;
+        if (dragTimeout) clearTimeout(dragTimeout);
+        dragTimeout = setTimeout(() => {
+          isDragging = false;
+        }, 100);
+      });
+
+      // Listen for changes and trigger auto-save (optimized)
       const handleUpdate = () => {
+        // Skip auto-save during drag operations to prevent lag
+        if (isDragging) {
+          return;
+        }
+        
         const html = editor.getHtml();
         const css = editor.getCss();
         
@@ -618,21 +635,38 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           }
         }
         
-        // Trigger auto-save on every change
-        onSaveTrigger?.();
-        
         // Call external update handler
         onUpdate?.(html, css);
       };
 
-      // Listen to all change events to trigger auto-save
+      // Optimized: Only trigger auto-save on meaningful changes, not during drag
+      const handleSaveTrigger = () => {
+        // Skip auto-save during drag operations
+        if (isDragging) {
+          return;
+        }
+        onSaveTrigger?.();
+      };
+
+      // Listen to meaningful change events (not drag-related)
       editor.on('update', handleUpdate);
-      editor.on('component:add', handleUpdate);
-      editor.on('component:remove', handleUpdate);
-      editor.on('component:update', handleUpdate);
-      editor.on('component:styleUpdate', handleUpdate);
-      editor.on('style:custom', handleUpdate);
-      editor.on('storage:store', handleUpdate);
+      editor.on('component:add', () => {
+        handleUpdate();
+        handleSaveTrigger();
+      });
+      editor.on('component:remove', () => {
+        handleUpdate();
+        handleSaveTrigger();
+      });
+      // Only trigger on style changes, not position updates during drag
+      editor.on('component:styleUpdate', () => {
+        handleUpdate();
+        handleSaveTrigger();
+      });
+      editor.on('style:custom', () => {
+        handleUpdate();
+        handleSaveTrigger();
+      });
 
     } catch (initError) {
       console.error('❌ GrapesJS init FAILED:', initError);

@@ -86,6 +86,7 @@ export default function EditorPage() {
   const [currentDevice, setCurrentDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
   
   // Check demo mode
@@ -103,7 +104,7 @@ export default function EditorPage() {
   } = useProjectStore();
   
   // Auto-save hook (1.5s debounce on every change)
-  const { triggerSave } = useAutoSave(!!currentProject);
+  const { triggerSave } = useAutoSave(!!currentProject && !isImporting);
   
   // Sync undo/redo state from editor
   useEffect(() => {
@@ -533,6 +534,7 @@ export default function EditorPage() {
           setTimeout(() => {
             setShowImportProgress(false);
             setImportProgress(null);
+            setIsImporting(false); // Re-enable auto-save
           console.log('[ZIP Import] ✅ Import workflow complete!');
           }, 2000);
         
@@ -550,7 +552,13 @@ export default function EditorPage() {
         setTimeout(() => {
           setShowImportProgress(false);
           setImportProgress(null);
+          setIsImporting(false); // Re-enable auto-save even on error
         }, 3000);
+      } finally {
+        // Ensure auto-save is re-enabled even if something goes wrong
+        setTimeout(() => {
+          setIsImporting(false);
+        }, 100);
       }
     };
     input.click();

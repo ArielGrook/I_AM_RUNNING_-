@@ -31,11 +31,14 @@ export function useAutoSave(enabled: boolean = true) {
   // Save function
   const performSave = useCallback(async () => {
     const project = useProjectStore.getState().currentProject;
-    if (!project) return;
+    if (!project) {
+      console.log('[Auto-Save] ⚠️ No project to save');
+      return;
+    }
 
     // Check demo mode limits
     if (!canSaveOrExport()) {
-      console.warn('Demo mode limit reached, cannot save');
+      console.warn('[Auto-Save] ⚠️ Demo mode limit reached, cannot save');
       setSaveStatus('error');
       return;
     }
@@ -43,14 +46,26 @@ export function useAutoSave(enabled: boolean = true) {
     try {
       setSaveStatus('saving');
       
-      // Save to Supabase (if authenticated)
-      await saveProjectToSupabase(project);
+      // Force Zustand persist to save by updating lastSaved timestamp
+      // This ensures the persist middleware actually writes to localStorage
+      const { updateProject } = useProjectStore.getState();
+      updateProject({
+        metadata: {
+          ...project.metadata,
+          updatedAt: new Date().toISOString(),
+        },
+      });
       
-      // Zustand persist middleware handles localStorage save automatically
-      // The persist middleware will save when state changes
+      // Save to Supabase (if authenticated) - don't await to prevent blocking
+      saveProjectToSupabase(project).catch(err => {
+        console.warn('[Auto-Save] Supabase save failed (non-critical):', err);
+      });
+      
+      // Zustand persist middleware will automatically save to localStorage
+      // The updateProject call above triggers the persist middleware
       setSaveStatus('saved');
       
-      console.log('[Auto-Save] ✅ Project saved successfully');
+      console.log('[Auto-Save] ✅ Project saved to localStorage');
     } catch (error) {
       console.error('[Auto-Save] ❌ Save failed:', error);
       setSaveStatus('error');
