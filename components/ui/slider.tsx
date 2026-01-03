@@ -78,6 +78,7 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
         max={max}
         step={step}
         value={localValue}
+        onInput={handleChange}
         onChange={handleChange}
         onMouseDown={handleDragStart}
         onMouseUp={handleDragEnd}
