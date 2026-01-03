@@ -19,77 +19,265 @@ import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { Project, SaveStatus } from '@/lib/types/project';
 import { v4 as uuidv4 } from 'uuid';
 
-/**
- * Maximum size for localStorage persistence (3MB)
- * localStorage typically has 5-10MB limit, so we use 3MB as safe threshold
- */
-const MAX_LOCALSTORAGE_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+const STORAGE_VERSION = 'v2';
+const CHUNK_SIZE = 900_000; // ~0.9MB chunks to keep localStorage writes reliable
+const STORAGE_FALLBACK_DB = 'project-storage';
+const STORAGE_FALLBACK_STORE = 'projects';
 
-/**
- * Calculate approximate size of an object in bytes (JSON stringified)
- */
-function calculateSize(obj: any): number {
+type CompressionEncoding = 'gzip' | 'none';
+
+const isClient = typeof window !== 'undefined';
+
+function uint8ToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function base64ToUint8(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function gzipCompress(input: string): Promise<{ payload: string; encoding: CompressionEncoding }> {
+  if (typeof CompressionStream === 'undefined') {
+    return { payload: input, encoding: 'none' };
+  }
+
+  const encoder = new TextEncoder();
+  const stream = new Blob([encoder.encode(input)]).stream().pipeThrough(new CompressionStream('gzip'));
+  const arrayBuffer = await new Response(stream).arrayBuffer();
+  return { payload: uint8ToBase64(new Uint8Array(arrayBuffer)), encoding: 'gzip' };
+}
+
+async function gzipDecompress(payload: string, encoding: CompressionEncoding): Promise<string> {
+  if (encoding !== 'gzip' || typeof DecompressionStream === 'undefined') {
+    return payload;
+  }
+
+  const bytes = base64ToUint8(payload);
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  const arrayBuffer = await new Response(stream).arrayBuffer();
+  return new TextDecoder().decode(arrayBuffer);
+}
+
+async function openIndexedDb(): Promise<IDBDatabase | null> {
+  if (!isClient || !('indexedDB' in window)) return null;
+
+  return await new Promise((resolve, reject) => {
+    const request = indexedDB.open(STORAGE_FALLBACK_DB, 1);
+    request.onerror = () => reject(request.error);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORAGE_FALLBACK_STORE)) {
+        db.createObjectStore(STORAGE_FALLBACK_STORE, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+  }).catch((error) => {
+    console.error('[Project Store] ❌ IndexedDB open failed:', error);
+    return null;
+  });
+}
+
+async function idbSet(name: string, payload: string, encoding: CompressionEncoding): Promise<void> {
+  const db = await openIndexedDb();
+  if (!db) return;
+
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORAGE_FALLBACK_STORE, 'readwrite');
+    const store = tx.objectStore(STORAGE_FALLBACK_STORE);
+    store.put({
+      id: name,
+      version: STORAGE_VERSION,
+      encoding,
+      payload,
+      updatedAt: Date.now(),
+    });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  }).catch((error) => {
+    console.error('[Project Store] ❌ IndexedDB write failed:', error);
+  });
+}
+
+async function idbGet(name: string): Promise<{ payload: string; encoding: CompressionEncoding } | null> {
+  const db = await openIndexedDb();
+  if (!db) return null;
+
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORAGE_FALLBACK_STORE, 'readonly');
+    const store = tx.objectStore(STORAGE_FALLBACK_STORE);
+    const request = store.get(name);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  }).catch((error) => {
+    console.error('[Project Store] ❌ IndexedDB read failed:', error);
+    return null;
+  });
+}
+
+async function idbRemove(name: string): Promise<void> {
+  const db = await openIndexedDb();
+  if (!db) return;
+
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORAGE_FALLBACK_STORE, 'readwrite');
+    const store = tx.objectStore(STORAGE_FALLBACK_STORE);
+    store.delete(name);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  }).catch((error) => {
+    console.error('[Project Store] ❌ IndexedDB delete failed:', error);
+  });
+}
+
+function clearChunkedLocalStorage(name: string) {
+  if (!isClient || typeof localStorage === 'undefined') return;
+  const meta = localStorage.getItem(`${name}:meta`);
+  const chunks = meta ? Number.parseInt(JSON.parse(meta)?.chunks ?? '0', 10) : 0;
+  if (Number.isFinite(chunks)) {
+    for (let i = 0; i < chunks; i += 1) {
+      localStorage.removeItem(`${name}:chunk:${i}`);
+    }
+  }
+  localStorage.removeItem(`${name}:meta`);
+  localStorage.removeItem(name);
+}
+
+async function saveChunked(
+  name: string,
+  data: string,
+  encoding: CompressionEncoding
+): Promise<'local' | 'idb'> {
+  if (!isClient || typeof localStorage === 'undefined') {
+    await idbSet(name, data, encoding);
+    return 'idb';
+  }
+
+  clearChunkedLocalStorage(name);
+
+  const chunks = [];
+  for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+    chunks.push(data.slice(i, i + CHUNK_SIZE));
+  }
+
   try {
-    return new Blob([JSON.stringify(obj)]).size;
-  } catch (error) {
-    console.warn('[Project Store] Failed to calculate size:', error);
-    return 0;
+    const meta = JSON.stringify({
+      version: STORAGE_VERSION,
+      encoding,
+      chunks: chunks.length,
+      storage: 'local',
+    });
+    localStorage.setItem(`${name}:meta`, meta);
+    chunks.forEach((chunk, idx) => {
+      localStorage.setItem(`${name}:chunk:${idx}`, chunk);
+    });
+    // Lightweight marker for compatibility (not used for payload)
+    localStorage.setItem(name, 'chunked');
+    return 'local';
+  } catch (error: any) {
+    console.warn('[Project Store] ⚠️ localStorage chunk write failed, falling back to IndexedDB:', error);
+    clearChunkedLocalStorage(name);
+    await idbSet(name, data, encoding);
+    return 'idb';
   }
 }
 
+async function loadChunked(
+  name: string
+): Promise<{ payload: string; encoding: CompressionEncoding } | null> {
+  if (!isClient) return null;
+
+  const metaRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(`${name}:meta`) : null;
+  if (metaRaw) {
+    try {
+      const meta = JSON.parse(metaRaw) as {
+        version: string;
+        encoding: CompressionEncoding;
+        chunks: number;
+        storage?: 'local' | 'idb';
+      };
+      if (meta.version === STORAGE_VERSION && meta.chunks > 0) {
+        let combined = '';
+        for (let i = 0; i < meta.chunks; i += 1) {
+          combined += localStorage.getItem(`${name}:chunk:${i}`) || '';
+        }
+        if (combined.length) {
+          return { payload: combined, encoding: meta.encoding || 'none' };
+        }
+      }
+    } catch (error) {
+      console.warn('[Project Store] ⚠️ Failed to read chunked localStorage payload:', error);
+    }
+  }
+
+  const idbValue = await idbGet(name);
+  if (idbValue) {
+    return { payload: idbValue.payload, encoding: idbValue.encoding || 'none' };
+  }
+
+  return null;
+}
+
 /**
- * Custom localStorage storage wrapper with size checks and error handling
- * Prevents QuotaExceededError by skipping persist for large projects
+ * Custom storage wrapper with compression + chunking and IndexedDB fallback
  */
 const createSafeLocalStorage = (): StateStorage => {
+  if (!isClient || typeof localStorage === 'undefined') {
+    // Server-safe no-op storage
+    return {
+      getItem: async () => null,
+      setItem: async () => {},
+      removeItem: async () => {},
+    };
+  }
+
   return {
-    getItem: (name: string): string | null => {
+    getItem: async (name: string): Promise<string | null> => {
       try {
-        return localStorage.getItem(name);
+        const chunked = await loadChunked(name);
+        if (chunked) {
+          const decompressed = await gzipDecompress(chunked.payload, chunked.encoding);
+          return decompressed;
+        }
+
+        const raw = localStorage.getItem(name);
+        return raw;
       } catch (error) {
-        console.error('[Project Store] Error reading from localStorage:', error);
+        console.error('[Project Store] Error reading from storage:', error);
         return null;
       }
     },
-    setItem: (name: string, value: string): void => {
+    setItem: async (name: string, value: string): Promise<void> => {
       try {
-        // Check size before attempting to save
-        const size = new Blob([value]).size;
-        const currentSize = localStorage.getItem(name) ? new Blob([localStorage.getItem(name)!]).size : 0;
-        
-        console.log(`[Project Store] 📊 Storage size check:`, {
-          key: name,
-          newSize: `${(size / 1024 / 1024).toFixed(2)}MB`,
-          currentSize: `${(currentSize / 1024 / 1024).toFixed(2)}MB`,
-          threshold: `${(MAX_LOCALSTORAGE_SIZE / 1024 / 1024).toFixed(2)}MB`,
-          willExceed: size > MAX_LOCALSTORAGE_SIZE
+        const { payload, encoding } = await gzipCompress(value);
+        const storageUsed = await saveChunked(name, payload, encoding);
+
+        console.log('[Project Store] ✅ Persisted project state', {
+          encoding,
+          storage: storageUsed,
+          rawSizeMB: (new Blob([value]).size / 1024 / 1024).toFixed(2),
+          compressedSizeMB: (new Blob([payload]).size / 1024 / 1024).toFixed(2),
         });
-        
-        if (size > MAX_LOCALSTORAGE_SIZE) {
-          console.warn(`[Project Store] ⚠️ Project size (${(size / 1024 / 1024).toFixed(2)}MB) exceeds threshold (${(MAX_LOCALSTORAGE_SIZE / 1024 / 1024).toFixed(2)}MB). Skipping localStorage persist to prevent QuotaExceededError.`);
-          console.warn(`[Project Store] 💡 Large projects will not be persisted to localStorage. Consider using Supabase for storage.`);
-          return; // Skip persist for large projects
-        }
-        
-        // Attempt to save
-        localStorage.setItem(name, value);
-        console.log(`[Project Store] ✅ Successfully persisted to localStorage (${(size / 1024 / 1024).toFixed(2)}MB)`);
       } catch (error: any) {
-        // Handle QuotaExceededError specifically
-        if (error?.name === 'QuotaExceededError' || error?.code === 22) {
-          console.error('[Project Store] ❌ QuotaExceededError: localStorage is full. Skipping persist for this project.');
-          console.error('[Project Store] 💡 Consider clearing localStorage or using Supabase for large projects.');
-        } else {
-          console.error('[Project Store] ❌ Error saving to localStorage:', error);
-        }
-        // Don't throw - gracefully handle the error by skipping persist
+        console.error('[Project Store] ❌ Error saving project state:', error);
       }
     },
-    removeItem: (name: string): void => {
+    removeItem: async (name: string): Promise<void> => {
       try {
-        localStorage.removeItem(name);
+        clearChunkedLocalStorage(name);
+        await idbRemove(name);
       } catch (error) {
-        console.error('[Project Store] Error removing from localStorage:', error);
+        console.error('[Project Store] Error removing project state:', error);
       }
     },
   };
@@ -226,26 +414,12 @@ export const useProjectStore = create<ProjectState>()(
       name: 'project-storage', // localStorage key
       storage: createJSONStorage(() => createSafeLocalStorage()),
       // Only persist currentProject and lastSaved
-      // CRITICAL: Size check happens in createSafeLocalStorage() to prevent QuotaExceededError
       partialize: (state) => {
         const partialState = {
           currentProject: state.currentProject,
           lastSaved: state.lastSaved,
         };
-        
-        // Log size before partialization
-        const size = calculateSize(partialState);
-        if (state.currentProject) {
-          console.log(`[Project Store] 📦 Preparing to persist project:`, {
-            projectName: state.currentProject.name,
-            projectId: state.currentProject.id,
-            pagesCount: state.currentProject.pages?.length || 0,
-            componentsCount: state.currentProject.pages?.[0]?.components?.length || 0,
-            estimatedSize: `${(size / 1024 / 1024).toFixed(2)}MB`,
-            willPersist: size <= MAX_LOCALSTORAGE_SIZE
-          });
-        }
-        
+
         return partialState;
       },
     }
