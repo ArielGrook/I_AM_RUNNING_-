@@ -46,12 +46,16 @@ function saveChunkedSync(
   }
 
   try {
+    // First try direct write (fast path) to keep restore simple
     clearChunkedLocalStorage(name);
+    localStorage.setItem(name, data);
+    return 'direct';
+  } catch (error) {
+    console.warn('[Project Store] ⚠️ direct localStorage write failed, attempting chunked:', error);
+  }
 
-    if (data.length <= CHUNK_SIZE) {
-      localStorage.setItem(name, data);
-      return 'direct';
-    }
+  try {
+    clearChunkedLocalStorage(name);
 
     const chunks = [];
     for (let i = 0; i < data.length; i += CHUNK_SIZE) {
@@ -89,6 +93,7 @@ function loadChunkedSync(
       const meta = JSON.parse(metaRaw) as {
         version: string;
         chunks: number;
+        encoding?: string;
       };
       if (meta.version === STORAGE_VERSION && meta.chunks > 0) {
         let combined = '';
