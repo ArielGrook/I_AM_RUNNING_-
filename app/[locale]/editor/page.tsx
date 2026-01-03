@@ -95,14 +95,14 @@ export default function EditorPage() {
   
   const { 
     currentProject, 
-    saveStatus, 
-    lastSaved,
     createProject,
     updateProject,
     loadProject,
+    setSaveStatus: setStoreSaveStatus,
   } = useProjectStore();
   
   // Manual save state
+  const [saveStatus, setSaveStatus] = useState<import('@/lib/types/project').SaveStatus>('idle');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   
@@ -113,6 +113,7 @@ export default function EditorPage() {
     setIsSaving(true);
     setSaveSuccess(false);
     setSaveStatus('saving');
+    setStoreSaveStatus('saving');
     
     try {
       // Force Zustand to persist by updating timestamp
@@ -127,6 +128,7 @@ export default function EditorPage() {
       await new Promise(resolve => setTimeout(resolve, 300));
       
       setSaveStatus('saved');
+      setStoreSaveStatus('saved');
       setSaveSuccess(true);
       console.log('[Manual Save] ✅ Project saved to localStorage');
       
@@ -135,10 +137,11 @@ export default function EditorPage() {
     } catch (error) {
       console.error('[Manual Save] ❌ Failed:', error);
       setSaveStatus('error');
+      setStoreSaveStatus('error');
     } finally {
       setIsSaving(false);
     }
-  }, [currentProject, isSaving, setSaveStatus, updateProject]);
+  }, [currentProject, isSaving, setSaveStatus, setStoreSaveStatus, updateProject]);
   
   // Sync undo/redo state from editor
   useEffect(() => {
@@ -729,6 +732,7 @@ export default function EditorPage() {
                 variant="outline"
                 onClick={handleManualSave}
                 disabled={isSaving}
+                data-status={saveStatus}
                 className={`h-8 px-3 transition-all ${
                   saveSuccess 
                     ? 'bg-green-50 border-green-400 text-green-700' 
