@@ -13,8 +13,6 @@ interface SliderProps {
 export function Slider({ value, onValueChange, min, max, step = 1, className, orientation }: SliderProps) {
   const [localValue, setLocalValue] = useState(value[0] || 0);
   const isDraggingRef = useRef(false);
-  const frameRef = useRef<number | null>(null);
-  const pendingValueRef = useRef<number | null>(null);
   const isVertical = orientation === 'vertical';
   const fillRef = useRef<HTMLDivElement | null>(null);
   const lastRenderValueRef = useRef<number>(localValue);
@@ -38,28 +36,14 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
     lastRenderValueRef.current = newValue;
   }, [isVertical, max, min]);
 
-  // 60fps-scheduled update to parent
-  const scheduleUpdate = useCallback((newValue: number) => {
-    pendingValueRef.current = newValue;
-
-    if (frameRef.current === null) {
-      frameRef.current = requestAnimationFrame(() => {
-        frameRef.current = null;
-        if (pendingValueRef.current !== null) {
-          onValueChange([pendingValueRef.current]);
-        }
-      });
-    }
-  }, [onValueChange]);
-  
   // Handle input change - update local state + throttled parent update
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value);
     setLocalValue(newValue);
     applyFillTransform(newValue);
-    // Call parent with animation-frame pacing for real-time visual feedback
-    scheduleUpdate(newValue);
-  }, [applyFillTransform, scheduleUpdate]);
+    // Call parent immediately for real-time property updates
+    onValueChange([newValue]);
+  }, [applyFillTransform, onValueChange]);
   
   // On mouse/touch down - mark dragging start
   const handleDragStart = useCallback(() => {
@@ -70,16 +54,11 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
   const handleDragEnd = useCallback(() => {
     isDraggingRef.current = false;
     // Always commit final value on release
-    scheduleUpdate(localValue);
-  }, [localValue, scheduleUpdate]);
+    onValueChange([localValue]);
+  }, [localValue, onValueChange]);
 
   useEffect(() => {
     applyFillTransform(localValue);
-    return () => {
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-      }
-    };
   }, [applyFillTransform, localValue]);
   
   return (
