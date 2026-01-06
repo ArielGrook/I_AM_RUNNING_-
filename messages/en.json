@@ -39,7 +39,9 @@
       "speed": "SPEED",
       "price": "PRICE",
       "subheadlineEnd": "elements, development speed, and affordable price for any level websites",
-      "cta": "Enter Editor"
+      "signUp": "Sign Up",
+      "enterChat": "Enter Chat",
+      "enterEditor": "Enter Editor"
     },
     "origin": {
       "eyebrow": "Our Story",

@@ -13,6 +13,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2 } from 'lucide-react';
 import Link from 'next/link';
@@ -87,7 +88,8 @@ export default function EditorPage() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
-  
+  const searchParams = useSearchParams();
+
   // Check demo mode
   const isDemo = isDemoMode();
   const canCreate = canCreateProject();
@@ -142,7 +144,15 @@ export default function EditorPage() {
       setIsSaving(false);
     }
   }, [currentProject, isSaving, setSaveStatus, setStoreSaveStatus, updateProject]);
-  
+
+  // Check for chat query parameter on mount
+  useEffect(() => {
+    const chatParam = searchParams.get('chat');
+    if (chatParam === 'open') {
+      setChatOpen(true);
+    }
+  }, [searchParams]);
+
   // Sync undo/redo state from editor
   useEffect(() => {
     if (!currentProject || !grapeEditorRef.current) {
