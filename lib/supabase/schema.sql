@@ -1,5 +1,26 @@
 -- Supabase Database Schema
--- 
+--
+-- User Profiles and Authentication
+-- Stage 1 Module 1: Authentication & User System
+
+-- Profiles table for user role management
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  full_name TEXT,
+  company TEXT,
+  role INTEGER DEFAULT 1 CHECK (role IN (0, 1, 2, 3)), -- 0=anon, 1=basic, 2=freelancer, 3=premium
+  ai_requests_today INTEGER DEFAULT 0,
+  ai_requests_limit INTEGER DEFAULT 10,
+  subscription_expires TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for profiles
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
+
 -- Component System Tables
 -- Stage 2 Module 5: Component System from Supabase
 
@@ -60,8 +81,25 @@ CREATE INDEX IF NOT EXISTS idx_user_packages_user_id ON user_packages(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_packages_status ON user_packages(status) WHERE status = 'active';
 
 -- Row Level Security (RLS) Policies
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE components ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+
+-- Profiles policies
+-- Users can view their own profile
+CREATE POLICY "Users can view their own profile"
+  ON profiles FOR SELECT
+  USING (auth.uid() = id);
+
+-- Users can insert their own profile
+CREATE POLICY "Users can insert their own profile"
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
+-- Users can update their own profile
+CREATE POLICY "Users can update their own profile"
+  ON profiles FOR UPDATE
+  USING (auth.uid() = id);
 
 -- Components policies
 -- Anyone can read public components
@@ -136,6 +174,11 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers for updated_at
+CREATE TRIGGER update_profiles_updated_at
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_components_updated_at
   BEFORE UPDATE ON components
   FOR EACH ROW
