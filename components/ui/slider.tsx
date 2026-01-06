@@ -13,8 +13,9 @@ interface SliderProps {
 export function Slider({ value, onValueChange, min, max, step = 1, className, orientation }: SliderProps) {
   const [localValue, setLocalValue] = useState(value[0] || 0);
   const isDraggingRef = useRef(false);
-  const lastCallRef = useRef(0);
   const isVertical = orientation === 'vertical';
+  const fillRef = useRef<HTMLDivElement | null>(null);
+  const lastRenderValueRef = useRef<number>(localValue);
   
   // Sync local value when prop value changes externally (only when not dragging)
   useEffect(() => {
@@ -23,22 +24,26 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
     }
   }, [value]);
   
-  // Throttled call to parent - max 30fps during drag for performance
-  const throttledUpdate = useCallback((newValue: number) => {
-    const now = Date.now();
-    if (now - lastCallRef.current >= 33) { // ~30fps throttle
-      lastCallRef.current = now;
-      onValueChange([newValue]);
-    }
-  }, [onValueChange]);
-  
+  const applyFillTransform = useCallback((newValue: number) => {
+    if (!fillRef.current) return;
+    if (newValue === lastRenderValueRef.current) return;
+
+    const percentage = Math.max(0, Math.min(100, ((newValue - min) / (max - min)) * 100));
+    const scale = percentage / 100;
+    const transform = isVertical ? `scaleY(${scale})` : `scaleX(${scale})`;
+
+    fillRef.current.style.transform = transform;
+    lastRenderValueRef.current = newValue;
+  }, [isVertical, max, min]);
+
   // Handle input change - update local state + throttled parent update
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value);
     setLocalValue(newValue);
-    // Call parent with throttling for real-time visual feedback
-    throttledUpdate(newValue);
-  }, [throttledUpdate]);
+    applyFillTransform(newValue);
+    // Call parent immediately for real-time property updates
+    onValueChange([newValue]);
+  }, [applyFillTransform, onValueChange]);
   
   // On mouse/touch down - mark dragging start
   const handleDragStart = useCallback(() => {
@@ -51,16 +56,21 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
     // Always commit final value on release
     onValueChange([localValue]);
   }, [localValue, onValueChange]);
-  
-  const percentage = ((localValue - min) / (max - min)) * 100;
+
+  useEffect(() => {
+    applyFillTransform(localValue);
+  }, [applyFillTransform, localValue]);
   
   return (
     <div className={`slider-wrapper ${isVertical ? 'slider-wrapper-vertical' : 'slider-wrapper-horizontal'} ${className || ''}`}>
       <div 
         className="slider-fill"
         style={{
-          [isVertical ? 'height' : 'width']: `${percentage}%`,
+          transformOrigin: isVertical ? 'bottom center' : 'left center',
+          willChange: 'transform',
+          transition: isDraggingRef.current ? 'none' : 'transform 80ms ease-out',
         }}
+        ref={fillRef}
       />
       <input
         type="range"
@@ -68,6 +78,7 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
         max={max}
         step={step}
         value={localValue}
+        onInput={handleChange}
         onChange={handleChange}
         onMouseDown={handleDragStart}
         onMouseUp={handleDragEnd}

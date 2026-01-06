@@ -19,77 +19,143 @@ import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { Project, SaveStatus } from '@/lib/types/project';
 import { v4 as uuidv4 } from 'uuid';
 
-/**
- * Maximum size for localStorage persistence (3MB)
- * localStorage typically has 5-10MB limit, so we use 3MB as safe threshold
- */
-const MAX_LOCALSTORAGE_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+const STORAGE_VERSION = 'v2';
+const CHUNK_SIZE = 900_000; // ~0.9MB chunks to keep localStorage writes reliable
 
-/**
- * Calculate approximate size of an object in bytes (JSON stringified)
- */
-function calculateSize(obj: any): number {
+const isClient = typeof window !== 'undefined';
+
+function clearChunkedLocalStorage(name: string) {
+  if (!isClient || typeof localStorage === 'undefined') return;
+  const meta = localStorage.getItem(`${name}:meta`);
+  const chunks = meta ? Number.parseInt(JSON.parse(meta)?.chunks ?? '0', 10) : 0;
+  if (Number.isFinite(chunks)) {
+    for (let i = 0; i < chunks; i += 1) {
+      localStorage.removeItem(`${name}:chunk:${i}`);
+    }
+  }
+  localStorage.removeItem(`${name}:meta`);
+  localStorage.removeItem(name);
+}
+
+function saveChunkedSync(
+  name: string,
+  data: string
+): 'chunked' | 'direct' | 'failed' {
+  if (!isClient || typeof localStorage === 'undefined') {
+    return 'failed';
+  }
+
   try {
-    return new Blob([JSON.stringify(obj)]).size;
+    // First try direct write (fast path) to keep restore simple
+    clearChunkedLocalStorage(name);
+    localStorage.setItem(name, data);
+    return 'direct';
   } catch (error) {
-    console.warn('[Project Store] Failed to calculate size:', error);
-    return 0;
+    console.warn('[Project Store] ⚠️ direct localStorage write failed, attempting chunked:', error);
+  }
+
+  try {
+    clearChunkedLocalStorage(name);
+
+    const chunks = [];
+    for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+      chunks.push(data.slice(i, i + CHUNK_SIZE));
+    }
+
+    const meta = JSON.stringify({
+      version: STORAGE_VERSION,
+      encoding: 'none',
+      chunks: chunks.length,
+      storage: 'local',
+    });
+    localStorage.setItem(`${name}:meta`, meta);
+    chunks.forEach((chunk, idx) => {
+      localStorage.setItem(`${name}:chunk:${idx}`, chunk);
+    });
+    // Marker for compatibility (not used for payload)
+    localStorage.setItem(name, 'chunked');
+    return 'chunked';
+  } catch (error) {
+    console.error('[Project Store] ❌ localStorage write failed:', error);
+    clearChunkedLocalStorage(name);
+    return 'failed';
   }
 }
 
+function loadChunkedSync(
+  name: string
+): string | null {
+  if (!isClient || typeof localStorage === 'undefined') return null;
+
+  const metaRaw = localStorage.getItem(`${name}:meta`);
+  if (metaRaw) {
+    try {
+      const meta = JSON.parse(metaRaw) as {
+        version: string;
+        chunks: number;
+        encoding?: string;
+      };
+      if (meta.version === STORAGE_VERSION && meta.chunks > 0) {
+        let combined = '';
+        for (let i = 0; i < meta.chunks; i += 1) {
+          combined += localStorage.getItem(`${name}:chunk:${i}`) || '';
+        }
+        if (combined.length) {
+          return combined;
+        }
+      }
+    } catch (error) {
+      console.warn('[Project Store] ⚠️ Failed to read chunked localStorage payload:', error);
+    }
+  }
+
+  const raw = localStorage.getItem(name);
+  // Guard against stale marker without meta
+  if (raw === 'chunked' && !metaRaw) {
+    return null;
+  }
+  return raw;
+}
+
 /**
- * Custom localStorage storage wrapper with size checks and error handling
- * Prevents QuotaExceededError by skipping persist for large projects
+ * Custom storage wrapper with chunking support (synchronous for Zustand persist)
  */
 const createSafeLocalStorage = (): StateStorage => {
+  if (!isClient || typeof localStorage === 'undefined') {
+    // Server-safe no-op storage
+    return {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    };
+  }
+
   return {
     getItem: (name: string): string | null => {
       try {
-        return localStorage.getItem(name);
+        return loadChunkedSync(name);
       } catch (error) {
-        console.error('[Project Store] Error reading from localStorage:', error);
+        console.error('[Project Store] Error reading from storage:', error);
         return null;
       }
     },
     setItem: (name: string, value: string): void => {
       try {
-        // Check size before attempting to save
-        const size = new Blob([value]).size;
-        const currentSize = localStorage.getItem(name) ? new Blob([localStorage.getItem(name)!]).size : 0;
-        
-        console.log(`[Project Store] 📊 Storage size check:`, {
-          key: name,
-          newSize: `${(size / 1024 / 1024).toFixed(2)}MB`,
-          currentSize: `${(currentSize / 1024 / 1024).toFixed(2)}MB`,
-          threshold: `${(MAX_LOCALSTORAGE_SIZE / 1024 / 1024).toFixed(2)}MB`,
-          willExceed: size > MAX_LOCALSTORAGE_SIZE
+        const storageUsed = saveChunkedSync(name, value);
+
+        console.log('[Project Store] ✅ Persisted project state', {
+          storage: storageUsed,
+          rawSizeMB: (new Blob([value]).size / 1024 / 1024).toFixed(2),
         });
-        
-        if (size > MAX_LOCALSTORAGE_SIZE) {
-          console.warn(`[Project Store] ⚠️ Project size (${(size / 1024 / 1024).toFixed(2)}MB) exceeds threshold (${(MAX_LOCALSTORAGE_SIZE / 1024 / 1024).toFixed(2)}MB). Skipping localStorage persist to prevent QuotaExceededError.`);
-          console.warn(`[Project Store] 💡 Large projects will not be persisted to localStorage. Consider using Supabase for storage.`);
-          return; // Skip persist for large projects
-        }
-        
-        // Attempt to save
-        localStorage.setItem(name, value);
-        console.log(`[Project Store] ✅ Successfully persisted to localStorage (${(size / 1024 / 1024).toFixed(2)}MB)`);
       } catch (error: any) {
-        // Handle QuotaExceededError specifically
-        if (error?.name === 'QuotaExceededError' || error?.code === 22) {
-          console.error('[Project Store] ❌ QuotaExceededError: localStorage is full. Skipping persist for this project.');
-          console.error('[Project Store] 💡 Consider clearing localStorage or using Supabase for large projects.');
-        } else {
-          console.error('[Project Store] ❌ Error saving to localStorage:', error);
-        }
-        // Don't throw - gracefully handle the error by skipping persist
+        console.error('[Project Store] ❌ Error saving project state:', error);
       }
     },
     removeItem: (name: string): void => {
       try {
-        localStorage.removeItem(name);
+        clearChunkedLocalStorage(name);
       } catch (error) {
-        console.error('[Project Store] Error removing from localStorage:', error);
+        console.error('[Project Store] Error removing project state:', error);
       }
     },
   };
@@ -226,26 +292,12 @@ export const useProjectStore = create<ProjectState>()(
       name: 'project-storage', // localStorage key
       storage: createJSONStorage(() => createSafeLocalStorage()),
       // Only persist currentProject and lastSaved
-      // CRITICAL: Size check happens in createSafeLocalStorage() to prevent QuotaExceededError
       partialize: (state) => {
         const partialState = {
           currentProject: state.currentProject,
           lastSaved: state.lastSaved,
         };
-        
-        // Log size before partialization
-        const size = calculateSize(partialState);
-        if (state.currentProject) {
-          console.log(`[Project Store] 📦 Preparing to persist project:`, {
-            projectName: state.currentProject.name,
-            projectId: state.currentProject.id,
-            pagesCount: state.currentProject.pages?.length || 0,
-            componentsCount: state.currentProject.pages?.[0]?.components?.length || 0,
-            estimatedSize: `${(size / 1024 / 1024).toFixed(2)}MB`,
-            willPersist: size <= MAX_LOCALSTORAGE_SIZE
-          });
-        }
-        
+
         return partialState;
       },
     }
