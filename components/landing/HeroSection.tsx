@@ -126,15 +126,11 @@ export function HeroSection() {
           >
             {t('subheadline')}{' '}
             <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('quality')}</span>{' '}
-            {t('subheadlineEnd').split(t('speed'))[0]}
-            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('speed')}</span>
-            {t('subheadlineEnd').includes(t('price')) && (
-              <>
-                {t('subheadlineEnd').split(t('speed'))[1]?.split(t('price'))[0]}
-                <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('price')}</span>
-                {t('subheadlineEnd').split(t('price'))[1]}
-              </>
-            )}
+            {t('subheadlineMid')}{' '}
+            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('speed')}</span>{' '}
+            {t('subheadlineMid2')}{' '}
+            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('price')}</span>
+            {t('subheadlineEnd')}
           </motion.p>
 
           {/* CTA Buttons */}
