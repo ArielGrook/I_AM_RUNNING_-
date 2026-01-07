@@ -44,7 +44,25 @@ export function useAuth() {
     error: null,
   });
 
-  const supabase = createSupabaseClient();
+  const [cookieConsent, setCookieConsent] = useState<'accepted' | 'declined' | null>(null);
+
+  // Get cookie consent from localStorage
+  useEffect(() => {
+    const storedConsent = localStorage.getItem('cookie-consent');
+    if (storedConsent === 'accepted' || storedConsent === 'declined') {
+      setCookieConsent(storedConsent as 'accepted' | 'declined');
+    }
+  }, []);
+
+  const supabase = createSupabaseClient(cookieConsent);
+
+  /**
+   * Update cookie consent and reinitialize auth client
+   */
+  const updateCookieConsent = (consent: 'accepted' | 'declined' | null) => {
+    setCookieConsent(consent);
+    localStorage.setItem('cookie-consent', consent || '');
+  };
 
   /**
    * Load profile data from the profiles table
@@ -292,11 +310,15 @@ export function useAuth() {
     // Auth state
     ...authState,
 
+    // Cookie consent
+    cookieConsent,
+
     // Actions
     signIn: signInUser,
     signUp: signUpUser,
     signOut: signOutUser,
     refreshAuth,
+    updateCookieConsent,
 
     // Role-based access
     hasRole,

@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { LoadingProvider } from '@/components/providers/loading-provider';
+import { CookieConsentWrapper } from '@/components/CookieConsentWrapper';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -69,6 +70,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <LoadingProvider>
             {children}
+            <CookieConsentWrapper />
           </LoadingProvider>
         </ThemeProvider>
       </body>

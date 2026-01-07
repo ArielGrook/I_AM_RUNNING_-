@@ -35,8 +35,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
  * Client-side Supabase client (browser)
  * Use in client components with SSR support
  */
-export function createSupabaseClient() {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+export function createSupabaseClient(cookieConsent?: 'accepted' | 'declined' | null) {
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: cookieConsent === 'accepted',
+    },
+  });
 }
 
 /**

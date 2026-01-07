@@ -16,7 +16,7 @@ export function HeroSection() {
   const t = useTranslations('Landing.hero');
   const locale = useLocale();
   const isRTL = locale === 'he';
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
   const router = useRouter();
 
   const handleEditorClick = (e: React.MouseEvent) => {
@@ -77,7 +77,7 @@ export function HeroSection() {
                 className="hidden sm:inline-flex text-white hover:bg-white/20 font-semibold"
               >
                 <Link href="/auth/login">
-                  {t('login', 'Login')}
+                  {t('login')}
                 </Link>
               </Button>
               <Button
@@ -143,7 +143,7 @@ export function HeroSection() {
             <Button
               onClick={handleChatClick}
               size="lg"
-              className="px-8 py-6 text-lg font-bold bg-gradient-to-r from-[#FFA500] to-[#FF6B35] text-white hover:from-[#FF6B35] hover:to-[#FFA500] shadow-lg hover:shadow-[0_0_30px_rgba(255,107,53,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
+              className="px-8 py-6 text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
             >
               {t('enterChat')}
               <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
@@ -152,7 +152,7 @@ export function HeroSection() {
             <Button
               onClick={handleEditorClick}
               size="lg"
-              className="px-8 py-6 text-lg font-bold bg-gradient-to-r from-[#FFA500] to-[#FF6B35] text-white hover:from-[#FF6B35] hover:to-[#FFA500] shadow-lg hover:shadow-[0_0_30px_rgba(255,107,53,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
+              className="px-8 py-6 text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
             >
               {t('enterEditor')}
               <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
