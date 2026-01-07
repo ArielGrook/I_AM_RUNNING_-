@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { CustomIcon } from '@/components/ui/custom-icons';
 
 export default function TermsPage() {
   const router = useRouter();
@@ -24,7 +25,9 @@ export default function TermsPage() {
           <p className="text-gray-600 dark:text-gray-400 mb-8">
             Terms and conditions for using our service...
           </p>
-          <div className="text-6xl mb-4">📄</div>
+          <div className="mb-4">
+            <CustomIcon name="file-text" size={72} />
+          </div>
           <p className="text-sm text-gray-500">Terms of service content coming soon</p>
         </div>
       </div>

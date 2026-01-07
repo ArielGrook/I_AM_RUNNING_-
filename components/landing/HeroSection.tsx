@@ -23,18 +23,23 @@ export function HeroSection() {
     if (!isAuthenticated) {
       e.preventDefault();
       router.push('/auth/login');
+      return;
     }
-    // If authenticated, allow normal Link navigation
+
+    // Check if user has editor access (roles 1, 2, 3)
+    const canAccess = profile?.role && profile.role >= 1;
+    if (!canAccess) {
+      e.preventDefault();
+      // Could show an upgrade message here
+      return;
+    }
+
+    // If authenticated and has access, allow normal Link navigation
   };
 
   const handleChatClick = () => {
-    // Chat is available to all users, but requires editor context
-    if (isAuthenticated) {
-      router.push('/editor?chat=open');
-    } else {
-      // For anonymous users, redirect to editor which will open chat
-      router.push('/editor?chat=open');
-    }
+    // Navigate to dedicated chat page
+    router.push('/chat');
   };
 
   return (

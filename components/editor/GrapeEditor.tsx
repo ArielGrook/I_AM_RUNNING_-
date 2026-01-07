@@ -15,6 +15,7 @@ import 'grapesjs/dist/css/grapes.min.css';
 import 'grapesjs-blocks-basic';
 import 'grapesjs-preset-webpage';
 import { useProjectStore } from '@/lib/store/project-store';
+import { useTheme } from 'next-themes';
 import { getAllCatalogBlockDefinitions, getSupabaseBlockDefinitions, type BlockDefinition } from '@/lib/grapesjs/catalog-blocks';
 import { type SupabaseComponent } from '@/lib/components/supabase-catalog';
 import { convertCssToInlineStyles } from '@/lib/utils/css-to-inline';
@@ -119,6 +120,8 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
   const [canRedo, setCanRedo] = useState(false);
   const lastSyncedProjectRef = useRef<string | null>(null);
   const { currentProject, updateProject } = useProjectStore();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Undo/Redo handlers
   const handleUndo = useCallback(() => {
@@ -634,6 +637,39 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       }
     };
   }, [isRTL, components]); // Re-initialize if RTL or components change
+
+  // Apply dark theme to editor when site theme changes
+  useEffect(() => {
+    const editor = grapesEditorRef.current;
+    if (!editor) return;
+
+    const canvas = editor.Canvas.getElement();
+    if (canvas) {
+      if (isDark) {
+        // Apply dark theme styles to canvas
+        canvas.style.backgroundColor = '#1f2937'; // Dark gray background
+        canvas.style.color = '#f9fafb'; // Light text
+      } else {
+        // Apply light theme styles to canvas
+        canvas.style.backgroundColor = '#f9fafb'; // Light background
+        canvas.style.color = '#1f2937'; // Dark text
+      }
+    }
+
+    // Apply theme to editor panels and UI
+    const editorContainer = editorRef.current;
+    if (editorContainer) {
+      if (isDark) {
+        editorContainer.style.setProperty('--editor-bg', '#1f2937');
+        editorContainer.style.setProperty('--editor-text', '#f9fafb');
+        editorContainer.style.setProperty('--editor-border', '#374151');
+      } else {
+        editorContainer.style.setProperty('--editor-bg', '#ffffff');
+        editorContainer.style.setProperty('--editor-text', '#1f2937');
+        editorContainer.style.setProperty('--editor-border', '#e5e7eb');
+      }
+    }
+  }, [isDark]);
 
   /**
    * Sync loaded/imported project structure into the GrapesJS canvas.

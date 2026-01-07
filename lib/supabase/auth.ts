@@ -41,6 +41,7 @@ export async function signUp(email: string, password: string, metadata?: Record<
     password,
     options: {
       data: metadata,
+      email_confirm: false, // Skip email verification
     },
   });
 

@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { CustomIcon } from '@/components/ui/custom-icons';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -24,7 +25,9 @@ export default function SettingsPage() {
           <p className="text-gray-600 dark:text-gray-400 mb-8">
             Account settings and preferences coming soon...
           </p>
-          <div className="text-6xl mb-4">⚙️</div>
+          <div className="mb-4">
+            <CustomIcon name="settings" size={72} />
+          </div>
           <p className="text-sm text-gray-500">This feature is under development</p>
         </div>
       </div>

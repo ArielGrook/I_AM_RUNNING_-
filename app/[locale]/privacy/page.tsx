@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { CustomIcon } from '@/components/ui/custom-icons';
 
 export default function PrivacyPage() {
   const router = useRouter();
@@ -24,7 +25,9 @@ export default function PrivacyPage() {
           <p className="text-gray-600 dark:text-gray-400 mb-8">
             Our commitment to protecting your privacy...
           </p>
-          <div className="text-6xl mb-4">🔒</div>
+          <div className="mb-4">
+            <CustomIcon name="shield" size={72} />
+          </div>
           <p className="text-sm text-gray-500">Privacy policy content coming soon</p>
         </div>
       </div>

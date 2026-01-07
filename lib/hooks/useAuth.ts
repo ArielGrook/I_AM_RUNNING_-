@@ -109,7 +109,8 @@ export function useAuth() {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      const user = session?.user;
 
       if (error) {
         console.error('Auth error:', error);
