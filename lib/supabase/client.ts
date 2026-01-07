@@ -36,9 +36,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
  * Use in client components with SSR support
  */
 export function createSupabaseClient(cookieConsent?: 'accepted' | 'declined' | null) {
+  const persistSession = cookieConsent === 'accepted';
+  console.log('🔧 Creating Supabase client with persistSession:', persistSession);
+
   return createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      persistSession: cookieConsent === 'accepted',
+      persistSession,
+      autoRefreshToken: persistSession,
+      detectSessionInUrl: true,
     },
   });
 }

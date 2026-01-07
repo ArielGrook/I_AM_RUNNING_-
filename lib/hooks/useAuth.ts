@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { User } from '@supabase/supabase-js';
 import { createSupabaseClient } from '@/lib/supabase/client';
-import { signIn, signUp, signOut } from '@/lib/supabase/auth';
+import { signIn, signUp, signOut, signInWithGoogle } from '@/lib/supabase/auth';
 
 /**
  * Profile interface matching our database schema
@@ -44,24 +44,27 @@ export function useAuth() {
     error: null,
   });
 
-  const [cookieConsent, setCookieConsent] = useState<'accepted' | 'declined' | null>(null);
-
-  // Get cookie consent from localStorage
-  useEffect(() => {
+  // Check cookie consent synchronously
+  const cookieConsent = useMemo(() => {
+    if (typeof window === 'undefined') return null;
     const storedConsent = localStorage.getItem('cookie-consent');
-    if (storedConsent === 'accepted' || storedConsent === 'declined') {
-      setCookieConsent(storedConsent as 'accepted' | 'declined');
-    }
+    return storedConsent === 'accepted' || storedConsent === 'declined'
+      ? (storedConsent as 'accepted' | 'declined')
+      : null;
   }, []);
 
-  const supabase = createSupabaseClient(cookieConsent);
+  console.log('🍪 Current cookie consent:', cookieConsent);
+
+  const supabase = useMemo(() => createSupabaseClient(cookieConsent), [cookieConsent]);
 
   /**
    * Update cookie consent and reinitialize auth client
    */
   const updateCookieConsent = (consent: 'accepted' | 'declined' | null) => {
-    setCookieConsent(consent);
+    console.log('🍪 Updating cookie consent to:', consent);
     localStorage.setItem('cookie-consent', consent || '');
+    // Force a page reload to reinitialize with new cookie consent
+    window.location.reload();
   };
 
   /**
@@ -219,6 +222,26 @@ export function useAuth() {
   };
 
   /**
+   * Sign in with Google OAuth
+   */
+  const signInWithGoogleUser = async () => {
+    setAuthState(prev => ({ ...prev, loading: true, error: null }));
+
+    try {
+      await signInWithGoogle();
+      // Auth state will be updated by the listener
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Google sign in failed';
+      setAuthState(prev => ({
+        ...prev,
+        loading: false,
+        error: errorMessage
+      }));
+      throw error;
+    }
+  };
+
+  /**
    * Sign out current user
    */
   const signOutUser = async () => {
@@ -246,15 +269,21 @@ export function useAuth() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
+        console.log('🔐 Auth state change:', event);
+        console.log('👤 User:', session?.user?.email);
+        console.log('🎫 Session:', session ? 'exists' : 'null');
+        console.log('🔑 Access token:', session?.access_token ? 'present' : 'missing');
 
         if (event === 'SIGNED_IN' && session?.user) {
+          console.log('✅ User signed in, loading profile...');
           let profile = await loadProfile(session.user.id);
           if (!profile) {
+            console.log('📝 Creating new profile for user...');
             // Create profile for new user
             profile = await createProfile(session.user);
           }
 
+          console.log('✅ Profile loaded:', profile);
           setAuthState({
             user: session.user,
             profile,
@@ -263,6 +292,7 @@ export function useAuth() {
             error: null,
           });
         } else if (event === 'SIGNED_OUT') {
+          console.log('🚪 User signed out');
           setAuthState({
             user: null,
             profile: null,
@@ -271,7 +301,19 @@ export function useAuth() {
             error: null,
           });
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          console.log('🔄 Token refreshed, reloading profile...');
           // User session refreshed, reload profile
+          const profile = await loadProfile(session.user.id);
+          setAuthState(prev => ({
+            ...prev,
+            user: session.user,
+            profile: profile || prev.profile,
+            loading: false,
+            isAuthenticated: true,
+            error: null,
+          }));
+        } else if (event === 'USER_UPDATED' && session?.user) {
+          console.log('👤 User updated');
           const profile = await loadProfile(session.user.id);
           setAuthState(prev => ({
             ...prev,
@@ -316,6 +358,7 @@ export function useAuth() {
     // Actions
     signIn: signInUser,
     signUp: signUpUser,
+    signInWithGoogle: signInWithGoogleUser,
     signOut: signOutUser,
     refreshAuth,
     updateCookieConsent,
