@@ -39,7 +39,7 @@ export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     profile: null,
-    loading: true,
+    loading: false, // Temporarily disabled to prevent infinite loading
     isAuthenticated: false,
     error: null,
   });
@@ -251,60 +251,28 @@ export function useAuth() {
     }
   };
 
-  // Listen for auth state changes
+  // Listen for auth state changes (temporarily disabled to debug loop)
   useEffect(() => {
     let mounted = true;
 
-    // Initial auth check (only once)
-    if (mounted) {
-      console.log('🔍 Initial auth check...');
-      refreshAuth();
-    }
+    // TEMPORARILY DISABLED: Initial auth check causing infinite loop
+    // if (mounted) {
+    //   console.log('🔍 Initial auth check...');
+    //   refreshAuth();
+    // }
 
-    // Listen for auth changes (simplified to prevent loops)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔐 Auth event:', event, 'User:', session?.user?.email || 'none');
+    // TEMPORARILY DISABLED: Auth state listener causing infinite loop
+    // const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    //   async (event, session) => {
+    //     console.log('🔐 Auth event:', event, 'User:', session?.user?.email || 'none');
+    //     // ... auth state handling
+    //   }
+    // );
 
-        if (event === 'SIGNED_IN' && session?.user) {
-          let profile = await loadProfile(session.user.id);
-          if (!profile) {
-            profile = await createProfile(session.user);
-          }
-
-          setAuthState({
-            user: session.user,
-            profile,
-            loading: false,
-            isAuthenticated: true,
-            error: null,
-          });
-        } else if (event === 'SIGNED_OUT') {
-          setAuthState({
-            user: null,
-            profile: null,
-            loading: false,
-            isAuthenticated: false,
-            error: null,
-          });
-        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          const profile = await loadProfile(session.user.id);
-          setAuthState(prev => ({
-            ...prev,
-            user: session.user,
-            profile: profile || prev.profile,
-            loading: false,
-            isAuthenticated: true,
-            error: null,
-          }));
-        }
-      }
-    );
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    // return () => {
+    //   mounted = false;
+    //   subscription.unsubscribe();
+    // };
   }, []);
 
   // Role-based access helpers
