@@ -128,7 +128,7 @@ export default function ChatPage() {
                     <div
                       className="inline-block max-w-[80%] text-gray-900 dark:text-white"
                     >
-                      <p className="text-sm leading-relaxed">{message.content}</p>
+                      <p className="text-base leading-relaxed">{message.content}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -156,7 +156,7 @@ export default function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <div className="py-6">
+          <div className="py-2">
             <div className="flex gap-3">
               <div className="flex-1 relative">
                 <Input
@@ -164,7 +164,7 @@ export default function ChatPage() {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Describe your website idea..."
-                  className="pr-12 py-3 border-none outline-none focus:outline-none focus:ring-0 bg-transparent"
+                  className="pr-12 py-4 text-base border-none outline-none focus:outline-none focus:ring-0 bg-transparent"
                 />
                 <button
                   onClick={handleSendMessage}
