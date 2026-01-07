@@ -44,27 +44,16 @@ export function useAuth() {
     error: null,
   });
 
-  // Check cookie consent synchronously
-  const cookieConsent = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    const storedConsent = localStorage.getItem('cookie-consent');
-    return storedConsent === 'accepted' || storedConsent === 'declined'
-      ? (storedConsent as 'accepted' | 'declined')
-      : null;
-  }, []);
-
-  console.log('🍪 Current cookie consent:', cookieConsent);
-
-  const supabase = useMemo(() => createSupabaseClient(cookieConsent), [cookieConsent]);
+  // Create Supabase client once (simplified to prevent infinite loops)
+  const supabase = createSupabaseClient(null); // Default to no persistence for now
 
   /**
-   * Update cookie consent and reinitialize auth client
+   * Update cookie consent (simplified to prevent loops)
    */
   const updateCookieConsent = (consent: 'accepted' | 'declined' | null) => {
     console.log('🍪 Updating cookie consent to:', consent);
     localStorage.setItem('cookie-consent', consent || '');
-    // Force a page reload to reinitialize with new cookie consent
-    window.location.reload();
+    // Note: For now, this won't change persistence until page reload
   };
 
   /**
@@ -127,6 +116,7 @@ export function useAuth() {
    * Refresh authentication state
    */
   const refreshAuth = async () => {
+    console.log('🔄 Refreshing auth state...');
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
@@ -263,27 +253,25 @@ export function useAuth() {
 
   // Listen for auth state changes
   useEffect(() => {
-    // Initial auth check
-    refreshAuth();
+    let mounted = true;
 
-    // Listen for auth changes
+    // Initial auth check (only once)
+    if (mounted) {
+      console.log('🔍 Initial auth check...');
+      refreshAuth();
+    }
+
+    // Listen for auth changes (simplified to prevent loops)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔐 Auth state change:', event);
-        console.log('👤 User:', session?.user?.email);
-        console.log('🎫 Session:', session ? 'exists' : 'null');
-        console.log('🔑 Access token:', session?.access_token ? 'present' : 'missing');
+        console.log('🔐 Auth event:', event, 'User:', session?.user?.email || 'none');
 
         if (event === 'SIGNED_IN' && session?.user) {
-          console.log('✅ User signed in, loading profile...');
           let profile = await loadProfile(session.user.id);
           if (!profile) {
-            console.log('📝 Creating new profile for user...');
-            // Create profile for new user
             profile = await createProfile(session.user);
           }
 
-          console.log('✅ Profile loaded:', profile);
           setAuthState({
             user: session.user,
             profile,
@@ -292,7 +280,6 @@ export function useAuth() {
             error: null,
           });
         } else if (event === 'SIGNED_OUT') {
-          console.log('🚪 User signed out');
           setAuthState({
             user: null,
             profile: null,
@@ -301,19 +288,6 @@ export function useAuth() {
             error: null,
           });
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          console.log('🔄 Token refreshed, reloading profile...');
-          // User session refreshed, reload profile
-          const profile = await loadProfile(session.user.id);
-          setAuthState(prev => ({
-            ...prev,
-            user: session.user,
-            profile: profile || prev.profile,
-            loading: false,
-            isAuthenticated: true,
-            error: null,
-          }));
-        } else if (event === 'USER_UPDATED' && session?.user) {
-          console.log('👤 User updated');
           const profile = await loadProfile(session.user.id);
           setAuthState(prev => ({
             ...prev,
@@ -328,6 +302,7 @@ export function useAuth() {
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
