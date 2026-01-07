@@ -86,114 +86,70 @@ export default function ChatPage() {
   return (
     <div className="h-screen bg-white dark:bg-[#262626] flex flex-col">
       {/* Header */}
-      <div className="bg-white dark:bg-[#262626] border-b border-gray-200 dark:border-[#525151] px-4 py-4 flex-shrink-0">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                onClick={() => router.back()}
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#F97316] rounded-full flex items-center justify-center">
-                  <Bot className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    AI Website Builder
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Online • Ready to help
-                  </p>
-                </div>
-              </div>
-            </div>
-            <Button
-              onClick={() => router.push('/editor')}
-              className="bg-[#F97316] hover:bg-[#F97316]/90 text-white"
-            >
-              Open Editor
-            </Button>
+      <div className="px-4 py-4 flex-shrink-0">
+        <div className="max-w-3xl mx-auto flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#F97316] rounded-full flex items-center justify-center">
+            <Bot className="h-5 w-5 text-white" />
           </div>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+            I AM RUNNING AI CHAT
+          </h1>
         </div>
       </div>
 
-      {/* Chat Container */}
-      <div className="flex-1 px-4 py-6 overflow-hidden">
-        <div className="bg-white dark:bg-[#525151] rounded-2xl border border-gray-200 dark:border-[#525151] h-full flex flex-col">
+      {/* Chat Container - Claude Style */}
+      <div className="flex-1 px-4 overflow-hidden">
+        <div className="max-w-3xl mx-auto h-full flex flex-col">
           {/* Messages Area */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-4">
-            <AnimatePresence>
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className={`flex items-start gap-3 ${
-                    message.type === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.type === 'assistant' && (
-                    <div className="w-8 h-8 bg-[#F97316] rounded-full flex items-center justify-center flex-shrink-0">
-                      <Bot className="h-4 w-4 text-white" />
-                    </div>
-                  )}
-
-                  <div
-                    className={`max-w-[70%] px-4 py-3 rounded-2xl ${
-                      message.type === 'user'
-                        ? 'bg-[#F97316] text-white rounded-br-md'
-                        : 'bg-gray-100 dark:bg-[#525151] text-gray-900 dark:text-white rounded-bl-md'
+          <div className="flex-1 overflow-y-auto py-6">
+            <div className="space-y-8">
+              <AnimatePresence>
+                {messages.map((message) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className={`${
+                      message.type === 'user' ? 'text-right' : 'text-left'
                     }`}
                   >
-                    <p className="text-sm leading-relaxed">{message.content}</p>
-                    <p className="text-xs opacity-70 mt-2">
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-
-                  {message.type === 'user' && (
-                    <div className="w-8 h-8 bg-gray-600 dark:bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4 text-white" />
+                    <div
+                      className={`inline-block max-w-[80%] ${
+                        message.type === 'user'
+                          ? 'bg-gray-100 dark:bg-[#525151] text-gray-900 dark:text-white px-4 py-3'
+                          : 'text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      <p className="text-sm leading-relaxed">{message.content}</p>
                     </div>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
 
-            {/* Typing Indicator */}
-            {isTyping && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-start gap-3"
-              >
-                <div className="w-8 h-8 bg-[#F97316] rounded-full flex items-center justify-center flex-shrink-0">
-                  <Bot className="h-4 w-4 text-white" />
-                </div>
-                <div className="bg-gray-100 dark:bg-[#525151] px-4 py-3 rounded-2xl rounded-bl-md">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              {/* Typing Indicator */}
+              {isTyping && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-left"
+                >
+                  <div className="inline-block">
+                    <div className="flex space-x-1 py-2">
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
 
-            <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} />
+            </div>
           </div>
 
           {/* Input Area */}
-          <div className="p-6 border-t border-gray-200 dark:border-[#525151] bg-gray-50 dark:bg-[#525151] rounded-b-2xl">
+          <div className="py-6">
             <div className="flex gap-3">
               <div className="flex-1 relative">
                 <Input
@@ -201,21 +157,19 @@ export default function ChatPage() {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Describe your website idea..."
-                  className="pr-12 py-3 border-gray-300 dark:border-gray-600 focus:border-[#F97316] dark:focus:border-[#F97316] rounded-xl"
+                  className="pr-12 py-3 border-gray-300 dark:border-gray-600 focus:outline-none rounded-xl bg-transparent"
                 />
-                <Button
+                <button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isTyping}
-                  size="sm"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#F97316] hover:bg-[#F97316]/90 text-white rounded-lg px-3 py-1"
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
+                    inputValue.trim() ? 'text-[#F97316]' : 'text-gray-400'
+                  } hover:text-[#F97316] transition-colors`}
                 >
                   <Send className="h-4 w-4" />
-                </Button>
+                </button>
               </div>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-              Press Enter to send • Describe your website and I'll suggest templates
-            </p>
           </div>
         </div>
       </div>

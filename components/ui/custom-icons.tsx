@@ -101,3 +101,4 @@ export const CustomIcon = ({
       return <span className="text-orange-500">{name}</span>;
   }
 };
+
