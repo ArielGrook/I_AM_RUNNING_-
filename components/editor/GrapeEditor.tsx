@@ -647,11 +647,11 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     if (canvas) {
       if (isDark) {
         // Apply dark theme styles to canvas
-        canvas.style.backgroundColor = '#1f2937'; // Dark gray background
-        canvas.style.color = '#f9fafb'; // Light text
+        canvas.style.backgroundColor = '#ffffff'; // Keep canvas white for content
+        canvas.style.color = '#1f2937'; // Dark text on canvas
       } else {
         // Apply light theme styles to canvas
-        canvas.style.backgroundColor = '#f9fafb'; // Light background
+        canvas.style.backgroundColor = '#ffffff'; // Light background
         canvas.style.color = '#1f2937'; // Dark text
       }
     }
@@ -671,9 +671,9 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
     // Toolbar and panels
     applyThemeToElements('.gjs-pn-panel, .gjs-toolbar, .gjs-pn-panels', {
-      backgroundColor: '#1f2937',
-      color: '#f9fafb',
-      borderColor: '#374151'
+      backgroundColor: '#262626',
+      color: '#ffffff',
+      borderColor: '#525151'
     }, {
       backgroundColor: '#ffffff',
       color: '#1f2937',
@@ -682,8 +682,8 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
     // Block manager and layer manager
     applyThemeToElements('.gjs-block-category, .gjs-blocks-c, .gjs-layer', {
-      backgroundColor: '#1f2937',
-      color: '#f9fafb'
+      backgroundColor: '#262626',
+      color: '#ffffff'
     }, {
       backgroundColor: '#f9fafb',
       color: '#1f2937'
@@ -691,8 +691,8 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
     // Style manager
     applyThemeToElements('.gjs-sm-sector, .gjs-sm-properties, .gjs-trt-traits', {
-      backgroundColor: '#1f2937',
-      color: '#f9fafb'
+      backgroundColor: '#262626',
+      color: '#ffffff'
     }, {
       backgroundColor: '#ffffff',
       color: '#1f2937'
@@ -700,9 +700,9 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
     // Buttons and controls
     applyThemeToElements('.gjs-pn-btn, .gjs-toolbar-item, button', {
-      backgroundColor: isDark ? '#374151' : '#f9fafb',
-      color: isDark ? '#f9fafb' : '#1f2937',
-      borderColor: isDark ? '#4b5563' : '#d1d5db'
+      backgroundColor: isDark ? '#525151' : '#f9fafb',
+      color: isDark ? '#ffffff' : '#1f2937',
+      borderColor: isDark ? '#525151' : '#d1d5db'
     }, {
       backgroundColor: '#f9fafb',
       color: '#1f2937',
@@ -711,16 +711,16 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
     // Active/hover states
     applyThemeToElements('.gjs-pn-btn:hover, .gjs-toolbar-item:hover', {
-      backgroundColor: '#4b5563'
+      backgroundColor: isDark ? '#525151' : '#f3f4f6'
     }, {
       backgroundColor: '#f3f4f6'
     });
 
     // Input fields and selects
     applyThemeToElements('input, select, textarea', {
-      backgroundColor: '#374151',
-      color: '#f9fafb',
-      borderColor: '#4b5563'
+      backgroundColor: isDark ? '#525151' : '#ffffff',
+      color: isDark ? '#ffffff' : '#1f2937',
+      borderColor: isDark ? '#525151' : '#d1d5db'
     }, {
       backgroundColor: '#ffffff',
       color: '#1f2937',
@@ -738,9 +738,9 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
     // Modal dialogs
     applyThemeToElements('.gjs-mdl-dialog', {
-      backgroundColor: '#1f2937',
-      color: '#f9fafb',
-      borderColor: '#374151'
+      backgroundColor: '#262626',
+      color: '#ffffff',
+      borderColor: '#525151'
     }, {
       backgroundColor: '#ffffff',
       color: '#1f2937',

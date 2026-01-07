@@ -84,10 +84,10 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-800">
+    <div className="h-screen bg-white dark:bg-[#262626] flex flex-col">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <div className="bg-white dark:bg-[#262626] border-b border-gray-200 dark:border-[#525151] px-4 py-4 flex-shrink-0">
+        <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -123,8 +123,8 @@ export default function ChatPage() {
       </div>
 
       {/* Chat Container */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 min-h-[600px] flex flex-col">
+      <div className="flex-1 px-4 py-6 overflow-hidden">
+        <div className="bg-white dark:bg-[#525151] rounded-2xl border border-gray-200 dark:border-[#525151] h-full flex flex-col">
           {/* Messages Area */}
           <div className="flex-1 p-6 overflow-y-auto space-y-4">
             <AnimatePresence>
@@ -148,7 +148,7 @@ export default function ChatPage() {
                     className={`max-w-[70%] px-4 py-3 rounded-2xl ${
                       message.type === 'user'
                         ? 'bg-[#F97316] text-white rounded-br-md'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-md'
+                        : 'bg-gray-100 dark:bg-[#525151] text-gray-900 dark:text-white rounded-bl-md'
                     }`}
                   >
                     <p className="text-sm leading-relaxed">{message.content}</p>
@@ -179,7 +179,7 @@ export default function ChatPage() {
                 <div className="w-8 h-8 bg-[#F97316] rounded-full flex items-center justify-center flex-shrink-0">
                   <Bot className="h-4 w-4 text-white" />
                 </div>
-                <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-2xl rounded-bl-md">
+                <div className="bg-gray-100 dark:bg-[#525151] px-4 py-3 rounded-2xl rounded-bl-md">
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -193,7 +193,7 @@ export default function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-2xl">
+          <div className="p-6 border-t border-gray-200 dark:border-[#525151] bg-gray-50 dark:bg-[#525151] rounded-b-2xl">
             <div className="flex gap-3">
               <div className="flex-1 relative">
                 <Input

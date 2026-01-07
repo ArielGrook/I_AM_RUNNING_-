@@ -51,7 +51,7 @@ export function ServicesSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
-              className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-800 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+              className="bg-white dark:bg-[#262626] rounded-xl p-6 shadow-md border border-gray-100 dark:border-[#525151] hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
             >
               <div className="text-3xl mb-3">{service.icon}</div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{service.title}</h3>

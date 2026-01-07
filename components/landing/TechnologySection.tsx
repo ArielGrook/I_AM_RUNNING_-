@@ -48,7 +48,7 @@ export function TechnologySection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="bg-white dark:bg-gray-900 rounded-2xl p-8 text-center shadow-lg border border-gray-100 dark:border-gray-800 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              className="bg-white dark:bg-[#262626] rounded-2xl p-8 text-center shadow-lg border border-gray-100 dark:border-[#525151] hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
               <div className="text-5xl mb-4">{feature.icon}</div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">{feature.title}</h3>
@@ -72,11 +72,11 @@ export function TechnologySection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg"
+          className="bg-white dark:bg-[#262626] rounded-2xl p-8 shadow-lg"
         >
           <div className="flex flex-wrap justify-center items-center gap-4 mb-6">
             {competitors.map((comp) => (
-              <span key={comp} className="px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full text-sm text-gray-600 dark:text-gray-400">
+              <span key={comp} className="px-4 py-2 bg-gray-100 dark:bg-[#525151] rounded-full text-sm text-gray-600 dark:text-white">
                 {comp}
               </span>
             ))}

@@ -42,7 +42,7 @@ export function SpeedSection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-gray-50 dark:bg-gray-900 rounded-3xl p-10"
+          className="bg-gray-50 dark:bg-[#262626] rounded-3xl p-10"
         >
           {/* Steps Timeline */}
           <div className={`flex justify-center items-center gap-4 md:gap-8 flex-wrap mb-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -74,7 +74,7 @@ export function SpeedSection() {
             viewport={{ once: true }}
             className="flex justify-center"
           >
-            <div className="inline-flex items-center gap-4 bg-white dark:bg-gray-800 px-8 py-4 rounded-2xl shadow-xl">
+            <div className="inline-flex items-center gap-4 bg-white dark:bg-[#262626] px-8 py-4 rounded-2xl shadow-xl">
               <span className="text-4xl">⏱️</span>
               <div>
                 <div className="text-3xl font-black text-[#FF6B35]">{t('time')}</div>

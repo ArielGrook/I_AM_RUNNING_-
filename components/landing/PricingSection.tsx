@@ -60,10 +60,10 @@ export function PricingSection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden max-w-3xl mx-auto"
+          className="bg-white dark:bg-[#262626] rounded-2xl shadow-xl overflow-hidden max-w-3xl mx-auto"
         >
           {/* Header */}
-          <div className="grid grid-cols-3 bg-gray-50 dark:bg-gray-800 border-b-2 border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-3 bg-gray-50 dark:bg-[#525151] border-b-2 border-gray-200 dark:border-[#525151]">
             <div className="p-4 font-bold text-gray-500 dark:text-gray-400">{t('featureLabel')}</div>
             <div className="p-4 font-bold text-emerald-600">{t('us')}</div>
             <div className="p-4 font-bold text-gray-500 dark:text-gray-400">{t('competitors')}</div>
