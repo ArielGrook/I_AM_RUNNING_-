@@ -76,17 +76,17 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
             Create your account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             Or{' '}
             <Link
               href="/auth/login"
-              className="font-medium text-orange-600 hover:text-orange-500"
+              className="font-medium text-primary hover:text-primary/80"
             >
               sign in to existing account
             </Link>
@@ -96,7 +96,7 @@ export default function SignupPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="fullName" className="block text-sm font-medium text-foreground">
                 Full Name (Optional)
               </label>
               <Input
@@ -112,7 +112,7 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground">
                 Email address
               </label>
               <Input
@@ -123,16 +123,16 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`mt-1 ${emailError ? 'border-red-500 focus:border-red-500' : ''}`}
+                className={`mt-1 ${emailError ? 'border-destructive focus:border-destructive' : ''}`}
                 placeholder="Enter your email"
               />
               {emailError && (
-                <p className="mt-1 text-sm text-red-600">{emailError}</p>
+                <p className="mt-1 text-sm text-destructive">{emailError}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground">
                 Password
               </label>
               <Input
@@ -143,16 +143,16 @@ export default function SignupPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`mt-1 ${passwordError ? 'border-red-500 focus:border-red-500' : ''}`}
+                className={`mt-1 ${passwordError ? 'border-destructive focus:border-destructive' : ''}`}
                 placeholder="Create a password (min 6 characters)"
               />
               {passwordError && (
-                <p className="mt-1 text-sm text-red-600">{passwordError}</p>
+                <p className="mt-1 text-sm text-destructive">{passwordError}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground">
                 Confirm Password
               </label>
               <Input
@@ -163,18 +163,18 @@ export default function SignupPage() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`mt-1 ${confirmPasswordError ? 'border-red-500 focus:border-red-500' : ''}`}
+                className={`mt-1 ${confirmPasswordError ? 'border-destructive focus:border-destructive' : ''}`}
                 placeholder="Confirm your password"
               />
               {confirmPasswordError && (
-                <p className="mt-1 text-sm text-red-600">{confirmPasswordError}</p>
+                <p className="mt-1 text-sm text-destructive">{confirmPasswordError}</p>
               )}
             </div>
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-700">{error}</div>
+            <div className="rounded-md bg-destructive/10 p-4">
+              <div className="text-sm text-destructive">{error}</div>
             </div>
           )}
 
@@ -198,7 +198,7 @@ export default function SignupPage() {
           <div className="text-center">
             <Link
               href="/"
-              className="text-sm text-gray-600 hover:text-gray-500"
+              className="text-sm text-muted-foreground hover:text-foreground"
             >
               ← Back to home
             </Link>
@@ -208,3 +208,4 @@ export default function SignupPage() {
     </div>
   );
 }
+

@@ -10,6 +10,7 @@ import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { ParticleField } from '@/components/motion/Particles';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 
 export function HeroSection() {
   const t = useTranslations('Landing.hero');
@@ -61,15 +62,30 @@ export function HeroSection() {
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
           <ThemeToggle />
-          <Button
-            asChild
-            className="hidden sm:inline-flex bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-semibold rounded-full"
-          >
-            <Link href="/auth/signup">
-              {t('signUp')}
-              <ArrowRight className={`h-4 w-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
-            </Link>
-          </Button>
+          {isAuthenticated ? (
+            <UserAvatar />
+          ) : (
+            <>
+              <Button
+                asChild
+                variant="ghost"
+                className="hidden sm:inline-flex text-white hover:bg-white/20 font-semibold"
+              >
+                <Link href="/auth/login">
+                  {t('login', 'Login')}
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="hidden sm:inline-flex bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-semibold rounded-full"
+              >
+                <Link href="/auth/signup">
+                  {t('signUp')}
+                  <ArrowRight className={`h-4 w-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
       </nav>
 
@@ -104,13 +120,13 @@ export function HeroSection() {
             transition={{ delay: 0.6 }}
           >
             {t('subheadline')}{' '}
-            <span className="bg-gradient-to-r from-[#FFA500] to-[#FF6B35] bg-clip-text text-transparent font-black text-2xl drop-shadow-[0_0_15px_rgba(255,165,0,0.6)]">{t('quality')}</span>{' '}
+            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('quality')}</span>{' '}
             {t('subheadlineEnd').split(t('speed'))[0]}
-            <span className="bg-gradient-to-r from-[#FFA500] to-[#FF6B35] bg-clip-text text-transparent font-black text-2xl drop-shadow-[0_0_15px_rgba(255,165,0,0.6)]">{t('speed')}</span>
+            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('speed')}</span>
             {t('subheadlineEnd').includes(t('price')) && (
               <>
                 {t('subheadlineEnd').split(t('speed'))[1]?.split(t('price'))[0]}
-                <span className="bg-gradient-to-r from-[#FFA500] to-[#FF6B35] bg-clip-text text-transparent font-black text-2xl drop-shadow-[0_0_15px_rgba(255,165,0,0.6)]">{t('price')}</span>
+                <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('price')}</span>
                 {t('subheadlineEnd').split(t('price'))[1]}
               </>
             )}
@@ -126,7 +142,7 @@ export function HeroSection() {
             <Button
               onClick={handleChatClick}
               size="lg"
-              className="px-8 py-6 text-lg font-bold bg-white/20 backdrop-blur-sm text-white border-2 border-[#FFA500] hover:bg-[#FFA500] hover:text-white shadow-lg hover:shadow-[0_0_20px_rgba(255,165,0,0.4)] transition-all duration-300 rounded-full min-w-[200px]"
+              className="px-8 py-6 text-lg font-bold bg-gradient-to-r from-[#FFA500] to-[#FF6B35] text-white hover:from-[#FF6B35] hover:to-[#FFA500] shadow-lg hover:shadow-[0_0_30px_rgba(255,107,53,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
             >
               {t('enterChat')}
               <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
@@ -149,4 +165,5 @@ export function HeroSection() {
     </header>
   );
 }
+
 

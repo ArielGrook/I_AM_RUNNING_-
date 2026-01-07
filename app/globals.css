@@ -30,24 +30,24 @@
   }
 
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 100%;
+    --background: 0 0% 15%; /* Dark grey instead of black */
+    --foreground: 0 0% 95%;
+    --card: 0 0% 20%; /* Dark grey card background */
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 20%;
+    --popover-foreground: 0 0% 95%;
     --primary: 17 100% 55%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 13%;
-    --muted-foreground: 0 0% 74%;
+    --secondary: 0 0% 25%; /* Dark grey secondary */
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 30%; /* Dark grey muted */
+    --muted-foreground: 0 0% 80%;
     --accent: 17 100% 55%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 16%;
-    --input: 0 0% 16%;
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
     --ring: 17 100% 55%;
     --glow-strong: 17 100% 60%;
     --glow-soft: 17 100% 70%;
