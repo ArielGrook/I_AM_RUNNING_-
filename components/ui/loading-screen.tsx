@@ -8,7 +8,7 @@ export function LoadingScreen() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-900 dark:to-gray-800"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-800"
     >
       <div className="text-center">
         {/* Logo/Brand */}
@@ -18,10 +18,10 @@ export function LoadingScreen() {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="mb-8"
         >
-          <div className="text-6xl font-black text-orange-500 mb-4">
+          <div className="text-6xl font-black text-[#F97316] mb-4">
             I AM RUNNING
           </div>
-          <div className="text-lg text-orange-600 dark:text-orange-400 font-medium">
+          <div className="text-lg text-[#F97316] font-medium">
             AI Website Builder
           </div>
         </motion.div>
@@ -33,14 +33,14 @@ export function LoadingScreen() {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="relative"
         >
-          <div className="w-16 h-16 border-4 border-orange-200 dark:border-orange-800 border-t-orange-500 rounded-full animate-spin mx-auto mb-6"></div>
+          <div className="w-16 h-16 border-4 border-[#F97316]/30 border-t-[#F97316] rounded-full animate-spin mx-auto mb-6"></div>
 
           {/* Animated dots */}
           <div className="flex justify-center space-x-2">
             {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
-                className="w-3 h-3 bg-orange-500 rounded-full"
+                className="w-3 h-3 bg-[#F97316] rounded-full"
                 animate={{
                   scale: [1, 1.2, 1],
                   opacity: [0.7, 1, 0.7],
@@ -60,7 +60,7 @@ export function LoadingScreen() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
-          className="mt-6 text-gray-600 dark:text-gray-400 text-sm font-medium"
+          className="mt-6 text-white text-sm font-medium"
         >
           Preparing your experience...
         </motion.p>

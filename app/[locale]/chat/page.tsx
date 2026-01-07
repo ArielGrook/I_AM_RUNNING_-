@@ -84,22 +84,22 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-white dark:bg-gray-800">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-orange-200 dark:border-gray-700 sticky top-0 z-10">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 onClick={() => router.back()}
-                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-[#F97316] rounded-full flex items-center justify-center">
                   <Bot className="h-5 w-5 text-white" />
                 </div>
                 <div>
@@ -114,7 +114,7 @@ export default function ChatPage() {
             </div>
             <Button
               onClick={() => router.push('/editor')}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
+              className="bg-[#F97316] hover:bg-[#F97316]/90 text-white"
             >
               Open Editor
             </Button>
@@ -124,7 +124,7 @@ export default function ChatPage() {
 
       {/* Chat Container */}
       <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-orange-200 dark:border-gray-700 min-h-[600px] flex flex-col">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 min-h-[600px] flex flex-col">
           {/* Messages Area */}
           <div className="flex-1 p-6 overflow-y-auto space-y-4">
             <AnimatePresence>
@@ -139,7 +139,7 @@ export default function ChatPage() {
                   }`}
                 >
                   {message.type === 'assistant' && (
-                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 bg-[#F97316] rounded-full flex items-center justify-center flex-shrink-0">
                       <Bot className="h-4 w-4 text-white" />
                     </div>
                   )}
@@ -147,8 +147,8 @@ export default function ChatPage() {
                   <div
                     className={`max-w-[70%] px-4 py-3 rounded-2xl ${
                       message.type === 'user'
-                        ? 'bg-orange-500 text-white rounded-br-md'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-bl-md'
+                        ? 'bg-[#F97316] text-white rounded-br-md'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-md'
                     }`}
                   >
                     <p className="text-sm leading-relaxed">{message.content}</p>
@@ -161,7 +161,7 @@ export default function ChatPage() {
                   </div>
 
                   {message.type === 'user' && (
-                    <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 bg-gray-600 dark:bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
                       <User className="h-4 w-4 text-white" />
                     </div>
                   )}
@@ -176,14 +176,14 @@ export default function ChatPage() {
                 animate={{ opacity: 1 }}
                 className="flex items-start gap-3"
               >
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 bg-[#F97316] rounded-full flex items-center justify-center flex-shrink-0">
                   <Bot className="h-4 w-4 text-white" />
                 </div>
                 <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-2xl rounded-bl-md">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </motion.div>
@@ -193,7 +193,7 @@ export default function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <div className="p-6 border-t border-orange-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-2xl">
+          <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-2xl">
             <div className="flex gap-3">
               <div className="flex-1 relative">
                 <Input
@@ -201,13 +201,13 @@ export default function ChatPage() {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Describe your website idea..."
-                  className="pr-12 py-3 border-orange-300 dark:border-gray-600 focus:border-orange-500 dark:focus:border-orange-400 rounded-xl"
+                  className="pr-12 py-3 border-gray-300 dark:border-gray-600 focus:border-[#F97316] dark:focus:border-[#F97316] rounded-xl"
                 />
                 <Button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isTyping}
                   size="sm"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-3 py-1"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#F97316] hover:bg-[#F97316]/90 text-white rounded-lg px-3 py-1"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
