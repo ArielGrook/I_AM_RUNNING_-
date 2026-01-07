@@ -113,7 +113,7 @@ export default function ChatPage() {
         <div className="max-w-3xl mx-auto h-full flex flex-col">
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto py-6">
-            <div className="space-y-8">
+            <div className="space-y-10">
               <AnimatePresence>
                 {messages.map((message) => (
                   <motion.div
@@ -128,7 +128,7 @@ export default function ChatPage() {
                     <div
                       className="inline-block max-w-[80%] text-gray-900 dark:text-white"
                     >
-                      <p className="text-base leading-relaxed">{message.content}</p>
+                      <p className="text-lg leading-relaxed">{message.content}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -142,10 +142,10 @@ export default function ChatPage() {
                   className="text-left"
                 >
                   <div className="inline-block">
-                    <div className="flex space-x-1 py-2">
-                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="flex space-x-1 py-3">
+                      <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+                      <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
                 </motion.div>
@@ -156,7 +156,7 @@ export default function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <div className="py-2">
+          <div className="py-12">
             <div className="flex gap-3">
               <div className="flex-1 relative">
                 <Input
@@ -164,7 +164,7 @@ export default function ChatPage() {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Describe your website idea..."
-                  className="pr-12 py-4 text-base border-none outline-none focus:outline-none focus:ring-0 bg-transparent"
+                  className="pr-12 py-5 text-lg border-none outline-none focus:outline-none focus:ring-0 bg-transparent"
                 />
                 <button
                   onClick={handleSendMessage}
@@ -173,7 +173,7 @@ export default function ChatPage() {
                     inputValue.trim() ? 'text-[#F97316]' : 'text-gray-400'
                   } hover:text-[#F97316] transition-colors`}
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-5 w-5" />
                 </button>
               </div>
             </div>
