@@ -87,13 +87,24 @@ export default function ChatPage() {
     <div className="h-screen bg-white dark:bg-[#262626] flex flex-col">
       {/* Header */}
       <div className="px-4 py-4 flex-shrink-0">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#F97316] rounded-full flex items-center justify-center">
-            <Bot className="h-5 w-5 text-white" />
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/')}
+            className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Home
+          </Button>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#F97316] rounded-full flex items-center justify-center">
+              <Bot className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+              I AM RUNNING AI CHAT
+            </h1>
           </div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-            I AM RUNNING AI CHAT
-          </h1>
+          <div className="w-[80px]" /> {/* Spacer for centering */}
         </div>
       </div>
 
@@ -115,11 +126,7 @@ export default function ChatPage() {
                     }`}
                   >
                     <div
-                      className={`inline-block max-w-[80%] ${
-                        message.type === 'user'
-                          ? 'bg-gray-100 dark:bg-[#525151] text-gray-900 dark:text-white px-4 py-3'
-                          : 'text-gray-900 dark:text-white'
-                      }`}
+                      className="inline-block max-w-[80%] text-gray-900 dark:text-white"
                     >
                       <p className="text-sm leading-relaxed">{message.content}</p>
                     </div>
@@ -157,7 +164,7 @@ export default function ChatPage() {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Describe your website idea..."
-                  className="pr-12 py-3 border-gray-300 dark:border-gray-600 focus:outline-none rounded-xl bg-transparent"
+                  className="pr-12 py-3 border-none outline-none focus:outline-none focus:ring-0 bg-transparent"
                 />
                 <button
                   onClick={handleSendMessage}
