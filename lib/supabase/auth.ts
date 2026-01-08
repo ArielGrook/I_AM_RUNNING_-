@@ -18,72 +18,143 @@ export interface AuthUser extends User {
  * Sign in with email and password
  */
 export async function signIn(email: string, password: string) {
+  console.log('🔐 AUTH: Starting email/password sign in', { email });
+
   const supabase = createSupabaseClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
 
-  if (error) {
-    throw new Error(error.message);
+  try {
+    console.log('📡 AUTH: Calling Supabase signInWithPassword...');
+
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Sign in request timed out')), 10000);
+    });
+
+    const authPromise = supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any;
+
+    console.log('📡 AUTH: Supabase response received', { success: !error, user: data?.user?.email });
+
+    if (error) {
+      console.error('❌ AUTH: Sign in error:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ AUTH: Sign in successful');
+    return data;
+  } catch (error) {
+    console.error('❌ AUTH: Sign in exception:', error);
+    throw error;
   }
-
-  return data;
 }
 
 /**
  * Sign up with email and password
  */
 export async function signUp(email: string, password: string, metadata?: Record<string, unknown>) {
+  console.log('🔐 AUTH: Starting email/password sign up', { email, metadata });
+
   const supabase = createSupabaseClient();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: metadata,
-      email_confirm: false, // Skip email verification
-    },
-  });
 
-  if (error) {
-    throw new Error(error.message);
+  try {
+    console.log('📡 AUTH: Calling Supabase signUp...');
+
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Sign up request timed out')), 10000);
+    });
+
+    const authPromise = supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata,
+        email_confirm: false, // Skip email verification
+      },
+    });
+
+    const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any;
+
+    console.log('📡 AUTH: Supabase response received', { success: !error, user: data?.user?.email });
+
+    if (error) {
+      console.error('❌ AUTH: Sign up error:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ AUTH: Sign up successful');
+    return data;
+  } catch (error) {
+    console.error('❌ AUTH: Sign up exception:', error);
+    throw error;
   }
-
-  return data;
 }
 
 /**
  * Sign in with Google OAuth
  */
 export async function signInWithGoogle() {
+  console.log('🔐 AUTH: Starting Google OAuth sign in');
+
   const supabase = createSupabaseClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
+
+  try {
+    console.log('📡 AUTH: Calling Supabase signInWithOAuth...');
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
-    },
-  });
+    });
 
-  if (error) {
-    throw new Error(error.message);
+    console.log('📡 AUTH: OAuth initiation response', { success: !error });
+
+    if (error) {
+      console.error('❌ AUTH: Google OAuth error:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ AUTH: Google OAuth initiated successfully');
+    return data;
+  } catch (error) {
+    console.error('❌ AUTH: Google OAuth exception:', error);
+    throw error;
   }
-
-  return data;
 }
 
 /**
  * Sign out current user
  */
 export async function signOut() {
-  const supabase = createSupabaseClient();
-  const { error } = await supabase.auth.signOut();
+  console.log('🚪 AUTH: Starting sign out');
 
-  if (error) {
-    throw new Error(error.message);
+  const supabase = createSupabaseClient();
+
+  try {
+    console.log('📡 AUTH: Calling Supabase signOut...');
+
+    const { error } = await supabase.auth.signOut();
+
+    console.log('📡 AUTH: Sign out response received', { success: !error });
+
+    if (error) {
+      console.error('❌ AUTH: Sign out error:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ AUTH: Sign out successful');
+  } catch (error) {
+    console.error('❌ AUTH: Sign out exception:', error);
+    throw error;
   }
 }
 

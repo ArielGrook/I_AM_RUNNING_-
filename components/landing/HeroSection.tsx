@@ -74,7 +74,7 @@ export function HeroSection() {
               <Button
                 asChild
                 variant="ghost"
-                className="hidden sm:inline-flex text-white hover:bg-white/20 font-semibold"
+                className="text-white hover:bg-white/20 font-semibold px-3 py-2 text-sm sm:px-4 sm:py-2 sm:text-base"
               >
                 <Link href="/auth/login">
                   {t('login')}
@@ -82,11 +82,11 @@ export function HeroSection() {
               </Button>
               <Button
                 asChild
-                className="hidden sm:inline-flex bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-semibold rounded-full"
+                className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-semibold rounded-full px-3 py-2 text-sm sm:px-4 sm:py-2 sm:text-base"
               >
                 <Link href="/auth/signup">
                   {t('signUp')}
-                  <ArrowRight className={`h-4 w-4 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                  <ArrowRight className={`h-3 w-3 sm:h-4 sm:w-4 ${isRTL ? 'mr-1 sm:mr-2 rotate-180' : 'ml-1 sm:ml-2'}`} />
                 </Link>
               </Button>
             </>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { signIn, signUp, signOut, signInWithGoogle } from '@/lib/supabase/auth';
@@ -39,21 +39,31 @@ export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     profile: null,
-    loading: false, // Temporarily disabled to prevent infinite loading
+    loading: true, // Start with loading true to check initial auth state
     isAuthenticated: false,
     error: null,
   });
 
-  // Create Supabase client once (simplified to prevent infinite loops)
-  const supabase = createSupabaseClient(null); // Default to no persistence for now
+  const [cookieConsent, setCookieConsent] = useState<'accepted' | 'declined' | null>(null);
+  const mountedRef = useRef(true);
+  const authTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Create Supabase client once
+  const supabase = useMemo(() => {
+    const consent = localStorage.getItem('cookie-consent');
+    const persistence = consent === 'accepted' ? 'local' : 'session';
+    console.log('🔧 Creating Supabase client with persistence:', persistence);
+    return createSupabaseClient(persistence);
+  }, []);
 
   /**
-   * Update cookie consent (simplified to prevent loops)
+   * Update cookie consent
    */
   const updateCookieConsent = (consent: 'accepted' | 'declined' | null) => {
     console.log('🍪 Updating cookie consent to:', consent);
+    setCookieConsent(consent);
     localStorage.setItem('cookie-consent', consent || '');
-    // Note: For now, this won't change persistence until page reload
+    // Note: Persistence change requires page reload
   };
 
   /**
@@ -61,6 +71,8 @@ export function useAuth() {
    */
   const loadProfile = async (userId: string): Promise<Profile | null> => {
     try {
+      console.log('🔍 Loading profile for user:', userId);
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -68,13 +80,15 @@ export function useAuth() {
         .single();
 
       if (error) {
-        console.error('Error loading profile:', error);
+        console.error('❌ Error loading profile:', error);
+        console.log('🔍 Profile load response:', { data, error });
         return null;
       }
 
+      console.log('✅ Profile loaded successfully:', data);
       return data;
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error('❌ Exception loading profile:', error);
       return null;
     }
   };
@@ -84,6 +98,8 @@ export function useAuth() {
    */
   const createProfile = async (user: User): Promise<Profile | null> => {
     try {
+      console.log('🏗️ Creating profile for user:', user.email);
+
       const profileData: Omit<Profile, 'created_at' | 'updated_at'> = {
         id: user.id,
         email: user.email!,
@@ -94,6 +110,8 @@ export function useAuth() {
         ai_requests_limit: 10,
       };
 
+      console.log('📝 Profile creation data:', profileData);
+
       const { data, error } = await supabase
         .from('profiles')
         .insert([profileData])
@@ -101,13 +119,15 @@ export function useAuth() {
         .single();
 
       if (error) {
-        console.error('Error creating profile:', error);
+        console.error('❌ Error creating profile:', error);
+        console.log('🏗️ Profile creation response:', { data, error });
         return null;
       }
 
+      console.log('✅ Profile created successfully:', data);
       return data;
     } catch (error) {
-      console.error('Error creating profile:', error);
+      console.error('❌ Exception creating profile:', error);
       return null;
     }
   };
@@ -117,57 +137,102 @@ export function useAuth() {
    */
   const refreshAuth = async () => {
     console.log('🔄 Refreshing auth state...');
+
+    if (!mountedRef.current) {
+      console.log('🚫 Component unmounted, skipping auth refresh');
+      return;
+    }
+
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
+    // Set timeout to prevent infinite loading
+    authTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        console.log('⏰ Auth refresh timeout');
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Authentication request timed out. Please try again.'
+        }));
+      }
+    }, 15000); // 15 second timeout
+
     try {
+      console.log('🔍 Getting current session...');
       const { data: { session }, error } = await supabase.auth.getSession();
-      const user = session?.user;
+
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = undefined;
+      }
+
+      console.log('🔐 Session check result:', { hasSession: !!session, error: error?.message });
 
       if (error) {
-        console.error('Auth error:', error);
-        setAuthState({
-          user: null,
-          profile: null,
-          loading: false,
-          isAuthenticated: false,
-          error: error.message,
-        });
+        console.error('❌ Auth session error:', error);
+        if (mountedRef.current) {
+          setAuthState({
+            user: null,
+            profile: null,
+            loading: false,
+            isAuthenticated: false,
+            error: error.message,
+          });
+        }
         return;
       }
 
+      const user = session?.user;
+      console.log('👤 User from session:', user?.email || 'none');
+
       if (user) {
+        console.log('🔍 Loading/creating profile for authenticated user...');
         // Load or create profile
         let profile = await loadProfile(user.id);
         if (!profile) {
+          console.log('🏗️ Profile not found, creating new profile...');
           // Profile doesn't exist, create one
           profile = await createProfile(user);
         }
 
-        setAuthState({
-          user,
-          profile,
-          loading: false,
-          isAuthenticated: true,
-          error: null,
-        });
+        if (mountedRef.current) {
+          console.log('✅ Auth state updated - user authenticated');
+          setAuthState({
+            user,
+            profile,
+            loading: false,
+            isAuthenticated: true,
+            error: null,
+          });
+        }
       } else {
+        if (mountedRef.current) {
+          console.log('👤 No authenticated user');
+          setAuthState({
+            user: null,
+            profile: null,
+            loading: false,
+            isAuthenticated: false,
+            error: null,
+          });
+        }
+      }
+    } catch (error) {
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = undefined;
+      }
+
+      console.error('❌ Exception refreshing auth:', error);
+      if (mountedRef.current) {
         setAuthState({
           user: null,
           profile: null,
           loading: false,
           isAuthenticated: false,
-          error: null,
+          error: error instanceof Error ? error.message : 'Authentication error',
         });
       }
-    } catch (error) {
-      console.error('Error refreshing auth:', error);
-      setAuthState({
-        user: null,
-        profile: null,
-        loading: false,
-        isAuthenticated: false,
-        error: error instanceof Error ? error.message : 'Authentication error',
-      });
     }
   };
 
@@ -175,18 +240,32 @@ export function useAuth() {
    * Sign in with email and password
    */
   const signInUser = async (email: string, password: string) => {
+    console.log('🔐 Starting email/password sign in process', { email });
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      await signIn(email, password);
+      console.log('📤 Calling Supabase signIn function...');
+      const result = await signIn(email, password);
+      console.log('✅ Sign in API call successful:', { user: result?.user?.email });
+
       // Auth state will be updated by the listener
+      // Clear loading state after a short delay to allow listener to process
+      setTimeout(() => {
+        if (mountedRef.current) {
+          console.log('🔄 Clearing loading state after sign in');
+          setAuthState(prev => ({ ...prev, loading: false }));
+        }
+      }, 1000);
     } catch (error) {
+      console.error('❌ Sign in failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
-      setAuthState(prev => ({
-        ...prev,
-        loading: false,
-        error: errorMessage
-      }));
+      if (mountedRef.current) {
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: errorMessage
+        }));
+      }
       throw error;
     }
   };
@@ -195,18 +274,32 @@ export function useAuth() {
    * Sign up with email and password
    */
   const signUpUser = async (email: string, password: string, metadata?: Record<string, any>) => {
+    console.log('🔐 Starting email/password sign up process', { email, metadata });
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      await signUp(email, password, metadata);
+      console.log('📤 Calling Supabase signUp function...');
+      const result = await signUp(email, password, metadata);
+      console.log('✅ Sign up API call successful:', { user: result?.user?.email });
+
       // Auth state will be updated by the listener
+      // Clear loading state after a short delay to allow listener to process
+      setTimeout(() => {
+        if (mountedRef.current) {
+          console.log('🔄 Clearing loading state after sign up');
+          setAuthState(prev => ({ ...prev, loading: false }));
+        }
+      }, 1000);
     } catch (error) {
+      console.error('❌ Sign up failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
-      setAuthState(prev => ({
-        ...prev,
-        loading: false,
-        error: errorMessage
-      }));
+      if (mountedRef.current) {
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: errorMessage
+        }));
+      }
       throw error;
     }
   };
@@ -215,18 +308,32 @@ export function useAuth() {
    * Sign in with Google OAuth
    */
   const signInWithGoogleUser = async () => {
+    console.log('🔐 Starting Google OAuth sign in process');
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      await signInWithGoogle();
-      // Auth state will be updated by the listener
+      console.log('📤 Calling Supabase signInWithGoogle function...');
+      const result = await signInWithGoogle();
+      console.log('✅ Google sign in initiated:', result);
+
+      // Auth state will be updated by the listener after OAuth redirect
+      // Clear loading state after redirect initiation
+      setTimeout(() => {
+        if (mountedRef.current) {
+          console.log('🔄 Clearing loading state after Google OAuth initiation');
+          setAuthState(prev => ({ ...prev, loading: false }));
+        }
+      }, 2000);
     } catch (error) {
+      console.error('❌ Google sign in failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Google sign in failed';
-      setAuthState(prev => ({
-        ...prev,
-        loading: false,
-        error: errorMessage
-      }));
+      if (mountedRef.current) {
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: errorMessage
+        }));
+      }
       throw error;
     }
   };
@@ -235,44 +342,121 @@ export function useAuth() {
    * Sign out current user
    */
   const signOutUser = async () => {
+    console.log('🚪 Starting sign out process');
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
+      console.log('📤 Calling Supabase signOut function...');
       await signOut();
-      // Auth state will be updated by the listener
+      console.log('✅ Sign out API call successful');
+
+      // Immediately clear auth state since sign out is synchronous
+      if (mountedRef.current) {
+        console.log('🔄 Clearing auth state after sign out');
+        setAuthState({
+          user: null,
+          profile: null,
+          loading: false,
+          isAuthenticated: false,
+          error: null,
+        });
+      }
     } catch (error) {
+      console.error('❌ Sign out failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Sign out failed';
-      setAuthState(prev => ({
-        ...prev,
-        loading: false,
-        error: errorMessage
-      }));
+      if (mountedRef.current) {
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: errorMessage
+        }));
+      }
       throw error;
     }
   };
 
-  // Listen for auth state changes (temporarily disabled to debug loop)
+  // Listen for auth state changes
   useEffect(() => {
-    let mounted = true;
+    console.log('🎧 Setting up auth state listener...');
+    mountedRef.current = true;
 
-    // TEMPORARILY DISABLED: Initial auth check causing infinite loop
-    // if (mounted) {
-    //   console.log('🔍 Initial auth check...');
-    //   refreshAuth();
-    // }
+    // Initial auth check
+    if (mountedRef.current) {
+      console.log('🔍 Performing initial auth check...');
+      refreshAuth();
+    }
 
-    // TEMPORARILY DISABLED: Auth state listener causing infinite loop
-    // const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    //   async (event, session) => {
-    //     console.log('🔐 Auth event:', event, 'User:', session?.user?.email || 'none');
-    //     // ... auth state handling
-    //   }
-    // );
+    // Auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔐 Auth state change event:', event, 'User:', session?.user?.email || 'none');
 
-    // return () => {
-    //   mounted = false;
-    //   subscription.unsubscribe();
-    // };
+        if (!mountedRef.current) {
+          console.log('🚫 Component unmounted, ignoring auth event');
+          return;
+        }
+
+        try {
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            console.log('✅ User signed in or token refreshed');
+            const user = session?.user;
+            if (user) {
+              // Load or create profile
+              let profile = await loadProfile(user.id);
+              if (!profile) {
+                console.log('🏗️ Creating profile for new user...');
+                profile = await createProfile(user);
+              }
+
+              setAuthState({
+                user,
+                profile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
+              console.log('✅ Auth state updated - user authenticated');
+            }
+          } else if (event === 'SIGNED_OUT') {
+            console.log('🚪 User signed out');
+            setAuthState({
+              user: null,
+              profile: null,
+              loading: false,
+              isAuthenticated: false,
+              error: null,
+            });
+          } else if (event === 'USER_UPDATED') {
+            console.log('👤 User updated');
+            const user = session?.user;
+            if (user && authState.isAuthenticated) {
+              // Update user data but keep existing profile
+              setAuthState(prev => ({
+                ...prev,
+                user,
+                loading: false,
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error handling auth state change:', error);
+          setAuthState(prev => ({
+            ...prev,
+            loading: false,
+            error: error instanceof Error ? error.message : 'Auth state update failed',
+          }));
+        }
+      }
+    );
+
+    return () => {
+      console.log('🧹 Cleaning up auth listener...');
+      mountedRef.current = false;
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+      }
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Role-based access helpers

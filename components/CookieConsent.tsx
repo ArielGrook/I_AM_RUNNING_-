@@ -74,3 +74,4 @@ export function CookieConsent({ onChoice }: CookieConsentProps) {
     </div>
   );
 }
+
