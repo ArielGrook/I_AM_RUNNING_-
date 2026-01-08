@@ -44,13 +44,20 @@ export function useAuth() {
     error: null,
   });
 
-  const [cookieConsent, setCookieConsent] = useState<'accepted' | 'declined' | null>(null);
+  const [cookieConsent, setCookieConsent] = useState<'accepted' | 'declined' | null>(() => {
+    // Initialize from localStorage on mount
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('cookie-consent');
+      return stored as 'accepted' | 'declined' | null || null;
+    }
+    return null;
+  });
   const mountedRef = useRef(true);
   const authTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Create Supabase client once
   const supabase = useMemo(() => {
-    const consent = localStorage.getItem('cookie-consent');
+    const consent = typeof window !== 'undefined' ? localStorage.getItem('cookie-consent') : null;
     const persistence = consent === 'accepted' ? 'local' : 'session';
     console.log('🔧 Creating Supabase client with persistence:', persistence);
     return createSupabaseClient(persistence);
@@ -62,7 +69,9 @@ export function useAuth() {
   const updateCookieConsent = (consent: 'accepted' | 'declined' | null) => {
     console.log('🍪 Updating cookie consent to:', consent);
     setCookieConsent(consent);
-    localStorage.setItem('cookie-consent', consent || '');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cookie-consent', consent || '');
+    }
     // Note: Persistence change requires page reload
   };
 

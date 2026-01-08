@@ -31,21 +31,36 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+// Singleton client instance to avoid multiple GoTrueClient instances
+let browserClientInstance: ReturnType<typeof createBrowserClient> | null = null;
+
 /**
  * Client-side Supabase client (browser)
  * Use in client components with SSR support
+ * Returns singleton instance to avoid multiple client creation
  */
 export function createSupabaseClient(cookieConsent?: 'accepted' | 'declined' | null) {
+  // If no cookie consent provided, default to session storage (no persistence)
   const persistSession = cookieConsent === 'accepted';
-  console.log('🔧 Creating Supabase client with persistSession:', persistSession);
+  console.log('🔧 Creating/getting Supabase client with persistSession:', persistSession);
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  // Return existing instance if available and persistence setting matches
+  if (browserClientInstance) {
+    console.log('🔄 Returning existing Supabase client instance');
+    return browserClientInstance;
+  }
+
+  // Create new instance
+  browserClientInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession,
       autoRefreshToken: persistSession,
       detectSessionInUrl: true,
     },
   });
+
+  console.log('🆕 Created new Supabase client instance');
+  return browserClientInstance;
 }
 
 /**
