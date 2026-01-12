@@ -170,6 +170,8 @@ export function useAuth() {
       console.log('🔍 Getting current session...');
       const { data: { session }, error } = await supabase.auth.getSession();
 
+      // Always clear timeout when getSession() resolves (success or error)
+      // This prevents timeout from firing after we've already handled the response
       if (authTimeoutRef.current) {
         clearTimeout(authTimeoutRef.current);
         authTimeoutRef.current = undefined;
@@ -257,14 +259,12 @@ export function useAuth() {
       const result = await signIn(email, password);
       console.log('✅ Sign in API call successful:', { user: result?.user?.email });
 
-      // Auth state will be updated by the listener
-      // Clear loading state after a short delay to allow listener to process
-      setTimeout(() => {
-        if (mountedRef.current) {
-          console.log('🔄 Clearing loading state after sign in');
-          setAuthState(prev => ({ ...prev, loading: false }));
-        }
-      }, 1000);
+      // Don't use setTimeout to clear loading - let the auth state change listener handle it
+      // Loading will be cleared when:
+      // 1. Auth listener detects SIGNED_IN event (success) - sets loading: false
+      // 2. Error occurs (catch block below) - sets loading: false
+      // 3. Timeout fires in refreshAuth() if auth hangs - sets loading: false
+      // This prevents race conditions between setTimeout and auth listener
     } catch (error) {
       console.error('❌ Sign in failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
