@@ -1,6 +1,14 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { User } from '@supabase/supabase-js';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { signIn, signUp, signOut, signInWithGoogle } from '@/lib/supabase/auth';
@@ -32,10 +40,32 @@ export interface AuthState {
   error: string | null;
 }
 
+type AuthContextValue = AuthState & {
+  cookieConsent: 'accepted' | 'declined' | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, metadata?: Record<string, any>) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
+  updateCookieConsent: (consent: 'accepted' | 'declined' | null) => void;
+  hasRole: (requiredRole: number) => boolean;
+  isAnonymous: boolean;
+  isBasicUser: boolean;
+  isFreelancer: boolean;
+  isPremium: boolean;
+  canAccessEditor: boolean;
+  canAddComponents: boolean;
+  canSaveProjects: boolean;
+  getAILimit: () => number;
+  getAIRequestsToday: () => number;
+};
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
 /**
  * useAuth hook for authentication and profile management
  */
-export function useAuth() {
+function useAuthProvider(): AuthContextValue {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     profile: null,
@@ -537,5 +567,25 @@ export function useAuth() {
     getAILimit,
     getAIRequestsToday,
   };
+}
+
+/**
+ * AuthProvider ensures a single shared auth instance across the app.
+ * This prevents multiple timers/listeners from being created by each consumer.
+ */
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const value = useAuthProvider();
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+/**
+ * Consumer hook for shared auth state/actions
+ */
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return ctx;
 }
 
