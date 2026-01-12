@@ -53,7 +53,7 @@ export function useAuth() {
     return null;
   });
   const mountedRef = useRef(true);
-  const authTimeoutRef = useRef<NodeJS.Timeout>();
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Create Supabase client once
   const supabase = useMemo(() => {
@@ -173,7 +173,7 @@ export function useAuth() {
       // This prevents timeout from firing after we've already handled the response
       if (authTimeoutRef.current) {
         clearTimeout(authTimeoutRef.current);
-        authTimeoutRef.current = undefined;
+        authTimeoutRef.current = null;
       }
 
       console.log('🔐 Session check result:', { hasSession: !!session, error: error?.message });
@@ -230,7 +230,7 @@ export function useAuth() {
     } catch (error) {
       if (authTimeoutRef.current) {
         clearTimeout(authTimeoutRef.current);
-        authTimeoutRef.current = undefined;
+        authTimeoutRef.current = null;
       }
 
       console.error('❌ Exception refreshing auth:', error);
@@ -268,8 +268,9 @@ export function useAuth() {
       
       // CRITICAL: Clear any pending timeout to prevent it from overwriting this error
       if (authTimeoutRef.current) {
+        console.log('🧹 Clearing auth timeout after sign-in error');
         clearTimeout(authTimeoutRef.current);
-        authTimeoutRef.current = undefined;
+        authTimeoutRef.current = null;
       }
       
       const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
@@ -304,7 +305,7 @@ export function useAuth() {
       // CRITICAL: Clear any pending timeout to prevent it from overwriting this error
       if (authTimeoutRef.current) {
         clearTimeout(authTimeoutRef.current);
-        authTimeoutRef.current = undefined;
+        authTimeoutRef.current = null;
       }
       
       const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
@@ -346,7 +347,7 @@ export function useAuth() {
       // CRITICAL: Clear any pending timeout to prevent it from overwriting this error
       if (authTimeoutRef.current) {
         clearTimeout(authTimeoutRef.current);
-        authTimeoutRef.current = undefined;
+        authTimeoutRef.current = null;
       }
       
       const errorMessage = error instanceof Error ? error.message : 'Google sign in failed';
