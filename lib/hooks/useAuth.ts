@@ -262,10 +262,16 @@ export function useAuth() {
       // Loading will be cleared when:
       // 1. Auth listener detects SIGNED_IN event (success) - sets loading: false
       // 2. Error occurs (catch block below) - sets loading: false
-      // 3. Timeout fires in refreshAuth() if auth hangs - sets loading: false
       // This prevents race conditions between setTimeout and auth listener
     } catch (error) {
       console.error('❌ Sign in failed:', error);
+      
+      // CRITICAL: Clear any pending timeout to prevent it from overwriting this error
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = undefined;
+      }
+      
       const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
       if (mountedRef.current) {
         setAuthState(prev => ({
@@ -290,16 +296,17 @@ export function useAuth() {
       const result = await signUp(email, password, metadata);
       console.log('✅ Sign up API call successful:', { user: result?.user?.email });
 
-      // Auth state will be updated by the listener
-      // Clear loading state after a short delay to allow listener to process
-      setTimeout(() => {
-        if (mountedRef.current) {
-          console.log('🔄 Clearing loading state after sign up');
-          setAuthState(prev => ({ ...prev, loading: false }));
-        }
-      }, 1000);
+      // Don't use setTimeout - let the auth state change listener handle loading state
+      // Loading will be cleared when listener detects SIGNED_IN event
     } catch (error) {
       console.error('❌ Sign up failed:', error);
+      
+      // CRITICAL: Clear any pending timeout to prevent it from overwriting this error
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = undefined;
+      }
+      
       const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
       if (mountedRef.current) {
         setAuthState(prev => ({
@@ -324,16 +331,24 @@ export function useAuth() {
       const result = await signInWithGoogle();
       console.log('✅ Google sign in initiated:', result);
 
-      // Auth state will be updated by the listener after OAuth redirect
-      // Clear loading state after redirect initiation
+      // For OAuth, user will be redirected away from page
+      // Clear loading after 2s in case redirect doesn't happen (popup blocked, etc.)
+      // This is different from email/password auth which doesn't redirect
       setTimeout(() => {
         if (mountedRef.current) {
-          console.log('🔄 Clearing loading state after Google OAuth initiation');
+          console.log('🔄 Clearing loading state - OAuth redirect may have been blocked');
           setAuthState(prev => ({ ...prev, loading: false }));
         }
       }, 2000);
     } catch (error) {
       console.error('❌ Google sign in failed:', error);
+      
+      // CRITICAL: Clear any pending timeout to prevent it from overwriting this error
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = undefined;
+      }
+      
       const errorMessage = error instanceof Error ? error.message : 'Google sign in failed';
       if (mountedRef.current) {
         setAuthState(prev => ({
