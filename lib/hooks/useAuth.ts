@@ -57,10 +57,9 @@ export function useAuth() {
 
   // Create Supabase client once
   const supabase = useMemo(() => {
-    const consent = typeof window !== 'undefined' ? localStorage.getItem('cookie-consent') : null;
-    const persistence = consent === 'accepted' ? 'local' : 'session';
-    console.log('🔧 Creating Supabase client with persistence:', persistence);
-    return createSupabaseClient(persistence);
+    const consent = typeof window !== 'undefined' ? localStorage.getItem('cookie-consent') as 'accepted' | 'declined' | null : null;
+    console.log('🔧 Creating Supabase client with cookieConsent:', consent);
+    return createSupabaseClient(consent);
   }, []);
 
   /**
