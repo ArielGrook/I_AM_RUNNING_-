@@ -6,7 +6,7 @@
  * Stage 3 Module 8: Shadow Mode
  */
 
-import { createSupabaseClient } from './client';
+import { getSupabaseClient } from './client';
 import type { User } from '@supabase/supabase-js';
 
 export interface AuthUser extends User {
@@ -20,7 +20,7 @@ export interface AuthUser extends User {
 export async function signIn(email: string, password: string) {
   console.log('🔐 AUTH: Starting email/password sign in', { email });
 
-  const supabase = createSupabaseClient();
+  const supabase = getSupabaseClient();
 
   try {
     console.log('📡 AUTH: Calling Supabase signInWithPassword...');
@@ -58,7 +58,7 @@ export async function signIn(email: string, password: string) {
 export async function signUp(email: string, password: string, metadata?: Record<string, unknown>) {
   console.log('🔐 AUTH: Starting email/password sign up', { email, metadata });
 
-  const supabase = createSupabaseClient();
+  const supabase = getSupabaseClient();
 
   try {
     console.log('📡 AUTH: Calling Supabase signUp...');
@@ -74,7 +74,7 @@ export async function signUp(email: string, password: string, metadata?: Record<
       options: {
         data: metadata,
         email_confirm: false, // Skip email verification
-      },
+      } as any,
     });
 
     const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any;
@@ -100,7 +100,7 @@ export async function signUp(email: string, password: string, metadata?: Record<
 export async function signInWithGoogle() {
   console.log('🔐 AUTH: Starting Google OAuth sign in');
 
-  const supabase = createSupabaseClient();
+  const supabase = getSupabaseClient();
 
   try {
     console.log('📡 AUTH: Calling Supabase signInWithOAuth...');
@@ -137,7 +137,7 @@ export async function signInWithGoogle() {
 export async function signOut() {
   console.log('🚪 AUTH: Starting sign out');
 
-  const supabase = createSupabaseClient();
+  const supabase = getSupabaseClient();
 
   try {
     console.log('📡 AUTH: Calling Supabase signOut...');
@@ -162,7 +162,7 @@ export async function signOut() {
  * Get current user
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const supabase = createSupabaseClient();
+  const supabase = getSupabaseClient();
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error || !user) {

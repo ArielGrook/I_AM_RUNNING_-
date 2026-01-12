@@ -32,49 +32,45 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // Singleton client instance to avoid multiple GoTrueClient instances
-let browserClientInstance: ReturnType<typeof createBrowserClient> | null = null;
+let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
 
 /**
- * Client-side Supabase client (browser)
- * Use in client components with SSR support
- * Returns singleton instance to avoid multiple client creation
+ * Get Supabase client (singleton in browser, server client on server)
  */
-export function createSupabaseClient(cookieConsent?: 'accepted' | 'declined' | null) {
-  // If no cookie consent provided, default to session storage (no persistence)
-  const persistSession = cookieConsent === 'accepted';
-  console.log('🔧 Creating/getting Supabase client with persistSession:', persistSession);
-
-  // Return existing instance if available and persistence setting matches
-  if (browserClientInstance) {
-    console.log('🔄 Returning existing Supabase client instance');
-    return browserClientInstance;
+export function getSupabaseClient(cookieConsent?: 'accepted' | 'declined' | null) {
+  // Server-side: return non-persisted client
+  if (typeof window === 'undefined') {
+    return supabase;
   }
 
-  // Create new instance
-  browserClientInstance = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession,
-      autoRefreshToken: persistSession,
-      detectSessionInUrl: true,
-    },
-  });
+  if (supabaseInstance) {
+    console.log('🔄 Returning existing Supabase client instance');
+    return supabaseInstance;
+  }
 
-  console.log('🆕 Created new Supabase client instance');
-  return browserClientInstance;
+  console.log('🆕 Creating new Supabase client instance');
+  const persistSession = cookieConsent === 'accepted';
+
+  supabaseInstance = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession,
+        autoRefreshToken: persistSession,
+        detectSessionInUrl: true,
+      },
+    }
+  );
+
+  return supabaseInstance;
 }
 
 /**
- * Get Supabase client for current context
- * Automatically detects server vs client
+ * Backward compatibility wrapper
  */
-export function getSupabaseClient() {
-  if (typeof window === 'undefined') {
-    // Server-side
-    return supabase;
-  } else {
-    // Client-side
-    return createSupabaseClient();
-  }
+export function createSupabaseClient(cookieConsent?: 'accepted' | 'declined' | null) {
+  return getSupabaseClient(cookieConsent);
 }
 
 

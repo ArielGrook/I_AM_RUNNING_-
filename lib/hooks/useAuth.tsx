@@ -445,13 +445,59 @@ function useAuthProvider(): AuthContextValue {
     console.log('🎧 Setting up auth state listener...');
     mountedRef.current = true;
 
-    // Initial auth check
-    if (mountedRef.current) {
-      console.log('🔍 Performing initial auth check...');
-      refreshAuth();
-    }
+    // Initial auth check - NO timeout for initial load
+    const initAuth = async () => {
+      console.log('🔍 Performing initial auth check (no timeout)...');
 
-    // Auth state change listener
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          console.log('✅ Found existing session:', session.user.email);
+          let profile = await loadProfile(session.user.id);
+          if (!profile) {
+            console.log('📝 Creating profile for user:', session.user.id);
+            profile = await createProfile(session.user);
+          }
+
+          if (mountedRef.current) {
+            setAuthState({
+              user: session.user,
+              profile,
+              loading: false,
+              isAuthenticated: true,
+              error: null,
+            });
+          }
+        } else {
+          console.log('ℹ️ No existing session found');
+          if (mountedRef.current) {
+            setAuthState({
+              user: null,
+              profile: null,
+              loading: false,
+              isAuthenticated: false,
+              error: null,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('❌ Initial auth check failed:', error);
+        if (mountedRef.current) {
+          setAuthState({
+            user: null,
+            profile: null,
+            loading: false,
+            isAuthenticated: false,
+            error: null,
+          });
+        }
+      }
+    };
+
+    initAuth();
+
+    // Auth state change listener (unchanged)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔐 Auth state change event:', event, 'User:', session?.user?.email || 'none');
@@ -523,14 +569,13 @@ function useAuthProvider(): AuthContextValue {
   }, []);
 
   // Role-based access helpers
-  const hasRole = (requiredRole: number): boolean => {
-    return authState.profile?.role >= requiredRole;
-  };
+  const role = authState.profile?.role ?? -1;
+  const hasRole = (requiredRole: number): boolean => role >= requiredRole;
 
-  const isAnonymous = authState.profile?.role === 0;
-  const isBasicUser = authState.profile?.role >= 1;
-  const isFreelancer = authState.profile?.role >= 2;
-  const isPremium = authState.profile?.role >= 3;
+  const isAnonymous = role === 0;
+  const isBasicUser = role >= 1;
+  const isFreelancer = role >= 2;
+  const isPremium = role >= 3;
 
   const canAccessEditor = isBasicUser;
   const canAddComponents = isBasicUser;
