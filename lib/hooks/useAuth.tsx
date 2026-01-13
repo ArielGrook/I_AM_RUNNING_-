@@ -583,7 +583,8 @@ function useAuthProvider(): AuthContextValue {
   }, []);
 
   // Role-based access helpers
-  const role = authState.profile?.role ?? -1;
+  // Default to 0 (anonymous) if no profile, not -1 (which blocks everything)
+  const role = authState.profile?.role ?? (authState.isAuthenticated ? 1 : 0);
   const hasRole = (requiredRole: number): boolean => role >= requiredRole;
 
   const isAnonymous = role === 0;
@@ -591,7 +592,8 @@ function useAuthProvider(): AuthContextValue {
   const isFreelancer = role >= 2;
   const isPremium = role >= 3;
 
-  const canAccessEditor = isBasicUser;
+  // Editor access: authenticated users with role >= 1
+  const canAccessEditor = authState.isAuthenticated && isBasicUser;
   const canAddComponents = isBasicUser;
   const canSaveProjects = isBasicUser;
   const getAILimit = (): number => authState.profile?.ai_requests_limit || 0;

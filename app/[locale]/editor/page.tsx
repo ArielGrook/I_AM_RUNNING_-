@@ -15,6 +15,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2 } from 'lucide-react';
 import Link from 'next/link';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -65,6 +66,44 @@ export default function EditorPage() {
   const t = useTranslations('EditorPage');
   const locale = useLocale();
   const isRTL = locale === 'he' || locale === 'ar';
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading, canAccessEditor, profile } = useAuth();
+  
+  // Guard: Redirect if not authenticated or no editor access
+  useEffect(() => {
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        console.log('🚫 Editor: Not authenticated, redirecting to login');
+        router.push('/auth/login');
+        return;
+      }
+      
+      if (!canAccessEditor) {
+        console.log('🚫 Editor: No access (role:', profile?.role ?? 'unknown', '), redirecting to home');
+        router.push('/');
+        return;
+      }
+      
+      console.log('✅ Editor: Access granted (role:', profile?.role ?? 'unknown', ')');
+    }
+  }, [isAuthenticated, authLoading, canAccessEditor, profile?.role, router]);
+  
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading editor...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render if no access (redirect will happen)
+  if (!isAuthenticated || !canAccessEditor) {
+    return null;
+  }
   
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
