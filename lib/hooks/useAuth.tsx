@@ -104,69 +104,29 @@ function useAuthProvider(): AuthContextValue {
   };
 
   /**
-   * Load profile data from the profiles table (simplified - no timeout)
+   * Load profile data from the profiles table
+   * Profile is created automatically by database trigger on signup
    */
-  const loadProfile = async (userId: string): Promise<Profile | null> => {
-    try {
-      console.log('🔍 Loading profile for user:', userId);
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+  const loadProfile = async (userId: string): Promise<Profile> => {
+    console.log('🔍 Loading profile for user:', userId);
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-      if (error) {
-        console.error('❌ Error loading profile:', error);
-        return null;
-      }
-      
-      console.log('✅ Profile loaded:', data);
-      return data as Profile;
-    } catch (error) {
-      console.error('❌ Exception loading profile:', error);
-      return null;
+    if (error || !data) {
+      console.error('❌ Profile not found:', error);
+      throw new Error('Profile not found');
     }
+    
+    console.log('✅ Profile loaded:', data);
+    return data as Profile;
   };
 
   /**
-   * Create a profile record for a new user (simplified - no timeout)
-   */
-  const createProfile = async (user: User): Promise<Profile | null> => {
-    try {
-      console.log('📝 Creating profile for:', user.email);
-      
-      const profileData = {
-        id: user.id,
-        email: user.email || '',
-        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-        company: user.user_metadata?.company || null,
-        role: 1,
-        ai_requests_today: 0,
-        ai_requests_limit: 10,
-      };
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([profileData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ Error creating profile:', error);
-        return null;
-      }
-      
-      console.log('✅ Profile created:', data);
-      return data as Profile;
-    } catch (error) {
-      console.error('❌ Exception creating profile:', error);
-      return null;
-    }
-  };
-
-  /**
-   * Refresh authentication state (simplified)
+   * Refresh authentication state
    */
   const refreshAuth = async () => {
     console.log('🔄 Refreshing auth...');
@@ -195,30 +155,36 @@ function useAuthProvider(): AuthContextValue {
       const user = session?.user;
 
       if (user) {
-        let profile = await loadProfile(user.id);
-        if (!profile) profile = await createProfile(user);
-        
-        // Use default if still null
-        if (!profile) {
-          profile = {
-            id: user.id,
-            email: user.email || '',
-            role: 1,
-            ai_requests_today: 0,
-            ai_requests_limit: 10,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          } as Profile;
-        }
-
-        if (mountedRef.current) {
-          setAuthState({
-            user,
-            profile,
-            loading: false,
-            isAuthenticated: true,
-            error: null,
-          });
+        try {
+          const profile = await loadProfile(user.id);
+          if (mountedRef.current) {
+            setAuthState({
+              user,
+              profile,
+              loading: false,
+              isAuthenticated: true,
+              error: null,
+            });
+          }
+        } catch {
+          // Fallback to default profile if database has issues
+          if (mountedRef.current) {
+            setAuthState({
+              user,
+              profile: {
+                id: user.id,
+                email: user.email || '',
+                role: 1,
+                ai_requests_today: 0,
+                ai_requests_limit: 10,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              } as Profile,
+              loading: false,
+              isAuthenticated: true,
+              error: null,
+            });
+          }
         }
       } else {
         if (mountedRef.current) {
@@ -357,7 +323,7 @@ function useAuthProvider(): AuthContextValue {
     }
   };
 
-  // Listen for auth state changes (simplified - no timeouts)
+  // Listen for auth state changes (profile created by database trigger)
   useEffect(() => {
     console.log('🎧 Auth: Starting...');
     mountedRef.current = true;
@@ -369,32 +335,38 @@ function useAuthProvider(): AuthContextValue {
         if (session?.user) {
           console.log('✅ Session found:', session.user.email);
           
-          let profile = await loadProfile(session.user.id);
-          if (!profile) {
-            profile = await createProfile(session.user);
-          }
-          
-          // Use default if still null
-          if (!profile) {
-            profile = {
-              id: session.user.id,
-              email: session.user.email || '',
-              role: 1,
-              ai_requests_today: 0,
-              ai_requests_limit: 10,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            } as Profile;
-          }
-          
-          if (mountedRef.current) {
-            setAuthState({
-              user: session.user,
-              profile,
-              loading: false,
-              isAuthenticated: true,
-              error: null,
-            });
+          try {
+            const profile = await loadProfile(session.user.id);
+            
+            if (mountedRef.current) {
+              setAuthState({
+                user: session.user,
+                profile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
+            }
+          } catch {
+            console.error('❌ Could not load profile, using default');
+            // Use default profile if database has issues
+            if (mountedRef.current) {
+              setAuthState({
+                user: session.user,
+                profile: {
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  role: 1,
+                  ai_requests_today: 0,
+                  ai_requests_limit: 10,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                } as Profile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
+            }
           }
         } else {
           console.log('ℹ️ No session');
@@ -433,29 +405,33 @@ function useAuthProvider(): AuthContextValue {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           const user = session?.user;
           if (user) {
-            let profile = await loadProfile(user.id);
-            if (!profile) {
-              profile = await createProfile(user);
+            try {
+              const profile = await loadProfile(user.id);
+              setAuthState({
+                user,
+                profile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
+            } catch {
+              // Fallback to default profile
+              setAuthState({
+                user,
+                profile: {
+                  id: user.id,
+                  email: user.email || '',
+                  role: 1,
+                  ai_requests_today: 0,
+                  ai_requests_limit: 10,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                } as Profile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
             }
-            if (!profile) {
-              profile = {
-                id: user.id,
-                email: user.email || '',
-                role: 1,
-                ai_requests_today: 0,
-                ai_requests_limit: 10,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              } as Profile;
-            }
-            
-            setAuthState({
-              user,
-              profile,
-              loading: false,
-              isAuthenticated: true,
-              error: null,
-            });
           }
         } else if (event === 'SIGNED_OUT') {
           setAuthState({
