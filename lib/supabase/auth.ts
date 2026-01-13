@@ -6,7 +6,31 @@
  * Stage 3 Module 8: Shadow Mode
  */
 
-import { getSupabaseClient } from './client';
+import { createBrowserClient } from '@supabase/ssr';
+
+/**
+ * Get a fresh Supabase client (no singleton)
+ */
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
+
+  const cookieConsent = typeof window !== 'undefined' 
+    ? localStorage.getItem('cookie-consent') as 'accepted' | 'declined' | null
+    : null;
+
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: cookieConsent === 'accepted',
+      autoRefreshToken: cookieConsent === 'accepted',
+      detectSessionInUrl: true,
+    },
+  });
+}
 import type { User } from '@supabase/supabase-js';
 
 export interface AuthUser extends User {

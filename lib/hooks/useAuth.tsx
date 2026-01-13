@@ -4,13 +4,12 @@ import {
   createContext,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
 import { User } from '@supabase/supabase-js';
-import { createSupabaseClient } from '@/lib/supabase/client';
+import { createBrowserClient } from '@supabase/ssr';
 import { signIn, signUp, signOut, signInWithGoogle } from '@/lib/supabase/auth';
 
 /**
@@ -63,33 +62,102 @@ type AuthContextValue = AuthState & {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
+ * Create a fresh Supabase client (no singleton, no caching)
+ */
+function createFreshSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
+
+  const cookieConsent = typeof window !== 'undefined' 
+    ? localStorage.getItem('cookie-consent') as 'accepted' | 'declined' | null
+    : null;
+
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: cookieConsent === 'accepted',
+      autoRefreshToken: cookieConsent === 'accepted',
+      detectSessionInUrl: true,
+    },
+  });
+}
+
+/**
+ * Timeout wrapper for promises
+ */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    ),
+  ]);
+}
+
+/**
+ * Load profile with timeout and fallback
+ */
+async function loadProfile(userId: string): Promise<Profile | null> {
+  console.log('🔍 Loading profile for user:', userId);
+  
+  const supabase = createFreshSupabaseClient();
+  
+  try {
+    // Try to load profile with 3 second timeout
+    const queryPromise = supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    const result = await withTimeout(
+      queryPromise,
+      3000,
+      'Profile query timeout after 3 seconds'
+    );
+
+    if (result.error) {
+      console.error('❌ Profile query error:', result.error);
+      return null;
+    }
+
+    if (result.data) {
+      console.log('✅ Profile loaded successfully:', result.data);
+      return result.data as Profile;
+    }
+
+    console.warn('⚠️ Profile query returned no data');
+    return null;
+  } catch (error) {
+    console.error('❌ Profile load failed:', error);
+    return null;
+  }
+}
+
+/**
  * useAuth hook for authentication and profile management
  */
 function useAuthProvider(): AuthContextValue {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     profile: null,
-    loading: true, // Start with loading true to check initial auth state
+    loading: true,
     isAuthenticated: false,
     error: null,
   });
 
   const [cookieConsent, setCookieConsent] = useState<'accepted' | 'declined' | null>(() => {
-    // Initialize from localStorage on mount
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('cookie-consent');
-      return stored as 'accepted' | 'declined' | null || null;
+      return localStorage.getItem('cookie-consent') as 'accepted' | 'declined' | null || null;
     }
     return null;
   });
-  const mountedRef = useRef(true);
 
-  // Create Supabase client once
-  const supabase = useMemo(() => {
-    const consent = typeof window !== 'undefined' ? localStorage.getItem('cookie-consent') as 'accepted' | 'declined' | null : null;
-    console.log('🔧 Creating Supabase client with cookieConsent:', consent);
-    return createSupabaseClient(consent);
-  }, []);
+  const mountedRef = useRef(true);
+  const initDoneRef = useRef(false);
 
   /**
    * Update cookie consent
@@ -100,43 +168,27 @@ function useAuthProvider(): AuthContextValue {
     if (typeof window !== 'undefined') {
       localStorage.setItem('cookie-consent', consent || '');
     }
-    // Note: Persistence change requires page reload
-  };
-
-  /**
-   * Load profile data from the profiles table
-   * Profile is created automatically by database trigger on signup
-   */
-  const loadProfile = async (userId: string): Promise<Profile> => {
-    console.log('🔍 Loading profile for user:', userId);
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (error || !data) {
-      console.error('❌ Profile not found:', error);
-      throw new Error('Profile not found');
-    }
-    
-    console.log('✅ Profile loaded:', data);
-    return data as Profile;
   };
 
   /**
    * Refresh authentication state
    */
   const refreshAuth = async () => {
-    console.log('🔄 Refreshing auth...');
-
     if (!mountedRef.current) return;
 
+    console.log('🔄 Refreshing auth...');
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const supabase = createFreshSupabaseClient();
+      
+      // Get session with timeout
+      const sessionPromise = supabase.auth.getSession();
+      const { data: { session }, error } = await withTimeout(
+        sessionPromise,
+        2000,
+        'Session check timeout'
+      );
 
       if (error) {
         console.error('❌ Session error:', error);
@@ -155,9 +207,11 @@ function useAuthProvider(): AuthContextValue {
       const user = session?.user;
 
       if (user) {
-        try {
-          const profile = await loadProfile(user.id);
-          if (mountedRef.current) {
+        // Try to load profile, but don't wait forever
+        const profile = await loadProfile(user.id);
+        
+        if (mountedRef.current) {
+          if (profile) {
             setAuthState({
               user,
               profile,
@@ -165,10 +219,9 @@ function useAuthProvider(): AuthContextValue {
               isAuthenticated: true,
               error: null,
             });
-          }
-        } catch {
-          // Fallback to default profile if database has issues
-          if (mountedRef.current) {
+          } else {
+            // Fallback to default profile if query fails
+            console.warn('⚠️ Using fallback profile');
             setAuthState({
               user,
               profile: {
@@ -219,8 +272,7 @@ function useAuthProvider(): AuthContextValue {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const result = await signIn(email, password);
-      console.log('✅ Sign in successful:', result?.user?.email);
+      await signIn(email, password);
       // Auth listener will handle state update
     } catch (error) {
       console.error('❌ Sign in failed:', error);
@@ -244,8 +296,7 @@ function useAuthProvider(): AuthContextValue {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const result = await signUp(email, password, metadata);
-      console.log('✅ Sign up successful:', result?.user?.email);
+      await signUp(email, password, metadata);
       // Auth listener will handle state update
     } catch (error) {
       console.error('❌ Sign up failed:', error);
@@ -269,14 +320,8 @@ function useAuthProvider(): AuthContextValue {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const result = await signInWithGoogle();
-      console.log('✅ Google OAuth initiated:', result);
-      // User will be redirected, clear loading after 2s if blocked
-      setTimeout(() => {
-        if (mountedRef.current) {
-          setAuthState(prev => ({ ...prev, loading: false }));
-        }
-      }, 2000);
+      await signInWithGoogle();
+      // User will be redirected
     } catch (error) {
       console.error('❌ Google sign in failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Google sign in failed';
@@ -300,7 +345,6 @@ function useAuthProvider(): AuthContextValue {
 
     try {
       await signOut();
-      console.log('✅ Signed out');
       if (mountedRef.current) {
         setAuthState({
           user: null,
@@ -323,22 +367,34 @@ function useAuthProvider(): AuthContextValue {
     }
   };
 
-  // Listen for auth state changes (profile created by database trigger)
+  // Initialize auth state once on mount
   useEffect(() => {
-    console.log('🎧 Auth: Starting...');
+    if (initDoneRef.current) return;
+    initDoneRef.current = true;
+
     mountedRef.current = true;
+    console.log('🎧 Auth: Initializing...');
 
     const initAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const supabase = createFreshSupabaseClient();
         
+        // Get session with timeout
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session } } = await withTimeout(
+          sessionPromise,
+          2000,
+          'Initial session check timeout'
+        );
+
         if (session?.user) {
           console.log('✅ Session found:', session.user.email);
           
-          try {
-            const profile = await loadProfile(session.user.id);
-            
-            if (mountedRef.current) {
+          // Try to load profile, but don't block on it
+          const profile = await loadProfile(session.user.id);
+          
+          if (mountedRef.current) {
+            if (profile) {
               setAuthState({
                 user: session.user,
                 profile,
@@ -346,11 +402,9 @@ function useAuthProvider(): AuthContextValue {
                 isAuthenticated: true,
                 error: null,
               });
-            }
-          } catch {
-            console.error('❌ Could not load profile, using default');
-            // Use default profile if database has issues
-            if (mountedRef.current) {
+            } else {
+              // Use fallback profile immediately
+              console.warn('⚠️ Using fallback profile (query failed or timed out)');
               setAuthState({
                 user: session.user,
                 profile: {
@@ -396,6 +450,8 @@ function useAuthProvider(): AuthContextValue {
 
     initAuth();
 
+    // Listen for auth state changes
+    const supabase = createFreshSupabaseClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔐 Auth event:', event);
@@ -405,33 +461,24 @@ function useAuthProvider(): AuthContextValue {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           const user = session?.user;
           if (user) {
-            try {
-              const profile = await loadProfile(user.id);
-              setAuthState({
-                user,
-                profile,
-                loading: false,
-                isAuthenticated: true,
-                error: null,
-              });
-            } catch {
-              // Fallback to default profile
-              setAuthState({
-                user,
-                profile: {
-                  id: user.id,
-                  email: user.email || '',
-                  role: 1,
-                  ai_requests_today: 0,
-                  ai_requests_limit: 10,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                } as Profile,
-                loading: false,
-                isAuthenticated: true,
-                error: null,
-              });
-            }
+            // Try to load profile, but use fallback if it fails
+            const profile = await loadProfile(user.id);
+            
+            setAuthState({
+              user,
+              profile: profile || {
+                id: user.id,
+                email: user.email || '',
+                role: 1,
+                ai_requests_today: 0,
+                ai_requests_limit: 10,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              } as Profile,
+              loading: false,
+              isAuthenticated: true,
+              error: null,
+            });
           }
         } else if (event === 'SIGNED_OUT') {
           setAuthState({
@@ -499,7 +546,6 @@ function useAuthProvider(): AuthContextValue {
 
 /**
  * AuthProvider ensures a single shared auth instance across the app.
- * This prevents multiple timers/listeners from being created by each consumer.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useAuthProvider();
@@ -516,4 +562,3 @@ export function useAuth(): AuthContextValue {
   }
   return ctx;
 }
-
