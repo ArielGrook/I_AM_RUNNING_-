@@ -144,12 +144,12 @@ function useAuthProvider(): AuthContextValue {
     try {
       console.log('🔍 Loading profile for user:', userId);
 
-      // Create timeout promise (5 seconds)
+      // Create timeout promise (10 seconds - Supabase can be slow)
       const timeoutPromise = new Promise<null>((resolve) => {
         setTimeout(() => {
-          console.log('⏰ Profile load timeout after 5s - returning null');
+          console.log('⏰ Profile load timeout after 10s - returning null');
           resolve(null);
-        }, 5000);
+        }, 10000);
       });
 
       // Create query promise
@@ -201,12 +201,12 @@ function useAuthProvider(): AuthContextValue {
 
       console.log('📝 Profile creation data:', profileData);
 
-      // Timeout promise (5 seconds)
+      // Timeout promise (10 seconds - Supabase can be slow)
       const timeoutPromise = new Promise<null>((resolve) => {
         setTimeout(() => {
-          console.log('⏰ Profile create timeout after 5s');
+          console.log('⏰ Profile create timeout after 10s');
           resolve(null);
-        }, 5000);
+        }, 10000);
       });
 
       // Insert query promise
@@ -476,7 +476,8 @@ function useAuthProvider(): AuthContextValue {
     console.log('🎧 Setting up auth state listener...');
     mountedRef.current = true;
 
-    // Defensive timeout - force loading clear after 3s if initAuth hangs
+    // Defensive timeout - force loading clear after 12s if initAuth hangs
+    // (allows 10s for profile load + 2s buffer)
     const initTimeout = setTimeout(() => {
       console.log('⚠️ Init auth timeout - forcing loading clear');
       if (mountedRef.current) {
@@ -485,7 +486,7 @@ function useAuthProvider(): AuthContextValue {
           loading: false,
         }));
       }
-    }, 3000);
+    }, 12000);
 
     // Initial auth check - NO timeout for initial load
     const initAuth = async () => {
