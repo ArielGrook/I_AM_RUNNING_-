@@ -98,55 +98,57 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
 }
 
 /**
- * Load profile with localStorage caching and timeout protection
+ * Load profile with AGGRESSIVE localStorage caching
+ * - Always checks cache first
+ * - Cache valid for 24 hours
+ * - NO background refresh (prevents timeout)
+ * - Only fetches from DB if no cache or expired
  */
 async function loadProfile(userId: string): Promise<Profile | null> {
   console.log('🔍 Loading profile for user:', userId);
   
-  // Try cache first (instant load)
-  if (typeof window !== 'undefined') {
-    const cacheKey = `profile_${userId}`;
-    const cachedProfile = localStorage.getItem(cacheKey);
-    
-    if (cachedProfile) {
-      try {
-        const profile = JSON.parse(cachedProfile) as Profile;
-        console.log('✅ Profile loaded from cache (instant):', profile);
-        
-        // Refresh cache in background (don't wait)
-        const supabase = createFreshSupabaseClient();
-        withTimeout(
-          supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single(),
-          3000,
-          'Background refresh timeout'
-        )
-          .then(({ data, error }) => {
-            if (!error && data) {
-              localStorage.setItem(cacheKey, JSON.stringify(data));
-              console.log('🔄 Profile cache refreshed in background');
-            }
-          })
-          .catch(() => {
-            console.log('⚠️ Background profile refresh failed (ignored)');
-          });
-        
-        return profile;
-      } catch (e) {
-        console.log('⚠️ Invalid cached profile, fetching fresh');
-        localStorage.removeItem(cacheKey);
-      }
-    }
+  // Check if we're in browser
+  if (typeof window === 'undefined') {
+    console.error('❌ Cannot load profile on server');
+    return null;
   }
   
-  // Fetch from database
+  // ALWAYS try cache FIRST
+  const cacheKey = `profile_${userId}`;
+  const cachedData = localStorage.getItem(cacheKey);
+  let expiredCache: Profile | null = null;
+  
+  if (cachedData) {
+    try {
+      const cached = JSON.parse(cachedData);
+      
+      // Check if cache is still valid (24 hours)
+      const MAX_CACHE_AGE = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      const cacheAge = cached.cachedAt 
+        ? Date.now() - new Date(cached.cachedAt).getTime()
+        : Infinity; // If no timestamp, consider expired
+      
+      if (cacheAge < MAX_CACHE_AGE) {
+        console.log(`✅ Profile loaded from cache (age: ${Math.round(cacheAge / 1000)}s):`, cached.profile);
+        return cached.profile as Profile;
+      } else {
+        console.log(`⏰ Cache expired (age: ${Math.round(cacheAge / 1000)}s), fetching fresh profile`);
+        // Save expired cache as fallback
+        expiredCache = cached.profile as Profile;
+      }
+    } catch (e) {
+      console.error('❌ Invalid cache data:', e);
+      localStorage.removeItem(cacheKey);
+    }
+  } else {
+    console.log('ℹ️ No cache found, fetching from database');
+  }
+  
+  // Fetch from database (only if no valid cache)
+  console.log('📡 Fetching profile from Supabase...');
   const supabase = createFreshSupabaseClient();
   
   try {
-    // Try to load profile with 3 second timeout
     const queryPromise = supabase
       .from('profiles')
       .select('*')
@@ -161,25 +163,48 @@ async function loadProfile(userId: string): Promise<Profile | null> {
 
     if (result.error) {
       console.error('❌ Profile query error:', result.error);
+      
+      // If we have expired cache, use it as fallback
+      if (expiredCache) {
+        console.log('⚠️ Using expired cache as fallback (DB query failed)');
+        return expiredCache;
+      }
+      
       return null;
     }
 
     if (result.data) {
-      console.log('✅ Profile loaded from database:', result.data);
+      console.log('✅ Profile fetched from database:', result.data);
       
-      // Cache for next time
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`profile_${userId}`, JSON.stringify(result.data));
-        console.log('💾 Profile cached for future loads');
-      }
+      // Save to cache with timestamp
+      const cacheData = {
+        profile: result.data,
+        cachedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      console.log('💾 Profile saved to cache with timestamp');
       
       return result.data as Profile;
     }
 
     console.warn('⚠️ Profile query returned no data');
+    
+    // If we have expired cache, use it as fallback
+    if (expiredCache) {
+      console.log('⚠️ Using expired cache as fallback (no data from DB)');
+      return expiredCache;
+    }
+    
     return null;
   } catch (error) {
     console.error('❌ Profile load failed:', error);
+    
+    // If we have expired cache, use it as fallback
+    if (expiredCache) {
+      console.log('⚠️ Using expired cache as fallback (query timeout)');
+      return expiredCache;
+    }
+    
     return null;
   }
 }

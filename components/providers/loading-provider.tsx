@@ -8,12 +8,12 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const { loading: authLoading } = useAuth();
 
-  // Track minimum display time for UX (2000ms - ensures auth completes)
+  // Track minimum display time for UX (500ms - fast since cache is instant)
   useEffect(() => {
     const timer = setTimeout(() => {
-      console.log('⏱️ Loading screen minimum time elapsed (2000ms)');
+      console.log('⏱️ Loading screen minimum time elapsed (500ms)');
       setMinTimeElapsed(true);
-    }, 2000);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, []);
