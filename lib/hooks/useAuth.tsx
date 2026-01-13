@@ -83,40 +83,6 @@ function useAuthProvider(): AuthContextValue {
     return null;
   });
   const mountedRef = useRef(true);
-  const authTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  /**
-   * Clear the in-flight auth timeout (no-op if none exists)
-   */
-  const clearAuthTimeout = () => {
-    if (authTimeoutRef.current !== null) {
-      clearTimeout(authTimeoutRef.current);
-      authTimeoutRef.current = null;
-    }
-  };
-
-  /**
-   * Arm the auth timeout and make sure no stale timer can fire later.
-   * Any previously scheduled timer is cleared before setting a new one.
-   */
-  const startAuthTimeout = () => {
-    // Prevent orphaned timers if refreshAuth is called multiple times
-    clearAuthTimeout();
-
-    const timeoutId = setTimeout(() => {
-      // Bail out if this timer has been cleared/replaced or the component is gone
-      if (!mountedRef.current || authTimeoutRef.current !== timeoutId) return;
-
-      console.log('⏰ Auth refresh timeout');
-      setAuthState(prev => ({
-        ...prev,
-        loading: false,
-        error: 'Authentication request timed out. Please try again.'
-      }));
-    }, 15000); // 15 second timeout
-
-    authTimeoutRef.current = timeoutId;
-  };
 
   // Create Supabase client once
   const supabase = useMemo(() => {
@@ -138,44 +104,25 @@ function useAuthProvider(): AuthContextValue {
   };
 
   /**
-   * Load profile data from the profiles table
+   * Load profile data from the profiles table (simplified - no timeout)
    */
   const loadProfile = async (userId: string): Promise<Profile | null> => {
     try {
       console.log('🔍 Loading profile for user:', userId);
-
-      // Create timeout promise (10 seconds - Supabase can be slow)
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => {
-          console.log('⏰ Profile load timeout after 10s - returning null');
-          resolve(null);
-        }, 10000);
-      });
-
-      // Create query promise
-      const queryPromise = supabase
+      
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single()
-        .then(({ data, error }) => {
-          if (error) {
-            console.error('❌ Error loading profile:', error);
-            console.log('🔍 Profile load response:', { data, error });
-            return null;
-          }
-          console.log('✅ Profile loaded successfully:', data);
-          return data as Profile;
-        });
+        .single();
 
-      // Race between query and timeout
-      const result = await Promise.race([queryPromise, timeoutPromise]);
-
-      if (result === null) {
-        console.log('⚠️ Profile load returned null - will trigger createProfile or use default');
+      if (error) {
+        console.error('❌ Error loading profile:', error);
+        return null;
       }
-
-      return result;
+      
+      console.log('✅ Profile loaded:', data);
+      return data as Profile;
     } catch (error) {
       console.error('❌ Exception loading profile:', error);
       return null;
@@ -183,51 +130,35 @@ function useAuthProvider(): AuthContextValue {
   };
 
   /**
-   * Create a profile record for a new user
+   * Create a profile record for a new user (simplified - no timeout)
    */
   const createProfile = async (user: User): Promise<Profile | null> => {
     try {
-      console.log('🏗️ Creating profile for user:', user.email);
-
-      const profileData: Omit<Profile, 'created_at' | 'updated_at'> = {
+      console.log('📝 Creating profile for:', user.email);
+      
+      const profileData = {
         id: user.id,
-        email: user.email!,
-        full_name: user.user_metadata?.full_name,
-        company: user.user_metadata?.company,
-        role: 1, // Default to basic user
+        email: user.email || '',
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        company: user.user_metadata?.company || null,
+        role: 1,
         ai_requests_today: 0,
         ai_requests_limit: 10,
       };
 
-      console.log('📝 Profile creation data:', profileData);
-
-      // Timeout promise (10 seconds - Supabase can be slow)
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => {
-          console.log('⏰ Profile create timeout after 10s');
-          resolve(null);
-        }, 10000);
-      });
-
-      // Insert query promise
-      const insertPromise = supabase
+      const { data, error } = await supabase
         .from('profiles')
         .insert([profileData])
         .select()
-        .single()
-        .then(({ data, error }) => {
-          if (error) {
-            console.error('❌ Error creating profile:', error);
-            console.log('🏗️ Profile creation response:', { data, error });
-            return null;
-          }
-          console.log('✅ Profile created successfully:', data);
-          return data as Profile;
-        });
+        .single();
 
-      // Race between insert and timeout
-      const result = await Promise.race([insertPromise, timeoutPromise]);
-      return result;
+      if (error) {
+        console.error('❌ Error creating profile:', error);
+        return null;
+      }
+      
+      console.log('✅ Profile created:', data);
+      return data as Profile;
     } catch (error) {
       console.error('❌ Exception creating profile:', error);
       return null;
@@ -235,33 +166,20 @@ function useAuthProvider(): AuthContextValue {
   };
 
   /**
-   * Refresh authentication state
+   * Refresh authentication state (simplified)
    */
   const refreshAuth = async () => {
-    console.log('🔄 Refreshing auth state...');
+    console.log('🔄 Refreshing auth...');
 
-    if (!mountedRef.current) {
-      console.log('🚫 Component unmounted, skipping auth refresh');
-      return;
-    }
+    if (!mountedRef.current) return;
 
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
-    // Set timeout to prevent infinite loading
-    startAuthTimeout();
-
     try {
-      console.log('🔍 Getting current session...');
       const { data: { session }, error } = await supabase.auth.getSession();
 
-      // Always clear timeout when getSession() resolves (success or error)
-      // This prevents timeout from firing after we've already handled the response
-      clearAuthTimeout();
-
-      console.log('🔐 Session check result:', { hasSession: !!session, error: error?.message });
-
       if (error) {
-        console.error('❌ Auth session error:', error);
+        console.error('❌ Session error:', error);
         if (mountedRef.current) {
           setAuthState({
             user: null,
@@ -275,20 +193,25 @@ function useAuthProvider(): AuthContextValue {
       }
 
       const user = session?.user;
-      console.log('👤 User from session:', user?.email || 'none');
 
       if (user) {
-        console.log('🔍 Loading/creating profile for authenticated user...');
-        // Load or create profile
         let profile = await loadProfile(user.id);
+        if (!profile) profile = await createProfile(user);
+        
+        // Use default if still null
         if (!profile) {
-          console.log('🏗️ Profile not found, creating new profile...');
-          // Profile doesn't exist, create one
-          profile = await createProfile(user);
+          profile = {
+            id: user.id,
+            email: user.email || '',
+            role: 1,
+            ai_requests_today: 0,
+            ai_requests_limit: 10,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as Profile;
         }
 
         if (mountedRef.current) {
-          console.log('✅ Auth state updated - user authenticated');
           setAuthState({
             user,
             profile,
@@ -299,7 +222,6 @@ function useAuthProvider(): AuthContextValue {
         }
       } else {
         if (mountedRef.current) {
-          console.log('👤 No authenticated user');
           setAuthState({
             user: null,
             profile: null,
@@ -310,16 +232,14 @@ function useAuthProvider(): AuthContextValue {
         }
       }
     } catch (error) {
-      clearAuthTimeout();
-
-      console.error('❌ Exception refreshing auth:', error);
+      console.error('❌ Refresh auth error:', error);
       if (mountedRef.current) {
         setAuthState({
           user: null,
           profile: null,
           loading: false,
           isAuthenticated: false,
-          error: error instanceof Error ? error.message : 'Authentication error',
+          error: error instanceof Error ? error.message : 'Auth error',
         });
       }
     }
@@ -329,28 +249,15 @@ function useAuthProvider(): AuthContextValue {
    * Sign in with email and password
    */
   const signInUser = async (email: string, password: string) => {
-    console.log('🔐 Starting email/password sign in process', { email });
+    console.log('🔐 Sign in:', email);
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log('📤 Calling Supabase signIn function...');
       const result = await signIn(email, password);
-      console.log('✅ Sign in API call successful:', { user: result?.user?.email });
-
-      // Don't use setTimeout to clear loading - let the auth state change listener handle it
-      // Loading will be cleared when:
-      // 1. Auth listener detects SIGNED_IN event (success) - sets loading: false
-      // 2. Error occurs (catch block below) - sets loading: false
-      // This prevents race conditions between setTimeout and auth listener
+      console.log('✅ Sign in successful:', result?.user?.email);
+      // Auth listener will handle state update
     } catch (error) {
       console.error('❌ Sign in failed:', error);
-      
-      // CRITICAL: Clear any pending timeout to prevent it from overwriting this error
-      if (authTimeoutRef.current) {
-        console.log('🧹 Clearing auth timeout after sign-in error');
-      }
-      clearAuthTimeout();
-      
       const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
       if (mountedRef.current) {
         setAuthState(prev => ({
@@ -367,22 +274,15 @@ function useAuthProvider(): AuthContextValue {
    * Sign up with email and password
    */
   const signUpUser = async (email: string, password: string, metadata?: Record<string, any>) => {
-    console.log('🔐 Starting email/password sign up process', { email, metadata });
+    console.log('🔐 Sign up:', email);
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log('📤 Calling Supabase signUp function...');
       const result = await signUp(email, password, metadata);
-      console.log('✅ Sign up API call successful:', { user: result?.user?.email });
-
-      // Don't use setTimeout - let the auth state change listener handle loading state
-      // Loading will be cleared when listener detects SIGNED_IN event
+      console.log('✅ Sign up successful:', result?.user?.email);
+      // Auth listener will handle state update
     } catch (error) {
       console.error('❌ Sign up failed:', error);
-      
-      // CRITICAL: Clear any pending timeout to prevent it from overwriting this error
-      clearAuthTimeout();
-      
       const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
       if (mountedRef.current) {
         setAuthState(prev => ({
@@ -399,29 +299,20 @@ function useAuthProvider(): AuthContextValue {
    * Sign in with Google OAuth
    */
   const signInWithGoogleUser = async () => {
-    console.log('🔐 Starting Google OAuth sign in process');
+    console.log('🔐 Google sign in...');
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log('📤 Calling Supabase signInWithGoogle function...');
       const result = await signInWithGoogle();
-      console.log('✅ Google sign in initiated:', result);
-
-      // For OAuth, user will be redirected away from page
-      // Clear loading after 2s in case redirect doesn't happen (popup blocked, etc.)
-      // This is different from email/password auth which doesn't redirect
+      console.log('✅ Google OAuth initiated:', result);
+      // User will be redirected, clear loading after 2s if blocked
       setTimeout(() => {
         if (mountedRef.current) {
-          console.log('🔄 Clearing loading state - OAuth redirect may have been blocked');
           setAuthState(prev => ({ ...prev, loading: false }));
         }
       }, 2000);
     } catch (error) {
       console.error('❌ Google sign in failed:', error);
-      
-      // CRITICAL: Clear any pending timeout to prevent it from overwriting this error
-      clearAuthTimeout();
-      
       const errorMessage = error instanceof Error ? error.message : 'Google sign in failed';
       if (mountedRef.current) {
         setAuthState(prev => ({
@@ -438,17 +329,13 @@ function useAuthProvider(): AuthContextValue {
    * Sign out current user
    */
   const signOutUser = async () => {
-    console.log('🚪 Starting sign out process');
+    console.log('🚪 Sign out...');
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log('📤 Calling Supabase signOut function...');
       await signOut();
-      console.log('✅ Sign out API call successful');
-
-      // Immediately clear auth state since sign out is synchronous
+      console.log('✅ Signed out');
       if (mountedRef.current) {
-        console.log('🔄 Clearing auth state after sign out');
         setAuthState({
           user: null,
           profile: null,
@@ -459,56 +346,36 @@ function useAuthProvider(): AuthContextValue {
       }
     } catch (error) {
       console.error('❌ Sign out failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Sign out failed';
       if (mountedRef.current) {
         setAuthState(prev => ({
           ...prev,
           loading: false,
-          error: errorMessage
+          error: error instanceof Error ? error.message : 'Sign out failed'
         }));
       }
       throw error;
     }
   };
 
-  // Listen for auth state changes
+  // Listen for auth state changes (simplified - no timeouts)
   useEffect(() => {
-    console.log('🎧 Setting up auth state listener...');
+    console.log('🎧 Auth: Starting...');
     mountedRef.current = true;
 
-    // Defensive timeout - force loading clear after 12s if initAuth hangs
-    // (allows 10s for profile load + 2s buffer)
-    const initTimeout = setTimeout(() => {
-      console.log('⚠️ Init auth timeout - forcing loading clear');
-      if (mountedRef.current) {
-        setAuthState(prev => ({
-          ...prev,
-          loading: false,
-        }));
-      }
-    }, 12000);
-
-    // Initial auth check - NO timeout for initial load
     const initAuth = async () => {
-      console.log('🔍 Performing initial auth check (no timeout)...');
-
       try {
         const { data: { session } } = await supabase.auth.getSession();
-
-        // Clear defensive timeout once we have a response
-        clearTimeout(initTimeout);
-
+        
         if (session?.user) {
-          console.log('✅ Found existing session:', session.user.email);
+          console.log('✅ Session found:', session.user.email);
+          
           let profile = await loadProfile(session.user.id);
           if (!profile) {
-            console.log('📝 Creating profile for user:', session.user.id);
             profile = await createProfile(session.user);
           }
-
-          // CRITICAL FIX: Even if profile is null, allow login with default profile
+          
+          // Use default if still null
           if (!profile) {
-            console.log('⚠️ Could not load/create profile - using default');
             profile = {
               id: session.user.id,
               email: session.user.email || '',
@@ -519,7 +386,7 @@ function useAuthProvider(): AuthContextValue {
               updated_at: new Date().toISOString(),
             } as Profile;
           }
-
+          
           if (mountedRef.current) {
             setAuthState({
               user: session.user,
@@ -530,7 +397,7 @@ function useAuthProvider(): AuthContextValue {
             });
           }
         } else {
-          console.log('ℹ️ No existing session found');
+          console.log('ℹ️ No session');
           if (mountedRef.current) {
             setAuthState({
               user: null,
@@ -542,8 +409,7 @@ function useAuthProvider(): AuthContextValue {
           }
         }
       } catch (error) {
-        console.error('❌ Initial auth check failed:', error);
-        clearTimeout(initTimeout);
+        console.error('❌ Init auth error:', error);
         if (mountedRef.current) {
           setAuthState({
             user: null,
@@ -558,88 +424,53 @@ function useAuthProvider(): AuthContextValue {
 
     initAuth();
 
-    // Auth state change listener (unchanged)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔐 Auth state change event:', event, 'User:', session?.user?.email || 'none');
-
-        if (!mountedRef.current) {
-          console.log('🚫 Component unmounted, ignoring auth event');
-          return;
-        }
-
-        try {
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            console.log('✅ User signed in or token refreshed');
-            const user = session?.user;
-            if (user) {
-              // Load or create profile
-              let profile = await loadProfile(user.id);
-              if (!profile) {
-                console.log('🏗️ Creating profile for new user...');
-                profile = await createProfile(user);
-              }
-
-              // CRITICAL FIX: Even if profile is null, allow login with default profile
-              if (!profile) {
-                console.log('⚠️ Could not load/create profile - using default');
-                profile = {
-                  id: user.id,
-                  email: user.email || '',
-                  role: 1,
-                  ai_requests_today: 0,
-                  ai_requests_limit: 10,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                } as Profile;
-              }
-
-              setAuthState({
-                user,
-                profile,
-                loading: false,
-                isAuthenticated: true,
-                error: null,
-              });
-              console.log('✅ Auth state updated - user authenticated');
+        console.log('🔐 Auth event:', event);
+        
+        if (!mountedRef.current) return;
+        
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          const user = session?.user;
+          if (user) {
+            let profile = await loadProfile(user.id);
+            if (!profile) {
+              profile = await createProfile(user);
             }
-          } else if (event === 'SIGNED_OUT') {
-            console.log('🚪 User signed out');
+            if (!profile) {
+              profile = {
+                id: user.id,
+                email: user.email || '',
+                role: 1,
+                ai_requests_today: 0,
+                ai_requests_limit: 10,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              } as Profile;
+            }
+            
             setAuthState({
-              user: null,
-              profile: null,
+              user,
+              profile,
               loading: false,
-              isAuthenticated: false,
+              isAuthenticated: true,
               error: null,
             });
-          } else if (event === 'USER_UPDATED') {
-            console.log('👤 User updated');
-            const user = session?.user;
-            if (user && authState.isAuthenticated) {
-              // Update user data but keep existing profile
-              setAuthState(prev => ({
-                ...prev,
-                user,
-                loading: false,
-              }));
-            }
           }
-        } catch (error) {
-          console.error('❌ Error handling auth state change:', error);
-          setAuthState(prev => ({
-            ...prev,
+        } else if (event === 'SIGNED_OUT') {
+          setAuthState({
+            user: null,
+            profile: null,
             loading: false,
-            error: error instanceof Error ? error.message : 'Auth state update failed',
-          }));
+            isAuthenticated: false,
+            error: null,
+          });
         }
       }
     );
 
     return () => {
-      console.log('🧹 Cleaning up auth listener...');
       mountedRef.current = false;
-      clearTimeout(initTimeout);
-      clearAuthTimeout();
       subscription.unsubscribe();
     };
   }, []);
