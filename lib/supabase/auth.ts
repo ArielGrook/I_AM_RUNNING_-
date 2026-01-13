@@ -24,18 +24,10 @@ export async function signIn(email: string, password: string) {
 
   try {
     console.log('📡 AUTH: Calling Supabase signInWithPassword...');
-
-    // Create a timeout promise
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Sign in request timed out')), 10000);
-    });
-
-    const authPromise = supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-
-    const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any;
 
     console.log('📡 AUTH: Supabase response received', { success: !error, user: data?.user?.email });
 
@@ -62,13 +54,7 @@ export async function signUp(email: string, password: string, metadata?: Record<
 
   try {
     console.log('📡 AUTH: Calling Supabase signUp...');
-
-    // Create a timeout promise
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Sign up request timed out')), 10000);
-    });
-
-    const authPromise = supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -76,8 +62,6 @@ export async function signUp(email: string, password: string, metadata?: Record<
         email_confirm: false, // Skip email verification
       } as any,
     });
-
-    const { data, error } = await Promise.race([authPromise, timeoutPromise]) as any;
 
     console.log('📡 AUTH: Supabase response received', { success: !error, user: data?.user?.email });
 
