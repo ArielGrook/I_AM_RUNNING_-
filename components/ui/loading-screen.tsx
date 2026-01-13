@@ -60,7 +60,7 @@ export function LoadingScreen() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
-          className="mt-6 text-white text-sm font-medium"
+          className="mt-6 text-gray-600 dark:text-gray-400 text-sm font-medium"
         >
           Preparing your experience...
         </motion.p>
