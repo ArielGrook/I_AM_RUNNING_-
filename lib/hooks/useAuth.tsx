@@ -445,12 +445,26 @@ function useAuthProvider(): AuthContextValue {
     console.log('🎧 Setting up auth state listener...');
     mountedRef.current = true;
 
+    // Defensive timeout - force loading clear after 3s if initAuth hangs
+    const initTimeout = setTimeout(() => {
+      console.log('⚠️ Init auth timeout - forcing loading clear');
+      if (mountedRef.current) {
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+        }));
+      }
+    }, 3000);
+
     // Initial auth check - NO timeout for initial load
     const initAuth = async () => {
       console.log('🔍 Performing initial auth check (no timeout)...');
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
+
+        // Clear defensive timeout once we have a response
+        clearTimeout(initTimeout);
 
         if (session?.user) {
           console.log('✅ Found existing session:', session.user.email);
@@ -483,6 +497,7 @@ function useAuthProvider(): AuthContextValue {
         }
       } catch (error) {
         console.error('❌ Initial auth check failed:', error);
+        clearTimeout(initTimeout);
         if (mountedRef.current) {
           setAuthState({
             user: null,
@@ -563,6 +578,7 @@ function useAuthProvider(): AuthContextValue {
     return () => {
       console.log('🧹 Cleaning up auth listener...');
       mountedRef.current = false;
+      clearTimeout(initTimeout);
       clearAuthTimeout();
       subscription.unsubscribe();
     };
