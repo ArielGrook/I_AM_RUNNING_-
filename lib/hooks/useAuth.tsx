@@ -95,127 +95,28 @@ function createFreshSupabaseClient() {
 }
 
 /**
- * Timeout wrapper for promises
+ * Build profile from auth user metadata (NO database query)
+ * Profile data is stored in auth.users.user_metadata for fast access
  */
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => 
-      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
-    ),
-  ]);
-}
-
-/**
- * Load profile with AGGRESSIVE localStorage caching
- * - Always checks cache first
- * - Cache valid for 24 hours
- * - NO background refresh (prevents timeout)
- * - Only fetches from DB if no cache or expired
- */
-async function loadProfile(userId: string): Promise<Profile | null> {
-  console.log('🔍 Loading profile for user:', userId);
+function buildProfileFromUser(user: User): Profile {
+  console.log('🔧 Building profile from user metadata:', user.email);
   
-  // Check if we're in browser
-  if (typeof window === 'undefined') {
-    console.error('❌ Cannot load profile on server');
-    return null;
-  }
+  const metadata = user.user_metadata || {};
   
-  // ALWAYS try cache FIRST
-  const cacheKey = `profile_${userId}`;
-  const cachedData = localStorage.getItem(cacheKey);
-  let expiredCache: Profile | null = null;
+  const profile: Profile = {
+    id: user.id,
+    email: user.email || '',
+    full_name: metadata.full_name || metadata.name || null,
+    company: metadata.company || null,
+    role: metadata.role ?? 1, // Default: Free User
+    ai_requests_today: metadata.ai_requests_today ?? 0,
+    ai_requests_limit: metadata.ai_requests_limit ?? 10,
+    created_at: user.created_at,
+    updated_at: new Date().toISOString(),
+  };
   
-  if (cachedData) {
-    try {
-      const cached = JSON.parse(cachedData);
-      
-      // Check if cache is still valid (24 hours)
-      const MAX_CACHE_AGE = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-      const cacheAge = cached.cachedAt 
-        ? Date.now() - new Date(cached.cachedAt).getTime()
-        : Infinity; // If no timestamp, consider expired
-      
-      if (cacheAge < MAX_CACHE_AGE) {
-        console.log(`✅ Profile loaded from cache (age: ${Math.round(cacheAge / 1000)}s):`, cached.profile);
-        return cached.profile as Profile;
-      } else {
-        console.log(`⏰ Cache expired (age: ${Math.round(cacheAge / 1000)}s), fetching fresh profile`);
-        // Save expired cache as fallback
-        expiredCache = cached.profile as Profile;
-      }
-    } catch (e) {
-      console.error('❌ Invalid cache data:', e);
-      localStorage.removeItem(cacheKey);
-    }
-  } else {
-    console.log('ℹ️ No cache found, fetching from database');
-  }
-  
-  // Fetch from database (only if no valid cache)
-  console.log('📡 Fetching profile from Supabase...');
-  const supabase = createFreshSupabaseClient();
-  
-  try {
-    const queryPromise = supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    const result = await withTimeout(
-      queryPromise,
-      3000,
-      'Profile query timeout after 3 seconds'
-    );
-
-    if (result.error) {
-      console.error('❌ Profile query error:', result.error);
-      
-      // If we have expired cache, use it as fallback
-      if (expiredCache) {
-        console.log('⚠️ Using expired cache as fallback (DB query failed)');
-        return expiredCache;
-      }
-      
-      return null;
-    }
-
-    if (result.data) {
-      console.log('✅ Profile fetched from database:', result.data);
-      
-      // Save to cache with timestamp
-      const cacheData = {
-        profile: result.data,
-        cachedAt: new Date().toISOString(),
-      };
-      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-      console.log('💾 Profile saved to cache with timestamp');
-      
-      return result.data as Profile;
-    }
-
-    console.warn('⚠️ Profile query returned no data');
-    
-    // If we have expired cache, use it as fallback
-    if (expiredCache) {
-      console.log('⚠️ Using expired cache as fallback (no data from DB)');
-      return expiredCache;
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('❌ Profile load failed:', error);
-    
-    // If we have expired cache, use it as fallback
-    if (expiredCache) {
-      console.log('⚠️ Using expired cache as fallback (query timeout)');
-      return expiredCache;
-    }
-    
-    return null;
-  }
+  console.log('✅ Profile built from metadata:', profile);
+  return profile;
 }
 
 /**
@@ -263,13 +164,8 @@ function useAuthProvider(): AuthContextValue {
     try {
       const supabase = createFreshSupabaseClient();
       
-      // Get session with timeout
-      const sessionPromise = supabase.auth.getSession();
-      const { data: { session }, error } = await withTimeout(
-        sessionPromise,
-        2000,
-        'Session check timeout'
-      );
+      // Get session (no timeout needed - Supabase handles this)
+      const { data: { session }, error } = await supabase.auth.getSession();
 
       if (error) {
         console.error('❌ Session error:', error);
@@ -288,37 +184,17 @@ function useAuthProvider(): AuthContextValue {
       const user = session?.user;
 
       if (user) {
-        // Try to load profile, but don't wait forever
-        const profile = await loadProfile(user.id);
+        // Build profile from user metadata (instant, no database query)
+        const profile = buildProfileFromUser(user);
         
         if (mountedRef.current) {
-          if (profile) {
-            setAuthState({
-              user,
-              profile,
-              loading: false,
-              isAuthenticated: true,
-              error: null,
-            });
-          } else {
-            // Fallback to default profile if query fails
-            console.warn('⚠️ Using fallback profile');
-            setAuthState({
-              user,
-              profile: {
-                id: user.id,
-                email: user.email || '',
-                role: 1,
-                ai_requests_today: 0,
-                ai_requests_limit: 10,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              } as Profile,
-              loading: false,
-              isAuthenticated: true,
-              error: null,
-            });
-          }
+          setAuthState({
+            user,
+            profile,
+            loading: false,
+            isAuthenticated: true,
+            error: null,
+          });
         }
       } else {
         if (mountedRef.current) {
@@ -425,12 +301,6 @@ function useAuthProvider(): AuthContextValue {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      // Clear cached profile before signing out
-      if (authState.user?.id && typeof window !== 'undefined') {
-        localStorage.removeItem(`profile_${authState.user.id}`);
-        console.log('🗑️ Cleared cached profile');
-      }
-      
       await signOut();
       if (mountedRef.current) {
         setAuthState({
@@ -466,48 +336,37 @@ function useAuthProvider(): AuthContextValue {
       try {
         const supabase = createFreshSupabaseClient();
         
-        // Get session with timeout
-        const sessionPromise = supabase.auth.getSession();
-        const { data: { session } } = await withTimeout(
-          sessionPromise,
-          2000,
-          'Initial session check timeout'
-        );
+        // Get session (no timeout needed - Supabase handles this)
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('❌ Session error:', error);
+          if (mountedRef.current) {
+            setAuthState({
+              user: null,
+              profile: null,
+              loading: false,
+              isAuthenticated: false,
+              error: error.message,
+            });
+          }
+          return;
+        }
 
         if (session?.user) {
           console.log('✅ Session found:', session.user.email);
           
-          // Try to load profile, but don't block on it
-          const profile = await loadProfile(session.user.id);
+          // Build profile from user metadata (instant, no database query)
+          const profile = buildProfileFromUser(session.user);
           
           if (mountedRef.current) {
-            if (profile) {
-              setAuthState({
-                user: session.user,
-                profile,
-                loading: false,
-                isAuthenticated: true,
-                error: null,
-              });
-            } else {
-              // Use fallback profile immediately
-              console.warn('⚠️ Using fallback profile (query failed or timed out)');
-              setAuthState({
-                user: session.user,
-                profile: {
-                  id: session.user.id,
-                  email: session.user.email || '',
-                  role: 1,
-                  ai_requests_today: 0,
-                  ai_requests_limit: 10,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                } as Profile,
-                loading: false,
-                isAuthenticated: true,
-                error: null,
-              });
-            }
+            setAuthState({
+              user: session.user,
+              profile,
+              loading: false,
+              isAuthenticated: true,
+              error: null,
+            });
           }
         } else {
           console.log('ℹ️ No session');
@@ -548,32 +407,18 @@ function useAuthProvider(): AuthContextValue {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           const user = session?.user;
           if (user) {
-            // Try to load profile, but use fallback if it fails
-            const profile = await loadProfile(user.id);
+            // Build profile from user metadata (instant, no database query)
+            const profile = buildProfileFromUser(user);
             
             setAuthState({
               user,
-              profile: profile || {
-                id: user.id,
-                email: user.email || '',
-                role: 1,
-                ai_requests_today: 0,
-                ai_requests_limit: 10,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              } as Profile,
+              profile,
               loading: false,
               isAuthenticated: true,
               error: null,
             });
           }
         } else if (event === 'SIGNED_OUT') {
-          // Clear cached profile on sign out
-          if (authState.user?.id && typeof window !== 'undefined') {
-            localStorage.removeItem(`profile_${authState.user.id}`);
-            console.log('🗑️ Cleared cached profile on sign out');
-          }
-          
           setAuthState({
             user: null,
             profile: null,

@@ -70,6 +70,7 @@ export async function signIn(email: string, password: string) {
 
 /**
  * Sign up with email and password
+ * Stores profile data in auth.users.user_metadata (no database query needed)
  */
 export async function signUp(email: string, password: string, metadata?: Record<string, unknown>) {
   console.log('🔐 AUTH: Starting email/password sign up', { email, metadata });
@@ -82,7 +83,12 @@ export async function signUp(email: string, password: string, metadata?: Record<
       email,
       password,
       options: {
-        data: metadata,
+        data: {
+          ...metadata,
+          role: 1, // Default: Free User
+          ai_requests_today: 0,
+          ai_requests_limit: 10,
+        },
         email_confirm: false, // Skip email verification
       } as any,
     });
@@ -94,7 +100,7 @@ export async function signUp(email: string, password: string, metadata?: Record<
       throw new Error(error.message);
     }
 
-    console.log('✅ AUTH: Sign up successful');
+    console.log('✅ AUTH: Sign up successful - profile stored in user_metadata');
     return data;
   } catch (error) {
     console.error('❌ AUTH: Sign up exception:', error);
