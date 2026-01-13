@@ -144,20 +144,38 @@ function useAuthProvider(): AuthContextValue {
     try {
       console.log('🔍 Loading profile for user:', userId);
 
-      const { data, error } = await supabase
+      // Create timeout promise (5 seconds)
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          console.log('⏰ Profile load timeout after 5s - returning null');
+          resolve(null);
+        }, 5000);
+      });
+
+      // Create query promise
+      const queryPromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('❌ Error loading profile:', error);
+            console.log('🔍 Profile load response:', { data, error });
+            return null;
+          }
+          console.log('✅ Profile loaded successfully:', data);
+          return data as Profile;
+        });
 
-      if (error) {
-        console.error('❌ Error loading profile:', error);
-        console.log('🔍 Profile load response:', { data, error });
-        return null;
+      // Race between query and timeout
+      const result = await Promise.race([queryPromise, timeoutPromise]);
+
+      if (result === null) {
+        console.log('⚠️ Profile load returned null - will trigger createProfile or use default');
       }
 
-      console.log('✅ Profile loaded successfully:', data);
-      return data;
+      return result;
     } catch (error) {
       console.error('❌ Exception loading profile:', error);
       return null;
@@ -183,20 +201,33 @@ function useAuthProvider(): AuthContextValue {
 
       console.log('📝 Profile creation data:', profileData);
 
-      const { data, error } = await supabase
+      // Timeout promise (5 seconds)
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          console.log('⏰ Profile create timeout after 5s');
+          resolve(null);
+        }, 5000);
+      });
+
+      // Insert query promise
+      const insertPromise = supabase
         .from('profiles')
         .insert([profileData])
         .select()
-        .single();
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('❌ Error creating profile:', error);
+            console.log('🏗️ Profile creation response:', { data, error });
+            return null;
+          }
+          console.log('✅ Profile created successfully:', data);
+          return data as Profile;
+        });
 
-      if (error) {
-        console.error('❌ Error creating profile:', error);
-        console.log('🏗️ Profile creation response:', { data, error });
-        return null;
-      }
-
-      console.log('✅ Profile created successfully:', data);
-      return data;
+      // Race between insert and timeout
+      const result = await Promise.race([insertPromise, timeoutPromise]);
+      return result;
     } catch (error) {
       console.error('❌ Exception creating profile:', error);
       return null;
@@ -474,6 +505,20 @@ function useAuthProvider(): AuthContextValue {
             profile = await createProfile(session.user);
           }
 
+          // CRITICAL FIX: Even if profile is null, allow login with default profile
+          if (!profile) {
+            console.log('⚠️ Could not load/create profile - using default');
+            profile = {
+              id: session.user.id,
+              email: session.user.email || '',
+              role: 1,
+              ai_requests_today: 0,
+              ai_requests_limit: 10,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            } as Profile;
+          }
+
           if (mountedRef.current) {
             setAuthState({
               user: session.user,
@@ -532,6 +577,20 @@ function useAuthProvider(): AuthContextValue {
               if (!profile) {
                 console.log('🏗️ Creating profile for new user...');
                 profile = await createProfile(user);
+              }
+
+              // CRITICAL FIX: Even if profile is null, allow login with default profile
+              if (!profile) {
+                console.log('⚠️ Could not load/create profile - using default');
+                profile = {
+                  id: user.id,
+                  email: user.email || '',
+                  role: 1,
+                  ai_requests_today: 0,
+                  ai_requests_limit: 10,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                } as Profile;
               }
 
               setAuthState({
