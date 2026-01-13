@@ -67,26 +67,32 @@ export default function EditorPage() {
   const locale = useLocale();
   const isRTL = locale === 'he' || locale === 'ar';
   const router = useRouter();
-  const { isAuthenticated, loading: authLoading, canAccessEditor, profile } = useAuth();
+  const { isAuthenticated, loading: authLoading, canAccessEditor, role } = useAuth();
   
   // Guard: Redirect if not authenticated or no editor access
   useEffect(() => {
     if (!authLoading) {
       if (!isAuthenticated) {
         console.log('🚫 Editor: Not authenticated, redirecting to login');
-        router.push('/auth/login');
+        router.push('/auth/login?redirect=/editor');
         return;
       }
       
       if (!canAccessEditor) {
-        console.log('🚫 Editor: No access (role:', profile?.role ?? 'unknown', '), redirecting to home');
-        router.push('/');
+        console.log(`🚫 Editor: Access denied (role: ${role})`);
+        if (role === 1) {
+          // Free user - needs to upgrade
+          router.push('/pricing?reason=editor_access&current_role=1');
+        } else {
+          // Shouldn't happen, but safe fallback
+          router.push('/');
+        }
         return;
       }
       
-      console.log('✅ Editor: Access granted (role:', profile?.role ?? 'unknown', ')');
+      console.log(`✅ Editor: Access granted (role: ${role})`);
     }
-  }, [isAuthenticated, authLoading, canAccessEditor, profile?.role, router]);
+  }, [isAuthenticated, authLoading, canAccessEditor, role, router]);
   
   // Show loading while checking auth
   if (authLoading) {

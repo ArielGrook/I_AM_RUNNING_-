@@ -16,25 +16,25 @@ export function HeroSection() {
   const t = useTranslations('Landing.hero');
   const locale = useLocale();
   const isRTL = locale === 'he';
-  const { isAuthenticated, profile } = useAuth();
+  const { isAuthenticated, canUseChat, canAccessEditor, role } = useAuth();
   const router = useRouter();
 
   const handleEditorClick = (e: React.MouseEvent) => {
     if (!isAuthenticated) {
       e.preventDefault();
-      router.push('/auth/login');
+      router.push('/auth/login?redirect=/editor');
       return;
     }
 
-    // Check if user has editor access (roles 1, 2, 3)
-    const canAccess = profile?.role && profile.role >= 1;
-    if (!canAccess) {
+    // Check if user has editor access (role >= 2)
+    if (!canAccessEditor) {
       e.preventDefault();
-      // Could show an upgrade message here
+      // Redirect to pricing for upgrade
+      router.push('/pricing?reason=editor_access&current_role=1');
       return;
     }
 
-    // If authenticated and has access, allow normal Link navigation
+    // If authenticated and has access, allow normal navigation
   };
 
   const handleChatClick = () => {
@@ -140,23 +140,56 @@ export function HeroSection() {
             transition={{ delay: 0.8 }}
             className="pt-6 flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            <Button
-              onClick={handleChatClick}
-              size="lg"
-              className="px-8 py-6 text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
-            >
-              {t('enterChat')}
-              <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
-            </Button>
+            {/* Chat button - show for registered users (role >= 1) */}
+            {canUseChat && (
+              <Button
+                onClick={handleChatClick}
+                size="lg"
+                className="px-8 py-6 text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
+              >
+                {t('enterChat')}
+                <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+              </Button>
+            )}
 
-            <Button
-              onClick={handleEditorClick}
-              size="lg"
-              className="px-8 py-6 text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
-            >
-              {t('enterEditor')}
-              <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
-            </Button>
+            {/* Editor button - only for role >= 2 */}
+            {canAccessEditor && (
+              <Button
+                onClick={handleEditorClick}
+                size="lg"
+                className="px-8 py-6 text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
+              >
+                {t('enterEditor')}
+                <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+              </Button>
+            )}
+
+            {/* Upgrade CTA for role 1 who can't access editor */}
+            {isAuthenticated && !canAccessEditor && (
+              <Button
+                onClick={() => router.push('/pricing?reason=editor_access&current_role=1')}
+                size="lg"
+                variant="outline"
+                className="px-8 py-6 text-lg font-bold border-2 border-[#ffa500] text-[#ffa500] hover:bg-[#ffa500] hover:text-white shadow-lg transition-all duration-300 rounded-full min-w-[200px]"
+              >
+                ⭐ Upgrade to Create Websites
+                <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+              </Button>
+            )}
+
+            {/* Sign up CTA for guests */}
+            {!isAuthenticated && (
+              <Button
+                asChild
+                size="lg"
+                className="px-8 py-6 text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
+              >
+                <Link href="/auth/signup">
+                  Get Started Free
+                  <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                </Link>
+              </Button>
+            )}
           </motion.div>
         </div>
       </div>

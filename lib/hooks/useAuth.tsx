@@ -20,7 +20,7 @@ export interface Profile {
   email: string;
   full_name?: string;
   company?: string;
-  role: number; // 0=anon, 1=basic, 2=freelancer, 3=premium
+  role: number; // 0=anon, 1=Free User, 2=Paid User, 3=Freelancer Basic, 4=Freelancer Pro, 5=Admin
   ai_requests_today: number;
   ai_requests_limit: number;
   subscription_expires?: string;
@@ -47,14 +47,23 @@ type AuthContextValue = AuthState & {
   signOut: () => Promise<void>;
   refreshAuth: () => Promise<void>;
   updateCookieConsent: (consent: 'accepted' | 'declined' | null) => void;
+  // Role system (5-tier)
+  role: number;
   hasRole: (requiredRole: number) => boolean;
   isAnonymous: boolean;
+  isRegistered: boolean;
   isBasicUser: boolean;
   isFreelancer: boolean;
-  isPremium: boolean;
+  isProFreelancer: boolean;
+  isAdmin: boolean;
+  // Feature access
+  canUseChat: boolean;
   canAccessEditor: boolean;
+  canCreateWebsites: boolean;
   canAddComponents: boolean;
   canSaveProjects: boolean;
+  hasUnlimitedProjects: boolean;
+  getProjectLimit: () => number;
   getAILimit: () => number;
   getAIRequestsToday: () => number;
 };
@@ -582,20 +591,41 @@ function useAuthProvider(): AuthContextValue {
     };
   }, []);
 
-  // Role-based access helpers
-  // Default to 0 (anonymous) if no profile, not -1 (which blocks everything)
+  // 5-Tier Role-Based Access System
+  // role: 0 = Anonymous (not logged in)
+  // role: 1 = Free User (Chat only, no editor)
+  // role: 2 = Paid User ($20 one-time) - Chat + Editor, 1 project limit
+  // role: 3 = Freelancer Basic ($30/month) - Full features, 5 projects
+  // role: 4 = Freelancer Pro ($100/month) - Unlimited projects + priority
+  // role: 5 = Admin - Full access to everything
+  
   const role = authState.profile?.role ?? (authState.isAuthenticated ? 1 : 0);
   const hasRole = (requiredRole: number): boolean => role >= requiredRole;
 
+  // Access levels
   const isAnonymous = role === 0;
-  const isBasicUser = role >= 1;
-  const isFreelancer = role >= 2;
-  const isPremium = role >= 3;
+  const isRegistered = role >= 1;          // Can use chat
+  const isBasicUser = role >= 1;           // Free user (backward compat)
+  const canAccessEditor = role >= 2;       // Can create websites
+  const isFreelancer = role >= 3;          // Monthly subscriber
+  const isProFreelancer = role >= 4;       // Premium tier
+  const isAdmin = role >= 5;               // Full access
 
-  // Editor access: authenticated users with role >= 1
-  const canAccessEditor = authState.isAuthenticated && isBasicUser;
-  const canAddComponents = isBasicUser;
-  const canSaveProjects = isBasicUser;
+  // Feature flags
+  const canUseChat = isRegistered && authState.isAuthenticated;
+  const canCreateWebsites = canAccessEditor && authState.isAuthenticated;
+  const hasUnlimitedProjects = role >= 4;
+  const canAddComponents = canAccessEditor;
+  const canSaveProjects = canAccessEditor;
+
+  // Project limits
+  const getProjectLimit = (): number => {
+    if (role === 2) return 1;      // Paid User: 1 project
+    if (role === 3) return 5;      // Freelancer Basic: 5 projects
+    if (role >= 4) return 999;     // Pro/Admin: Unlimited (999 = practical unlimited)
+    return 0;                       // Free/Anonymous: No projects
+  };
+
   const getAILimit = (): number => authState.profile?.ai_requests_limit || 0;
   const getAIRequestsToday = (): number => authState.profile?.ai_requests_today || 0;
 
@@ -614,17 +644,24 @@ function useAuthProvider(): AuthContextValue {
     refreshAuth,
     updateCookieConsent,
 
-    // Role-based access
+    // Role system (5-tier)
+    role,
     hasRole,
     isAnonymous,
+    isRegistered,
     isBasicUser,
     isFreelancer,
-    isPremium,
+    isProFreelancer,
+    isAdmin,
 
     // Feature access
+    canUseChat,
     canAccessEditor,
+    canCreateWebsites,
     canAddComponents,
     canSaveProjects,
+    hasUnlimitedProjects,
+    getProjectLimit,
     getAILimit,
     getAIRequestsToday,
   };
