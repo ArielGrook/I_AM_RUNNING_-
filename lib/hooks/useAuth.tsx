@@ -98,11 +98,51 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
 }
 
 /**
- * Load profile with timeout and fallback
+ * Load profile with localStorage caching and timeout protection
  */
 async function loadProfile(userId: string): Promise<Profile | null> {
   console.log('🔍 Loading profile for user:', userId);
   
+  // Try cache first (instant load)
+  if (typeof window !== 'undefined') {
+    const cacheKey = `profile_${userId}`;
+    const cachedProfile = localStorage.getItem(cacheKey);
+    
+    if (cachedProfile) {
+      try {
+        const profile = JSON.parse(cachedProfile) as Profile;
+        console.log('✅ Profile loaded from cache (instant):', profile);
+        
+        // Refresh cache in background (don't wait)
+        const supabase = createFreshSupabaseClient();
+        withTimeout(
+          supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single(),
+          3000,
+          'Background refresh timeout'
+        )
+          .then(({ data, error }) => {
+            if (!error && data) {
+              localStorage.setItem(cacheKey, JSON.stringify(data));
+              console.log('🔄 Profile cache refreshed in background');
+            }
+          })
+          .catch(() => {
+            console.log('⚠️ Background profile refresh failed (ignored)');
+          });
+        
+        return profile;
+      } catch (e) {
+        console.log('⚠️ Invalid cached profile, fetching fresh');
+        localStorage.removeItem(cacheKey);
+      }
+    }
+  }
+  
+  // Fetch from database
   const supabase = createFreshSupabaseClient();
   
   try {
@@ -125,7 +165,14 @@ async function loadProfile(userId: string): Promise<Profile | null> {
     }
 
     if (result.data) {
-      console.log('✅ Profile loaded successfully:', result.data);
+      console.log('✅ Profile loaded from database:', result.data);
+      
+      // Cache for next time
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`profile_${userId}`, JSON.stringify(result.data));
+        console.log('💾 Profile cached for future loads');
+      }
+      
       return result.data as Profile;
     }
 
@@ -344,6 +391,12 @@ function useAuthProvider(): AuthContextValue {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
+      // Clear cached profile before signing out
+      if (authState.user?.id && typeof window !== 'undefined') {
+        localStorage.removeItem(`profile_${authState.user.id}`);
+        console.log('🗑️ Cleared cached profile');
+      }
+      
       await signOut();
       if (mountedRef.current) {
         setAuthState({
@@ -481,6 +534,12 @@ function useAuthProvider(): AuthContextValue {
             });
           }
         } else if (event === 'SIGNED_OUT') {
+          // Clear cached profile on sign out
+          if (authState.user?.id && typeof window !== 'undefined') {
+            localStorage.removeItem(`profile_${authState.user.id}`);
+            console.log('🗑️ Cleared cached profile on sign out');
+          }
+          
           setAuthState({
             user: null,
             profile: null,
