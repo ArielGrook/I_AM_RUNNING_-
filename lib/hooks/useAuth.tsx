@@ -405,10 +405,20 @@ function useAuthProvider(): AuthContextValue {
         if (!mountedRef.current) return;
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log('🔐 Auth event:', event);
           const user = session?.user;
+          
           if (user) {
+            console.log('👤 User data:', {
+              id: user.id,
+              email: user.email,
+              metadata: user.user_metadata,
+            });
+            
             // Build profile from user metadata (instant, no database query)
             const profile = buildProfileFromUser(user);
+            
+            console.log('📋 Built profile:', profile);
             
             setAuthState({
               user,
@@ -417,6 +427,8 @@ function useAuthProvider(): AuthContextValue {
               isAuthenticated: true,
               error: null,
             });
+            
+            console.log('✅ Auth state updated');
           }
         } else if (event === 'SIGNED_OUT') {
           setAuthState({
@@ -455,6 +467,18 @@ function useAuthProvider(): AuthContextValue {
   const isFreelancer = role >= 3;          // Monthly subscriber
   const isProFreelancer = role >= 4;       // Premium tier
   const isAdmin = role >= 5;               // Full access
+
+  // Debug logging (only log when auth state changes)
+  useEffect(() => {
+    if (!authState.loading && authState.isAuthenticated) {
+      console.log('🔐 Auth state:', {
+        role,
+        canAccessEditor,
+        isAuthenticated: authState.isAuthenticated,
+        profileRole: authState.profile?.role,
+      });
+    }
+  }, [role, canAccessEditor, authState.isAuthenticated, authState.loading, authState.profile?.role]);
 
   // Feature flags
   const canUseChat = isRegistered && authState.isAuthenticated;

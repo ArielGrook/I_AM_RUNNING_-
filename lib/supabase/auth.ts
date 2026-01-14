@@ -73,9 +73,20 @@ export async function signIn(email: string, password: string) {
  * Stores profile data in auth.users.user_metadata (no database query needed)
  */
 export async function signUp(email: string, password: string, metadata?: Record<string, unknown>) {
-  console.log('🔐 AUTH: Starting email/password sign up', { email, metadata });
+  console.log('🔐 AUTH: Starting sign up', { email, metadata });
 
   const supabase = getSupabaseClient();
+
+  // Build complete metadata
+  const userMetadata = {
+    full_name: metadata?.full_name || metadata?.name || null,
+    company: metadata?.company || null,
+    role: 1, // Default: Free User
+    ai_requests_today: 0,
+    ai_requests_limit: 10,
+  };
+
+  console.log('📝 AUTH: Sending metadata:', userMetadata);
 
   try {
     console.log('📡 AUTH: Calling Supabase signUp...');
@@ -83,24 +94,24 @@ export async function signUp(email: string, password: string, metadata?: Record<
       email,
       password,
       options: {
-        data: {
-          ...metadata,
-          role: 1, // Default: Free User
-          ai_requests_today: 0,
-          ai_requests_limit: 10,
-        },
-        email_confirm: false, // Skip email verification
-      } as any,
+        data: userMetadata,
+        emailRedirectTo: undefined,
+      },
     });
 
     console.log('📡 AUTH: Supabase response received', { success: !error, user: data?.user?.email });
 
     if (error) {
       console.error('❌ AUTH: Sign up error:', error);
-      throw new Error(error.message);
+      throw error;
     }
 
-    console.log('✅ AUTH: Sign up successful - profile stored in user_metadata');
+    console.log('✅ AUTH: Sign up successful:', {
+      user_id: data.user?.id,
+      email: data.user?.email,
+      metadata: data.user?.user_metadata,
+    });
+
     return data;
   } catch (error) {
     console.error('❌ AUTH: Sign up exception:', error);

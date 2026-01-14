@@ -71,28 +71,32 @@ export default function EditorPage() {
   
   // Guard: Redirect if not authenticated or no editor access
   useEffect(() => {
-    if (!authLoading) {
-      if (!isAuthenticated) {
-        console.log('🚫 Editor: Not authenticated, redirecting to login');
-        router.push('/auth/login?redirect=/editor');
-        return;
-      }
-      
-      if (!canAccessEditor) {
-        console.log(`🚫 Editor: Access denied (role: ${role})`);
-        if (role === 1) {
-          // Free user - needs to upgrade
-          router.push('/pricing?reason=editor_access&current_role=1');
-        } else {
-          // Shouldn't happen, but safe fallback
-          router.push('/');
-        }
-        return;
-      }
-      
-      console.log(`✅ Editor: Access granted (role: ${role})`);
+    console.log('🔍 Editor guard check:', {
+      isAuthenticated,
+      canAccessEditor,
+      role,
+      loading: authLoading,
+    });
+    
+    if (authLoading) {
+      console.log('⏳ Editor: Auth still loading, waiting...');
+      return;
     }
-  }, [isAuthenticated, authLoading, canAccessEditor, role, router]);
+    
+    if (!isAuthenticated) {
+      console.log('🚫 Editor: Not authenticated, redirecting to login');
+      router.push('/auth/login?redirect=/editor');
+      return;
+    }
+    
+    if (!canAccessEditor) {
+      console.log(`🚫 Editor: Access denied (role: ${role}), redirecting to pricing`);
+      router.push('/pricing?reason=editor_access&current_role=' + role);
+      return;
+    }
+    
+    console.log(`✅ Editor: Access granted (role: ${role})`);
+  }, [isAuthenticated, canAccessEditor, role, authLoading, router]);
   
   // Show loading while checking auth
   if (authLoading) {

@@ -20,21 +20,28 @@ export function HeroSection() {
   const router = useRouter();
 
   const handleEditorClick = (e: React.MouseEvent) => {
+    console.log('🖱️ Editor button clicked');
+    console.log('🔐 Auth state:', { 
+      isAuthenticated, 
+      canAccessEditor, 
+      role 
+    });
+    
     if (!isAuthenticated) {
+      console.log('🚫 Not authenticated, redirecting to login');
       e.preventDefault();
       router.push('/auth/login?redirect=/editor');
       return;
     }
-
-    // Check if user has editor access (role >= 2)
+    
     if (!canAccessEditor) {
+      console.log(`🚫 No editor access (role: ${role}), redirecting to pricing`);
       e.preventDefault();
-      // Redirect to pricing for upgrade
-      router.push('/pricing?reason=editor_access&current_role=1');
+      router.push('/pricing?reason=editor_access&current_role=' + role);
       return;
     }
-
-    // If authenticated and has access, allow normal navigation
+    
+    console.log('✅ Editor access OK, navigating...');
   };
 
   const handleChatClick = () => {

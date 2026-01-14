@@ -60,18 +60,29 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📝 Signup form submitted');
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      console.log('❌ Form validation failed');
+      return;
+    }
 
     try {
-      await signUp(email, password, {
+      console.log('🔐 Calling signUpUser...');
+      await signUp(email, password, { 
         full_name: fullName.trim() || undefined,
       });
-      // Redirect to editor on successful signup
-      router.push('/editor');
-    } catch (error) {
+      
+      console.log('✅ SignUp result received');
+      
+      // Wait a moment for auth listener to process
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('🔄 Redirecting to chat...');
+      router.push('/chat');
+    } catch (err: any) {
+      console.error('❌ Signup error:', err);
       // Error is handled by the useAuth hook
-      console.error('Signup failed:', error);
     }
   };
 
