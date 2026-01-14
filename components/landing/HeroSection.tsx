@@ -42,6 +42,7 @@ export function HeroSection() {
     }
     
     console.log('✅ Editor access OK, navigating...');
+    router.push('/editor');
   };
 
   const handleChatClick = () => {
