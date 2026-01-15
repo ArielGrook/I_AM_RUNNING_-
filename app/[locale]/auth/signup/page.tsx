@@ -16,7 +16,9 @@ export default function SignupPage() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
-  const { signUp, loading, error } = useAuth();
+  const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { signUp, error } = useAuth();
   const router = useRouter();
 
   const validateForm = () => {
@@ -67,6 +69,8 @@ export default function SignupPage() {
       return;
     }
 
+    setIsLoading(true);
+
     try {
       console.log('🔐 Calling signUpUser...');
       await signUp(email, password, { 
@@ -75,13 +79,13 @@ export default function SignupPage() {
       
       console.log('✅ SignUp result received');
       
-      // Wait a moment for auth listener to process
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('🔄 Redirecting to chat...');
-      router.push('/chat');
+      // Show success message instead of redirecting
+      setIsLoading(false);
+      setSuccess(true);
+      console.log('📧 Email confirmation sent to:', email);
     } catch (err: any) {
       console.error('❌ Signup error:', err);
+      setIsLoading(false);
       // Error is handled by the useAuth hook
     }
   };
@@ -89,22 +93,58 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
-            Create your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-muted-foreground">
-            Or{' '}
-            <Link
-              href="/auth/login"
-              className="font-medium text-primary hover:text-primary/80"
-            >
-              sign in to existing account
-            </Link>
-          </p>
-        </div>
+        {success ? (
+          <div className="text-center space-y-4">
+            <div className="text-green-500 text-6xl mb-4">✓</div>
+            <h2 className="text-2xl font-bold text-foreground">Check Your Email!</h2>
+            <p className="text-muted-foreground">
+              We sent a confirmation link to <strong className="text-foreground">{email}</strong>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Click the link in the email to confirm your account.
+            </p>
+            <p className="text-sm text-muted-foreground mt-4">
+              Didn't receive it? Check your spam folder or{' '}
+              <button
+                onClick={() => {
+                  setSuccess(false);
+                  setEmail('');
+                  setPassword('');
+                  setConfirmPassword('');
+                  setFullName('');
+                }}
+                className="text-primary hover:underline font-medium"
+              >
+                try again
+              </button>
+            </p>
+            <div className="pt-4">
+              <Link
+                href="/auth/login"
+                className="text-sm text-primary hover:text-primary/80 underline"
+              >
+                Back to Login
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div>
+              <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
+                Create your account
+              </h2>
+              <p className="mt-2 text-center text-sm text-muted-foreground">
+                Or{' '}
+                <Link
+                  href="/auth/login"
+                  className="font-medium text-primary hover:text-primary/80"
+                >
+                  sign in to existing account
+                </Link>
+              </p>
+            </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-foreground">
@@ -189,32 +229,34 @@ export default function SignupPage() {
             </div>
           )}
 
-          <div>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Create account'
-              )}
-            </Button>
-          </div>
+              <div>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    'Create account'
+                  )}
+                </Button>
+              </div>
 
-          <div className="text-center">
-            <Link
-              href="/"
-              className="text-sm text-muted-foreground hover:text-foreground"
-            >
-              ← Back to home
-            </Link>
-          </div>
-        </form>
+              <div className="text-center">
+                <Link
+                  href="/"
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  ← Back to home
+                </Link>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
