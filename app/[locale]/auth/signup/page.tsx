@@ -101,29 +101,29 @@ export default function SignupPage() {
   if (success) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-        <div className="text-center space-y-6 px-4">
+        <div className="text-center space-y-6">
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
             <div className="text-4xl font-bold text-[#ffa500]">I AM RUNNING</div>
           </div>
-
-          {/* Thank you message */}
-          <h1 className="text-2xl font-bold text-gray-900">
-            {locale === 'ru' 
-              ? 'СПАСИБО ЧТО ЗАРЕГИСТРИРОВАЛИСЬ НА I AM RUNNING'
-              : locale === 'he'
-              ? 'תודה שנרשמתם ל I AM RUNNING'
-              : 'THANK YOU FOR REGISTERING FOR I AM RUNNING'}
-          </h1>
           
-          {/* Instructions */}
-          <p className="text-lg text-gray-600 max-w-md mx-auto">
-            {locale === 'ru'
-              ? 'Проверьте свою электронную почту для завершения регистрации. Вы можете закрыть это окно'
-              : locale === 'he'
-              ? 'בדקו את האימייל שלכם כדי להשלים את ההרשמה. ניתן לסגור חלון זה'
-              : 'Check your email to complete your registration. You can close this window.'}
-          </p>
+          {/* Message */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {locale === 'ru' 
+                ? 'Проверьте свою электронную почту' 
+                : locale === 'he' 
+                ? 'בדקו את האימייל שלכם'
+                : 'Check your email'}
+            </h2>
+            <p className="text-gray-600">
+              {locale === 'ru'
+                ? 'Можете закрыть это окно'
+                : locale === 'he'
+                ? 'אתם יכולים לסגור את החלון הזה'
+                : 'You can close this window'}
+            </p>
+          </div>
         </div>
       </div>
     );
