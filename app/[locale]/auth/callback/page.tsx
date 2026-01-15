@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
   useEffect(() => {
@@ -45,9 +48,8 @@ export default function AuthCallbackPage() {
             return;
           }
 
-          console.log('✅ Email confirmed! Redirecting...');
+          console.log('✅ Email confirmed!');
           setStatus('success');
-          setTimeout(() => router.push('/chat'), 2000);
         } else {
           setStatus('error');
         }
@@ -58,37 +60,96 @@ export default function AuthCallbackPage() {
     };
 
     handleCallback();
-  }, [searchParams, router]);
+  }, [searchParams]);
+
+  const getText = () => {
+    if (locale === 'ru') {
+      return {
+        loading: 'Подтверждаем email...',
+        success: 'Ваш email успешно подтвержден',
+        error: 'Ошибка подтверждения',
+        button: 'НАЧАТЬ',
+      };
+    } else if (locale === 'he') {
+      return {
+        loading: 'מאשרים אימייל...',
+        success: 'האימייל שלך אושר בהצלחה',
+        error: 'שגיאת אישור',
+        button: 'להתחיל לרוץ',
+      };
+    } else {
+      return {
+        loading: 'Confirming email...',
+        success: 'Your email was successfully confirmed',
+        error: 'Confirmation failed',
+        button: 'START RUNNING',
+      };
+    }
+  };
+
+  const text = getText();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="max-w-md w-full text-center space-y-8 px-4">
+        {/* Logo */}
+        <div className="flex items-center justify-center mb-12">
+          <div className="text-4xl font-bold text-[#ffa500]">I AM RUNNING</div>
+        </div>
+
         {status === 'loading' && (
-          <>
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <h2 className="text-2xl font-bold mb-2">Confirming Email...</h2>
-            <p className="text-gray-600">Please wait</p>
-          </>
+          <div className="space-y-6">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#ffa500] border-t-transparent mx-auto"></div>
+            <p className="text-xl text-gray-900">{text.loading}</p>
+          </div>
         )}
+
         {status === 'success' && (
-          <>
-            <div className="text-green-500 text-6xl mb-4">✓</div>
-            <h2 className="text-2xl font-bold mb-2 text-green-600">Email Confirmed!</h2>
-            <p className="text-gray-600">Redirecting to chat...</p>
-          </>
+          <div className="space-y-8">
+            {/* Success checkmark */}
+            <div className="mx-auto w-24 h-24 rounded-full bg-[#ffa500] flex items-center justify-center">
+              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            
+            {/* Success text */}
+            <h1 className="text-3xl font-bold text-gray-900">
+              {text.success}
+            </h1>
+
+            {/* START RUNNING button */}
+            <button
+              onClick={() => router.push('/')}
+              className="w-full max-w-xs mx-auto px-8 py-4 bg-[#ffa500] text-white text-lg font-bold rounded-full hover:bg-[#ff8c00] transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              {text.button}
+            </button>
+          </div>
         )}
+
         {status === 'error' && (
-          <>
-            <div className="text-red-500 text-6xl mb-4">✗</div>
-            <h2 className="text-2xl font-bold mb-2 text-red-600">Confirmation Failed</h2>
-            <p className="text-gray-600 mb-4">Please try again or contact support</p>
+          <div className="space-y-8">
+            {/* Error icon */}
+            <div className="mx-auto w-24 h-24 rounded-full bg-red-500 flex items-center justify-center">
+              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            
+            {/* Error text */}
+            <h1 className="text-3xl font-bold text-gray-900">
+              {text.error}
+            </h1>
+
+            {/* Back button */}
             <button
               onClick={() => router.push('/auth/login')}
-              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
+              className="w-full max-w-xs mx-auto px-8 py-4 bg-[#ffa500] text-white text-lg font-bold rounded-full hover:bg-[#ff8c00] transition-all"
             >
-              Back to Login
+              {locale === 'ru' ? 'Назад' : locale === 'he' ? 'חזרה' : 'Back to Login'}
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>

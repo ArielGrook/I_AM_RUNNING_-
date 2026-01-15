@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -20,6 +21,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { signUp, error } = useAuth();
   const router = useRouter();
+  const locale = useLocale();
 
   const validateForm = () => {
     let isValid = true;
@@ -94,37 +96,30 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {success ? (
-          <div className="text-center space-y-4">
-            <div className="text-green-500 text-6xl mb-4">✓</div>
-            <h2 className="text-2xl font-bold text-foreground">Check Your Email!</h2>
-            <p className="text-muted-foreground">
-              We sent a confirmation link to <strong className="text-foreground">{email}</strong>
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Click the link in the email to confirm your account.
-            </p>
-            <p className="text-sm text-muted-foreground mt-4">
-              Didn't receive it? Check your spam folder or{' '}
-              <button
-                onClick={() => {
-                  setSuccess(false);
-                  setEmail('');
-                  setPassword('');
-                  setConfirmPassword('');
-                  setFullName('');
-                }}
-                className="text-primary hover:underline font-medium"
-              >
-                try again
-              </button>
-            </p>
-            <div className="pt-4">
-              <Link
-                href="/auth/login"
-                className="text-sm text-primary hover:text-primary/80 underline"
-              >
-                Back to Login
-              </Link>
+          <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+            <div className="text-center space-y-6">
+              {/* Logo */}
+              <div className="flex items-center justify-center mb-8">
+                <div className="text-4xl font-bold text-[#ffa500]">I AM RUNNING</div>
+              </div>
+              
+              {/* Message */}
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {locale === 'ru' 
+                    ? 'Проверьте свою электронную почту' 
+                    : locale === 'he' 
+                    ? 'בדקו את האימייל שלכם'
+                    : 'Check your email'}
+                </h2>
+                <p className="text-gray-600">
+                  {locale === 'ru'
+                    ? 'Можете закрыть это окно'
+                    : locale === 'he'
+                    ? 'אתם יכולים לסגור את החלון הזה'
+                    : 'You can close this window'}
+                </p>
+              </div>
             </div>
           </div>
         ) : (

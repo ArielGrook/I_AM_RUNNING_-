@@ -175,13 +175,15 @@ export function HeroSection() {
             {/* Upgrade CTA for role 1 who can't access editor */}
             {isAuthenticated && !canAccessEditor && (
               <Button
-                onClick={() => router.push('/pricing?reason=editor_access&current_role=1')}
+                asChild
                 size="lg"
                 variant="outline"
                 className="px-8 py-6 text-lg font-bold border-2 border-[#ffa500] text-[#ffa500] hover:bg-[#ffa500] hover:text-white shadow-lg transition-all duration-300 rounded-full min-w-[200px]"
               >
-                ⭐ Upgrade to Create Websites
-                <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                <Link href="/pricing?reason=editor_access&current_role=1">
+                  Upgrade Plan
+                  <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                </Link>
               </Button>
             )}
 
