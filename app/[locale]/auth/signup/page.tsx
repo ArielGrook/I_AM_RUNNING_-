@@ -75,15 +75,20 @@ export default function SignupPage() {
 
     try {
       console.log('🔐 Calling signUpUser...');
-      await signUp(email, password, { 
-        full_name: fullName.trim() || undefined,
-      }, locale);
-      
+      await signUp(
+        email,
+        password,
+        {
+          full_name: fullName.trim() || undefined,
+        },
+        locale
+      );
+
       console.log('✅ SignUp result received');
-      
-      // Show success message instead of redirecting
-      setIsLoading(false);
+
+      // Immediately show success message (remove form)
       setSuccess(true);
+      setIsLoading(false);
       console.log('📧 Email confirmation sent to:', email);
     } catch (err: any) {
       console.error('❌ Signup error:', err);

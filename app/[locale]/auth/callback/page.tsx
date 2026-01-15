@@ -43,13 +43,24 @@ export default function AuthCallbackPage() {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
           if (exchangeError) {
-            console.error('❌ Exchange failed:', exchangeError);
+            console.warn('⚠️ Exchange returned error, checking session anyway:', exchangeError);
+          }
+
+          // Verify session even if exchange reported an error
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError) {
+            console.error('❌ Session check failed:', sessionError);
             setStatus('error');
             return;
           }
 
-          console.log('✅ Email confirmed!');
-          setStatus('success');
+          if (sessionData?.session?.user) {
+            console.log('✅ Email confirmed! Session present.');
+            setStatus('success');
+          } else {
+            console.error('❌ No session after code exchange');
+            setStatus('error');
+          }
         } else {
           setStatus('error');
         }
@@ -66,7 +77,7 @@ export default function AuthCallbackPage() {
     if (locale === 'ru') {
       return {
         loading: 'Подтверждаем email...',
-        success: 'Ваш email успешно подтвержден',
+        success: 'Ваша почта подтверждена',
         error: 'Ошибка подтверждения',
         button: 'НАЧАТЬ',
       };

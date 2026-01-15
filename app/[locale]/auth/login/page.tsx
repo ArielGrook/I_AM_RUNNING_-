@@ -14,25 +14,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const { signIn, signInWithGoogle, loading, error, isAuthenticated, role, canAccessEditor } = useAuth();
+  const { signIn, signInWithGoogle, loading, error, isAuthenticated } = useAuth();
   const router = useRouter();
 
   // Redirect when authenticated - check role first
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('🔄 User authenticated, checking role for redirect...', { role, canAccessEditor });
-      
-      // Role >= 2: redirect to editor
-      // Role === 1: redirect to chat
-      if (canAccessEditor) {
-        console.log('✅ User has editor access, redirecting to /editor');
-        router.push('/editor');
-      } else {
-        console.log('✅ User is free tier, redirecting to /chat');
-        router.push('/chat');
-      }
+      console.log('🔄 User authenticated, redirecting to home');
+      router.push('/');
     }
-  }, [isAuthenticated, canAccessEditor, role, router]);
+  }, [isAuthenticated, router]);
 
   const validateForm = () => {
     let isValid = true;
