@@ -254,7 +254,16 @@ function useAuthProvider(): AuthContextValue {
 
     try {
       await signUp(email, password, metadata, locale);
-      // Auth listener will handle state update
+      // Signup successful - clear loading state immediately
+      // (User will confirm email later, which will trigger SIGNED_IN event)
+      console.log('✅ Signup successful, clearing loading state');
+      if (mountedRef.current) {
+        setAuthState(prev => ({
+          ...prev,
+          loading: false,
+          error: null
+        }));
+      }
     } catch (error) {
       console.error('❌ Sign up failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Sign up failed';

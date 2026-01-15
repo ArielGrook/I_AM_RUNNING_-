@@ -88,7 +88,9 @@ export default function SignupPage() {
 
       // Immediately show success message (remove form)
       setSuccess(true);
+      console.log('🎉 SUCCESS STATE SET TO TRUE');
       setIsLoading(false);
+      console.log('⏹️ LOADING STATE SET TO FALSE');
       console.log('📧 Email confirmation sent to:', email);
     } catch (err: any) {
       console.error('❌ Signup error:', err);
@@ -99,6 +101,7 @@ export default function SignupPage() {
 
   // Show full-screen success message
   if (success) {
+    console.log('✅ RENDERING SUCCESS SCREEN');
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
         <div className="text-center space-y-6">
