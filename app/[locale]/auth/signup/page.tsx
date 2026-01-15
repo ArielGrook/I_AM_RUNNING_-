@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
@@ -19,12 +19,35 @@ export default function SignupPage() {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp, error } = useAuth();
+  const { signUp, error, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const locale = useLocale();
 
-  // Diagnostic logging on every render
-  console.log('[DIAGNOSTIC] SignupPage render - success:', success, 'isLoading:', isLoading);
+  // ============ DIAGNOSTIC: Render counter ============
+  const renderCount = useRef(0);
+  renderCount.current++;
+  console.log(`[DIAGNOSTIC] Render #${renderCount.current} - success: ${success}, isLoading: ${isLoading}, authLoading: ${authLoading}, isAuthenticated: ${isAuthenticated}`);
+
+  // ============ DIAGNOSTIC: Track success state changes ============
+  useEffect(() => {
+    console.log('[DIAGNOSTIC] SUCCESS STATE CHANGED TO:', success);
+    if (success) {
+      console.log('[DIAGNOSTIC] ✅✅✅ SUCCESS IS TRUE - SCREEN SHOULD RENDER ✅✅✅');
+    }
+  }, [success]);
+
+  // ============ DIAGNOSTIC: Track loading state changes ============
+  useEffect(() => {
+    console.log('[DIAGNOSTIC] LOADING STATE CHANGED TO:', isLoading);
+  }, [isLoading]);
+
+  // ============ DIAGNOSTIC: Track auth state ============
+  useEffect(() => {
+    console.log('[DIAGNOSTIC] Auth state changed:', { isAuthenticated, authLoading });
+    if (isAuthenticated && !success) {
+      console.log('[DIAGNOSTIC] ⚠️ USER IS AUTHENTICATED BUT SUCCESS IS FALSE - MIGHT REDIRECT');
+    }
+  }, [isAuthenticated, authLoading, success]);
 
   const validateForm = () => {
     let isValid = true;
@@ -108,24 +131,33 @@ export default function SignupPage() {
     }
   };
 
+  // ============ DIAGNOSTIC: Pre-render check ============
+  console.log('[DIAGNOSTIC] About to check success condition - success:', success);
+
   // Show full-screen success message
   // ALWAYS render success screen first if success=true
   // This prevents any layout/loading screen interference
   if (success) {
-    console.log('🎉 [DIAGNOSTIC] RENDERING SUCCESS SCREEN NOW!');
+    console.log('🎉🎉🎉 [DIAGNOSTIC] RETURNING SUCCESS SCREEN 🎉🎉🎉');
     return (
       <div 
-        className="flex flex-col items-center justify-center bg-white"
+        className="flex flex-col items-center justify-center"
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          zIndex: 9999,
-          minHeight: '100vh'
+          zIndex: 99999,
+          minHeight: '100vh',
+          backgroundColor: 'white'
         }}
       >
+        {/* DIAGNOSTIC: Highly visible test element */}
+        <h1 style={{color: 'red', fontSize: '24px', marginBottom: '20px'}}>
+          [DEBUG] SUCCESS SCREEN IS RENDERING
+        </h1>
+        
         <div className="text-center space-y-6">
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
@@ -153,6 +185,8 @@ export default function SignupPage() {
       </div>
     );
   }
+
+  console.log('[DIAGNOSTIC] NOT RENDERING SUCCESS - RENDERING FORM INSTEAD');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
