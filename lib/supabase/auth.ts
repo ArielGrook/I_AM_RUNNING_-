@@ -72,8 +72,8 @@ export async function signIn(email: string, password: string) {
  * Sign up with email and password
  * Stores profile data in auth.users.user_metadata (no database query needed)
  */
-export async function signUp(email: string, password: string, metadata?: Record<string, unknown>) {
-  console.log('🔐 AUTH: Starting sign up', { email, metadata });
+export async function signUp(email: string, password: string, metadata?: Record<string, unknown>, locale?: string) {
+  console.log('🔐 AUTH: Starting sign up', { email, metadata, locale });
 
   const supabase = getSupabaseClient();
 
@@ -90,12 +90,20 @@ export async function signUp(email: string, password: string, metadata?: Record<
 
   try {
     console.log('📡 AUTH: Calling Supabase signUp...');
+    
+    // Production callback URL with locale (always use production for email links)
+    // Default to 'en' if locale not provided
+    const userLocale = locale || 'en';
+    const emailRedirectTo = `https://iamrunning.online/${userLocale}/auth/callback`;
+    
+    console.log('📧 AUTH: Email redirect URL:', emailRedirectTo);
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: userMetadata,
-        emailRedirectTo: undefined,
+        emailRedirectTo,
       },
     });
 
@@ -130,10 +138,15 @@ export async function signInWithGoogle() {
   try {
     console.log('📡 AUTH: Calling Supabase signInWithOAuth...');
 
+    // Production callback URL
+    const redirectTo = typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/callback`
+      : 'https://iamrunning.online/auth/callback';
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`,
+        redirectTo,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',

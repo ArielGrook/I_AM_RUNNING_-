@@ -42,7 +42,7 @@ export interface AuthState {
 type AuthContextValue = AuthState & {
   cookieConsent: 'accepted' | 'declined' | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, metadata?: Record<string, any>) => Promise<void>;
+  signUp: (email: string, password: string, metadata?: Record<string, any>, locale?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshAuth: () => Promise<void>;
@@ -248,12 +248,12 @@ function useAuthProvider(): AuthContextValue {
   /**
    * Sign up with email and password
    */
-  const signUpUser = async (email: string, password: string, metadata?: Record<string, any>) => {
-    console.log('🔐 Sign up:', email);
+  const signUpUser = async (email: string, password: string, metadata?: Record<string, any>, locale?: string) => {
+    console.log('🔐 Sign up:', email, 'locale:', locale);
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      await signUp(email, password, metadata);
+      await signUp(email, password, metadata, locale);
       // Auth listener will handle state update
     } catch (error) {
       console.error('❌ Sign up failed:', error);

@@ -77,7 +77,7 @@ export default function SignupPage() {
       console.log('🔐 Calling signUpUser...');
       await signUp(email, password, { 
         full_name: fullName.trim() || undefined,
-      });
+      }, locale);
       
       console.log('✅ SignUp result received');
       
@@ -92,54 +92,57 @@ export default function SignupPage() {
     }
   };
 
+  // Show full-screen success message
+  if (success) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+        <div className="text-center space-y-6">
+          {/* Logo */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="text-4xl font-bold text-[#ffa500]">I AM RUNNING</div>
+          </div>
+          
+          {/* Message */}
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {locale === 'ru' 
+                ? 'Проверьте свою электронную почту' 
+                : locale === 'he' 
+                ? 'בדקו את האימייל שלכם'
+                : 'Check your email'}
+            </h2>
+            <p className="text-gray-600">
+              {locale === 'ru'
+                ? 'Можете закрыть это окно'
+                : locale === 'he'
+                ? 'אתם יכולים לסגור את החלון הזה'
+                : 'You can close this window'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {success ? (
-          <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-            <div className="text-center space-y-6">
-              {/* Logo */}
-              <div className="flex items-center justify-center mb-8">
-                <div className="text-4xl font-bold text-[#ffa500]">I AM RUNNING</div>
-              </div>
-              
-              {/* Message */}
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {locale === 'ru' 
-                    ? 'Проверьте свою электронную почту' 
-                    : locale === 'he' 
-                    ? 'בדקו את האימייל שלכם'
-                    : 'Check your email'}
-                </h2>
-                <p className="text-gray-600">
-                  {locale === 'ru'
-                    ? 'Можете закрыть это окно'
-                    : locale === 'he'
-                    ? 'אתם יכולים לסגור את החלון הזה'
-                    : 'You can close this window'}
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div>
-              <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
-                Create your account
-              </h2>
-              <p className="mt-2 text-center text-sm text-muted-foreground">
-                Or{' '}
-                <Link
-                  href="/auth/login"
-                  className="font-medium text-primary hover:text-primary/80"
-                >
-                  sign in to existing account
-                </Link>
-              </p>
-            </div>
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
+            Create your account
+          </h2>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            Or{' '}
+            <Link
+              href="/auth/login"
+              className="font-medium text-primary hover:text-primary/80"
+            >
+              sign in to existing account
+            </Link>
+          </p>
+        </div>
 
-            <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-foreground">
@@ -250,8 +253,6 @@ export default function SignupPage() {
                 </Link>
               </div>
             </form>
-          </>
-        )}
       </div>
     </div>
   );
