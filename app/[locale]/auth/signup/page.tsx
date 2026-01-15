@@ -153,11 +153,6 @@ export default function SignupPage() {
           backgroundColor: 'white'
         }}
       >
-        {/* DIAGNOSTIC: Highly visible test element */}
-        <h1 style={{color: 'red', fontSize: '24px', marginBottom: '20px'}}>
-          [DEBUG] SUCCESS SCREEN IS RENDERING
-        </h1>
-        
         <div className="text-center space-y-6">
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
