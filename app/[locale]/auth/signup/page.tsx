@@ -109,10 +109,23 @@ export default function SignupPage() {
   };
 
   // Show full-screen success message
+  // ALWAYS render success screen first if success=true
+  // This prevents any layout/loading screen interference
   if (success) {
     console.log('🎉 [DIAGNOSTIC] RENDERING SUCCESS SCREEN NOW!');
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+      <div 
+        className="flex flex-col items-center justify-center bg-white"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+          minHeight: '100vh'
+        }}
+      >
         <div className="text-center space-y-6">
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
@@ -124,7 +137,7 @@ export default function SignupPage() {
             <h2 className="text-2xl font-bold text-gray-900">
               {locale === 'ru' 
                 ? 'СПАСИБО ЧТО ЗАРЕГИСТРИРОВАЛИСЬ НА I AM RUNNING' 
-                : locale === 'he' 
+                : locale === 'he'
                 ? 'תודה שנרשמתם ל I AM RUNNING'
                 : 'THANK YOU FOR REGISTERING FOR I AM RUNNING'}
             </h2>
