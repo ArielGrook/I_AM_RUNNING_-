@@ -111,17 +111,17 @@ export default function SignupPage() {
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-gray-900">
               {locale === 'ru' 
-                ? 'Проверьте свою электронную почту' 
+                ? 'СПАСИБО ЧТО ЗАРЕГИСТРИРОВАЛИСЬ НА I AM RUNNING' 
                 : locale === 'he' 
-                ? 'בדקו את האימייל שלכם'
-                : 'Check your email'}
+                ? 'תודה שנרשמתם ל I AM RUNNING'
+                : 'THANK YOU FOR REGISTERING FOR I AM RUNNING'}
             </h2>
             <p className="text-gray-600">
               {locale === 'ru'
-                ? 'Можете закрыть это окно'
+                ? 'Проверьте свою электронную почту для завершения регистрации. Вы можете закрыть это окно'
                 : locale === 'he'
-                ? 'אתם יכולים לסגור את החלון הזה'
-                : 'You can close this window'}
+                ? 'בדקו את האימייל שלכם כדי להשלים את ההרשמה. ניתן לסגור חלון זה'
+                : 'Check your email to complete your registration. You can close this window.'}
             </p>
           </div>
         </div>
