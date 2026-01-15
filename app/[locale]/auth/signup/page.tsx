@@ -23,6 +23,9 @@ export default function SignupPage() {
   const router = useRouter();
   const locale = useLocale();
 
+  // Diagnostic logging on every render
+  console.log('[DIAGNOSTIC] SignupPage render - success:', success, 'isLoading:', isLoading);
+
   const validateForm = () => {
     let isValid = true;
 
@@ -64,17 +67,19 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('📝 Signup form submitted');
+    console.log('📝 [DIAGNOSTIC] Form submitted');
 
     if (!validateForm()) {
-      console.log('❌ Form validation failed');
+      console.log('❌ [DIAGNOSTIC] Validation failed');
       return;
     }
 
+    console.log('✅ [DIAGNOSTIC] Validation passed');
     setIsLoading(true);
+    console.log('⏳ [DIAGNOSTIC] Loading state set to TRUE');
 
     try {
-      console.log('🔐 Calling signUpUser...');
+      console.log('🔐 [DIAGNOSTIC] Calling signUp...');
       await signUp(
         email,
         password,
@@ -84,16 +89,20 @@ export default function SignupPage() {
         locale
       );
 
-      console.log('✅ SignUp result received');
-
-      // Immediately show success message (remove form)
+      console.log('✅ [DIAGNOSTIC] signUp completed successfully');
+      console.log('🎯 [DIAGNOSTIC] About to set success=true');
+      
       setSuccess(true);
-      console.log('🎉 SUCCESS STATE SET TO TRUE');
+      console.log('✅ [DIAGNOSTIC] SUCCESS STATE IS NOW TRUE');
+      
       setIsLoading(false);
-      console.log('⏹️ LOADING STATE SET TO FALSE');
-      console.log('📧 Email confirmation sent to:', email);
+      console.log('⏹️ [DIAGNOSTIC] LOADING STATE IS NOW FALSE');
+      
+      console.log('📧 [DIAGNOSTIC] Should see success screen now');
+      console.log('📧 [DIAGNOSTIC] Email confirmation sent to:', email);
     } catch (err: any) {
-      console.error('❌ Signup error:', err);
+      console.error('❌ [DIAGNOSTIC] Signup error:', err);
+      console.log('⏹️ [DIAGNOSTIC] Setting loading to false after error');
       setIsLoading(false);
       // Error is handled by the useAuth hook
     }
@@ -101,7 +110,7 @@ export default function SignupPage() {
 
   // Show full-screen success message
   if (success) {
-    console.log('✅ RENDERING SUCCESS SCREEN');
+    console.log('🎉 [DIAGNOSTIC] RENDERING SUCCESS SCREEN NOW!');
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
         <div className="text-center space-y-6">
