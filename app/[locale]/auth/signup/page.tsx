@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
@@ -22,32 +22,6 @@ export default function SignupPage() {
   const { signUp, error, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const locale = useLocale();
-
-  // ============ DIAGNOSTIC: Render counter ============
-  const renderCount = useRef(0);
-  renderCount.current++;
-  console.log(`[DIAGNOSTIC] Render #${renderCount.current} - success: ${success}, isLoading: ${isLoading}, authLoading: ${authLoading}, isAuthenticated: ${isAuthenticated}`);
-
-  // ============ DIAGNOSTIC: Track success state changes ============
-  useEffect(() => {
-    console.log('[DIAGNOSTIC] SUCCESS STATE CHANGED TO:', success);
-    if (success) {
-      console.log('[DIAGNOSTIC] ✅✅✅ SUCCESS IS TRUE - SCREEN SHOULD RENDER ✅✅✅');
-    }
-  }, [success]);
-
-  // ============ DIAGNOSTIC: Track loading state changes ============
-  useEffect(() => {
-    console.log('[DIAGNOSTIC] LOADING STATE CHANGED TO:', isLoading);
-  }, [isLoading]);
-
-  // ============ DIAGNOSTIC: Track auth state ============
-  useEffect(() => {
-    console.log('[DIAGNOSTIC] Auth state changed:', { isAuthenticated, authLoading });
-    if (isAuthenticated && !success) {
-      console.log('[DIAGNOSTIC] ⚠️ USER IS AUTHENTICATED BUT SUCCESS IS FALSE - MIGHT REDIRECT');
-    }
-  }, [isAuthenticated, authLoading, success]);
 
   const validateForm = () => {
     let isValid = true;
@@ -90,19 +64,13 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('📝 [DIAGNOSTIC] Form submitted');
-
     if (!validateForm()) {
-      console.log('❌ [DIAGNOSTIC] Validation failed');
       return;
     }
 
-    console.log('✅ [DIAGNOSTIC] Validation passed');
     setIsLoading(true);
-    console.log('⏳ [DIAGNOSTIC] Loading state set to TRUE');
 
     try {
-      console.log('🔐 [DIAGNOSTIC] Calling signUp...');
       await signUp(
         email,
         password,
@@ -112,33 +80,18 @@ export default function SignupPage() {
         locale
       );
 
-      console.log('✅ [DIAGNOSTIC] signUp completed successfully');
-      console.log('🎯 [DIAGNOSTIC] About to set success=true');
-      
       setSuccess(true);
-      console.log('✅ [DIAGNOSTIC] SUCCESS STATE IS NOW TRUE');
-      
       setIsLoading(false);
-      console.log('⏹️ [DIAGNOSTIC] LOADING STATE IS NOW FALSE');
-      
-      console.log('📧 [DIAGNOSTIC] Should see success screen now');
-      console.log('📧 [DIAGNOSTIC] Email confirmation sent to:', email);
     } catch (err: any) {
-      console.error('❌ [DIAGNOSTIC] Signup error:', err);
-      console.log('⏹️ [DIAGNOSTIC] Setting loading to false after error');
       setIsLoading(false);
       // Error is handled by the useAuth hook
     }
   };
 
-  // ============ DIAGNOSTIC: Pre-render check ============
-  console.log('[DIAGNOSTIC] About to check success condition - success:', success);
-
   // Show full-screen success message
   // ALWAYS render success screen first if success=true
   // This prevents any layout/loading screen interference
   if (success) {
-    console.log('🎉🎉🎉 [DIAGNOSTIC] RETURNING SUCCESS SCREEN 🎉🎉🎉');
     return (
       <div 
         className="flex flex-col items-center justify-center"
@@ -180,8 +133,6 @@ export default function SignupPage() {
       </div>
     );
   }
-
-  console.log('[DIAGNOSTIC] NOT RENDERING SUCCESS - RENDERING FORM INSTEAD');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
