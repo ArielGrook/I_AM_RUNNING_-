@@ -19,10 +19,10 @@ export function ShowcaseSection() {
 
   return (
     <section 
-      className="py-24 bg-black text-white"
+      className="py-16 sm:py-24 bg-black text-white"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -32,7 +32,7 @@ export function ShowcaseSection() {
           <span className="inline-block text-sm font-semibold text-[#FFA500] uppercase tracking-widest mb-4">
             {t('eyebrow')}
           </span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mb-6">
             {t('title')}
           </h2>
         </motion.div>
@@ -42,20 +42,20 @@ export function ShowcaseSection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="flex justify-center items-center gap-4 md:gap-6 flex-wrap mb-12"
+          className="flex flex-col sm:flex-row justify-center items-center gap-4 md:gap-6 flex-wrap mb-12"
         >
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-6 py-4 text-center">
-            <div className="text-4xl font-black text-[#FFA500]">20</div>
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-5 py-3 sm:px-6 sm:py-4 text-center">
+            <div className="text-3xl sm:text-4xl font-black text-[#FFA500]">20</div>
             <div className="text-sm opacity-70">{t('styles')}</div>
           </div>
-          <span className="text-3xl font-bold text-[#FFA500]">×</span>
-          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-6 py-4 text-center">
-            <div className="text-4xl font-black text-[#FFA500]">49</div>
+          <span className="text-2xl sm:text-3xl font-bold text-[#FFA500]">×</span>
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-5 py-3 sm:px-6 sm:py-4 text-center">
+            <div className="text-3xl sm:text-4xl font-black text-[#FFA500]">49</div>
             <div className="text-sm opacity-70">{t('tags')}</div>
           </div>
-          <span className="text-3xl font-bold text-[#FFA500]">=</span>
-          <div className="bg-gradient-to-r from-[#FF6B35] to-[#FF4500] rounded-xl px-6 py-4 text-center">
-            <div className="text-4xl font-black">980+</div>
+          <span className="text-2xl sm:text-3xl font-bold text-[#FFA500]">=</span>
+          <div className="bg-gradient-to-r from-[#FF6B35] to-[#FF4500] rounded-xl px-5 py-3 sm:px-6 sm:py-4 text-center">
+            <div className="text-3xl sm:text-4xl font-black">980+</div>
             <div className="text-sm opacity-90">{t('combinations')}</div>
           </div>
         </motion.div>

@@ -62,17 +62,17 @@ export function HeroSection() {
       </div>
 
       {/* Header Nav */}
-      <nav className="relative z-20 w-full px-6 py-6 flex items-center justify-between">
+      <nav className="relative z-20 w-full px-4 sm:px-6 py-4 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-left"
+          className="text-center sm:text-left"
         >
           <div className="text-xl font-black tracking-wide">I AM RUNNING</div>
           <div className="text-xs text-white/80">AI-Powered Builder</div>
         </motion.div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-center">
           <LanguageSwitcher />
           <ThemeToggle />
           {isAuthenticated ? (
@@ -103,11 +103,11 @@ export function HeroSection() {
       </nav>
 
       {/* Hero Content */}
-      <div className="relative z-10 flex-1 flex items-center justify-center w-full px-6">
+      <div className="relative z-10 flex-1 flex items-center justify-center w-full px-4 sm:px-6">
         <div className="w-full max-w-5xl mx-auto text-center space-y-8">
           {/* Intro text */}
           <motion.p
-            className="text-lg sm:text-xl text-white/90 font-normal max-w-3xl mx-auto"
+            className="text-base sm:text-lg md:text-xl text-white/90 font-normal max-w-3xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -117,7 +117,7 @@ export function HeroSection() {
 
           {/* Main headline */}
           <motion.h1
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight"
+            className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-black leading-tight"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
@@ -127,17 +127,17 @@ export function HeroSection() {
 
           {/* Subheadline with highlighted keywords */}
           <motion.p
-            className="text-lg sm:text-xl md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed"
+            className="text-base sm:text-lg md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
             {t('subheadline')}{' '}
-            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('quality')}</span>{' '}
+            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-xl sm:text-2xl">{t('quality')}</span>{' '}
             {t('subheadlineMid')}{' '}
-            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('speed')}</span>{' '}
+            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-xl sm:text-2xl">{t('speed')}</span>{' '}
             {t('subheadlineMid2')}{' '}
-            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-2xl">{t('price')}</span>
+            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-xl sm:text-2xl">{t('price')}</span>
             {t('subheadlineEnd')}
           </motion.p>
 
@@ -153,7 +153,7 @@ export function HeroSection() {
               <Button
                 onClick={handleChatClick}
                 size="lg"
-                className="px-8 py-6 text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
+                className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full sm:min-w-[200px]"
               >
                 {t('enterChat')}
                 <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
@@ -165,7 +165,7 @@ export function HeroSection() {
               <Button
                 onClick={handleEditorClick}
                 size="lg"
-                className="px-8 py-6 text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
+                className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full sm:min-w-[200px]"
               >
                 {t('enterEditor')}
                 <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
@@ -178,7 +178,7 @@ export function HeroSection() {
                 asChild
                 size="lg"
                 variant="outline"
-                className="px-8 py-6 text-lg font-bold border-2 border-[#ffa500] text-[#ffa500] hover:bg-[#ffa500] hover:text-white shadow-lg transition-all duration-300 rounded-full min-w-[200px]"
+                className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold border-2 border-[#ffa500] text-[#ffa500] hover:bg-[#ffa500] hover:text-white shadow-lg transition-all duration-300 rounded-full sm:min-w-[200px]"
               >
                 <Link href="/pricing?reason=editor_access&current_role=1">
                   Upgrade Plan
@@ -192,7 +192,7 @@ export function HeroSection() {
               <Button
                 asChild
                 size="lg"
-                className="px-8 py-6 text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full min-w-[200px]"
+                className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full sm:min-w-[200px]"
               >
                 <Link href="/auth/signup">
                   Get Started Free

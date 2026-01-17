@@ -18,10 +18,10 @@ export function PricingSection() {
 
   return (
     <section 
-      className="py-24 bg-gray-50 dark:bg-black"
+      className="py-16 sm:py-24 bg-gray-50 dark:bg-black"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -31,10 +31,10 @@ export function PricingSection() {
           <span className="inline-block text-sm font-semibold text-[#FF6B35] uppercase tracking-widest mb-4">
             {t('eyebrow')}
           </span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 dark:text-white mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 dark:text-white mb-6">
             {t('title')}
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
             {t('content')}
           </p>
         </motion.div>
@@ -46,11 +46,11 @@ export function PricingSection() {
           viewport={{ once: true }}
           className="flex justify-center mb-12"
         >
-          <div className="inline-flex items-center gap-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-10 py-6 rounded-2xl shadow-xl">
-            <span className="text-5xl">💰</span>
+          <div className="inline-flex items-center gap-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-4 sm:px-10 sm:py-6 rounded-2xl shadow-xl">
+            <span className="text-4xl sm:text-5xl">💰</span>
             <div>
-              <div className="text-4xl font-black">{t('savings')}</div>
-              <div className="text-lg opacity-90">{t('savingsLabel')}</div>
+              <div className="text-3xl sm:text-4xl font-black">{t('savings')}</div>
+              <div className="text-base sm:text-lg opacity-90">{t('savingsLabel')}</div>
             </div>
           </div>
         </motion.div>
@@ -63,7 +63,7 @@ export function PricingSection() {
           className="bg-white dark:bg-[#262626] rounded-2xl shadow-xl overflow-hidden max-w-3xl mx-auto"
         >
           {/* Header */}
-          <div className="grid grid-cols-3 bg-gray-50 dark:bg-[#525151] border-b-2 border-gray-200 dark:border-[#525151]">
+          <div className="hidden sm:grid grid-cols-3 bg-gray-50 dark:bg-[#525151] border-b-2 border-gray-200 dark:border-[#525151]">
             <div className="p-4 font-bold text-gray-500 dark:text-gray-400">{t('featureLabel')}</div>
             <div className="p-4 font-bold text-emerald-600">{t('us')}</div>
             <div className="p-4 font-bold text-gray-500 dark:text-gray-400">{t('competitors')}</div>
@@ -73,14 +73,25 @@ export function PricingSection() {
           {comparisons.map((row, i) => (
             <div
               key={row.label}
-              className="grid grid-cols-3 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+              className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-0 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
             >
-              <div className="p-4 font-medium text-gray-900 dark:text-white">{row.label}</div>
+              <div className="p-4 font-medium text-gray-900 dark:text-white">
+                <span className="sm:hidden block text-xs uppercase tracking-wide text-gray-400 mb-1">
+                  {t('featureLabel')}
+                </span>
+                {row.label}
+              </div>
               <div className="p-4 text-emerald-600 font-bold flex items-center gap-2">
+                <span className="sm:hidden block text-xs uppercase tracking-wide text-gray-400">
+                  {t('us')}
+                </span>
                 <Check className="w-5 h-5" />
                 {row.us}
               </div>
               <div className="p-4 text-gray-400 flex items-center gap-2">
+                <span className="sm:hidden block text-xs uppercase tracking-wide text-gray-400">
+                  {t('competitors')}
+                </span>
                 <X className="w-5 h-5 text-red-400" />
                 {row.them}
               </div>

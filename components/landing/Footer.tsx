@@ -10,21 +10,21 @@ export function Footer() {
 
   return (
     <footer 
-      className="py-16 bg-black text-white"
+      className="py-12 sm:py-16 bg-black text-white"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <div className="max-w-6xl mx-auto px-6 text-center">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
         {/* Logo */}
         <div className="flex justify-center items-center gap-4 mb-8">
-          <span className="text-5xl">🏃‍♂️</span>
+          <span className="text-4xl sm:text-5xl">🏃‍♂️</span>
           <div className={isRTL ? 'text-right' : 'text-left'}>
-            <h3 className="text-2xl font-black text-[#FF6B35]">{t('brand')}</h3>
+            <h3 className="text-xl sm:text-2xl font-black text-[#FF6B35]">{t('brand')}</h3>
             <p className="text-sm text-gray-400">{t('tagline')}</p>
           </div>
         </div>
 
         {/* Links */}
-        <div className="flex justify-center gap-8 mb-8">
+        <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8 mb-8">
           <Link href="/privacy" className="text-gray-400 hover:text-[#FF6B35] transition-colors text-sm">
             {t('privacy')}
           </Link>

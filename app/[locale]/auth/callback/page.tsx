@@ -119,8 +119,8 @@ export default function AuthCallbackPage() {
         {status === 'success' && (
           <div className="space-y-8">
             {/* Success checkmark */}
-            <div className="mx-auto w-24 h-24 rounded-full bg-[#ffa500] flex items-center justify-center">
-              <svg className="w-12 h-12 text-[#22c55e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mx-auto w-24 h-24 rounded-full bg-[#22c55e] flex items-center justify-center">
+              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>

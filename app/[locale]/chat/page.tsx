@@ -87,24 +87,24 @@ export default function ChatPage() {
     <div className="h-screen bg-white dark:bg-[#262626] flex flex-col">
       {/* Header */}
       <div className="px-4 py-4 flex-shrink-0">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
+        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
           <Button
             variant="ghost"
             onClick={() => router.push('/')}
-            className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white flex items-center gap-2"
+            className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             <ArrowLeft className="h-4 w-4" />
             Home
           </Button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#F97316] rounded-full flex items-center justify-center">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[#F97316] rounded-full flex items-center justify-center">
               <Bot className="h-5 w-5 text-white" />
             </div>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white text-center">
               I AM RUNNING AI CHAT
             </h1>
           </div>
-          <div className="w-[80px]" /> {/* Spacer for centering */}
+          <div className="hidden sm:block w-[80px]" /> {/* Spacer for centering */}
         </div>
       </div>
 
@@ -112,7 +112,7 @@ export default function ChatPage() {
       <div className="flex-1 px-4 overflow-hidden">
         <div className="max-w-3xl mx-auto h-full flex flex-col">
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto py-6">
+          <div className="flex-1 overflow-y-auto py-4 sm:py-6">
             <div className="space-y-10">
               <AnimatePresence>
                 {messages.map((message) => (
@@ -126,9 +126,9 @@ export default function ChatPage() {
                     }`}
                   >
                     <div
-                      className="inline-block max-w-[80%] text-gray-900 dark:text-white"
+                      className="inline-block max-w-[90%] sm:max-w-[80%] text-gray-900 dark:text-white"
                     >
-                      <p className="text-lg leading-relaxed">{message.content}</p>
+                      <p className="text-base sm:text-lg leading-relaxed">{message.content}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -156,7 +156,7 @@ export default function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <div className="py-12">
+          <div className="py-4 sm:py-12 sticky bottom-0 bg-white dark:bg-[#262626] border-t border-gray-100 dark:border-gray-800">
             <div className="flex gap-3">
               <div className="flex-1 relative">
                 <Input
@@ -164,7 +164,7 @@ export default function ChatPage() {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Describe your website idea..."
-                  className="pr-12 py-5 text-lg border-none outline-none focus:outline-none focus:ring-0 bg-transparent"
+                  className="pr-12 py-4 sm:py-5 text-base sm:text-lg border-none outline-none focus:outline-none focus:ring-0 bg-transparent"
                 />
                 <button
                   onClick={handleSendMessage}

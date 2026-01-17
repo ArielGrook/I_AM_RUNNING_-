@@ -18,10 +18,10 @@ export function TechnologySection() {
 
   return (
     <section 
-      className="py-24 bg-gray-50 dark:bg-black"
+      className="py-16 sm:py-24 bg-gray-50 dark:bg-black"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -31,16 +31,16 @@ export function TechnologySection() {
           <span className="inline-block text-sm font-semibold text-[#FF6B35] uppercase tracking-widest mb-4">
             {t('eyebrow')}
           </span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 dark:text-white mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 dark:text-white mb-6">
             {t('title')}
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
             {t('content')}
           </p>
         </motion.div>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
           {features.map((feature, i) => (
             <motion.div
               key={feature.title}
@@ -48,9 +48,9 @@ export function TechnologySection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className="bg-white dark:bg-[#262626] rounded-2xl p-8 text-center shadow-lg border border-gray-100 dark:border-[#525151] hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              className="bg-white dark:bg-[#262626] rounded-2xl p-6 sm:p-8 text-center shadow-lg border border-gray-100 dark:border-[#525151] hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
-              <div className="text-5xl mb-4">{feature.icon}</div>
+              <div className="text-4xl sm:text-5xl mb-4">{feature.icon}</div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">{feature.title}</h3>
             </motion.div>
           ))}
@@ -61,10 +61,10 @@ export function TechnologySection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-gradient-to-r from-[#FF6B35] to-[#FF4500] rounded-2xl p-8 flex items-center gap-6 mb-8 text-white"
+          className="bg-gradient-to-r from-[#FF6B35] to-[#FF4500] rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-8 text-white text-center sm:text-left"
         >
           <span className="text-4xl">🔒</span>
-          <p className="text-xl font-medium">{t('highlight')}</p>
+          <p className="text-lg sm:text-xl font-medium">{t('highlight')}</p>
         </motion.div>
 
         {/* Competitors Comparison */}
@@ -72,7 +72,7 @@ export function TechnologySection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-white dark:bg-[#262626] rounded-2xl p-8 shadow-lg"
+          className="bg-white dark:bg-[#262626] rounded-2xl p-6 sm:p-8 shadow-lg"
         >
           <div className="flex flex-wrap justify-center items-center gap-4 mb-6">
             {competitors.map((comp) => (
