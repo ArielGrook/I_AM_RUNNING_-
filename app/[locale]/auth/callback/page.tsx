@@ -48,14 +48,20 @@ export default function AuthCallbackPage() {
           }
 
           // Verify session even if exchange reported an error
-          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-          if (sessionError) {
-            console.error('❌ Session check failed:', sessionError);
-            setStatus('error');
-            return;
-          }
+          const { data: sessionData } = await supabase.auth.getSession();
 
           if (sessionData?.session?.user) {
+            const user = sessionData.session.user;
+
+            if (user.user_metadata?.role == null) {
+              const { error: updateError } = await supabase.auth.updateUser({
+                data: { role: 1 },
+              });
+              if (updateError) {
+                console.warn('⚠️ Failed to set default role metadata:', updateError);
+              }
+            }
+
             console.log('✅ Email confirmed! Session present.');
             setStatus('success');
           } else {

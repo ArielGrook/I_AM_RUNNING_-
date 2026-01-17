@@ -155,5 +155,11 @@
     "loading": "טוען...",
     "error": "שגיאה",
     "success": "הצלחה"
+  },
+  "Auth": {
+    "googleSignIn": "התחבר עם Google",
+    "googleSignUp": "להירשם עם Google",
+    "googleSigningIn": "מתחבר...",
+    "orContinueWith": "או המשך עם"
   }
 }

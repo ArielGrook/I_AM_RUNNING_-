@@ -8,14 +8,19 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
+import { useLocale, useTranslations } from 'next-intl';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const { signIn, signInWithGoogle, loading, error, isAuthenticated } = useAuth();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const { signIn, loading, error, isAuthenticated } = useAuth();
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations('Auth');
 
   // Redirect when authenticated - check role first
   useEffect(() => {
@@ -70,12 +75,24 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     try {
+      setIsGoogleLoading(true);
       console.log('🔐 Attempting Google sign in...');
-      await signInWithGoogle();
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `https://iamrunning.online/${locale}/auth/callback`,
+        },
+      });
       // OAuth redirect will happen automatically
     } catch (error) {
       console.error('❌ Google sign in failed:', error);
       // Error is handled by the useAuth hook
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -150,14 +167,14 @@ export default function LoginPage() {
             <Button
               type="button"
               onClick={handleGoogleSignIn}
-              disabled={loading}
+              disabled={loading || isGoogleLoading}
               variant="outline"
-              className="w-full border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+              className="w-full bg-white text-gray-900 border-gray-300 hover:bg-gray-50 dark:bg-white dark:text-gray-900 dark:border-gray-300"
             >
-              {loading ? (
+              {isGoogleLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
+                  {t('googleSigningIn')}
                 </>
               ) : (
                 <>
@@ -179,7 +196,7 @@ export default function LoginPage() {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  Sign in with Google
+                  {t('googleSignIn')}
                 </>
               )}
             </Button>
@@ -189,7 +206,7 @@ export default function LoginPage() {
                 <span className="w-full border-t border-gray-300 dark:border-gray-600" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-background px-2 text-muted-foreground">{t('orContinueWith')}</span>
               </div>
             </div>
           </div>

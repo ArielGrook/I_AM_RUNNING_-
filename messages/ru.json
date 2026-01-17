@@ -155,5 +155,11 @@
     "loading": "Загрузка...",
     "error": "Ошибка",
     "success": "Успешно"
+  },
+  "Auth": {
+    "googleSignIn": "Войти через Google",
+    "googleSignUp": "Зарегистрироваться через Google",
+    "googleSigningIn": "Вход...",
+    "orContinueWith": "Или продолжить с помощью"
   }
 }

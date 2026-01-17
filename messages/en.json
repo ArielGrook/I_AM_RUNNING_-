@@ -155,5 +155,11 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success"
+  },
+  "Auth": {
+    "googleSignIn": "Sign in with Google",
+    "googleSignUp": "Sign up with Google",
+    "googleSigningIn": "Signing in...",
+    "orContinueWith": "Or continue with"
   }
 }
