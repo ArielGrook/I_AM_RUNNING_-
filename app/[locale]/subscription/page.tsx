@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -26,7 +26,7 @@ export default function SubscriptionPage() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center px-4">
         <div className="text-center space-y-4">
-          <div className="h-10 w-10 rounded-full border-4 border-orange-400 border-t-transparent animate-spin mx-auto" />
+          <Loader2 className="h-8 w-8 animate-spin text-orange-500 mx-auto" />
           <p className="text-gray-700">{t('loading')}</p>
         </div>
       </div>
@@ -62,10 +62,10 @@ export default function SubscriptionPage() {
             return (
               <Card
                 key={plan.key}
-                className={`border-2 ${plan.highlight ? 'border-orange-400 shadow-lg' : 'border-gray-200'} bg-white`}
+                className={`border-2 ${plan.highlight ? 'border-orange-500' : 'border-gray-300'} rounded-lg shadow-md bg-white`}
               >
                 <CardHeader>
-                  <CardTitle className="text-xl text-gray-900">
+                  <CardTitle className="text-xl font-semibold text-gray-900">
                     {t(`plans.${plan.key}.name`)}
                   </CardTitle>
                   <CardDescription className="text-gray-600">
@@ -77,9 +77,9 @@ export default function SubscriptionPage() {
                     {t(`plans.${plan.key}.price`)}
                   </div>
                   <ul className="space-y-2 text-sm text-gray-700">
-                    {features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <Check className="w-4 h-4 text-orange-500 mt-0.5" />
+                    {features.map((feature, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -87,7 +87,7 @@ export default function SubscriptionPage() {
                 </CardContent>
                 <CardFooter>
                   <Button
-                    className={`w-full ${plan.highlight ? 'bg-orange-500 hover:bg-orange-600' : 'bg-orange-400 hover:bg-orange-500'} text-white`}
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                     onClick={() => handleChoosePlan(plan.key)}
                   >
                     {t('choosePlan')}

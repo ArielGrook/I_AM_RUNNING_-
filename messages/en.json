@@ -158,40 +158,43 @@
     "success": "Success"
   },
   "Subscription": {
-    "title": "Choose your plan",
-    "subtitle": "Upgrade anytime. Payments are coming soon.",
+    "title": "Choose Your Plan",
+    "subtitle": "Select the perfect plan for your needs. Payments coming soon.",
     "choosePlan": "Choose Plan",
-    "comingSoon": "Coming soon",
+    "comingSoon": "Coming soon!",
     "loading": "Checking your account...",
     "plans": {
       "starter": {
         "name": "Starter",
-        "price": "$0",
-        "description": "For trying the platform",
+        "price": "$20 one-time",
+        "description": "For getting started with basic features",
         "features": [
-          "Basic editor access",
-          "Limited AI requests",
+          "1 project",
+          "Frontend editor",
+          "Limited components",
           "Community support"
         ]
       },
       "basic": {
         "name": "Basic",
-        "price": "$19",
-        "description": "For personal and small projects",
+        "price": "$30/mo",
+        "description": "For small teams and projects",
         "features": [
-          "Higher AI limits",
-          "More saved projects",
-          "Priority email support"
+          "5 projects",
+          "Simple backend blocks",
+          "Email support",
+          "Higher limits"
         ]
       },
       "pro": {
         "name": "Pro",
-        "price": "$49",
-        "description": "For teams and professionals",
+        "price": "$100/mo",
+        "description": "For professionals and agencies",
         "features": [
           "Unlimited projects",
-          "Advanced components",
-          "Premium support"
+          "Advanced backend",
+          "Priority support",
+          "Custom features"
         ]
       }
     }
