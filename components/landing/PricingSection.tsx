@@ -1,8 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { Check, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export function PricingSection() {
   const t = useTranslations('Landing.pricing');
@@ -109,6 +111,19 @@ export function PricingSection() {
           <div className="inline-block px-8 py-4 bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-200 dark:border-orange-800 rounded-xl">
             <p className="text-xl font-bold text-[#FF6B35]">{t('highlight')}</p>
           </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mt-8"
+        >
+          <Link href={`/${locale}/subscription`}>
+            <Button className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg rounded-full">
+              {t('upgradePlan')}
+            </Button>
+          </Link>
         </motion.div>
       </div>
     </section>

@@ -15,6 +15,48 @@ export default function AuthCallbackPage() {
   const [isGoogleAuth, setIsGoogleAuth] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const getText = () => {
+    if (locale === 'ru') {
+      return {
+        loading: 'Подтверждаем email...',
+        success: 'Вы вошли через Google!',
+        successEmail: 'Ваша почта подтверждена',
+        error: 'Ошибка подтверждения',
+        errorMessage: 'Попробуйте войти вручную',
+        button: 'НАЧАТЬ',
+        backToLogin: 'Вернуться к входу',
+        linkGoogleInSettings: 'Аккаунт существует. Привязать Google в настройках?',
+        oauthFailed: 'Ошибка OAuth',
+      };
+    } else if (locale === 'he') {
+      return {
+        loading: 'מאשרים אימייל...',
+        success: 'התחברת עם Google!',
+        successEmail: 'האימייל שלך אושר בהצלחה',
+        error: 'כשל באישור',
+        errorMessage: 'נסה להתחבר ידנית',
+        button: 'להתחיל לרוץ',
+        backToLogin: 'חזרה להתחברות',
+        linkGoogleInSettings: 'החשבון קיים. לחבר את Google בהגדרות?',
+        oauthFailed: 'OAuth נכשל',
+      };
+    } else {
+      return {
+        loading: 'Confirming email...',
+        success: 'Logged in with Google!',
+        successEmail: 'Your email was successfully confirmed',
+        error: 'Confirmation failed',
+        errorMessage: 'Try logging in manually',
+        button: 'START RUNNING',
+        backToLogin: 'Back to Login',
+        linkGoogleInSettings: 'Account exists. Link Google in settings?',
+        oauthFailed: 'OAuth failed',
+      };
+    }
+  };
+
+  const text = getText();
+
   useEffect(() => {
     const handleCallback = async () => {
       // Test on multiple devices/countries: signup → email link → callback.
@@ -74,8 +116,8 @@ export default function AuthCallbackPage() {
           const messageSource = errorDescription || error;
           const normalized = messageSource.toLowerCase();
           const friendlyMessage = normalized.includes('account exists with different credential')
-            ? 'Account exists. Link Google in settings?'
-            : 'OAuth failed';
+            ? text.linkGoogleInSettings
+            : text.oauthFailed;
           console.error('❌ Callback error in URL params:', {
             error,
             errorDescription,
@@ -200,12 +242,12 @@ export default function AuthCallbackPage() {
               userAgent,
               allParams,
             });
-            setErrorMessage('OAuth failed');
+            setErrorMessage(text.oauthFailed);
             setStatus('error');
           }
         } else {
           console.error('❌ Not an OAuth flow', { allParams });
-          setErrorMessage('OAuth failed');
+          setErrorMessage(text.oauthFailed);
           setStatus('error');
         }
       } catch (err) {
@@ -214,13 +256,13 @@ export default function AuthCallbackPage() {
           stack: err instanceof Error ? err.stack : undefined,
           userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
         });
-        setErrorMessage('OAuth failed');
+        setErrorMessage(text.oauthFailed);
         setStatus('error');
       }
     };
 
     handleCallback();
-  }, [searchParams]);
+  }, [searchParams, text.linkGoogleInSettings, text.oauthFailed]);
 
   useEffect(() => {
     if (status !== 'success') return;
@@ -229,42 +271,6 @@ export default function AuthCallbackPage() {
     }, 2000);
     return () => window.clearTimeout(timeoutId);
   }, [status, router]);
-
-  const getText = () => {
-    if (locale === 'ru') {
-      return {
-        loading: 'Подтверждаем email...',
-        success: 'Вы вошли через Google!',
-        successEmail: 'Ваша почта подтверждена',
-        error: 'Ошибка подтверждения',
-        errorMessage: 'Попробуйте войти вручную',
-        button: 'НАЧАТЬ',
-        backToLogin: 'Вернуться к входу',
-      };
-    } else if (locale === 'he') {
-      return {
-        loading: 'מאשרים אימייל...',
-        success: 'התחברת עם Google!',
-        successEmail: 'האימייל שלך אושר בהצלחה',
-        error: 'כשל באישור',
-        errorMessage: 'נסה להתחבר ידנית',
-        button: 'להתחיל לרוץ',
-        backToLogin: 'חזרה להתחברות',
-      };
-    } else {
-      return {
-        loading: 'Confirming email...',
-        success: 'Logged in with Google!',
-        successEmail: 'Your email was successfully confirmed',
-        error: 'Confirmation failed',
-        errorMessage: 'Try logging in manually',
-        button: 'START RUNNING',
-        backToLogin: 'Back to Login',
-      };
-    }
-  };
-
-  const text = getText();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">

@@ -916,16 +916,6 @@ export default function EditorPage() {
               </>
             )}
             <LanguageSwitcher />
-            {(!userPackage && isDemo) && (
-              <Button 
-                size="sm" 
-                variant="default"
-                onClick={() => setShowPackageSelector(true)}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-              >
-                {t('upgrade')}
-              </Button>
-            )}
             <Button 
               size="sm" 
               variant="outline"
