@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <!-- [HTML-1] META -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>СЗЛ — Современная Зуботехническая Лаборатория</title>
+
+  <!-- [HTML-2] FONTS + CSS -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unica+One&family=Montserrat:wght@400;600;700;900&display=swap">
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <!-- [HTML-3] BACKGROUND LAYER -->
+  <div class="background-layer"></div>
+
+  <!-- [HTML-4] MAIN SITE -->
+  <div class="main-site">
+
+    <!-- [HTML-5] HERO -->
+    <section class="hero" id="hero">
+      <h1 class="hero-title">
+        <span class="gold-letter">С</span>овременная
+        <span class="gold-letter">З</span>уботехническая
+        <span class="gold-letter">Л</span>аборатория
+      </h1>
+      <p class="hero-desc">
+        Производит высококачественные зубные протезы и ортодонтические конструкции по индивидуальному заказу.<br>
+        Работает с ведущими стоматологическими клиниками Москвы.
+      </p>
+      <div class="hero-buttons">
+        <a href="#contact" class="hero-btn-new hero-btn-order">Скачать Заказ НАРЯД</a>
+        <a href="#contact" class="hero-btn-new hero-btn-price">Получить Прайс Лист</a>
+      </div>
+    </section>
+
+    <!-- [HTML-9] ADVANTAGES (статичный блок-плейсхолдер без скриптов) -->
+    <section class="advantages-stacks" id="advantages" aria-label="Наши преимущества">
+      <div class="advantages-inner">
+        <h2 class="section-title">Наши преимущества</h2>
+        <ul class="adv-grid">
+          <li>Точность CAD/CAM</li>
+          <li>Опытные техники</li>
+          <li>Клиническая коммуникация</li>
+          <li>Сроки без срывов</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- [HTML-11] SERVICES -->
+    <section class="services-section" id="services">
+      <h2 class="section-title">Наши услуги</h2>
+      <div class="services-list">
+        <ul>
+          <li>Коронки и мостовидные протезы</li>
+          <li>Съемные протезы (частичные и полные)</li>
+          <li>Имплантологические конструкции</li>
+          <li>Ортодонтические аппараты</li>
+          <li>Реставрационные работы</li>
+          <li>Индивидуальные каппы</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- [HTML-14] PORTFOLIO -->
+    <section class="portfolio-section" id="portfolio">
+      <h2 class="portfolio-title">Портфолио</h2>
+
+      <!-- [HTML-14.1] VIEWPORT -->
+      <div class="pf-viewport">
+        <button class="pf-nav pf-prev" aria-label="Назад">‹</button>
+        <div class="pf-track"><!-- карты вставит JS --></div>
+        <button class="pf-nav pf-next" aria-label="Вперёд">›</button>
+      </div>
+    </section>
+
+    <!-- [HTML-17] CONTACT -->
+    <section class="contact-section" id="contact">
+      <div class="contact-wrapper">
+        <div class="contact-info-container">
+          <div class="contact-block">
+            <h3 class="contact-block-title">Адрес</h3>
+            <div class="contact-block-content">
+              <p>г. Москва, м. Бульвар Рокоссовского<br>Открытое шоссе 6 к. 8</p>
+            </div>
+          </div>
+
+          <div class="contact-block">
+            <h3 class="contact-block-title">Номера телефонов</h3>
+            <div class="contact-block-content">
+              <p>
+                Управляющий: +7 (958) 236-99-55<br>
+                Ресепшн: +7 (926) 30-111-30<br>
+                CAD/CAM: +7 (958) 233-33-48
+              </p>
+            </div>
+          </div>
+
+          <div class="contact-block">
+            <h3 class="contact-block-title">Режим работы</h3>
+            <div class="contact-block-content">
+              <p>Пн-Пт: 09:00-19:00<br>Сб-Вс: Выходной</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-map-container">
+          <div id="yandex-map" class="map" aria-label="Карта"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- [HTML-24] FOOTER -->
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>РЕЖИМ РАБОТЫ</h4>
+          <ul>
+            <li>Пн-Пт: 09:00-19:00</li>
+            <li>Сб-Вс: Выходной</li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>МЫ В СОЦСЕТЯХ</h4>
+          <ul class="social-icons">
+            <li>
+              <a href="https://vk.com/public161581396" target="_blank">
+                <img src="assets/vk-icon.png" alt=""> ВКонтакте
+              </a>
+            </li>
+            <li>
+              <a href="https://www.facebook.com/SZLLAB" target="_blank">
+                <img src="assets/fb-icon.png" alt=""> Facebook
+              </a>
+            </li>
+            <li>
+              <a href="#" target="_blank">
+                <img src="assets/inst-icon.png" alt=""> Instagram
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>КОНТАКТЫ</h4>
+          <ul>
+            <li>Управляющий: +7 (958) 236-99-55</li>
+            <li>Ресепшн: +7 (926) 30-111-30</li>
+            <li>CAD/CAM: +7 (958) 233-33-48</li>
+            <li>Email: szllab@yandex.ru (для фотографий)</li>
+            <li>Email: szllab@mail.ru (для документов)</li>
+            <li>Email: szlcadcam@mail.ru (для цифровых заказов)</li>
+            <li>Адрес: г. Москва, Открытое шоссе, д. 6, корп. 8</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p><strong>Лицензия:</strong> № Л041-01137-77/00313685 от 30.05.2017</p>
+        <p>© 2025 СЗЛ — Современная Зуботехническая Лаборатория. Все права защищены.</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- [HTML-30] FLOATING HEADER -->
+  <header class="floating-header" id="header">
+    <img src="assets/logo.png" alt="СЗЛ" class="logo" />
+    <nav class="header-nav">
+      <ul class="nav-menu">
+        <li><a href="#hero">Главная</a></li>
+        <li><a href="#advantages">Наши преимущества</a></li>
+        <li><a href="#services">Услуги</a></li>
+        <li><a href="#portfolio">Портфолио</a></li>
+        <li><a href="#contact">Контактная информация</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- [HTML-33] SCRIPTS -->
+  <script src="https://api-maps.yandex.ru/2.1/?apikey=51984b76-7365-44be-bf3e-881d2544d984&lang=ru_RU"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

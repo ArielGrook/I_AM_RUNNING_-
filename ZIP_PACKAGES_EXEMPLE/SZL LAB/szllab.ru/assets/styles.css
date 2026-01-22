@@ -1,0 +1,458 @@
+/* assets/styles.css */
+
+/* [CSS-1] BODY */
+:root { 
+  --gold1:#FFAE66; 
+  --gold2:#F0A056; 
+  --gold3:#F28705;
+  --headerH: 100px;
+  --sectionPadTop: calc(var(--headerH) + 40px);
+  --sectionPadBot: 80px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; padding:0;
+  font-family:'Montserrat', Arial, sans-serif;
+  min-height:100vh; position:relative; overflow-x:hidden;
+  color:#fff;
+}
+
+/* [CSS-2] BACKGROUND LAYER */
+.background-layer{
+  position:fixed; inset:0; z-index:-1;
+  background-image:url('37024-koja_material.jpg');
+  background-size:cover; background-position:center; background-attachment:fixed;
+  filter:brightness(1.1) saturate(1.2) contrast(1.0);
+  pointer-events:none;
+}
+
+/* [CSS-3] MAIN */
+.main-site{position:relative; width:100%; min-height:100vh; z-index:1}
+
+/* [CSS-3A] SECTION FRAMES */
+.hero,
+.advantages-stacks,
+.services-section,
+.portfolio-section,
+.contact-section{
+  min-height: 100vh;
+  padding-top: var(--sectionPadTop);
+  padding-bottom: var(--sectionPadBot);
+  box-sizing: border-box;
+  scroll-margin-top: var(--headerH);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* [CSS-4] FLOATING HEADER — ЧЕРНЫЙ ПОЛУПРОЗРАЧНЫЙ ФОН */
+.floating-header{
+  position:fixed !important;
+  top:20px !important; left:50% !important;
+  transform:translate3d(-50%,0,0) !important;
+  will-change:transform;
+  width:90% !important; max-width:1400px !important; height:72px !important;
+  border-radius:40px !important; padding:0 40px !important; display:flex !important; align-items:center !important;
+  z-index:999999 !important;
+  
+  /* черный полупрозрачный фон */
+  background:rgba(0,0,0,0.85) !important;
+  
+  /* золотая окантовка */
+  border:2px solid transparent !important;
+  background-origin:border-box !important;
+  background-clip:padding-box,border-box !important;
+  
+  box-shadow:0 8px 32px rgba(0,0,0,.4) !important; 
+  backdrop-filter:blur(10px) !important;
+}
+
+.floating-header .logo{height:56px !important; margin-right:40px !important; flex-shrink:0 !important;}
+.header-nav{width:100% !important; display:flex !important; justify-content:center !important;}
+
+.nav-menu{
+  display:flex !important; gap:30px !important;
+  margin:0 !important; padding:0 !important; list-style:none !important;
+}
+
+.nav-menu a{
+  position:relative !important;
+  display:inline-block !important;
+  padding:8px 16px !important;
+  border-radius:22px !important;
+  text-decoration:none !important;
+  font-weight:700 !important; font-size:16px !important;
+  color:#fff !important;
+  overflow:hidden !important;
+  transition:transform .2s ease, color .2s ease, box-shadow .2s ease;
+}
+
+.nav-menu a::after{
+  content:''; position:absolute; inset:0;
+  border-radius:inherit;
+  background:linear-gradient(90deg,var(--gold1) 0%, var(--gold2) 50%, var(--gold3) 100%);
+  opacity:0; transition:opacity .22s ease;
+  z-index:-1;
+}
+
+.nav-menu a:hover,
+.nav-menu a:focus-visible{
+  color:#1a1a1a !important;
+  transform:translateY(-1px) scale(1.03);
+  box-shadow:0 6px 18px rgba(242,135,5,.35);
+}
+.nav-menu a:hover::after,
+.nav-menu a:focus-visible::after{ opacity:1; }
+
+/* [CSS-6] HERO */
+.hero{
+  padding-top:120px; 
+  padding-bottom:100px;
+  text-align:center;
+}
+.hero-title{
+  font-family:'Unica One','Arial Black','Helvetica',sans-serif;
+  font-size:3vw; font-weight:900; margin:0 0 40px; color:#fff; letter-spacing:.08em; line-height:1.05;
+  text-shadow:2px 2px 0 rgba(0,0,0,.3),4px 4px 0 rgba(0,0,0,.2),6px 6px 0 rgba(0,0,0,.1);
+}
+.gold-letter{
+  background:linear-gradient(90deg,#f2b705 0%, #f28705 50%, #FD7E35 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  font-weight:900; font-size:1.1em; text-transform:uppercase; text-shadow:1px 1px 2px rgba(0,0,0,.2);
+}
+.hero-desc{color:#fff; font-size:1.8vw; margin-bottom:44px; max-width:1000px; line-height:1.32; font-weight:600; text-shadow:0 1px 12px #00000060;}
+.hero-buttons{display:flex; gap:50px; margin-top:35px; flex-wrap:wrap; justify-content:center; align-items:center;}
+.hero-btn-new{
+  display:inline-block; font-size:1.2vw; padding:12px 40px; border-radius:50px; font-weight:700; color:#fff; text-decoration:none;
+  background:linear-gradient(135deg,#0a7c32 0%, #04942c 50%, #0c8c4c 100%); position:relative; cursor:pointer;
+  transition:all .3s ease; text-shadow:0 2px 4px rgba(0,0,0,.3); box-shadow:0 4px 15px rgba(0,0,0,.2); 
+  animation:buttonPulseSync 2s ease-in-out infinite;
+}
+.hero-btn-new:hover{
+  transform:scale(1.03) !important; 
+  background:linear-gradient(135deg,#33FF99 0%,#1AE580 25%,#00CC66 50%,#00B24D 75%,#009933 100%); 
+  box-shadow:0 6px 25px rgba(0,0,0,.3); 
+  animation-play-state:paused;
+}
+@keyframes buttonPulseSync{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+
+/* [CSS-7] ADVANTAGES — черный полупрозрачный блок */
+.advantages-stacks{
+  position:relative; 
+  width:100%; 
+  padding: 100px 20px;
+}
+.advantages-inner{
+  background:rgba(0,0,0,0.85); /* ЧЕРНЫЙ ПОЛУПРОЗРАЧНЫЙ ФОН */
+  border:2px solid transparent; 
+  border-radius:18px;
+  background-clip:padding-box,border-box; 
+  padding:48px 60px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+.adv-grid{
+  display:grid; 
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); 
+  gap:24px; 
+  margin:0; 
+  padding:0; 
+  list-style:none
+}
+.adv-grid li{
+  padding:20px 24px; 
+  background:rgba(0,0,0,0.6); 
+  border:1px solid rgba(255,255,255,.12); 
+  border-radius:10px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+/* [CSS-8] SERVICES */
+.services-section{
+  width:100%; 
+  padding: 100px 20px;
+}
+.section-title{
+  font-size:2.8vw; margin-bottom:40px; font-weight:900; text-transform:uppercase;
+  background:linear-gradient(90deg,#f2b705 0%, #f28705 50%, #FD7E35 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}
+.services-list{
+  color:#fff; 
+  font-size:1.4vw; 
+  max-width:800px; 
+  line-height:1.8;
+  background:rgba(0,0,0,0.85); /* ЧЕРНЫЙ ПОЛУПРОЗРАЧНЫЙ ФОН */
+  padding: 40px 60px;
+  border-radius: 15px;
+  border:2px solid transparent;
+  background-clip:padding-box,border-box;
+}
+.services-list ul{
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.services-list li{
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.services-list li:last-child{
+  border-bottom: none;
+}
+
+/* [CSS-9] PORTFOLIO */
+.portfolio-section{
+  width:100%; 
+  padding: 100px 20px;
+  padding-top: 80px; /* Уменьшаем верхний отступ для видимости заголовка */
+}
+.portfolio-title{
+  font-size:2.8vw; margin-bottom:30px; font-weight:900; text-transform:uppercase;
+  background:linear-gradient(90deg,#f2b705 0%, #f28705 50%, #FD7E35 100%); 
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}
+.pf-viewport{
+  position:relative; 
+  overflow:hidden; 
+  padding-inline:24px; 
+  width:100%; 
+  max-width:1400px;
+  margin: 0 auto;
+}
+.pf-track{
+  display:flex; 
+  gap:28px; 
+  will-change:transform; 
+  transition:transform .6s cubic-bezier(.22,.61,.36,1);
+  padding: 0 50%; /* Добавляем паддинг для центрирования первой и последней карточки */
+}
+.pf-card{
+  flex:0 0 calc(clamp(320px, 60vw, 980px) * 0.8); /* Уменьшаем на 20% */
+  border-radius:22px; 
+  overflow:hidden; 
+  position:relative; 
+  z-index:1;
+  background:rgba(0,0,0,0.85); /* ЧЕРНЫЙ ПОЛУПРОЗРАЧНЫЙ ФОН */
+  border:2px solid transparent;
+  background-clip:padding-box,border-box;
+}
+.pf-media{position:relative; aspect-ratio:16/9; overflow:hidden}
+.pf-img{width:100%; height:100%; object-fit:cover; display:block; user-select:none; pointer-events:none}
+
+/* сравнение - ДО слева, ПОСЛЕ справа */
+.pf-compare{position:relative; height:100%; width:100%; overflow:hidden}
+.pf-compare .pf-before{
+  position:absolute; 
+  inset:0;
+  /* ДО - всегда слева (под слайдером) */
+}
+.pf-compare .pf-after{
+  position:absolute; 
+  inset:0; 
+  clip-path:inset(0 50% 0 0); /* ПОСЛЕ - справа (обрезается слева) */
+}
+.pf-compare .pf-bar{position:absolute; top:0; bottom:0; left:50%; width:2px; background:var(--gold2)}
+.pf-compare .pf-handle{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:42px; height:42px; border-radius:50%; border:2px solid var(--gold2);
+  background:rgba(0,0,0,.92); display:grid; place-items:center; color:var(--gold2); cursor:ew-resize
+}
+
+/* Метки ДО/ПОСЛЕ */
+.pf-compare .pf-before::after,
+.pf-compare .pf-after::before {
+  content: attr(data-label);
+  position: absolute;
+  top: 20px;
+  padding: 5px 15px;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 20px;
+  border: 1px solid var(--gold2);
+}
+.pf-compare .pf-before::after {
+  content: 'ДО';
+  left: 20px;
+}
+.pf-compare .pf-after::before {
+  content: 'ПОСЛЕ';
+  right: 20px;
+}
+
+/* meta */
+.pf-meta{padding:18px 20px 26px}
+.pf-title{margin:0 0 8px; color:#f6a23a; font-weight:800; font-size:clamp(16px,2vw,22px)} /* Уменьшен размер */
+.pf-desc{margin:8px 0 0; color:#e8e8e8; opacity:.92; font-size:clamp(14px,1.8vw,18px)} /* Уменьшен размер */
+.pf-tags{display:flex; gap:8px; flex-wrap:wrap}
+.pf-tags span{
+  font-size:11px; 
+  padding:3px 8px; 
+  border-radius:999px; 
+  background:rgba(0,0,0,0.6); 
+  border:1px solid rgba(255,255,255,.12); 
+  color:#ddd
+}
+
+/* arrows */
+.pf-nav{
+  position:absolute; top:50%; transform:translateY(-50%);
+  width:46px; height:46px; border-radius:50%; 
+  background:rgba(0,0,0,0.9);
+  border:2px solid var(--gold2); color:var(--gold2); display:grid; place-items:center;
+  font-size:24px; cursor:pointer; z-index:10000; pointer-events:auto; user-select:none;
+}
+.pf-prev{left:6px} .pf-next{right:6px}
+
+/* [CSS-10] CONTACT — большой контейнер + чёрные внутренние блоки */
+.contact-section{
+  width:100vw;
+  padding:80px 5rem 40px;
+  display:flex; align-items:center; justify-content:center;
+  box-sizing:border-box;
+}
+.contact-wrapper{
+  display:flex; gap:2.2rem;
+  width:100%; max-width:1200px;
+  padding:2.2rem; border-radius:26px;
+  background:rgba(0,0,0,.78);
+  border:2px solid transparent;
+  background-clip:padding-box,border-box;
+}
+
+/* левая колонка с разделами */
+.contact-info-container{
+  flex:1.1; display:flex; flex-direction:column; gap:1.6rem;
+}
+.contact-block{display:block;}
+.contact-block-title{
+  margin:0 0 .8rem;
+  text-transform:uppercase; font-weight:900;
+  text-align:center; letter-spacing:.03em;
+  font-size:clamp(22px,2.6vw,40px);
+  background:linear-gradient(90deg,#f2b705 0%, #f28705 50%, #FD7E35 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}
+/* чёрные планшетки под текст (без золотой рамки) */
+.contact-block-content{
+  padding:1rem 1.25rem; border-radius:14px;
+  background:rgba(0,0,0,.88);
+  border:1px solid rgba(255,255,255,.08);
+  color:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+
+/* правая колонка — квадрат под карту */
+.contact-map-container{
+  flex:1; min-height:520px;
+  background:rgba(0,0,0,.9);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:24px; padding:12px;
+  box-shadow:0 2px 10px rgba(0,0,0,.35);
+  display:flex;
+}
+#yandex-map{
+  width:100% !important; height:100% !important;
+  border-radius:18px; overflow:hidden;
+  background:#000;
+}
+
+/* нижняя плашка футера как была */
+.footer{background:#2a2a2a; color:#888; width:100%; padding:50px 0 0; margin-top:auto}
+
+/* адаптация */
+@media (max-width:900px){
+  .contact-section{padding:70px 1rem 40px}
+  .contact-wrapper{flex-direction:column; padding:1.2rem; border-radius:20px}
+  .contact-map-container{min-height:380px; border-radius:18px; padding:10px}
+  #yandex-map{border-radius:14px}
+}
+
+
+/* [CSS-11] FOOTER */
+.footer{
+  background:#2a2a2a; /* Оставляем как есть - НЕ полупрозрачный */
+  color:#888; 
+  width:100%; 
+  padding:50px 0 0; 
+  margin-top:auto
+}
+.footer-content{
+  display:flex; 
+  justify-content:space-between; 
+  max-width:1200px; 
+  margin:0 auto; 
+  padding:0 20px
+}
+.footer-column{flex:1}
+.footer-column h4{
+  background:linear-gradient(90deg,#f2b705 0%, #f28705 50%, #FD7E35 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  margin-bottom:15px;
+}
+.footer-column ul{list-style:none; padding:0; margin:0}
+.social-icons{display:flex; flex-direction:column; gap:10px}
+.social-icons li a{display:flex; align-items:center; color:#888; text-decoration:none; transition:color .3s}
+.social-icons li a:hover{
+  background:linear-gradient(90deg,#f2b705 0%, #f28705 50%, #FD7E35 100%); 
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent
+}
+.social-icons img{width:30px; height:30px; margin-right:10px; filter:grayscale(100%); transition:filter .3s}
+.social-icons li a:hover img{filter:grayscale(0%) sepia(100%) hue-rotate(15deg) saturate(2)}
+.footer-bottom{
+  background:#1a1a1a; /* Оставляем как есть */
+  text-align:center; 
+  padding:20px 0; 
+  margin-top:30px
+}
+
+/* [CSS-12] ADAPTIVE */
+@media (max-width:900px){
+  :root{ --headerH: 82px; }
+
+  .floating-header{
+    width:95% !important; 
+    top:10px !important; 
+    height:60px !important; 
+    padding:0 20px !important; 
+    border-radius:25px !important
+  }
+  .floating-header .logo{height:45px !important; margin-right:20px !important}
+  .nav-menu{gap:10px !important}
+  .nav-menu a{font-size:13px !important; padding:5px 10px !important}
+
+  .hero-title{font-size:7vw}
+  .hero-desc{font-size:3.5vw}
+  .hero-btn-new{font-size:2.5vw; padding:10px 25px}
+
+  .section-title, .portfolio-title{font-size:6vw}
+  .services-list{font-size:2.5vw; padding: 30px}
+  .pf-viewport{padding-inline:12px}
+  .pf-card{flex-basis:calc(92vw * 0.8)} /* Уменьшаем на 20% на мобильных тоже */
+  .pf-track{padding: 0 30%} /* Меньше паддинг на мобильных */
+  
+  .contact-wrapper{
+    flex-direction:column;
+  }
+  .contact-map-container{
+    min-height: 350px;
+  }
+  
+  .advantages-inner{
+    padding: 30px;
+  }
+  .adv-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* [CSS-13] Hide scrollbars */
+html, body{scrollbar-width:none}
+html::-webkit-scrollbar, body::-webkit-scrollbar{display:none}
+section{position:relative; z-index:1}

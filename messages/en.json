@@ -100,8 +100,7 @@
       "components": "Component Library",
       "componentsUs": "980+ combinations",
       "componentsThem": "Limited",
-    "highlight": "Pay for what you use, get exactly what you need.",
-    "upgradePlan": "Upgrade Plan"
+      "highlight": "Pay for what you use, get exactly what you need."
     },
     "services": {
       "eyebrow": "Complete Solution",
@@ -157,49 +156,9 @@
     "error": "Error",
     "success": "Success"
   },
-  "Subscription": {
-    "title": "Choose your plan",
-    "subtitle": "Upgrade anytime. Payments are coming soon.",
-    "choosePlan": "Choose Plan",
-    "comingSoon": "Coming soon",
-    "loading": "Checking your account...",
-    "plans": {
-      "starter": {
-        "name": "Starter",
-        "price": "$0",
-        "description": "For trying the platform",
-        "features": [
-          "Basic editor access",
-          "Limited AI requests",
-          "Community support"
-        ]
-      },
-      "basic": {
-        "name": "Basic",
-        "price": "$19",
-        "description": "For personal and small projects",
-        "features": [
-          "Higher AI limits",
-          "More saved projects",
-          "Priority email support"
-        ]
-      },
-      "pro": {
-        "name": "Pro",
-        "price": "$49",
-        "description": "For teams and professionals",
-        "features": [
-          "Unlimited projects",
-          "Advanced components",
-          "Premium support"
-        ]
-      }
-    }
-  },
   "Auth": {
     "continueWithGoogle": "Continue with Google",
     "signingInWithGoogle": "Signing in...",
-    "orContinueWith": "Or continue with",
-    "linkGoogleInSettings": "Account exists. Link Google in settings?"
+    "orContinueWith": "Or continue with"
   }
 }
