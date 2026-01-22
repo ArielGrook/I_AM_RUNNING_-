@@ -130,7 +130,7 @@ export async function signUp(email: string, password: string, metadata?: Record<
 /**
  * Sign in with Google OAuth
  */
-export async function signInWithGoogle() {
+export async function signInWithGoogle(redirectTo?: string) {
   console.log('🔐 AUTH: Starting Google OAuth sign in');
 
   const supabase = getSupabaseClient();
@@ -138,15 +138,16 @@ export async function signInWithGoogle() {
   try {
     console.log('📡 AUTH: Calling Supabase signInWithOAuth...');
 
-    // Production callback URL
-    const redirectTo = typeof window !== 'undefined'
+    // Assumes SUPABASE_GOOGLE enabled in dashboard.
+    const oauthRedirectTo = redirectTo || (typeof window !== 'undefined'
       ? `${window.location.origin}/auth/callback`
-      : 'https://iamrunning.online/auth/callback';
+      : 'https://iamrunning.online/auth/callback');
     
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo,
+        redirectTo: oauthRedirectTo,
+        scopes: 'email profile',
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',

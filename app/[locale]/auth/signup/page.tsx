@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
-import { createBrowserClient } from '@supabase/ssr';
+import { signInWithGoogle } from '@/lib/supabase/auth';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -21,6 +21,7 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
   const { signUp, error, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const locale = useLocale();
@@ -91,21 +92,18 @@ export default function SignupPage() {
     }
   };
 
-  const handleGoogleSignUp = async () => {
+  const handleGoogleAuth = async () => {
     try {
+      setGoogleError('');
       setIsGoogleLoading(true);
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `https://iamrunning.online/${locale}/auth/callback`,
-        },
-      });
+      await signInWithGoogle(`${window.location.origin}/auth/callback`);
     } catch (err) {
       console.error('❌ Google sign up failed:', err);
+      const rawMessage = err instanceof Error ? err.message : 'OAuth failed';
+      const message = rawMessage.toLowerCase().includes('account exists with different credential')
+        ? 'Account exists. Link Google in settings?'
+        : rawMessage;
+      setGoogleError(message);
     } finally {
       setIsGoogleLoading(false);
     }
@@ -179,7 +177,7 @@ export default function SignupPage() {
           <div className="space-y-3">
             <Button
               type="button"
-              onClick={handleGoogleSignUp}
+              onClick={handleGoogleAuth}
               disabled={isLoading || isGoogleLoading}
               variant="outline"
               className="w-full bg-white text-gray-900 border-gray-300 hover:bg-gray-50 dark:bg-white dark:text-gray-900 dark:border-gray-300"
@@ -187,7 +185,7 @@ export default function SignupPage() {
               {isGoogleLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('googleSigningIn')}
+                  {t('signingInWithGoogle')}
                 </>
               ) : (
                 <>
@@ -209,7 +207,7 @@ export default function SignupPage() {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  {t('googleSignUp')}
+                  {t('continueWithGoogle')}
                 </>
               )}
             </Button>
@@ -301,9 +299,9 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {error && (
+          {(error || googleError) && (
             <div className="rounded-md bg-destructive/10 p-4">
-              <div className="text-sm text-destructive">{error}</div>
+              <div className="text-sm text-destructive">{googleError || error}</div>
             </div>
           )}
 

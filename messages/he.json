@@ -157,9 +157,8 @@
     "success": "הצלחה"
   },
   "Auth": {
-    "googleSignIn": "התחבר עם Google",
-    "googleSignUp": "להירשם עם Google",
-    "googleSigningIn": "מתחבר...",
+    "continueWithGoogle": "המשך עם Google",
+    "signingInWithGoogle": "מתחבר...",
     "orContinueWith": "או המשך עם"
   }
 }

@@ -274,7 +274,7 @@ export default function AdminPage() {
 
       <div className="flex h-[calc(100vh-73px)]">
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r p-4">
+        <aside className="hidden sm:block w-64 bg-white border-r p-4">
           <div className="space-y-4">
             <div>
               <h2 className="font-semibold mb-2 flex items-center gap-2">

@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
+import { signInWithGoogle } from '@/lib/supabase/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,9 +17,9 @@ export default function LoginPage() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
   const { signIn, loading, error, isAuthenticated } = useAuth();
   const router = useRouter();
-  const locale = useLocale();
   const t = useTranslations('Auth');
 
   // Redirect when authenticated - check role first
@@ -73,23 +73,20 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleAuth = async () => {
     try {
+      setGoogleError('');
       setIsGoogleLoading(true);
-      console.log('🔐 Attempting Google sign in...');
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `https://iamrunning.online/${locale}/auth/callback`,
-        },
-      });
+      console.log('🔐 Attempting Google auth...');
+      await signInWithGoogle(`${window.location.origin}/auth/callback`);
       // OAuth redirect will happen automatically
     } catch (error) {
       console.error('❌ Google sign in failed:', error);
+      const rawMessage = error instanceof Error ? error.message : 'OAuth failed';
+      const message = rawMessage.toLowerCase().includes('account exists with different credential')
+        ? 'Account exists. Link Google in settings?'
+        : rawMessage;
+      setGoogleError(message);
       // Error is handled by the useAuth hook
     } finally {
       setIsGoogleLoading(false);
@@ -157,16 +154,16 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {error && (
+          {(error || googleError) && (
             <div className="rounded-md bg-destructive/10 p-4">
-              <div className="text-sm text-destructive">{error}</div>
+              <div className="text-sm text-destructive">{googleError || error}</div>
             </div>
           )}
 
           <div className="space-y-3">
             <Button
               type="button"
-              onClick={handleGoogleSignIn}
+              onClick={handleGoogleAuth}
               disabled={loading || isGoogleLoading}
               variant="outline"
               className="w-full bg-white text-gray-900 border-gray-300 hover:bg-gray-50 dark:bg-white dark:text-gray-900 dark:border-gray-300"
@@ -174,7 +171,7 @@ export default function LoginPage() {
               {isGoogleLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('googleSigningIn')}
+                  {t('signingInWithGoogle')}
                 </>
               ) : (
                 <>
@@ -196,7 +193,7 @@ export default function LoginPage() {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  {t('googleSignIn')}
+                  {t('continueWithGoogle')}
                 </>
               )}
             </Button>

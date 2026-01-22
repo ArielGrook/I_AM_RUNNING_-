@@ -157,9 +157,8 @@
     "success": "Успешно"
   },
   "Auth": {
-    "googleSignIn": "Войти через Google",
-    "googleSignUp": "Зарегистрироваться через Google",
-    "googleSigningIn": "Вход...",
+    "continueWithGoogle": "Продолжить с Google",
+    "signingInWithGoogle": "Вход...",
     "orContinueWith": "Или продолжить с помощью"
   }
 }

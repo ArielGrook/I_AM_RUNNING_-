@@ -17,6 +17,7 @@ interface ChatMessage {
 }
 
 export default function ChatPage() {
+  // No sidebar found in chat.
   const t = useTranslations();
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([

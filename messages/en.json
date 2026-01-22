@@ -157,9 +157,8 @@
     "success": "Success"
   },
   "Auth": {
-    "googleSignIn": "Sign in with Google",
-    "googleSignUp": "Sign up with Google",
-    "googleSigningIn": "Signing in...",
+    "continueWithGoogle": "Continue with Google",
+    "signingInWithGoogle": "Signing in...",
     "orContinueWith": "Or continue with"
   }
 }
