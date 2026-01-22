@@ -100,7 +100,8 @@
       "components": "ספריית רכיבים",
       "componentsUs": "980+ שילובים",
       "componentsThem": "מוגבל",
-      "highlight": "משלמים על מה שמשתמשים, מקבלים בדיוק מה שצריך."
+      "highlight": "משלמים על מה שמשתמשים, מקבלים בדיוק מה שצריך.",
+      "upgradePlan": "שדרג תוכנית"
     },
     "services": {
       "eyebrow": "פתרון מלא",
@@ -156,9 +157,49 @@
     "error": "שגיאה",
     "success": "הצלחה"
   },
+  "Subscription": {
+    "title": "בחרו תוכנית",
+    "subtitle": "אפשר לשדרג בכל עת. תשלומים בקרוב.",
+    "choosePlan": "בחר תוכנית",
+    "comingSoon": "בקרוב",
+    "loading": "בודקים את החשבון...",
+    "plans": {
+      "starter": {
+        "name": "מתחיל",
+        "price": "$0",
+        "description": "להיכרות עם הפלטפורמה",
+        "features": [
+          "גישה בסיסית לעורך",
+          "מגבלת בקשות AI",
+          "תמיכת קהילה"
+        ]
+      },
+      "basic": {
+        "name": "בסיסי",
+        "price": "$19",
+        "description": "לפרויקטים אישיים וקטנים",
+        "features": [
+          "מגבלות AI גבוהות יותר",
+          "יותר פרויקטים שמורים",
+          "תמיכת אימייל בעדיפות"
+        ]
+      },
+      "pro": {
+        "name": "פרו",
+        "price": "$49",
+        "description": "לצוותים ומקצוענים",
+        "features": [
+          "פרויקטים ללא הגבלה",
+          "רכיבים מתקדמים",
+          "תמיכה פרימיום"
+        ]
+      }
+    }
+  },
   "Auth": {
     "continueWithGoogle": "המשך עם Google",
     "signingInWithGoogle": "מתחבר...",
-    "orContinueWith": "או המשך עם"
+    "orContinueWith": "או המשך עם",
+    "linkGoogleInSettings": "החשבון קיים. לחבר את Google בהגדרות?"
   }
 }
