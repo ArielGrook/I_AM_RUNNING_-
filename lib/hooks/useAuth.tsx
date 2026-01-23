@@ -433,6 +433,17 @@ function useAuthProvider(): AuthContextValue {
                 isAuthenticated: true,
                 error: null,
               });
+              console.log('✅ Auth state updated (fallback to session user)');
+            } else {
+              // No session user either - set loading false anyway
+              console.warn('⚠️ No user found in refresh or session');
+              setAuthState({
+                user: null,
+                profile: null,
+                loading: false,
+                isAuthenticated: false,
+                error: refreshError.message,
+              });
             }
             return;
           }
@@ -458,6 +469,31 @@ function useAuthProvider(): AuthContextValue {
             });
             
             console.log('✅ Auth state updated with fresh metadata');
+          } else {
+            // No error but also no user - fall back to session
+            console.warn('⚠️ No error but refreshedUser is null, falling back to session');
+            const user = session?.user;
+            if (user) {
+              const profile = buildProfileFromUser(user);
+              setAuthState({
+                user,
+                profile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
+              console.log('✅ Auth state updated (fallback to session user)');
+            } else {
+              // No session either - treat as signed out
+              console.warn('⚠️ No user found in refresh or session');
+              setAuthState({
+                user: null,
+                profile: null,
+                loading: false,
+                isAuthenticated: false,
+                error: null,
+              });
+            }
           }
         } else if (event === 'TOKEN_REFRESHED') {
           // For token refresh, use cached session (no need to hit server again)
