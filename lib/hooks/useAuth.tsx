@@ -413,18 +413,64 @@ function useAuthProvider(): AuthContextValue {
         
         if (!mountedRef.current) return;
         
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          console.log('🔐 Auth event:', event);
+        if (event === 'SIGNED_IN') {
+          console.log('🔐 Auth event: SIGNED_IN - forcing metadata refresh');
+          
+          // Force refresh user data from server to get latest metadata
+          // This catches manual role changes made in Supabase Dashboard
+          const { data: { user: refreshedUser }, error: refreshError } = await supabase.auth.getUser();
+          
+          if (refreshError) {
+            console.error('❌ Failed to refresh user data:', refreshError);
+            // Fall back to session user if refresh fails
+            const user = session?.user;
+            if (user) {
+              const profile = buildProfileFromUser(user);
+              setAuthState({
+                user,
+                profile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
+            }
+            return;
+          }
+          
+          if (refreshedUser) {
+            console.log('👤 Refreshed user data:', {
+              id: refreshedUser.id,
+              email: refreshedUser.email,
+              metadata: refreshedUser.user_metadata,
+            });
+            
+            // Build profile from REFRESHED user metadata (not cached session)
+            const profile = buildProfileFromUser(refreshedUser);
+            
+            console.log('📋 Built profile from refreshed data:', profile);
+            
+            setAuthState({
+              user: refreshedUser,
+              profile,
+              loading: false,
+              isAuthenticated: true,
+              error: null,
+            });
+            
+            console.log('✅ Auth state updated with fresh metadata');
+          }
+        } else if (event === 'TOKEN_REFRESHED') {
+          // For token refresh, use cached session (no need to hit server again)
+          console.log('🔐 Auth event: TOKEN_REFRESHED');
           const user = session?.user;
           
           if (user) {
-            console.log('👤 User data:', {
+            console.log('👤 User data (from cache):', {
               id: user.id,
               email: user.email,
               metadata: user.user_metadata,
             });
             
-            // Build profile from user metadata (instant, no database query)
             const profile = buildProfileFromUser(user);
             
             console.log('📋 Built profile:', profile);

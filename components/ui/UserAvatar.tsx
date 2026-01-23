@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,25 @@ import { useRouter } from 'next/navigation';
 export function UserAvatar() {
   const { user, profile, signOut, isAuthenticated } = useAuth();
   const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+    
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
 
   if (!isAuthenticated || !user) {
     return null;
@@ -51,22 +71,33 @@ export function UserAvatar() {
   };
 
   const handleMenuClick = (path: string) => {
+    setIsOpen(false);
     router.push(path);
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={user.user_metadata?.avatar_url} alt={displayName} />
-            <AvatarFallback className="bg-orange-500 text-white font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+    <div ref={menuRef} className="relative">
+      {/* Mobile overlay backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/30 z-40 md:hidden"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={user.user_metadata?.avatar_url} alt={displayName} />
+              <AvatarFallback className="bg-orange-500 text-white font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56 z-50" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{displayName}</p>
@@ -103,7 +134,8 @@ export function UserAvatar() {
           <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenu>
+    </div>
   );
 }
 
