@@ -414,86 +414,50 @@ function useAuthProvider(): AuthContextValue {
         if (!mountedRef.current) return;
         
         if (event === 'SIGNED_IN') {
-          console.log('🔐 Auth event: SIGNED_IN - forcing metadata refresh');
+          console.log('🔐 Auth event: SIGNED_IN');
           
-          // Force refresh user data from server to get latest metadata
-          // This catches manual role changes made in Supabase Dashboard
-          const { data: { user: refreshedUser }, error: refreshError } = await supabase.auth.getUser();
+          let userToUse = session?.user;
           
-          if (refreshError) {
-            console.error('❌ Failed to refresh user data:', refreshError);
-            // Fall back to session user if refresh fails
-            const user = session?.user;
-            if (user) {
-              const profile = buildProfileFromUser(user);
-              setAuthState({
-                user,
-                profile,
-                loading: false,
-                isAuthenticated: true,
-                error: null,
-              });
-              console.log('✅ Auth state updated (fallback to session user)');
+          // Try to refresh metadata from server
+          try {
+            console.log('🔄 Attempting metadata refresh...');
+            
+            const { data, error } = await supabase.auth.getUser();
+            
+            if (error) {
+              console.warn('⚠️ Metadata refresh error (using cached):', error.message);
+            } else if (data?.user) {
+              console.log('✅ Metadata refreshed from server');
+              userToUse = data.user;
             } else {
-              // No session user either - set loading false anyway
-              console.warn('⚠️ No user found in refresh or session');
-              setAuthState({
-                user: null,
-                profile: null,
-                loading: false,
-                isAuthenticated: false,
-                error: refreshError.message,
-              });
+              console.warn('⚠️ Metadata refresh returned null (using cached)');
             }
-            return;
+          } catch (err) {
+            console.error('❌ Metadata refresh threw exception (using cached):', err);
           }
           
-          if (refreshedUser) {
-            console.log('👤 Refreshed user data:', {
-              id: refreshedUser.id,
-              email: refreshedUser.email,
-              metadata: refreshedUser.user_metadata,
-            });
-            
-            // Build profile from REFRESHED user metadata (not cached session)
-            const profile = buildProfileFromUser(refreshedUser);
-            
-            console.log('📋 Built profile from refreshed data:', profile);
+          if (userToUse) {
+            console.log('👤 Processing user:', userToUse.email);
+            const profile = buildProfileFromUser(userToUse);
             
             setAuthState({
-              user: refreshedUser,
+              user: userToUse,
               profile,
               loading: false,
               isAuthenticated: true,
               error: null,
             });
             
-            console.log('✅ Auth state updated with fresh metadata');
+            console.log('✅ Auth state updated');
           } else {
-            // No error but also no user - fall back to session
-            console.warn('⚠️ No error but refreshedUser is null, falling back to session');
-            const user = session?.user;
-            if (user) {
-              const profile = buildProfileFromUser(user);
-              setAuthState({
-                user,
-                profile,
-                loading: false,
-                isAuthenticated: true,
-                error: null,
-              });
-              console.log('✅ Auth state updated (fallback to session user)');
-            } else {
-              // No session either - treat as signed out
-              console.warn('⚠️ No user found in refresh or session');
-              setAuthState({
-                user: null,
-                profile: null,
-                loading: false,
-                isAuthenticated: false,
-                error: null,
-              });
-            }
+            console.error('❌ No user data available');
+            setAuthState({
+              user: null,
+              profile: null,
+              loading: false,
+              isAuthenticated: false,
+              error: 'No user data',
+            });
           }
         } else if (event === 'TOKEN_REFRESHED') {
           // For token refresh, use cached session (no need to hit server again)
