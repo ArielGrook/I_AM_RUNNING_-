@@ -14,6 +14,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 
 export function HeroSection() {
   const t = useTranslations('Landing.hero');
+  const tPricing = useTranslations('Landing.pricing');
   const locale = useLocale();
   const isRTL = locale === 'he';
   const { isAuthenticated, canUseChat, canAccessEditor, role } = useAuth();
@@ -35,9 +36,9 @@ export function HeroSection() {
     }
     
     if (!canAccessEditor) {
-      console.log(`🚫 No editor access (role: ${role}), redirecting to pricing`);
+      console.log(`🚫 No editor access (role: ${role}), redirecting to subscription`);
       e.preventDefault();
-      router.push('/pricing?reason=editor_access&current_role=' + role);
+      router.push(`/${locale}/subscription?reason=editor_access&current_role=${role}`);
       return;
     }
     
@@ -180,8 +181,8 @@ export function HeroSection() {
                 variant="outline"
                 className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold border-2 border-[#ffa500] text-[#ffa500] hover:bg-[#ffa500] hover:text-white shadow-lg transition-all duration-300 rounded-full sm:min-w-[200px]"
               >
-                <Link href="/pricing?reason=editor_access&current_role=1">
-                  Upgrade Plan
+                <Link href={`/${locale}/subscription?reason=editor_access&current_role=1`}>
+                  {tPricing('upgradePlan')}
                   <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
                 </Link>
               </Button>

@@ -90,8 +90,8 @@ export default function EditorPage() {
     }
     
     if (!canAccessEditor) {
-      console.log(`🚫 Editor: Access denied (role: ${role}), redirecting to pricing`);
-      router.push('/pricing?reason=editor_access&current_role=' + role);
+      console.log(`🚫 Editor: Access denied (role: ${role}), redirecting to subscription`);
+      router.push(`/${locale}/subscription?reason=editor_access&current_role=${role}`);
       return;
     }
     
@@ -117,6 +117,16 @@ export default function EditorPage() {
   
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  
+  // Close sidebars on mobile by default
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      setLeftPanelOpen(false);
+      setRightPanelOpen(false);
+    }
+  }, []); // Only run on mount
+  
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<import('@/lib/parser/types').ParseProgress | null>(null);
@@ -829,7 +839,7 @@ export default function EditorPage() {
             {/* Undo/Redo Buttons */}
             {currentProject && (
               <>
-                <div className="flex items-center gap-1">
+                <div className="hidden md:flex items-center gap-1">
                   <Button
                     size="sm"
                     variant="outline"
@@ -859,13 +869,13 @@ export default function EditorPage() {
                     <Redo2 className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="h-6 w-px bg-gray-300 mx-1" />
+                <div className="hidden md:block h-6 w-px bg-gray-300 mx-1" />
               </>
             )}
             {/* Device Selector Buttons */}
             {currentProject && (
               <>
-                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <div className="hidden md:flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                   <Button
                     size="sm"
                     variant={currentDevice === 'desktop' ? 'default' : 'ghost'}
@@ -912,7 +922,7 @@ export default function EditorPage() {
                     <Smartphone className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="h-6 w-px bg-gray-300 mx-1" />
+                <div className="hidden md:block h-6 w-px bg-gray-300 mx-1" />
               </>
             )}
             <LanguageSwitcher />
@@ -998,10 +1008,28 @@ export default function EditorPage() {
         
         {/* Main Editor Area */}
         {currentProject ? (
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden relative">
+            {/* Mobile Overlay */}
+            {(leftPanelOpen || rightPanelOpen) && (
+              <div 
+                className="fixed inset-0 bg-black/50 z-30 md:hidden"
+                onClick={() => {
+                  setLeftPanelOpen(false);
+                  setRightPanelOpen(false);
+                }}
+              />
+            )}
+            
             {/* Left Panel - Components */}
-            <div className={`transition-all duration-300 ${leftPanelOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
-              <div className="h-full bg-white border-r flex flex-col">
+            <div className={`
+              fixed md:relative 
+              inset-y-0 left-0 
+              z-40 md:z-auto
+              transition-all duration-300
+              ${leftPanelOpen ? 'w-80 translate-x-0' : 'w-80 -translate-x-full md:w-0 md:translate-x-0'}
+              overflow-hidden
+            `}>
+              <div className="h-full bg-white dark:bg-gray-900 border-r flex flex-col shadow-lg md:shadow-none">
                 <div className="p-4 border-b">
                   <h3 className="font-semibold text-lg mb-3">{t('components')}</h3>
                   <div className="flex flex-wrap gap-1">
@@ -1099,7 +1127,7 @@ export default function EditorPage() {
             {/* Toggle Left Panel */}
             <button
               onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-              className="w-6 bg-white border-y border-r hover:bg-gray-50 flex items-center justify-center z-10"
+              className="w-6 bg-white border-y border-r hover:bg-gray-50 flex items-center justify-center z-10 md:z-auto"
               aria-label={leftPanelOpen ? 'Hide panel' : 'Show panel'}
             >
               {isRTL ? (leftPanelOpen ? '→' : '←') : (leftPanelOpen ? '←' : '→')}
@@ -1120,15 +1148,22 @@ export default function EditorPage() {
             {/* Toggle Right Panel */}
             <button
               onClick={() => setRightPanelOpen(!rightPanelOpen)}
-              className="w-6 bg-white border-y border-l hover:bg-gray-50 flex items-center justify-center z-10"
+              className="w-6 bg-white border-y border-l hover:bg-gray-50 flex items-center justify-center z-10 md:z-auto"
               aria-label={rightPanelOpen ? 'Hide panel' : 'Show panel'}
             >
               {isRTL ? (rightPanelOpen ? '←' : '→') : (rightPanelOpen ? '→' : '←')}
             </button>
             
             {/* Right Panel - Style Manager */}
-            <div className={`transition-all duration-300 ${rightPanelOpen ? 'w-[450px]' : 'w-0'} overflow-hidden`}>
-              <div className="h-full bg-white border-l flex flex-col">
+            <div className={`
+              fixed md:relative 
+              inset-y-0 right-0 
+              z-40 md:z-auto
+              transition-all duration-300
+              ${rightPanelOpen ? 'w-[450px] translate-x-0' : 'w-[450px] translate-x-full md:w-0 md:translate-x-0'}
+              overflow-hidden
+            `}>
+              <div className="h-full bg-white dark:bg-gray-900 border-l flex flex-col shadow-lg md:shadow-none">
                 <div className="p-4 border-b">
                   <h3 className="font-semibold text-lg text-gray-900">{t('properties')}</h3>
                 </div>
