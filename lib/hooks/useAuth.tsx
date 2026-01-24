@@ -421,7 +421,7 @@ function useAuthProvider(): AuthContextValue {
           try {
             // Create timeout promise (5 seconds)
             const timeoutPromise = new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
             );
             
             // Create profile fetch promise
