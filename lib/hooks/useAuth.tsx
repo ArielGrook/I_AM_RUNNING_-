@@ -419,17 +419,37 @@ function useAuthProvider(): AuthContextValue {
           console.log('🔐 Auth event: SIGNED_IN - fetching profile from database');
           
           try {
-            // Fetch profile from database (single query per login session)
-            const { data: dbProfile, error: profileError } = await supabase
+            // Create timeout promise (5 seconds)
+            const timeoutPromise = new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+            );
+            
+            // Create profile fetch promise
+            const fetchPromise = supabase
               .from('profiles')
               .select('id, email, full_name, company, role, ai_requests_today, ai_requests_limit, subscription_expires')
               .eq('id', user.id)
               .single();
             
+            // Race: whichever completes first (fetch or timeout)
+            const { data: dbProfile, error: profileError } = await Promise.race([
+              fetchPromise,
+              timeoutPromise
+            ]);
+            
+            console.log('📊 Profile fetch result:', { 
+              hasData: !!dbProfile, 
+              hasError: !!profileError,
+              email: dbProfile?.email,
+              role: dbProfile?.role 
+            });
+            
             if (profileError) {
               console.error('❌ Failed to fetch profile from DB:', profileError);
               // Fallback to metadata
               const fallbackProfile = buildProfileFromUser(user);
+              console.log('🔄 Using fallback profile:', fallbackProfile);
+              
               setAuthState({
                 user,
                 profile: fallbackProfile,
@@ -441,7 +461,10 @@ function useAuthProvider(): AuthContextValue {
             }
             
             if (dbProfile) {
-              console.log('✅ Profile loaded from database:', { email: dbProfile.email, role: dbProfile.role });
+              console.log('✅ Profile loaded from database:', { 
+                email: dbProfile.email, 
+                role: dbProfile.role 
+              });
               
               // Merge database profile with required fields
               const profile: Profile = {
@@ -467,6 +490,7 @@ function useAuthProvider(): AuthContextValue {
             } else {
               console.warn('⚠️ No profile found in database, using metadata fallback');
               const fallbackProfile = buildProfileFromUser(user);
+              
               setAuthState({
                 user,
                 profile: fallbackProfile,
@@ -477,8 +501,12 @@ function useAuthProvider(): AuthContextValue {
             }
           } catch (err) {
             console.error('❌ Exception fetching profile:', err);
+            console.error('Stack trace:', err instanceof Error ? err.stack : 'No stack');
+            
             // Fallback to metadata
             const fallbackProfile = buildProfileFromUser(user);
+            console.log('🔄 Using fallback profile after exception:', fallbackProfile);
+            
             setAuthState({
               user,
               profile: fallbackProfile,
