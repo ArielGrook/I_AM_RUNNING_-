@@ -69,6 +69,10 @@ export async function POST(request: NextRequest) {
               activated_at: new Date().toISOString(),
             })
             .eq('order_id', orderId);
+          
+          // TODO: Update user role after successful payment
+          // import { updateUserRole } from '@/lib/supabase/updateUserRole';
+          // await updateUserRole(packageData.user_id, newRoleBasedOnPlan);
         }
       }
     }

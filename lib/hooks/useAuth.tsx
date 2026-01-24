@@ -416,105 +416,23 @@ function useAuthProvider(): AuthContextValue {
         if (event === 'SIGNED_IN' && session?.user) {
           const user = session.user;
           
-          console.log('🔐 Auth event: SIGNED_IN - fetching profile from database');
+          console.log('🔐 Auth event: SIGNED_IN');
+          console.log('👤 User data:', { email: user.email, metadata: user.user_metadata });
           
-          try {
-            // Create timeout promise (5 seconds)
-            const timeoutPromise = new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
-            );
-            
-            // Create profile fetch promise
-            const fetchPromise = supabase
-              .from('profiles')
-              .select('id, email, full_name, company, role, ai_requests_today, ai_requests_limit, subscription_expires')
-              .eq('id', user.id)
-              .single();
-            
-            // Race: whichever completes first (fetch or timeout)
-            const { data: dbProfile, error: profileError } = await Promise.race([
-              fetchPromise,
-              timeoutPromise
-            ]);
-            
-            console.log('📊 Profile fetch result:', { 
-              hasData: !!dbProfile, 
-              hasError: !!profileError,
-              email: dbProfile?.email,
-              role: dbProfile?.role 
-            });
-            
-            if (profileError) {
-              console.error('❌ Failed to fetch profile from DB:', profileError);
-              // Fallback to metadata
-              const fallbackProfile = buildProfileFromUser(user);
-              console.log('🔄 Using fallback profile:', fallbackProfile);
-              
-              setAuthState({
-                user,
-                profile: fallbackProfile,
-                loading: false,
-                isAuthenticated: true,
-                error: null,
-              });
-              return;
-            }
-            
-            if (dbProfile) {
-              console.log('✅ Profile loaded from database:', { 
-                email: dbProfile.email, 
-                role: dbProfile.role 
-              });
-              
-              // Merge database profile with required fields
-              const profile: Profile = {
-                id: dbProfile.id,
-                email: dbProfile.email,
-                full_name: dbProfile.full_name,
-                company: dbProfile.company,
-                role: dbProfile.role ?? 1,
-                ai_requests_today: dbProfile.ai_requests_today ?? 0,
-                ai_requests_limit: dbProfile.ai_requests_limit ?? 10,
-                subscription_expires: dbProfile.subscription_expires,
-                created_at: user.created_at,
-                updated_at: new Date().toISOString(),
-              };
-              
-              setAuthState({
-                user,
-                profile,
-                loading: false,
-                isAuthenticated: true,
-                error: null,
-              });
-            } else {
-              console.warn('⚠️ No profile found in database, using metadata fallback');
-              const fallbackProfile = buildProfileFromUser(user);
-              
-              setAuthState({
-                user,
-                profile: fallbackProfile,
-                loading: false,
-                isAuthenticated: true,
-                error: null,
-              });
-            }
-          } catch (err) {
-            console.error('❌ Exception fetching profile:', err);
-            console.error('Stack trace:', err instanceof Error ? err.stack : 'No stack');
-            
-            // Fallback to metadata
-            const fallbackProfile = buildProfileFromUser(user);
-            console.log('🔄 Using fallback profile after exception:', fallbackProfile);
-            
-            setAuthState({
-              user,
-              profile: fallbackProfile,
-              loading: false,
-              isAuthenticated: true,
-              error: null,
-            });
-          }
+          // Build profile from user metadata (fast, cached by Supabase)
+          const profile = buildProfileFromUser(user);
+          
+          console.log('📋 Profile built from metadata:', { email: profile.email, role: profile.role });
+          
+          setAuthState({
+            user,
+            profile,
+            loading: false,
+            isAuthenticated: true,
+            error: null,
+          });
+          
+          console.log('✅ Auth state updated');
         } else if (event === 'TOKEN_REFRESHED') {
           // For token refresh, use cached session (no need to hit server again)
           console.log('🔐 Auth event: TOKEN_REFRESHED');
