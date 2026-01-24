@@ -413,50 +413,78 @@ function useAuthProvider(): AuthContextValue {
         
         if (!mountedRef.current) return;
         
-        if (event === 'SIGNED_IN') {
-          console.log('🔐 Auth event: SIGNED_IN');
+        if (event === 'SIGNED_IN' && session?.user) {
+          const user = session.user;
           
-          let userToUse = session?.user;
+          console.log('🔐 Auth event: SIGNED_IN - fetching profile from database');
           
-          // Try to refresh metadata from server
           try {
-            console.log('🔄 Attempting metadata refresh...');
+            // Fetch profile from database (single query per login session)
+            const { data: dbProfile, error: profileError } = await supabase
+              .from('profiles')
+              .select('id, email, full_name, company, role, ai_requests_today, ai_requests_limit, subscription_expires')
+              .eq('id', user.id)
+              .single();
             
-            const { data, error } = await supabase.auth.getUser();
+            if (profileError) {
+              console.error('❌ Failed to fetch profile from DB:', profileError);
+              // Fallback to metadata
+              const fallbackProfile = buildProfileFromUser(user);
+              setAuthState({
+                user,
+                profile: fallbackProfile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
+              return;
+            }
             
-            if (error) {
-              console.warn('⚠️ Metadata refresh error (using cached):', error.message);
-            } else if (data?.user) {
-              console.log('✅ Metadata refreshed from server');
-              userToUse = data.user;
+            if (dbProfile) {
+              console.log('✅ Profile loaded from database:', { email: dbProfile.email, role: dbProfile.role });
+              
+              // Merge database profile with required fields
+              const profile: Profile = {
+                id: dbProfile.id,
+                email: dbProfile.email,
+                full_name: dbProfile.full_name,
+                company: dbProfile.company,
+                role: dbProfile.role ?? 1,
+                ai_requests_today: dbProfile.ai_requests_today ?? 0,
+                ai_requests_limit: dbProfile.ai_requests_limit ?? 10,
+                subscription_expires: dbProfile.subscription_expires,
+                created_at: user.created_at,
+                updated_at: new Date().toISOString(),
+              };
+              
+              setAuthState({
+                user,
+                profile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
             } else {
-              console.warn('⚠️ Metadata refresh returned null (using cached)');
+              console.warn('⚠️ No profile found in database, using metadata fallback');
+              const fallbackProfile = buildProfileFromUser(user);
+              setAuthState({
+                user,
+                profile: fallbackProfile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
             }
           } catch (err) {
-            console.error('❌ Metadata refresh threw exception (using cached):', err);
-          }
-          
-          if (userToUse) {
-            console.log('👤 Processing user:', userToUse.email);
-            const profile = buildProfileFromUser(userToUse);
-            
+            console.error('❌ Exception fetching profile:', err);
+            // Fallback to metadata
+            const fallbackProfile = buildProfileFromUser(user);
             setAuthState({
-              user: userToUse,
-              profile,
+              user,
+              profile: fallbackProfile,
               loading: false,
               isAuthenticated: true,
               error: null,
-            });
-            
-            console.log('✅ Auth state updated');
-          } else {
-            console.error('❌ No user data available');
-            setAuthState({
-              user: null,
-              profile: null,
-              loading: false,
-              isAuthenticated: false,
-              error: 'No user data',
             });
           }
         } else if (event === 'TOKEN_REFRESHED') {
