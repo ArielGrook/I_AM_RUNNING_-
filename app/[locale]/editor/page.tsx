@@ -27,7 +27,8 @@ import { useProjectStore } from '@/lib/store/project-store';
 import { componentCatalog, getAllCategories } from '@/lib/components/catalog';
 import { getComponentCatalog, type SupabaseComponent } from '@/lib/components/supabase-catalog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { ParseProgress, ZipParseError } from '@/lib/parser/types';
+import { ParseProgress, ParserError, ProjectV2, projectToEditorFormat } from '@/lib/parser/v2';
+import { parseZipProject } from '@/lib/parser/v2';
 import { SaveComponentDialog } from '@/components/editor/SaveComponentDialog';
 import { SearchInput } from '@/components/ui/search-input';
 import { StyleManager } from '@/components/editor/StyleManager';
@@ -44,7 +45,6 @@ import {
 } from '@/lib/utils/demo-mode';
 import { getUserPackage, hasFeatureAccess } from '@/lib/utils/user-package';
 import dynamic from 'next/dynamic';
-import JSZip from 'jszip';
 
 // Lazy load heavy components for better performance
 const ChatPanel = dynamic(() => import('@/components/editor/ChatPanel').then(mod => ({ default: mod.ChatPanel })), {
@@ -129,7 +129,7 @@ export default function EditorPage() {
   
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [importProgress, setImportProgress] = useState<import('@/lib/parser/types').ParseProgress | null>(null);
+  const [importProgress, setImportProgress] = useState<ParseProgress | null>(null);
   const [showImportProgress, setShowImportProgress] = useState(false);
   const [showSaveComponent, setShowSaveComponent] = useState(false);
   const [components, setComponents] = useState<SupabaseComponent[]>([]);
@@ -421,35 +421,35 @@ export default function EditorPage() {
     }
   }, [currentProject, updateProject]);
   
-  // Handle import with client-side ZIP parsing (browser-only, no server)
+  // Handle import with Parser V2 (complete ZIP parsing with progress)
   const handleImport = async () => {
-    console.log('[ZIP Import] 🚀 handleImport() called - CLIENT-SIDE MODE');
+    console.log('[ZIP Import V2] 🚀 handleImport() called');
     
     if (!canSave) {
-      console.warn('[ZIP Import] ❌ Demo mode limit reached');
+      console.warn('[ZIP Import V2] ❌ Demo mode limit reached');
       alert('Demo mode limit reached. Please upgrade to import projects.');
       return;
     }
     
     // Check if FileReader is available (browser-only API)
     if (typeof window === 'undefined' || typeof FileReader === 'undefined') {
-      console.error('[ZIP Import] ❌ FileReader not available - must run in browser');
+      console.error('[ZIP Import V2] ❌ FileReader not available - must run in browser');
       alert('Import requires browser environment. FileReader API not available.');
       return;
     }
     
-    console.log('[ZIP Import] ✅ Creating file input dialog...');
+    console.log('[ZIP Import V2] ✅ Creating file input dialog...');
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.zip';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) {
-        console.warn('[ZIP Import] ❌ No file selected');
+        console.warn('[ZIP Import V2] ❌ No file selected');
         return;
       }
       
-      console.log('[ZIP Import] ✅ File selected:', {
+      console.log('[ZIP Import V2] ✅ File selected:', {
         name: file.name,
         size: file.size,
         type: file.type
@@ -458,22 +458,22 @@ export default function EditorPage() {
       // Check file size (50MB max)
       const maxSize = 50 * 1024 * 1024;
       if (file.size > maxSize) {
-        console.error('[ZIP Import] ❌ File size exceeded:', file.size);
+        console.error('[ZIP Import V2] ❌ File size exceeded:', file.size);
         alert(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (${(maxSize / 1024 / 1024).toFixed(2)}MB)`);
         return;
       }
       
-      console.log('[ZIP Import] 📊 Showing progress dialog...');
+      console.log('[ZIP Import V2] 📊 Showing progress dialog...');
       setShowImportProgress(true);
       setImportProgress({
-        stage: 'loading',
+        stage: 'reading',
         progress: 0,
-        message: 'Loading ZIP file...',
+        message: 'Reading ZIP file...',
       });
       
       try {
         // Clear canvas before import
-        console.log('[ZIP Import] 🧹 Clearing canvas...');
+        console.log('[ZIP Import V2] 🧹 Clearing canvas...');
         if (grapeEditorRef.current) {
           grapeEditorRef.current.clear();
         }
@@ -484,180 +484,84 @@ export default function EditorPage() {
           throw new Error('Editor not ready. Please wait for editor to initialize.');
         }
         
-        setImportProgress({
-          stage: 'parsing',
-          progress: 10,
-          message: 'Parsing ZIP file...',
+        // Use Parser V2 to parse the ZIP file
+        console.log('[ZIP Import V2] 📦 Starting Parser V2...');
+        
+        const project = await parseZipProject(file, {
+          onProgress: (progress: ParseProgress) => {
+            console.log('[ZIP Import V2] Progress:', progress.stage, progress.progress + '%');
+            setImportProgress(progress);
+          },
+          onWarning: (warning) => {
+            console.warn('[ZIP Import V2] Warning:', warning.message);
+          },
+          maxFileSize: maxSize,
         });
         
-        // CLIENT-SIDE: Load ZIP with JSZip (browser-only)
-        console.log('[ZIP Import] 📦 Loading ZIP with JSZip (client-side)...');
-        const zip = new JSZip();
-        const zipContent = await zip.loadAsync(file);
-        
-        console.log('[ZIP Import] ✅ ZIP loaded, files count:', Object.keys(zipContent.files).length);
-        
-        setImportProgress({
-          stage: 'parsing',
-          progress: 30,
-          message: 'Extracting HTML and CSS...',
+        console.log('[ZIP Import V2] ✅ Parser V2 complete:', {
+          pages: project.pages.length,
+          assets: project.assets.length,
+          globalCssLength: project.globalStyles.length,
         });
         
-        // Extract HTML files
-        const htmlFiles: Array<{ filename: string; content: string; pageName: string }> = [];
-        let globalCss = '';
-        const assets: Array<{ original: string; data: string }> = [];
+        // Convert project to editor format
+        const { html, css, assets } = projectToEditorFormat(project);
         
-        // Process all files in ZIP
-        for (const [filename, zipFile] of Object.entries(zipContent.files)) {
-          if (zipFile.dir) continue;
-          
-          if (filename.endsWith('.html') || filename.endsWith('.htm')) {
-            console.log('[ZIP Import] 📄 Found HTML file:', filename);
-            const content = await zipFile.async('string');
-            const pageName = filename.replace(/\.html?$/, '').replace(/^.*\//, '');
-            htmlFiles.push({ filename, content, pageName });
-            
-          } else if (filename.endsWith('.css')) {
-            console.log('[ZIP Import] 🎨 Found CSS file:', filename);
-            const content = await zipFile.async('string');
-            globalCss += `\n/* From ${filename} */\n${content}\n`;
-            
-          } else if (filename.match(/\.(jpg|jpeg|png|gif|svg|webp)$/i)) {
-            console.log('[ZIP Import] 🖼️ Found image file:', filename);
-            // Process image with FileReader in browser
-            const blob = await zipFile.async('blob');
-            const base64 = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => {
-                const result = reader.result as string;
-                resolve(result);
-              };
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
-            
-            assets.push({
-              original: filename,
-              data: base64
-            });
-          }
-        }
-        
-        if (htmlFiles.length === 0) {
-          throw new Error('No HTML files found in ZIP archive');
-        }
-        
-        console.log('[ZIP Import] ✅ Extracted:', {
-          htmlFiles: htmlFiles.length,
-          cssLength: globalCss.length,
-          images: assets.length
+        console.log('[ZIP Import V2] 📄 Editor format:', {
+          htmlLength: html.length,
+          cssLength: css.length,
+          assetsCount: assets.length,
         });
         
-        setImportProgress({
-          stage: 'processing',
-          progress: 60,
-          message: 'Processing HTML content...',
-        });
-        
-        // Sort HTML files (index.html first)
-        htmlFiles.sort((a, b) => a.filename.includes('index') ? -1 : 1);
-        
-        // Process first HTML file (main page)
-        const mainHtmlFile = htmlFiles[0];
-        console.log('[ZIP Import] 📄 Processing main HTML:', mainHtmlFile.pageName);
-        
-        // Extract body content
-        let pageHtml = '';
-        const bodyMatch = mainHtmlFile.content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-        if (bodyMatch) {
-          pageHtml = bodyMatch[1]
-            // Remove script tags (we'll handle JS separately if needed)
-            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-        } else {
-          // No body tag, use entire content
-          pageHtml = mainHtmlFile.content
-            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-            .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '');
-        }
-        
-        // Replace image paths with base64 data URLs
-        console.log('[ZIP Import] 🔄 Replacing image paths with base64...');
-        assets.forEach(asset => {
-          const fileName = asset.original.split('/').pop() || asset.original;
-          const patterns = [
-            new RegExp(`src=["']([^"']*${fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})["']`, 'gi'),
-            new RegExp(`href=["']([^"']*${fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})["']`, 'gi'),
-            new RegExp(`url\\(["']?([^"')]*${fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})["']?\\)`, 'gi')
-          ];
-          
-          patterns.forEach(pattern => {
-            pageHtml = pageHtml.replace(pattern, (match) => {
-              if (match.includes('url(')) {
-                return `url("${asset.data}")`;
-              } else if (match.includes('src=')) {
-                return `src="${asset.data}"`;
-              } else {
-                return `href="${asset.data}"`;
-              }
-            });
-            globalCss = globalCss.replace(pattern, `url("${asset.data}")`);
-          });
-        });
-        
-        console.log('[ZIP Import] ✅ HTML processed, length:', pageHtml.length);
-        
-        setImportProgress({
-          stage: 'loading',
-          progress: 90,
-          message: 'Loading into editor...',
-        });
-        
-        // DIRECT EDITOR SET: No project store, no loadProject()
-        console.log('[ZIP Import] 🎯 Setting components directly in editor...');
-        console.log('[ZIP Import] HTML preview (first 500 chars):', pageHtml.substring(0, 500));
+        // Set content directly in editor
+        console.log('[ZIP Import V2] 🎯 Setting components in editor...');
         
         // Wait a bit for canvas to be ready
         await new Promise(resolve => setTimeout(resolve, 100));
         
         // Set HTML directly in editor
-        grapeEditorRef.current?.setComponents(pageHtml);
+        grapeEditorRef.current?.setComponents(html);
         
         // Set CSS directly in editor
-        if (globalCss.trim()) {
-          grapeEditorRef.current?.setStyle(globalCss);
+        if (css.trim()) {
+          grapeEditorRef.current?.setStyle(css);
         }
         
-        console.log('[ZIP Import] ✅ Components and styles set in editor');
+        console.log('[ZIP Import V2] ✅ Components and styles set in editor');
         
-          setImportProgress({
+        // Update progress to complete
+        setImportProgress({
           stage: 'complete',
           progress: 100,
-          message: `✅ Imported ${htmlFiles.length} page(s), ${assets.length} image(s)!`,
+          message: `✅ Imported ${project.pages.length} page(s), ${project.assets.length} asset(s)!`,
         });
         
         // Close progress dialog after a delay
-          setTimeout(() => {
-            setShowImportProgress(false);
-            setImportProgress(null);
-          console.log('[ZIP Import] ✅ Import workflow complete!');
-          }, 2000);
-        
-      } catch (error) {
-        console.error('[ZIP Import] ❌ Import failed:', error);
-        console.error('[ZIP Import] Error details:', {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
-        setImportProgress({
-          stage: 'error',
-          progress: 0,
-          message: error instanceof Error ? error.message : 'Import failed',
-        });
         setTimeout(() => {
           setShowImportProgress(false);
           setImportProgress(null);
-        }, 3000);
+          console.log('[ZIP Import V2] ✅ Import workflow complete!');
+        }, 2000);
+        
+      } catch (error) {
+        console.error('[ZIP Import V2] ❌ Import failed:', error);
+        console.error('[ZIP Import V2] Error details:', {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          code: error instanceof ParserError ? error.code : undefined,
+        });
+        
+        // Show error in progress dialog
+        setImportProgress({
+          stage: 'complete', // Use 'complete' stage to show error state
+          progress: 0,
+          message: `❌ ${error instanceof Error ? error.message : 'Import failed'}`,
+        });
+        
+        setTimeout(() => {
+          setShowImportProgress(false);
+          setImportProgress(null);
+        }, 4000);
       }
     };
     input.click();
