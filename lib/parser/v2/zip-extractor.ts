@@ -88,14 +88,28 @@ export class ZipExtractor {
     const zipEntries = Object.entries(this.zip.files);
     const totalEntries = zipEntries.length;
 
+    // DEBUG: Log ALL files in ZIP before any filtering
+    console.log('[ZipExtractor] 🔍 === ALL FILES IN ZIP (before filtering) ===');
+    console.log(`[ZipExtractor] Total entries in ZIP: ${totalEntries}`);
+    
+    for (const [path, entry] of zipEntries) {
+      const ext = path.split('.').pop()?.toLowerCase() || '(none)';
+      console.log(`[ZipExtractor] 📄 ${entry.dir ? '📁 DIR' : '📄 FILE'}: ${path} [.${ext}]`);
+    }
+    console.log('[ZipExtractor] 🔍 === END OF ZIP FILE LIST ===');
+
     for (let i = 0; i < zipEntries.length; i++) {
       const [path, zipEntry] = zipEntries[i];
 
       // Skip directories
-      if (zipEntry.dir) continue;
+      if (zipEntry.dir) {
+        console.log(`[ZipExtractor] ⏭️ Skipping directory: ${path}`);
+        continue;
+      }
 
       // Check if should be ignored
       if (this.shouldIgnore(path)) {
+        console.log(`[ZipExtractor] 🚫 Ignored: ${path}`);
         continue;
       }
 
@@ -133,17 +147,27 @@ export class ZipExtractor {
       entries.set(path, entry);
       totalFiles++;
 
+      // DEBUG: Log classification
+      console.log(`[ZipExtractor] ✅ Processing: ${path}`);
+      console.log(`[ZipExtractor]    Name: ${name}, Extension: "${extension}"`);
+
       if (extension === 'html' || extension === 'htm') {
+        console.log(`[ZipExtractor]    → Classified as HTML`);
         htmlFiles.push(entry);
       } else if (extension === 'css') {
+        console.log(`[ZipExtractor]    → Classified as CSS`);
         cssFiles.push(entry);
       } else if (extension === 'js') {
+        console.log(`[ZipExtractor]    → Classified as JS`);
         jsFiles.push(entry);
       } else if (IMAGE_EXTENSIONS.includes(extension)) {
+        console.log(`[ZipExtractor]    → Classified as IMAGE (ext: ${extension})`);
         imageFiles.push(entry);
       } else if (FONT_EXTENSIONS.includes(extension)) {
+        console.log(`[ZipExtractor]    → Classified as FONT (ext: ${extension})`);
         fontFiles.push(entry);
       } else {
+        console.log(`[ZipExtractor]    → Classified as OTHER (ext: ${extension})`);
         otherFiles.push(entry);
       }
 
@@ -182,15 +206,29 @@ export class ZipExtractor {
     };
 
     const elapsed = Date.now() - startTime;
-    console.log(`[ZipExtractor] Indexed ${totalFiles} files in ${elapsed}ms`);
-    console.log(`[ZipExtractor] Categories:`, {
-      html: htmlFiles.length,
-      css: cssFiles.length,
-      js: jsFiles.length,
-      images: imageFiles.length,
-      fonts: fontFiles.length,
-      other: otherFiles.length,
-    });
+    
+    // DEBUG: Final summary
+    console.log('[ZipExtractor] ========================================');
+    console.log(`[ZipExtractor] ✅ INDEXING COMPLETE in ${elapsed}ms`);
+    console.log(`[ZipExtractor] Total files indexed: ${totalFiles}`);
+    console.log('[ZipExtractor] Categories breakdown:');
+    console.log(`[ZipExtractor]   📄 HTML files: ${htmlFiles.length}`);
+    console.log(`[ZipExtractor]   🎨 CSS files: ${cssFiles.length}`);
+    console.log(`[ZipExtractor]   📜 JS files: ${jsFiles.length}`);
+    console.log(`[ZipExtractor]   🖼️ Image files: ${imageFiles.length}`);
+    console.log(`[ZipExtractor]   🔤 Font files: ${fontFiles.length}`);
+    console.log(`[ZipExtractor]   📦 Other files: ${otherFiles.length}`);
+    
+    if (imageFiles.length > 0) {
+      console.log('[ZipExtractor] Image files found:');
+      imageFiles.forEach(f => console.log(`[ZipExtractor]   - ${f.path}`));
+    }
+    
+    if (fontFiles.length > 0) {
+      console.log('[ZipExtractor] Font files found:');
+      fontFiles.forEach(f => console.log(`[ZipExtractor]   - ${f.path}`));
+    }
+    console.log('[ZipExtractor] ========================================');
 
     onProgress?.({
       stage: 'reading',
@@ -233,9 +271,15 @@ export class ZipExtractor {
    * Check if file path should be ignored
    */
   private shouldIgnore(path: string): boolean {
-    // Check ignored folders
+    // Normalize path separators
+    const normalizedPath = path.replace(/\\/g, '/');
+    const pathParts = normalizedPath.split('/');
+    
+    // Check ignored folders - look at each path segment
     for (const folder of IGNORE_FOLDERS) {
-      if (path.includes(`/${folder}/`) || path.startsWith(`${folder}/`)) {
+      // Check if any path segment exactly matches the ignored folder
+      if (pathParts.some(part => part === folder)) {
+        console.log(`[ZipExtractor] 🚫 Ignoring due to folder "${folder}": ${path}`);
         return true;
       }
     }
@@ -243,12 +287,14 @@ export class ZipExtractor {
     // Check ignored extensions
     const ext = '.' + this.getExtension(path);
     if (IGNORE_EXTENSIONS.includes(ext as typeof IGNORE_EXTENSIONS[number])) {
+      console.log(`[ZipExtractor] 🚫 Ignoring due to extension "${ext}": ${path}`);
       return true;
     }
 
-    // Check for hidden files
+    // Check for hidden files (starting with .)
     const name = this.getFileName(path);
-    if (name.startsWith('.')) {
+    if (name.startsWith('.') && name !== '.htaccess') {
+      console.log(`[ZipExtractor] 🚫 Ignoring hidden file: ${path}`);
       return true;
     }
 
