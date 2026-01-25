@@ -196,6 +196,14 @@ export async function parseZipProject(
     allWarnings.push(...assetConverter.getWarnings());
     tracker.completeStage('Assets converted');
 
+    // Replace asset paths inside global CSS after conversion
+    if (cssClassification.global && assetResult.replacementMap.size > 0) {
+      cssClassification.global = cssProcessor.replaceAssetPaths(
+        cssClassification.global,
+        assetResult.replacementMap
+      );
+    }
+
     // ========================================================================
     // STEP 5: Process HTML and Build Pages
     // ========================================================================

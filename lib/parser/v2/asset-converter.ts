@@ -145,7 +145,10 @@ export class AssetConverter {
         const result = results[j];
         if (result.status === 'fulfilled' && result.value) {
           this.convertedAssets.push(result.value.asset);
-          this.replacementMap.set(result.value.originalPath, result.value.dataUrl);
+          const normalizedKey = this.normalizeAssetPath(result.value.originalPath);
+          if (normalizedKey) {
+            this.replacementMap.set(normalizedKey, result.value.dataUrl);
+          }
           totalSize += result.value.asset.size;
           convertedCount++;
         } else if (result.status === 'rejected') {
@@ -181,7 +184,10 @@ export class AssetConverter {
         const result = results[j];
         if (result.status === 'fulfilled' && result.value) {
           this.convertedAssets.push(result.value.asset);
-          this.replacementMap.set(result.value.originalPath, result.value.dataUrl);
+          const normalizedKey = this.normalizeAssetPath(result.value.originalPath);
+          if (normalizedKey) {
+            this.replacementMap.set(normalizedKey, result.value.dataUrl);
+          }
           totalSize += result.value.asset.size;
           convertedCount++;
         } else if (result.status === 'rejected') {
@@ -202,6 +208,7 @@ export class AssetConverter {
       skipped: skippedCount,
       totalSize: `${(totalSize / 1024 / 1024).toFixed(2)}MB`,
     });
+    console.log('[AssetConverter] Replacement map keys:', Array.from(this.replacementMap.keys()));
 
     return {
       assets: this.convertedAssets,
@@ -318,6 +325,37 @@ export class AssetConverter {
       return absolutePath.slice(rootPath.length + 1);
     }
     return absolutePath;
+  }
+
+  /**
+   * Normalize asset paths for consistent lookup
+   */
+  private normalizeAssetPath(path: string): string | null {
+    if (!path) return null;
+
+    let normalized = path.replace(/\\/g, '/').trim();
+
+    // Skip external or data URLs
+    if (
+      normalized.startsWith('data:') ||
+      normalized.startsWith('http://') ||
+      normalized.startsWith('https://') ||
+      normalized.startsWith('//')
+    ) {
+      return null;
+    }
+
+    // Remove query/hash
+    normalized = normalized.split('?')[0]?.split('#')[0] || normalized;
+
+    // Remove leading ./ and ../
+    normalized = normalized.replace(/^(\.\.\/)+/g, '');
+    normalized = normalized.replace(/^\.\//, '');
+
+    // Remove leading slash
+    normalized = normalized.replace(/^\/+/, '');
+
+    return normalized;
   }
 
   /**

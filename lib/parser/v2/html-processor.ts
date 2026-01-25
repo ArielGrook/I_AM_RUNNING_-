@@ -446,44 +446,75 @@ export class HTMLProcessor {
   ): string {
     let result = html;
 
-    for (const [originalPath, dataUrl] of replacements) {
-      // Build patterns for various path formats
-      const patterns = this.buildPathPatterns(originalPath);
+    console.log('[HTMLProcessor] === PATH REPLACEMENT START ===');
+    console.log('[HTMLProcessor] Asset map keys:', Array.from(replacements.keys()));
+    console.log('[HTMLProcessor] HTML length before replacement:', html.length);
 
-      for (const pattern of patterns) {
-        const escaped = this.escapeRegex(pattern);
-
-        // Replace in src attributes
-        result = result.replace(
-          new RegExp(`(src\\s*=\\s*["'])${escaped}(["'])`, 'gi'),
-          `$1${dataUrl}$2`
-        );
-
-        // Replace in href (for fonts, etc.)
-        result = result.replace(
-          new RegExp(`(href\\s*=\\s*["'])${escaped}(["'])`, 'gi'),
-          `$1${dataUrl}$2`
-        );
-
-        // Replace in style background-image
-        result = result.replace(
-          new RegExp(`(url\\s*\\(\\s*["']?)${escaped}(["']?\\s*\\))`, 'gi'),
-          `$1${dataUrl}$2`
-        );
-
-        // Replace in poster attribute
-        result = result.replace(
-          new RegExp(`(poster\\s*=\\s*["'])${escaped}(["'])`, 'gi'),
-          `$1${dataUrl}$2`
-        );
-
-        // Replace in srcset (images)
-        result = result.replace(
-          new RegExp(`${escaped}(\\s+\\d+[wx])`, 'gi'),
-          `${dataUrl}$1`
-        );
+    const normalizedMap = new Map<string, string>();
+    for (const [key, value] of replacements) {
+      const normalizedKey = this.normalizeAssetPath(key);
+      if (normalizedKey) {
+        normalizedMap.set(normalizedKey, value);
       }
     }
+
+    const resolveAsset = (value: string, context: string): string | null => {
+      console.log(`[HTMLProcessor] Found ${context}:`, value);
+      const normalized = this.normalizeAssetPath(value);
+      if (!normalized) {
+        console.log('[HTMLProcessor] ⚠️ Skipping non-local asset:', value);
+        return null;
+      }
+      const dataUrl = normalizedMap.get(normalized);
+      if (dataUrl) {
+        console.log('[HTMLProcessor] ✅ Replacing with base64:', normalized);
+        return dataUrl;
+      }
+      console.log('[HTMLProcessor] ⚠️ No base64 found for:', normalized);
+      return null;
+    };
+
+    // Replace src, href, poster attributes
+    result = result.replace(
+      /(src|href|poster)\s*=\s*["']([^"']+)["']/gi,
+      (match, attr, value) => {
+        const dataUrl = resolveAsset(value, `${attr} attribute`);
+        if (dataUrl) {
+          return `${attr}="${dataUrl}"`;
+        }
+        return match;
+      }
+    );
+
+    // Replace srcset (multiple URLs)
+    result = result.replace(
+      /srcset\s*=\s*["']([^"']+)["']/gi,
+      (match, value) => {
+        const parts = value.split(',').map(part => part.trim()).filter(Boolean);
+        const replaced = parts.map(part => {
+          const [url, ...rest] = part.split(/\s+/);
+          const descriptor = rest.join(' ');
+          const dataUrl = resolveAsset(url, 'srcset');
+          if (dataUrl) {
+            return descriptor ? `${dataUrl} ${descriptor}` : dataUrl;
+          }
+          return part;
+        });
+        return `srcset="${replaced.join(', ')}"`;
+      }
+    );
+
+    // Replace url() in inline styles
+    result = result.replace(/url\(['"]?([^'"()]+)['"]?\)/gi, (match, path) => {
+      const dataUrl = resolveAsset(path, 'url()');
+      if (dataUrl) {
+        return `url(${dataUrl})`;
+      }
+      return match;
+    });
+
+    console.log('[HTMLProcessor] HTML length after replacement:', result.length);
+    console.log('[HTMLProcessor] === PATH REPLACEMENT END ===');
 
     return result;
   }
@@ -557,6 +588,40 @@ export class HTMLProcessor {
    */
   private escapeRegex(str: string): string {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * Normalize asset paths for consistent lookup
+   */
+  private normalizeAssetPath(path: string): string | null {
+    if (!path) return null;
+
+    let normalized = path.replace(/\\/g, '/').trim();
+
+    // Skip external or data URLs
+    if (
+      normalized.startsWith('data:') ||
+      normalized.startsWith('http://') ||
+      normalized.startsWith('https://') ||
+      normalized.startsWith('//') ||
+      normalized.startsWith('mailto:') ||
+      normalized.startsWith('tel:') ||
+      normalized.startsWith('#')
+    ) {
+      return null;
+    }
+
+    // Remove query/hash
+    normalized = normalized.split('?')[0]?.split('#')[0] || normalized;
+
+    // Remove leading ./ and ../
+    normalized = normalized.replace(/^(\.\.\/)+/g, '');
+    normalized = normalized.replace(/^\.\//, '');
+
+    // Remove leading slash
+    normalized = normalized.replace(/^\/+/, '');
+
+    return normalized;
   }
 
   /**

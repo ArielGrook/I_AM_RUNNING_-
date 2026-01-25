@@ -454,6 +454,55 @@ export class CSSProcessor {
   }
 
   /**
+   * Replace asset paths in CSS with base64 data URLs
+   */
+  replaceAssetPaths(
+    css: string,
+    replacements: Map<string, string>
+  ): string {
+    if (!css || replacements.size === 0) return css;
+
+    console.log('[CSSProcessor] === PATH REPLACEMENT START ===');
+    console.log('[CSSProcessor] Asset map keys:', Array.from(replacements.keys()));
+    console.log('[CSSProcessor] CSS length before replacement:', css.length);
+
+    const normalizedMap = new Map<string, string>();
+    for (const [key, value] of replacements) {
+      const normalizedKey = normalizeAssetPath(key);
+      if (normalizedKey) {
+        normalizedMap.set(normalizedKey, value);
+      }
+    }
+
+    let replacedCount = 0;
+    const urlPattern = /url\(['"]?([^'"()]+)['"]?\)/gi;
+    const updatedCss = css.replace(urlPattern, (match, path) => {
+      console.log('[CSSProcessor] Found url():', path);
+      const normalizedPath = normalizeAssetPath(path);
+      if (!normalizedPath) {
+        console.log('[CSSProcessor] ⚠️ Skipping non-local url():', path);
+        return match;
+      }
+
+      const dataUrl = normalizedMap.get(normalizedPath);
+      if (dataUrl) {
+        replacedCount += 1;
+        console.log('[CSSProcessor] ✅ Replacing with base64:', normalizedPath);
+        return `url(${dataUrl})`;
+      }
+
+      console.log('[CSSProcessor] ⚠️ No base64 found for:', normalizedPath);
+      return match;
+    });
+
+    console.log('[CSSProcessor] CSS length after replacement:', updatedCss.length);
+    console.log('[CSSProcessor] Replacements applied:', replacedCount);
+    console.log('[CSSProcessor] === PATH REPLACEMENT END ===');
+
+    return updatedCss;
+  }
+
+  /**
    * Apply inline styles to an HTML element string
    */
   applyInlineStyles(
@@ -663,6 +712,37 @@ export function extractCSSVariables(css: string): Map<string, string> {
   }
 
   return variables;
+}
+
+/**
+ * Normalize asset paths for consistent lookup
+ */
+export function normalizeAssetPath(path: string): string | null {
+  if (!path) return null;
+
+  let normalized = path.replace(/\\/g, '/').trim();
+
+  // Skip external or data URLs
+  if (
+    normalized.startsWith('data:') ||
+    normalized.startsWith('http://') ||
+    normalized.startsWith('https://') ||
+    normalized.startsWith('//')
+  ) {
+    return null;
+  }
+
+  // Remove query/hash
+  normalized = normalized.split('?')[0]?.split('#')[0] || normalized;
+
+  // Remove leading ./ and ../
+  normalized = normalized.replace(/^(\.\.\/)+/g, '');
+  normalized = normalized.replace(/^\.\//, '');
+
+  // Remove leading slash
+  normalized = normalized.replace(/^\/+/, '');
+
+  return normalized;
 }
 
 /**
