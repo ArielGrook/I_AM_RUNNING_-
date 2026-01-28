@@ -75,6 +75,7 @@ export async function parseTemplate(
   const cssFiles: Array<{ path: string; content: string }> = [];
   const imageMap = new Map<string, string>(); // path -> base64 data URL
   const jsMap = new Map<string, string>(); // path -> base64 data URL for JS files
+  const fontMap = new Map<string, string>(); // path -> base64 data URL for font files
   
   // First pass: collect HTML and CSS files, convert images
   log('[SimpleParser V3] 📦 Processing ZIP contents...');
@@ -134,27 +135,65 @@ export async function parseTemplate(
         logError(`[SimpleParser V3] ⚠️ Failed to convert JS ${fileName}:`, error);
       }
     }
+    
+    // Convert font files to base64
+    else if (['woff', 'woff2', 'ttf', 'eot', 'otf'].includes(extension) && !path.includes('__MACOSX')) {
+      try {
+        const base64Content = await entry.async('base64');
+        
+        // Determine MIME type
+        const mimeTypes: Record<string, string> = {
+          'woff': 'font/woff',
+          'woff2': 'font/woff2',
+          'ttf': 'font/ttf',
+          'otf': 'font/otf',
+          'eot': 'application/vnd.ms-fontobject',
+        };
+        const mimeType = mimeTypes[extension.toLowerCase()] || 'font/woff';
+        const dataUrl = `data:${mimeType};base64,${base64Content}`;
+        
+        // Add multiple path variations to fontMap for better matching
+        fontMap.set(path, dataUrl); // Full path
+        fontMap.set(fileName, dataUrl); // Filename only
+        const normalizedPath = path.replace(/^\.\//, '').replace(/^\.\.\//, '');
+        fontMap.set(normalizedPath, dataUrl); // Normalized path
+        fontMap.set(path.replace(/\\/g, '/'), dataUrl); // Windows path normalized
+        fontMap.set(path.replace(/\//g, '\\'), dataUrl); // Reverse Windows path
+        
+        log(`[SimpleParser V3] 🔤 Converted font: ${fileName}`);
+      } catch (error) {
+        logError(`[SimpleParser V3] ⚠️ Failed to convert font ${fileName}:`, error);
+      }
+    }
   }
   
   if (htmlFiles.length === 0) {
     throw new Error('No HTML files found in ZIP template');
   }
   
-  log(`[SimpleParser V3] 📊 Found ${htmlFiles.length} HTML files, ${cssFiles.length} CSS files, ${imageMap.size} images, ${jsMap.size} JS files`);
+  log(`[SimpleParser V3] 📊 Found ${htmlFiles.length} HTML files, ${cssFiles.length} CSS files, ${imageMap.size} images, ${jsMap.size} JS files, ${fontMap.size} fonts`);
   
-  // Debug: Log jsMap and imageMap contents
+  // Debug: Log jsMap, imageMap, and fontMap contents
   if (debug) {
     log(`[SimpleParser V3] 📊 jsMap contents:`, Array.from(jsMap.keys()));
     log(`[SimpleParser V3] 📊 imageMap contents (first 10):`, Array.from(imageMap.keys()).slice(0, 10));
+    log(`[SimpleParser V3] 📊 fontMap contents:`, Array.from(fontMap.keys()));
   }
   
   // Merge all CSS files into one shared CSS
+  // First, inline all @import directives
   let sharedCss = '';
   for (const cssFile of cssFiles) {
     let cssContent = cssFile.content;
     
+    // Inline @import directives
+    cssContent = await inlineCssImports(cssContent, cssFile.path, zipContents, log, logError);
+    
     // Replace image paths in CSS with base64
     cssContent = replaceCssAssetPaths(cssContent, imageMap);
+    
+    // Replace font paths in @font-face with base64
+    cssContent = replaceFontPaths(cssContent, fontMap, log);
     
     sharedCss += `\n/* ${cssFile.path} */\n${cssContent}\n`;
   }
@@ -176,29 +215,47 @@ export async function parseTemplate(
       const scriptTags = doc.querySelectorAll('script[src]');
       let scriptReplacedCount = 0;
       
+      // Track original paths to prevent duplication
+      const processedScriptPaths = new Set<string>();
+      
       for (const scriptTag of scriptTags) {
-        const src = scriptTag.getAttribute('src');
-        if (!src) continue;
+        const originalSrc = scriptTag.getAttribute('src');
+        if (!originalSrc) continue;
+        
+        // Normalize original path for duplicate checking
+        const normalizedOriginalSrc = normalizePath(originalSrc);
+        const originalFileName = originalSrc.split('/').pop() || originalSrc;
+        
+        // Check if this script was already processed (to prevent duplicates)
+        const isDuplicate = processedScriptPaths.has(normalizedOriginalSrc) || 
+                           processedScriptPaths.has(originalFileName);
+        
+        if (isDuplicate) {
+          log(`   ⚠️ Skipping duplicate script: ${originalSrc}`);
+          scriptTag.remove(); // Remove duplicate
+          continue;
+        }
+        
+        // Mark as processed
+        processedScriptPaths.add(normalizedOriginalSrc);
+        processedScriptPaths.add(originalFileName);
         
         // Normalize path (remove ./ and ../)
-        const normalizedSrc = src.replace(/^\.\//, '').replace(/^\.\.\//, '');
-        const fileName = src.split('/').pop() || src;
-        const normalizedFileName = fileName.replace(/^\.\//, '');
+        const normalizedSrc = normalizePath(originalSrc);
+        const fileName = originalSrc.split('/').pop() || originalSrc;
         
         // Check jsMap with multiple path variations (try all possible matches)
         let dataUrl = jsMap.get(normalizedSrc) || 
                      jsMap.get(fileName) || 
-                     jsMap.get(normalizedFileName) ||
-                     jsMap.get(src);
+                     jsMap.get(originalSrc);
         
         // Also try path variations with different separators
         if (!dataUrl) {
           const pathVariations = [
             normalizedSrc,
-            src.replace(/\\/g, '/'), // Windows path
-            src.replace(/\//g, '\\'), // Reverse Windows path
+            originalSrc.replace(/\\/g, '/'), // Windows path
+            originalSrc.replace(/\//g, '\\'), // Reverse Windows path
             fileName,
-            normalizedFileName
           ];
           
           for (const variation of pathVariations) {
@@ -210,11 +267,11 @@ export async function parseTemplate(
         if (dataUrl) {
           // Replace src attribute with base64 data URL
           scriptTag.setAttribute('src', dataUrl);
-          log(`   🔄 Replaced JS: ${src} → base64 (matched: ${normalizedSrc || fileName})`);
+          log(`   🔄 Replaced JS: ${originalSrc} → base64`);
           scriptReplacedCount++;
         } else {
           // Try CDN conversion for known libraries
-          const srcLower = src.toLowerCase();
+          const srcLower = originalSrc.toLowerCase();
           for (const [lib, cdn] of Object.entries(SCRIPT_CDN_MAP)) {
             if (srcLower.includes(lib)) {
               scriptTag.setAttribute('src', cdn);
@@ -226,14 +283,18 @@ export async function parseTemplate(
         }
       }
       
-      // Extract scripts from head and move them to body (after replacement)
+      // Extract body content AFTER script replacement
+      // КРИТИЧЕСКИ ВАЖНО: Скрипты остаются там, где они были (head или body)
+      // Дубликаты уже удалены выше
+      const body = doc.querySelector('body');
+      let bodyHtml = body ? body.innerHTML : htmlContent;
+      
+      // Также извлекаем скрипты из head и добавляем их в bodyHtml
+      // (они уже обработаны и дубликаты удалены)
       const head = doc.querySelector('head');
       const headScripts = head ? head.querySelectorAll('script[src]') : [];
-      const body = doc.querySelector('body');
-      
-      // Move head scripts to body (they're already replaced with base64/CDN)
-      if (body && headScripts.length > 0) {
-        // Create script elements in body (node-html-parser doesn't have clone())
+      if (headScripts.length > 0) {
+        const headScriptsHtml: string[] = [];
         headScripts.forEach(script => {
           const src = script.getAttribute('src');
           if (!src) return;
@@ -242,26 +303,19 @@ export async function parseTemplate(
           const attrs = (script as any).attributes || {};
           const attrsArray: string[] = [];
           Object.entries(attrs).forEach(([name, value]) => {
-            if (name !== 'src') {
-              attrsArray.push(`${name}="${value}"`);
-            }
+            attrsArray.push(`${name}="${value}"`);
           });
           const attrsStr = attrsArray.length > 0 ? ' ' + attrsArray.join(' ') : '';
           
-          // Create new script tag in body
-          const newScript = parse(`<script src="${src}"${attrsStr}></script>`).querySelector('script');
-          if (newScript && body) {
-            body.appendChild(newScript);
-          }
-          
-          // Remove from head
-          script.remove();
+          headScriptsHtml.push(`<script${attrsStr}></script>`);
         });
-        log(`   📦 Moved ${headScripts.length} script(s) from head to body`);
+        
+        // Добавляем скрипты из head в конец bodyHtml
+        if (headScriptsHtml.length > 0) {
+          bodyHtml += '\n' + headScriptsHtml.join('\n');
+          log(`   📦 Added ${headScriptsHtml.length} script(s) from head to body`);
+        }
       }
-      
-      // Extract body content AFTER script replacement and movement
-      let bodyHtml = body ? body.innerHTML : htmlContent;
       
       // Replace image paths with base64
       bodyHtml = replaceHtmlAssetPaths(bodyHtml, imageMap);
@@ -280,21 +334,31 @@ export async function parseTemplate(
       for (const styleTag of styleTags) {
         let cssContent = styleTag.textContent || '';
         
+        // Inline @import directives
+        cssContent = await inlineCssImports(cssContent, htmlFile.path, zipContents, log, logError);
+        
         // Replace CSS asset paths (including background images)
         cssContent = replaceCssAssetPaths(cssContent, imageMap);
         
-        // Additional processing for background-image URLs
+        // Replace font paths in @font-face
+        cssContent = replaceFontPaths(cssContent, fontMap, log);
+        
+        // Additional processing for background-image URLs (check both images and fonts)
         cssContent = cssContent.replace(
           /url\(['"]?([^'"()]+)['"]?\)/gi,
           (match, path) => {
-            const normalizedPath = path.replace(/^\.\//, '').replace(/^\.\.\//, '');
-            const fileName = path.split('/').pop() || path;
+            const cleanPath = path.split('?')[0].split('#')[0]; // Remove query params and hash
+            const normalizedPath = cleanPath.replace(/^\.\//, '').replace(/^\.\.\//, '');
+            const fileName = cleanPath.split('/').pop() || cleanPath;
             
-            // Check imageMap with multiple path variations
-            const dataUrl = imageMap.get(normalizedPath) || imageMap.get(fileName) || imageMap.get(path);
+            // Check imageMap and fontMap with multiple path variations
+            let dataUrl = imageMap.get(normalizedPath) || imageMap.get(fileName) || imageMap.get(cleanPath);
+            if (!dataUrl) {
+              dataUrl = fontMap.get(normalizedPath) || fontMap.get(fileName) || fontMap.get(cleanPath);
+            }
             
             if (dataUrl) {
-              log(`   🎨 Replaced CSS background: ${path}`);
+              log(`   🎨 Replaced CSS url(): ${path}`);
               return `url('${dataUrl}')`;
             }
             
@@ -344,6 +408,7 @@ export async function parseTemplate(
       cssFiles: cssFiles.length,
       imagesConverted: imageMap.size,
       jsFilesConverted: jsMap.size,
+      fontsConverted: fontMap.size,
     },
   };
 }
@@ -388,6 +453,139 @@ function convertScriptToCDN(src: string, otherAttributes: string = '', jsMap?: M
   // For now, we'll keep the original path - GrapesJS may handle it
   const fixedPath = src.replace(/^\.\//, '').replace(/^\.\.\//, '');
   return `<script src="${fixedPath}"${otherAttributes}></script>`;
+}
+
+/**
+ * Normalize path for matching
+ */
+function normalizePath(path: string): string {
+  return path
+    .replace(/\\/g, '/') // Windows → Unix
+    .replace(/^\.\//, '') // ./path → path
+    .replace(/^\.\.\//, '') // ../path → path
+    .replace(/\/+/g, '/') // // → /
+    .trim();
+}
+
+/**
+ * Inline CSS @import directives
+ */
+async function inlineCssImports(
+  css: string,
+  basePath: string,
+  zipContents: JSZip,
+  log: (msg: string, ...args: any[]) => void,
+  logError: (msg: string, ...args: any[]) => void
+): Promise<string> {
+  const importRegex = /@import\s+(?:url\(['"]?([^'"()]+)['"]?\)|['"]([^'"]+)['"])\s*;?/gi;
+  
+  let match;
+  const imports: Array<{ fullMatch: string; path: string }> = [];
+  
+  // Find all @import directives
+  while ((match = importRegex.exec(css)) !== null) {
+    const path = match[1] || match[2];
+    imports.push({ fullMatch: match[0], path });
+  }
+  
+  // Process each import
+  for (const imp of imports) {
+    try {
+      // Resolve relative path
+      const baseDir = basePath.split('/').slice(0, -1).join('/');
+      const resolvedPath = normalizePath(
+        imp.path.startsWith('/') 
+          ? imp.path.substring(1)
+          : `${baseDir}/${imp.path}`
+      );
+      
+      // Try to find the CSS file in ZIP
+      let cssContent = '';
+      const pathVariations = [
+        resolvedPath,
+        imp.path,
+        `${baseDir}/${imp.path}`,
+        imp.path.replace(/^\.\//, ''),
+        imp.path.replace(/^\.\.\//, ''),
+      ];
+      
+      for (const pathVar of pathVariations) {
+        const file = zipContents.files[pathVar];
+        if (file && !file.dir) {
+          cssContent = await file.async('string');
+          log(`   📦 Found CSS @import: ${imp.path} → ${pathVar}`);
+          break;
+        }
+      }
+      
+      if (cssContent) {
+        // Recursively process nested @import
+        const inlinedContent = await inlineCssImports(cssContent, resolvedPath, zipContents, log, logError);
+        css = css.replace(imp.fullMatch, inlinedContent);
+        log(`   ✅ Inlined CSS @import: ${imp.path}`);
+      } else {
+        logError(`   ⚠️ Could not find CSS file for @import: ${imp.path}`);
+        // Remove the @import if file not found
+        css = css.replace(imp.fullMatch, '');
+      }
+    } catch (error) {
+      logError(`   ⚠️ Failed to inline CSS @import ${imp.path}:`, error);
+      // Remove the @import on error
+      css = css.replace(imp.fullMatch, '');
+    }
+  }
+  
+  return css;
+}
+
+/**
+ * Replace font paths in @font-face rules with base64 data URLs
+ */
+function replaceFontPaths(
+  css: string,
+  fontMap: Map<string, string>,
+  log: (msg: string, ...args: any[]) => void
+): string {
+  // Process @font-face rules
+  return css.replace(/@font-face\s*{([^}]*)}/gi, (match, content) => {
+    const replacedContent = content.replace(
+      /url\(['"]?([^'"()]+)['"]?\)/gi,
+      (urlMatch: string, path: string) => {
+        const cleanPath = path.split('?')[0].split('#')[0]; // Remove query params and hash
+        const normalizedPath = normalizePath(cleanPath);
+        const fileName = cleanPath.split('/').pop() || cleanPath;
+        
+        // Try multiple path variations
+        let dataUrl = fontMap.get(normalizedPath) || 
+                     fontMap.get(fileName) || 
+                     fontMap.get(cleanPath);
+        
+        if (!dataUrl) {
+          // Try with different separators
+          const pathVariations = [
+            normalizedPath,
+            cleanPath.replace(/\\/g, '/'),
+            cleanPath.replace(/\//g, '\\'),
+            fileName,
+          ];
+          
+          for (const variation of pathVariations) {
+            dataUrl = fontMap.get(variation);
+            if (dataUrl) break;
+          }
+        }
+        
+        if (dataUrl) {
+          log(`   🔤 Replaced font URL: ${path}`);
+          return `url('${dataUrl}')`;
+        }
+        
+        return urlMatch; // Keep original if not found
+      }
+    );
+    
+    return `@font-face {${replacedContent}}`;
+  });
 }
 
 /**

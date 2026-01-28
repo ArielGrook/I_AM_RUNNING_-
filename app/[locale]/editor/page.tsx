@@ -476,7 +476,20 @@ export default function EditorPage() {
       });
       
       try {
-        // Clear ALL localStorage keys starting with 'gjs-' BEFORE clearing canvas
+        // Clear canvas FIRST
+        console.log('[ZIP Import] 🧹 Clearing canvas...');
+        if (grapeEditorRef.current) {
+          grapeEditorRef.current.clear();
+        }
+        // Clear pages state
+        setPages([]);
+        setActivePage(0);
+        setImportResult(null);
+        
+        // Wait for GrapesJS to create localStorage keys, then clear them
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        // Clear ALL localStorage keys starting with 'gjs-' AFTER clearing canvas
         console.log('[ZIP Import] 🗑️ Clearing ALL localStorage...');
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
@@ -490,16 +503,6 @@ export default function EditorPage() {
         
         // Also clear project-storage
         localStorage.removeItem('project-storage');
-        
-        // Clear canvas before import
-        console.log('[ZIP Import] 🧹 Clearing canvas...');
-        if (grapeEditorRef.current) {
-          grapeEditorRef.current.clear();
-        }
-        // Clear pages state
-        setPages([]);
-        setActivePage(0);
-        setImportResult(null);
         
         // Ensure editor is ready
         const editor = grapeEditorRef.current?.getEditor();
