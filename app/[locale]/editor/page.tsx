@@ -919,7 +919,11 @@ export default function EditorPage() {
                     if (editor) {
                       editor.setComponents('');
                       editor.setStyle('');
-                      console.log('Canvas cleared');
+                      // Clear pages and reset active page
+                      setPages([]);
+                      setActivePage(0);
+                      setImportResult(null);
+                      console.log('[Editor] 🗑️ Cleared canvas and page tabs');
                     }
                   }}
                   title="Clear Canvas"

@@ -74,6 +74,7 @@ export async function parseTemplate(
   const htmlFiles: Array<{ path: string; name: string }> = [];
   const cssFiles: Array<{ path: string; content: string }> = [];
   const imageMap = new Map<string, string>(); // path -> base64 data URL
+  const jsMap = new Map<string, string>(); // path -> base64 data URL for JS files
   
   // First pass: collect HTML and CSS files, convert images
   log('[SimpleParser V3] 📦 Processing ZIP contents...');
@@ -113,13 +114,26 @@ export async function parseTemplate(
         logError(`[SimpleParser V3] ⚠️ Failed to convert image ${fileName}:`, error);
       }
     }
+    
+    // Convert JavaScript files to base64
+    else if (extension === 'js' && !path.includes('__MACOSX')) {
+      try {
+        const base64Content = await entry.async('base64');
+        const dataUrl = `data:application/javascript;base64,${base64Content}`;
+        jsMap.set(path, dataUrl);
+        jsMap.set(fileName, dataUrl); // Also map by filename for easier lookup
+        log(`[SimpleParser V3] 📜 Converted JS: ${fileName}`);
+      } catch (error) {
+        logError(`[SimpleParser V3] ⚠️ Failed to convert JS ${fileName}:`, error);
+      }
+    }
   }
   
   if (htmlFiles.length === 0) {
     throw new Error('No HTML files found in ZIP template');
   }
   
-  log(`[SimpleParser V3] 📊 Found ${htmlFiles.length} HTML files, ${cssFiles.length} CSS files, ${imageMap.size} images`);
+  log(`[SimpleParser V3] 📊 Found ${htmlFiles.length} HTML files, ${cssFiles.length} CSS files, ${imageMap.size} images, ${jsMap.size} JS files`);
   
   // Merge all CSS files into one shared CSS
   let sharedCss = '';
@@ -174,10 +188,24 @@ export async function parseTemplate(
         const attrsStr = attributes.length > 0 ? ' ' + attributes.join(' ') : '';
         
         if (src) {
-          // External script - convert to CDN if known library, preserve other attributes
-          const convertedScript = convertScriptToCDN(src, attrsStr);
-          scriptsHtml += convertedScript + '\n';
-          scriptCount++;
+          // External script - check for base64 first, then CDN, then keep original
+          const fixedPath = src.replace(/^\.\//, '').replace(/^\.\.\//, '');
+          const fileName = src.split('/').pop() || src;
+          
+          // Check if we have this JS file as base64
+          let dataUrl = jsMap.get(fixedPath) || jsMap.get(fileName) || jsMap.get(src);
+          
+          if (dataUrl) {
+            // Use base64 data URL
+            log(`   🔄 Replaced JS: ${src} → base64`);
+            scriptsHtml += `<script src="${dataUrl}"${attrsStr}></script>\n`;
+            scriptCount++;
+          } else {
+            // Try CDN conversion for known libraries
+            const convertedScript = convertScriptToCDN(src, attrsStr, jsMap);
+            scriptsHtml += convertedScript + '\n';
+            scriptCount++;
+          }
         } else if (scriptContent.trim()) {
           // Inline script - preserve as-is with all attributes
           scriptsHtml += `<script${attrsStr}>${scriptContent}</script>\n`;
@@ -202,7 +230,7 @@ export async function parseTemplate(
       // Append preserved scripts at the end of body
       if (scriptsHtml.trim()) {
         bodyHtml += '\n' + scriptsHtml.trim();
-        log(`   ✅ Preserved ${scriptCount} script(s) (converted to CDN where possible)`);
+        log(`   ✅ Preserved ${scriptCount} script(s) (base64 for local files, CDN for known libraries)`);
       }
       
       pages.push({
@@ -235,6 +263,7 @@ export async function parseTemplate(
       htmlFiles: htmlFiles.length,
       cssFiles: cssFiles.length,
       imagesConverted: imageMap.size,
+      jsFilesConverted: jsMap.size,
     },
   };
 }
@@ -257,8 +286,9 @@ const SCRIPT_CDN_MAP: Record<string, string> = {
 /**
  * Convert script path to CDN if it's a known library, otherwise fix the path
  * Preserves all other script attributes (type, async, defer, etc.)
+ * Note: Base64 JS files are handled before this function is called
  */
-function convertScriptToCDN(src: string, otherAttributes: string = ''): string {
+function convertScriptToCDN(src: string, otherAttributes: string = '', jsMap?: Map<string, string>): string {
   const srcLower = src.toLowerCase();
   
   // Check if it's a known library
