@@ -131,6 +131,10 @@ export default function EditorPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<ParseProgress | null>(null);
   const [showImportProgress, setShowImportProgress] = useState(false);
+  
+  // Multi-page template support
+  const [pages, setPages] = useState<Array<{ name: string; html: string; css: string }>>([]);
+  const [activePage, setActivePage] = useState(0);
   const [showSaveComponent, setShowSaveComponent] = useState(false);
   const [components, setComponents] = useState<SupabaseComponent[]>([]);
   const [filteredComponents, setFilteredComponents] = useState<SupabaseComponent[]>([]);
@@ -477,6 +481,10 @@ export default function EditorPage() {
         if (grapeEditorRef.current) {
           grapeEditorRef.current.clear();
         }
+        // Clear pages state
+        setPages([]);
+        setActivePage(0);
+        setImportResult(null);
         
         // Ensure editor is ready
         const editor = grapeEditorRef.current?.getEditor();
@@ -501,32 +509,41 @@ export default function EditorPage() {
         const result = await parseTemplate(file, true); // true = debug mode
         
         console.log('[ZIP Import] ✅ SimpleParser V3 complete:', {
-          htmlLength: result.html.length,
+          pagesCount: result.pages.length,
           cssLength: result.css.length,
           stats: result.stats,
         });
         
-        // Set content directly in editor
+        // Store all pages for tab navigation
+        setPages(result.pages);
+        setActivePage(0);
+        setImportResult({ css: result.css }); // Store CSS for page switching
+        
+        // Set content directly in editor (first page)
         console.log('[ZIP Import] 🎯 Setting components in editor...');
         
         // Wait a bit for canvas to be ready
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Set HTML directly in editor
-        grapeEditorRef.current?.setComponents(result.html);
+        // Set HTML from first page
+        const firstPage = result.pages[0];
+        grapeEditorRef.current?.setComponents(firstPage.html);
         
-        // Set CSS directly in editor
-        if (result.css.trim()) {
-          grapeEditorRef.current?.setStyle(result.css);
+        // Set CSS (shared CSS + first page CSS)
+        const allCss = result.css + (firstPage.css ? '\n' + firstPage.css : '');
+        if (allCss.trim()) {
+          grapeEditorRef.current?.setStyle(allCss);
         }
         
         console.log('[ZIP Import] ✅ Components and styles set in editor');
+        console.log(`[ZIP Import] 📄 Loaded ${result.pages.length} page(s):`, result.pages.map((p: { name: string }) => p.name));
         
         // Update progress to complete
+        const totalHtmlSize = result.pages.reduce((sum: number, p: { html: string }) => sum + p.html.length, 0);
         setImportProgress({
           stage: 'complete',
           progress: 100,
-          message: `✅ Import complete! HTML: ${(result.html.length / 1024).toFixed(1)}KB, CSS: ${(result.css.length / 1024).toFixed(1)}KB`,
+          message: `✅ Import complete! ${result.pages.length} page(s), ${(totalHtmlSize / 1024).toFixed(1)}KB HTML, ${(result.css.length / 1024).toFixed(1)}KB CSS`,
         });
         
         // Close progress dialog after a delay
@@ -558,6 +575,32 @@ export default function EditorPage() {
     };
     input.click();
   };
+  
+  // Store result for CSS access
+  const [importResult, setImportResult] = useState<{ css: string } | null>(null);
+  
+  // Switch between pages in multi-page template
+  const switchPage = useCallback((pageIndex: number) => {
+    if (pageIndex < 0 || pageIndex >= pages.length) return;
+    
+    const page = pages[pageIndex];
+    if (!page || !grapeEditorRef.current) return;
+    
+    console.log(`[Page Switch] Switching to page ${pageIndex}: ${page.name}`);
+    
+    setActivePage(pageIndex);
+    
+    // Update editor content
+    grapeEditorRef.current.setComponents(page.html);
+    
+    // Set CSS (shared CSS + page-specific CSS)
+    const allCss = importResult?.css || '';
+    const pageCss = page.css || '';
+    const combinedCss = (allCss + '\n' + pageCss).trim();
+    if (combinedCss) {
+      grapeEditorRef.current.setStyle(combinedCss);
+    }
+  }, [pages, importResult]);
   
   // Handle preview generation
   const handlePreview = async () => {
@@ -662,6 +705,10 @@ export default function EditorPage() {
   
   // Handle create project with demo limits
   const handleCreateProject = (name: string, description?: string) => {
+    // Clear pages state when creating new project
+    setPages([]);
+    setActivePage(0);
+    setImportResult(null);
     if (!canCreate) {
       alert('Demo mode limit reached. You can only create 1 project in demo mode.');
       return;
@@ -1030,8 +1077,30 @@ export default function EditorPage() {
             </button>
             
             {/* Center - Canvas with Grape.js */}
-            <div className="flex-1 bg-gray-100 overflow-hidden relative">
-              <GrapeEditor
+            <div className="flex-1 bg-gray-100 overflow-hidden relative flex flex-col">
+              {/* Page Tabs (only show if multiple pages) */}
+              {pages.length > 1 && (
+                <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-2 overflow-x-auto">
+                  <span className="text-sm text-gray-500 mr-2">Pages:</span>
+                  {pages.map((page, index) => (
+                    <button
+                      key={index}
+                      onClick={() => switchPage(index)}
+                      className={`
+                        px-3 py-1.5 text-sm font-medium rounded-md transition-colors
+                        ${activePage === index
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }
+                      `}
+                    >
+                      {page.name.replace('.html', '').replace('.htm', '')}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex-1 overflow-hidden">
+                <GrapeEditor
                 ref={grapeEditorRef}
                 onUpdate={handleEditorUpdate}
                 initialHtml={currentProject.pages[0]?.components?.[0]?.props?.html || ''}
@@ -1039,6 +1108,7 @@ export default function EditorPage() {
                 isRTL={isRTL}
                 components={components}
               />
+              </div>
             </div>
             
             {/* Toggle Right Panel */}
