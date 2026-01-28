@@ -205,6 +205,11 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         dragAutoScroll: true,
         dragMultipleComponent: true,
         showOffsets: true,
+        
+        // Parser configuration - CRITICAL: Don't sanitize HTML to preserve all elements
+        // Note: GrapesJS parser options may vary by version
+        // We rely on allowScripts: true at root level and minimal sanitization
+        // The parser will preserve HTML structure as much as possible
         resizer: {
           tl: 1,
           tr: 1,
@@ -843,15 +848,24 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     }
 
     if (htmlFromComponents) {
-      // CRITICAL FIX: Convert CSS classes to inline styles before setting components
-      // This matches the working approach from LSB-REDACTOR.js where all styles are inline
-      // GrapesJS treats CSS strings in canvas.styles as URLs, so we must inline styles
+      // КРИТИЧЕСКИ ВАЖНО: НЕ конвертировать CSS в inline для ZIP импортов!
+      // ZIP импорты уже содержат <style> теги с CSS - конвертация может терять элементы
+      // Проверяем: если HTML уже содержит <style> тег, значит это ZIP импорт
+      const hasStyleTag = htmlFromComponents.includes('<style') || htmlFromComponents.includes('<STYLE');
+      
       let htmlWithInlineStyles = htmlFromComponents;
       
-      if (css) {
-        console.log('Converting CSS classes to inline styles...');
+      // Только конвертируем CSS в inline если:
+      // 1. НЕТ <style> тега в HTML (старый формат проекта)
+      // 2. ЕСТЬ CSS для конвертации
+      if (css && !hasStyleTag) {
+        console.log('[GrapeEditor] Converting CSS classes to inline styles (no <style> tag found)...');
         htmlWithInlineStyles = convertCssToInlineStyles(htmlFromComponents, css);
-        console.log('✅ CSS converted to inline styles');
+        console.log('[GrapeEditor] ✅ CSS converted to inline styles');
+      } else if (hasStyleTag) {
+        console.log('[GrapeEditor] ⚠️ HTML contains <style> tag - skipping CSS-to-inline conversion to preserve structure');
+      } else {
+        console.log('[GrapeEditor] No CSS to convert or no style tag - using HTML as-is');
       }
       
       // CRITICAL: Don't sanitize HTML by default - sanitization was corrupting valid HTML attributes

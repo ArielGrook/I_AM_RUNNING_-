@@ -505,8 +505,8 @@ export default function EditorPage() {
         localStorage.removeItem('project-storage');
         
         // Ensure editor is ready
-        const editor = grapeEditorRef.current?.getEditor();
-        if (!editor) {
+        const grapesEditor = grapeEditorRef.current?.getEditor();
+        if (!grapesEditor) {
           throw new Error('Editor not ready. Please wait for editor to initialize.');
         }
         
@@ -541,12 +541,109 @@ export default function EditorPage() {
         
         // Set HTML from first page
         const firstPage = result.pages[0];
+        
+        // Count elements in original HTML
+        const countElements = (html: string) => {
+          const divs = (html.match(/<div/gi) || []).length;
+          const spans = (html.match(/<span/gi) || []).length;
+          const imgs = (html.match(/<img/gi) || []).length;
+          const scripts = (html.match(/<script/gi) || []).length;
+          const links = (html.match(/<a\s/gi) || []).length;
+          const buttons = (html.match(/<button/gi) || []).length;
+          const inputs = (html.match(/<input/gi) || []).length;
+          const tables = (html.match(/<table/gi) || []).length;
+          const sections = (html.match(/<section/gi) || []).length;
+          return { divs, spans, imgs, scripts, links, buttons, inputs, tables, sections };
+        };
+        
+        const originalStats = countElements(firstPage.html);
+        console.log('[ZIP Import] 📊 Original HTML statistics:', originalStats);
+        console.log(`[ZIP Import] 📏 Original HTML length: ${firstPage.html.length} chars`);
+        
+        // Set components in editor
+        // КРИТИЧЕСКИ ВАЖНО: Передаем HTML БЕЗ обработки - GrapesJS должен сохранить все элементы
+        console.log('[ZIP Import] 🎯 Setting components in editor (preserving all elements)...');
+        console.log('[ZIP Import] 📋 HTML preview (first 1000 chars):', firstPage.html.substring(0, 1000));
+        
         grapeEditorRef.current?.setComponents(firstPage.html);
         
         // Set CSS (shared CSS + first page CSS)
+        // КРИТИЧЕСКИ ВАЖНО: CSS уже в HTML как <style> тег из парсера
+        // setStyle добавляет CSS в canvas.styles, но основной CSS уже в HTML
         const allCss = result.css + (firstPage.css ? '\n' + firstPage.css : '');
         if (allCss.trim()) {
+          console.log('[ZIP Import] 🎨 Setting additional CSS via setStyle (length:', allCss.length, 'chars)');
           grapeEditorRef.current?.setStyle(allCss);
+        } else {
+          console.log('[ZIP Import] ℹ️ No additional CSS to set (CSS already in HTML <style> tag)');
+        }
+        
+        // Проверить что <style> тег присутствует в HTML
+        if (firstPage.html.includes('<style')) {
+          console.log('[ZIP Import] ✅ HTML contains <style> tag - CSS preserved in HTML');
+        } else {
+          console.warn('[ZIP Import] ⚠️ HTML does NOT contain <style> tag - CSS may be missing!');
+        }
+        
+        // Wait a bit for GrapesJS to process
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Count elements in editor after setComponents
+        const grapesEditor = grapeEditorRef.current?.getEditor();
+        if (grapesEditor) {
+          const components = grapesEditor.getComponents();
+          
+          // Recursively count all nested components
+          const countNestedComponents = (component: any): { divs: number; spans: number; imgs: number; total: number } => {
+            let divs = 0;
+            let spans = 0;
+            let imgs = 0;
+            let total = 1;
+            
+            const tagName = component.get?.('tagName')?.toLowerCase() || '';
+            if (tagName === 'div') divs = 1;
+            if (tagName === 'span') spans = 1;
+            if (tagName === 'img') imgs = 1;
+            
+            const children = component.components?.() || [];
+            children.forEach((child: any) => {
+              const childCount = countNestedComponents(child);
+              divs += childCount.divs;
+              spans += childCount.spans;
+              imgs += childCount.imgs;
+              total += childCount.total;
+            });
+            
+            return { divs, spans, imgs, total };
+          };
+          
+          const editorStats = components.reduce((acc: any, comp: any) => {
+            const stats = countNestedComponents(comp);
+            return {
+              divs: acc.divs + stats.divs,
+              spans: acc.spans + stats.spans,
+              imgs: acc.imgs + stats.imgs,
+              total: acc.total + stats.total,
+            };
+          }, { divs: 0, spans: 0, imgs: 0, total: 0 });
+          
+          console.log('[ZIP Import] 📊 Editor components statistics:', editorStats);
+          console.log(`[ZIP Import] 📏 Total components in editor: ${editorStats.total}`);
+          
+          // Compare original vs editor
+          const divDiff = originalStats.divs - editorStats.divs;
+          const spanDiff = originalStats.spans - editorStats.spans;
+          const imgDiff = originalStats.imgs - editorStats.imgs;
+          
+          if (divDiff > 0 || spanDiff > 0 || imgDiff > 0) {
+            console.warn(`[ZIP Import] ⚠️ ELEMENTS LOST:`, {
+              divs: `${originalStats.divs} → ${editorStats.divs} (lost: ${divDiff})`,
+              spans: `${originalStats.spans} → ${editorStats.spans} (lost: ${spanDiff})`,
+              imgs: `${originalStats.imgs} → ${editorStats.imgs} (lost: ${imgDiff})`,
+            });
+          } else {
+            console.log('[ZIP Import] ✅ All elements preserved!');
+          }
         }
         
         console.log('[ZIP Import] ✅ Components and styles set in editor');

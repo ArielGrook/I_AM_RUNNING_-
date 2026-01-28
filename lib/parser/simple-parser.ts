@@ -370,17 +370,22 @@ export async function parseTemplate(
       }
       
       // Inject shared CSS into HTML as <style> tag
+      // КРИТИЧЕСКИ ВАЖНО: CSS вставляется как <style> тег, НЕ конвертируется в inline!
       if (sharedCss.trim() || pageCss.trim()) {
         const allCss = (sharedCss + '\n' + pageCss).trim();
-        bodyHtml = `<style>${allCss}</style>\n${bodyHtml}`;
+        bodyHtml = `<style id="template-styles">${allCss}</style>\n${bodyHtml}`;
       }
       
       // Scripts are already in bodyHtml (they were replaced in DOM)
       
+      // КРИТИЧЕСКИ ВАЖНО: Возвращаем HTML БЕЗ дополнительной обработки!
+      // НЕ конвертируем CSS в inline styles - это может терять элементы!
+      // НЕ оптимизируем HTML структуру
+      // НЕ удаляем комментарии или нестандартные атрибуты
       pages.push({
         name: htmlFile.name,
-        html: bodyHtml,
-        css: pageCss, // Page-specific CSS (shared CSS is already injected)
+        html: bodyHtml, // ← Оригинальный HTML с замененными путями, но структура сохранена
+        css: pageCss, // Page-specific CSS (shared CSS уже в bodyHtml как <style>)
       });
       
       log(`[SimpleParser V3] ✅ Processed ${htmlFile.name}`);
@@ -398,6 +403,38 @@ export async function parseTemplate(
   });
   
   log(`[SimpleParser V3] ✅ Parsing complete! ${pages.length} pages processed`);
+  
+  // Count elements in HTML for debugging
+  const countElements = (html: string) => {
+    const divs = (html.match(/<div/gi) || []).length;
+    const spans = (html.match(/<span/gi) || []).length;
+    const imgs = (html.match(/<img/gi) || []).length;
+    const scripts = (html.match(/<script/gi) || []).length;
+    const links = (html.match(/<a\s/gi) || []).length;
+    const buttons = (html.match(/<button/gi) || []).length;
+    const inputs = (html.match(/<input/gi) || []).length;
+    const tables = (html.match(/<table/gi) || []).length;
+    const sections = (html.match(/<section/gi) || []).length;
+    
+    return { divs, spans, imgs, scripts, links, buttons, inputs, tables, sections };
+  };
+  
+  // Log statistics for each page
+  pages.forEach(page => {
+    const stats = countElements(page.html);
+    log(`[SimpleParser V3] 📊 Page "${page.name}" statistics:`);
+    log(`   - DIVs: ${stats.divs}`);
+    log(`   - SPANs: ${stats.spans}`);
+    log(`   - IMGs: ${stats.imgs}`);
+    log(`   - SCRIPTs: ${stats.scripts}`);
+    log(`   - Links: ${stats.links}`);
+    log(`   - Buttons: ${stats.buttons}`);
+    log(`   - Inputs: ${stats.inputs}`);
+    log(`   - Tables: ${stats.tables}`);
+    log(`   - Sections: ${stats.sections}`);
+    log(`   - HTML length: ${page.html.length} chars`);
+    log(`   - CSS length: ${page.css.length} chars`);
+  });
   
   return {
     pages,
