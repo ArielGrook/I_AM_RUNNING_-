@@ -8,9 +8,10 @@
  * - Processes ALL HTML files (not just index.html)
  * - Converts images to base64 data URLs
  * - Injects CSS into HTML
+ * - Preserves JavaScript scripts (converts known libraries to CDN)
  * - Returns array of pages for tab navigation
  * 
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 import JSZip from 'jszip';
@@ -150,6 +151,40 @@ export async function parseTemplate(
       // Replace image paths with base64
       bodyHtml = replaceHtmlAssetPaths(bodyHtml, imageMap);
       
+      // Extract and preserve scripts (from both head and body)
+      const scriptTags = doc.querySelectorAll('script');
+      let scriptsHtml = '';
+      let scriptCount = 0;
+      
+      for (const scriptTag of scriptTags) {
+        const src = scriptTag.getAttribute('src');
+        const scriptContent = scriptTag.textContent || '';
+        
+        // Get all attributes (node-html-parser uses object-based attributes)
+        const attrs = (scriptTag as any).attributes || {};
+        const attributes: string[] = [];
+        
+        // Collect all attributes except src (for external scripts)
+        Object.entries(attrs).forEach(([name, value]) => {
+          if (name !== 'src') {
+            attributes.push(`${name}="${value}"`);
+          }
+        });
+        
+        const attrsStr = attributes.length > 0 ? ' ' + attributes.join(' ') : '';
+        
+        if (src) {
+          // External script - convert to CDN if known library, preserve other attributes
+          const convertedScript = convertScriptToCDN(src, attrsStr);
+          scriptsHtml += convertedScript + '\n';
+          scriptCount++;
+        } else if (scriptContent.trim()) {
+          // Inline script - preserve as-is with all attributes
+          scriptsHtml += `<script${attrsStr}>${scriptContent}</script>\n`;
+          scriptCount++;
+        }
+      }
+      
       // Extract inline styles from <style> tags
       const styleTags = doc.querySelectorAll('style');
       let pageCss = '';
@@ -162,6 +197,12 @@ export async function parseTemplate(
       if (sharedCss.trim() || pageCss.trim()) {
         const allCss = (sharedCss + '\n' + pageCss).trim();
         bodyHtml = `<style>${allCss}</style>\n${bodyHtml}`;
+      }
+      
+      // Append preserved scripts at the end of body
+      if (scriptsHtml.trim()) {
+        bodyHtml += '\n' + scriptsHtml.trim();
+        log(`   ✅ Preserved ${scriptCount} script(s) (converted to CDN where possible)`);
       }
       
       pages.push({
@@ -201,6 +242,43 @@ export async function parseTemplate(
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * CDN mappings for common libraries
+ */
+const SCRIPT_CDN_MAP: Record<string, string> = {
+  'jquery': 'https://code.jquery.com/jquery-3.6.0.min.js',
+  'bootstrap': 'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js',
+  'owl.carousel': 'https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js',
+  'slick': 'https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js',
+  'isotope': 'https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js',
+};
+
+/**
+ * Convert script path to CDN if it's a known library, otherwise fix the path
+ * Preserves all other script attributes (type, async, defer, etc.)
+ */
+function convertScriptToCDN(src: string, otherAttributes: string = ''): string {
+  const srcLower = src.toLowerCase();
+  
+  // Check if it's a known library
+  for (const [lib, cdn] of Object.entries(SCRIPT_CDN_MAP)) {
+    if (srcLower.includes(lib)) {
+      console.log(`   🔄 Converted ${lib} to CDN: ${cdn}`);
+      return `<script src="${cdn}"${otherAttributes}></script>`;
+    }
+  }
+  
+  // If it's already a CDN URL (http/https), keep it as-is
+  if (src.startsWith('http://') || src.startsWith('https://')) {
+    return `<script src="${src}"${otherAttributes}></script>`;
+  }
+  
+  // Otherwise, try to fix relative paths (though they may not work in GrapesJS)
+  // For now, we'll keep the original path - GrapesJS may handle it
+  const fixedPath = src.replace(/^\.\//, '').replace(/^\.\.\//, '');
+  return `<script src="${fixedPath}"${otherAttributes}></script>`;
+}
 
 /**
  * Convert blob to base64 data URL

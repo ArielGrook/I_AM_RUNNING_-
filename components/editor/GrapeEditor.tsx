@@ -236,7 +236,10 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           styles: [
             'https://cdn.tailwindcss.com', // Tailwind CSS for component styling
           ],
-          scripts: [],
+          scripts: [
+            'https://code.jquery.com/jquery-3.6.0.min.js',
+            'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js',
+          ],
           frameStyle: `
             body {
               min-height: 5000px;
