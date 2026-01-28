@@ -476,6 +476,21 @@ export default function EditorPage() {
       });
       
       try {
+        // Clear ALL localStorage keys starting with 'gjs-' BEFORE clearing canvas
+        console.log('[ZIP Import] 🗑️ Clearing ALL localStorage...');
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith('gjs-')) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        console.log(`[ZIP Import] ✅ Cleared ${keysToRemove.length} localStorage keys`);
+        
+        // Also clear project-storage
+        localStorage.removeItem('project-storage');
+        
         // Clear canvas before import
         console.log('[ZIP Import] 🧹 Clearing canvas...');
         if (grapeEditorRef.current) {
@@ -491,10 +506,6 @@ export default function EditorPage() {
         if (!editor) {
           throw new Error('Editor not ready. Please wait for editor to initialize.');
         }
-        
-        // Clear localStorage before import to prevent old project from overwriting new import
-        localStorage.removeItem('project-storage');
-        console.log('[ZIP Import] 🗑️ Cleared localStorage to prevent old project overwrite');
         
         // Use SimpleParser V3 to parse the ZIP file
         console.log('[ZIP Import] 📦 Starting SimpleParser V3...');

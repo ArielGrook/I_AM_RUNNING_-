@@ -120,8 +120,15 @@ export async function parseTemplate(
       try {
         const base64Content = await entry.async('base64');
         const dataUrl = `data:application/javascript;base64,${base64Content}`;
-        jsMap.set(path, dataUrl);
-        jsMap.set(fileName, dataUrl); // Also map by filename for easier lookup
+        
+        // Add multiple path variations to jsMap for better matching
+        jsMap.set(path, dataUrl); // Full path
+        jsMap.set(fileName, dataUrl); // Filename only
+        const normalizedPath = path.replace(/^\.\//, '').replace(/^\.\.\//, '');
+        jsMap.set(normalizedPath, dataUrl); // Normalized path
+        jsMap.set(path.replace(/\\/g, '/'), dataUrl); // Windows path normalized
+        jsMap.set(path.replace(/\//g, '\\'), dataUrl); // Reverse Windows path
+        
         log(`[SimpleParser V3] 📜 Converted JS: ${fileName}`);
       } catch (error) {
         logError(`[SimpleParser V3] ⚠️ Failed to convert JS ${fileName}:`, error);
@@ -134,6 +141,12 @@ export async function parseTemplate(
   }
   
   log(`[SimpleParser V3] 📊 Found ${htmlFiles.length} HTML files, ${cssFiles.length} CSS files, ${imageMap.size} images, ${jsMap.size} JS files`);
+  
+  // Debug: Log jsMap and imageMap contents
+  if (debug) {
+    log(`[SimpleParser V3] 📊 jsMap contents:`, Array.from(jsMap.keys()));
+    log(`[SimpleParser V3] 📊 imageMap contents (first 10):`, Array.from(imageMap.keys()).slice(0, 10));
+  }
   
   // Merge all CSS files into one shared CSS
   let sharedCss = '';
@@ -158,67 +171,138 @@ export async function parseTemplate(
       // Parse HTML
       const doc = parse(htmlContent);
       
-      // Extract body content
+      // Replace script src attributes directly in DOM using node-html-parser
+      // Query from entire document (head + body) to catch all scripts
+      const scriptTags = doc.querySelectorAll('script[src]');
+      let scriptReplacedCount = 0;
+      
+      for (const scriptTag of scriptTags) {
+        const src = scriptTag.getAttribute('src');
+        if (!src) continue;
+        
+        // Normalize path (remove ./ and ../)
+        const normalizedSrc = src.replace(/^\.\//, '').replace(/^\.\.\//, '');
+        const fileName = src.split('/').pop() || src;
+        const normalizedFileName = fileName.replace(/^\.\//, '');
+        
+        // Check jsMap with multiple path variations (try all possible matches)
+        let dataUrl = jsMap.get(normalizedSrc) || 
+                     jsMap.get(fileName) || 
+                     jsMap.get(normalizedFileName) ||
+                     jsMap.get(src);
+        
+        // Also try path variations with different separators
+        if (!dataUrl) {
+          const pathVariations = [
+            normalizedSrc,
+            src.replace(/\\/g, '/'), // Windows path
+            src.replace(/\//g, '\\'), // Reverse Windows path
+            fileName,
+            normalizedFileName
+          ];
+          
+          for (const variation of pathVariations) {
+            dataUrl = jsMap.get(variation);
+            if (dataUrl) break;
+          }
+        }
+        
+        if (dataUrl) {
+          // Replace src attribute with base64 data URL
+          scriptTag.setAttribute('src', dataUrl);
+          log(`   🔄 Replaced JS: ${src} → base64 (matched: ${normalizedSrc || fileName})`);
+          scriptReplacedCount++;
+        } else {
+          // Try CDN conversion for known libraries
+          const srcLower = src.toLowerCase();
+          for (const [lib, cdn] of Object.entries(SCRIPT_CDN_MAP)) {
+            if (srcLower.includes(lib)) {
+              scriptTag.setAttribute('src', cdn);
+              log(`   🔄 Converted ${lib} to CDN: ${cdn}`);
+              scriptReplacedCount++;
+              break;
+            }
+          }
+        }
+      }
+      
+      // Extract scripts from head and move them to body (after replacement)
+      const head = doc.querySelector('head');
+      const headScripts = head ? head.querySelectorAll('script[src]') : [];
       const body = doc.querySelector('body');
+      
+      // Move head scripts to body (they're already replaced with base64/CDN)
+      if (body && headScripts.length > 0) {
+        // Create script elements in body (node-html-parser doesn't have clone())
+        headScripts.forEach(script => {
+          const src = script.getAttribute('src');
+          if (!src) return;
+          
+          // Get all attributes
+          const attrs = (script as any).attributes || {};
+          const attrsArray: string[] = [];
+          Object.entries(attrs).forEach(([name, value]) => {
+            if (name !== 'src') {
+              attrsArray.push(`${name}="${value}"`);
+            }
+          });
+          const attrsStr = attrsArray.length > 0 ? ' ' + attrsArray.join(' ') : '';
+          
+          // Create new script tag in body
+          const newScript = parse(`<script src="${src}"${attrsStr}></script>`).querySelector('script');
+          if (newScript && body) {
+            body.appendChild(newScript);
+          }
+          
+          // Remove from head
+          script.remove();
+        });
+        log(`   📦 Moved ${headScripts.length} script(s) from head to body`);
+      }
+      
+      // Extract body content AFTER script replacement and movement
       let bodyHtml = body ? body.innerHTML : htmlContent;
       
       // Replace image paths with base64
       bodyHtml = replaceHtmlAssetPaths(bodyHtml, imageMap);
       
-      // Extract and preserve scripts (from both head and body)
-      const scriptTags = doc.querySelectorAll('script');
-      let scriptsHtml = '';
-      let scriptCount = 0;
+      // Collect all scripts (including inline) for logging
+      const allScripts = doc.querySelectorAll('script');
+      const scriptCount = allScripts.length;
       
-      for (const scriptTag of scriptTags) {
-        const src = scriptTag.getAttribute('src');
-        const scriptContent = scriptTag.textContent || '';
-        
-        // Get all attributes (node-html-parser uses object-based attributes)
-        const attrs = (scriptTag as any).attributes || {};
-        const attributes: string[] = [];
-        
-        // Collect all attributes except src (for external scripts)
-        Object.entries(attrs).forEach(([name, value]) => {
-          if (name !== 'src') {
-            attributes.push(`${name}="${value}"`);
-          }
-        });
-        
-        const attrsStr = attributes.length > 0 ? ' ' + attributes.join(' ') : '';
-        
-        if (src) {
-          // External script - check for base64 first, then CDN, then keep original
-          const fixedPath = src.replace(/^\.\//, '').replace(/^\.\.\//, '');
-          const fileName = src.split('/').pop() || src;
-          
-          // Check if we have this JS file as base64
-          let dataUrl = jsMap.get(fixedPath) || jsMap.get(fileName) || jsMap.get(src);
-          
-          if (dataUrl) {
-            // Use base64 data URL
-            log(`   🔄 Replaced JS: ${src} → base64`);
-            scriptsHtml += `<script src="${dataUrl}"${attrsStr}></script>\n`;
-            scriptCount++;
-          } else {
-            // Try CDN conversion for known libraries
-            const convertedScript = convertScriptToCDN(src, attrsStr, jsMap);
-            scriptsHtml += convertedScript + '\n';
-            scriptCount++;
-          }
-        } else if (scriptContent.trim()) {
-          // Inline script - preserve as-is with all attributes
-          scriptsHtml += `<script${attrsStr}>${scriptContent}</script>\n`;
-          scriptCount++;
-        }
+      if (scriptCount > 0) {
+        log(`   ✅ Processed ${scriptCount} script(s) (${scriptReplacedCount} replaced with base64/CDN)`);
       }
       
-      // Extract inline styles from <style> tags
+      // Extract inline styles from <style> tags and process background images
       const styleTags = doc.querySelectorAll('style');
       let pageCss = '';
       for (const styleTag of styleTags) {
-        const cssContent = styleTag.textContent || '';
-        pageCss += replaceCssAssetPaths(cssContent, imageMap) + '\n';
+        let cssContent = styleTag.textContent || '';
+        
+        // Replace CSS asset paths (including background images)
+        cssContent = replaceCssAssetPaths(cssContent, imageMap);
+        
+        // Additional processing for background-image URLs
+        cssContent = cssContent.replace(
+          /url\(['"]?([^'"()]+)['"]?\)/gi,
+          (match, path) => {
+            const normalizedPath = path.replace(/^\.\//, '').replace(/^\.\.\//, '');
+            const fileName = path.split('/').pop() || path;
+            
+            // Check imageMap with multiple path variations
+            const dataUrl = imageMap.get(normalizedPath) || imageMap.get(fileName) || imageMap.get(path);
+            
+            if (dataUrl) {
+              log(`   🎨 Replaced CSS background: ${path}`);
+              return `url('${dataUrl}')`;
+            }
+            
+            return match;
+          }
+        );
+        
+        pageCss += cssContent + '\n';
       }
       
       // Inject shared CSS into HTML as <style> tag
@@ -227,11 +311,7 @@ export async function parseTemplate(
         bodyHtml = `<style>${allCss}</style>\n${bodyHtml}`;
       }
       
-      // Append preserved scripts at the end of body
-      if (scriptsHtml.trim()) {
-        bodyHtml += '\n' + scriptsHtml.trim();
-        log(`   ✅ Preserved ${scriptCount} script(s) (base64 for local files, CDN for known libraries)`);
-      }
+      // Scripts are already in bodyHtml (they were replaced in DOM)
       
       pages.push({
         name: htmlFile.name,
