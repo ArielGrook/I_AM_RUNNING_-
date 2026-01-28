@@ -778,31 +778,45 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     }
 
     // Build HTML from parsed components (ZIP import, structured project)
-    console.log('[GrapeEditor] Building HTML from components, component count:', firstPage.components?.length || 0);
+    // CRITICAL FIX: Handle both string (SimpleParser V3) and array (Parser V2) formats
+    const components = firstPage.components;
+    const componentCount = typeof components === 'string' 
+      ? components.length 
+      : Array.isArray(components) 
+        ? (components as any[]).length 
+        : 0;
+    console.log('[GrapeEditor] Building HTML from components, component count:', componentCount);
     
-    const htmlFromComponents =
-      firstPage.components && firstPage.components.length > 0
-        ? firstPage.components
-            .map((component, idx) => {
-              const html = component?.props && typeof component.props.html === 'string'
-                ? component.props.html
-                : '';
-              
-              if (!html || html.trim().length === 0) {
-                console.warn(`[GrapeEditor] Component ${idx} has empty HTML:`, {
-                  type: component?.type,
-                  category: component?.category,
-                  props: component?.props
-                });
-              } else {
-                console.log(`[GrapeEditor] Component ${idx} HTML length: ${html.length}, preview: ${html.substring(0, 100)}`);
-              }
-              
-              return html;
-            })
-            .filter(Boolean)
-            .join('\n')
-        : '';
+    let htmlFromComponents = '';
+    
+    // Type guard: If components is already a string (HTML), use it directly
+    if (typeof components === 'string') {
+      htmlFromComponents = components;
+      console.log('[GrapeEditor] Components is HTML string, using directly, length:', htmlFromComponents.length);
+    }
+    // If components is an array, process it as before
+    else if (Array.isArray(components) && components.length > 0) {
+      htmlFromComponents = components
+        .map((component, idx) => {
+          const html = component?.props && typeof component.props.html === 'string'
+            ? component.props.html
+            : '';
+          
+          if (!html || html.trim().length === 0) {
+            console.warn(`[GrapeEditor] Component ${idx} has empty HTML:`, {
+              type: component?.type,
+              category: component?.category,
+              props: component?.props
+            });
+          } else {
+            console.log(`[GrapeEditor] Component ${idx} HTML length: ${html.length}, preview: ${html.substring(0, 100)}`);
+          }
+          
+          return html;
+        })
+        .filter(Boolean)
+        .join('\n');
+    }
     
     console.log('[GrapeEditor] Final HTML from components length:', htmlFromComponents.length);
     if (htmlFromComponents.length === 0) {
