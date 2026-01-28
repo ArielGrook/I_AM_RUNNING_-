@@ -589,7 +589,7 @@ export default function EditorPage() {
         await new Promise(resolve => setTimeout(resolve, 200));
         
         // Count elements in editor after setComponents
-        const grapesEditor = grapeEditorRef.current?.getEditor();
+        // Reuse grapesEditor variable declared earlier (line 508)
         if (grapesEditor) {
           const components = grapesEditor.getComponents();
           
