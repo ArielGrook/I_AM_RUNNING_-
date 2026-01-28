@@ -484,6 +484,10 @@ export default function EditorPage() {
           throw new Error('Editor not ready. Please wait for editor to initialize.');
         }
         
+        // Clear localStorage before import to prevent old project from overwriting new import
+        localStorage.removeItem('project-storage');
+        console.log('[ZIP Import V2] 🗑️ Cleared localStorage to prevent old project overwrite');
+        
         // Use Parser V2 to parse the ZIP file
         console.log('[ZIP Import V2] 📦 Starting Parser V2...');
         
