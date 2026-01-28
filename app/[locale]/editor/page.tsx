@@ -27,8 +27,8 @@ import { useProjectStore } from '@/lib/store/project-store';
 import { componentCatalog, getAllCategories } from '@/lib/components/catalog';
 import { getComponentCatalog, type SupabaseComponent } from '@/lib/components/supabase-catalog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { ParseProgress, ParserError, ProjectV2, projectToEditorFormat } from '@/lib/parser/v2';
-import { parseZipProject } from '@/lib/parser/v2';
+import { parseTemplate } from '@/lib/parser/simple-parser';
+import type { ParseProgress } from '@/lib/parser/v2/types';
 import { SaveComponentDialog } from '@/components/editor/SaveComponentDialog';
 import { SearchInput } from '@/components/ui/search-input';
 import { StyleManager } from '@/components/editor/StyleManager';
@@ -421,35 +421,35 @@ export default function EditorPage() {
     }
   }, [currentProject, updateProject]);
   
-  // Handle import with Parser V2 (complete ZIP parsing with progress)
+  // Handle import with SimpleParser V3 (converts images to base64, injects CSS properly)
   const handleImport = async () => {
-    console.log('[ZIP Import V2] 🚀 handleImport() called');
+    console.log('[ZIP Import] 🚀 handleImport() called');
     
     if (!canSave) {
-      console.warn('[ZIP Import V2] ❌ Demo mode limit reached');
+      console.warn('[ZIP Import] ❌ Demo mode limit reached');
       alert('Demo mode limit reached. Please upgrade to import projects.');
       return;
     }
     
     // Check if FileReader is available (browser-only API)
     if (typeof window === 'undefined' || typeof FileReader === 'undefined') {
-      console.error('[ZIP Import V2] ❌ FileReader not available - must run in browser');
+      console.error('[ZIP Import] ❌ FileReader not available - must run in browser');
       alert('Import requires browser environment. FileReader API not available.');
       return;
     }
     
-    console.log('[ZIP Import V2] ✅ Creating file input dialog...');
+    console.log('[ZIP Import] ✅ Creating file input dialog...');
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.zip';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) {
-        console.warn('[ZIP Import V2] ❌ No file selected');
+        console.warn('[ZIP Import] ❌ No file selected');
         return;
       }
       
-      console.log('[ZIP Import V2] ✅ File selected:', {
+      console.log('[ZIP Import] ✅ File selected:', {
         name: file.name,
         size: file.size,
         type: file.type
@@ -458,12 +458,12 @@ export default function EditorPage() {
       // Check file size (50MB max)
       const maxSize = 50 * 1024 * 1024;
       if (file.size > maxSize) {
-        console.error('[ZIP Import V2] ❌ File size exceeded:', file.size);
+        console.error('[ZIP Import] ❌ File size exceeded:', file.size);
         alert(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (${(maxSize / 1024 / 1024).toFixed(2)}MB)`);
         return;
       }
       
-      console.log('[ZIP Import V2] 📊 Showing progress dialog...');
+      console.log('[ZIP Import] 📊 Showing progress dialog...');
       setShowImportProgress(true);
       setImportProgress({
         stage: 'reading',
@@ -473,7 +473,7 @@ export default function EditorPage() {
       
       try {
         // Clear canvas before import
-        console.log('[ZIP Import V2] 🧹 Clearing canvas...');
+        console.log('[ZIP Import] 🧹 Clearing canvas...');
         if (grapeEditorRef.current) {
           grapeEditorRef.current.clear();
         }
@@ -486,73 +486,61 @@ export default function EditorPage() {
         
         // Clear localStorage before import to prevent old project from overwriting new import
         localStorage.removeItem('project-storage');
-        console.log('[ZIP Import V2] 🗑️ Cleared localStorage to prevent old project overwrite');
+        console.log('[ZIP Import] 🗑️ Cleared localStorage to prevent old project overwrite');
         
-        // Use Parser V2 to parse the ZIP file
-        console.log('[ZIP Import V2] 📦 Starting Parser V2...');
+        // Use SimpleParser V3 to parse the ZIP file
+        console.log('[ZIP Import] 📦 Starting SimpleParser V3...');
         
-        const project = await parseZipProject(file, {
-          onProgress: (progress: ParseProgress) => {
-            console.log('[ZIP Import V2] Progress:', progress.stage, progress.progress + '%');
-            setImportProgress(progress);
-          },
-          onWarning: (warning) => {
-            console.warn('[ZIP Import V2] Warning:', warning.message);
-          },
-          maxFileSize: maxSize,
+        // Update progress
+        setImportProgress({
+          stage: 'html',
+          progress: 50,
+          message: 'Parsing ZIP file with SimpleParser V3...',
         });
         
-        console.log('[ZIP Import V2] ✅ Parser V2 complete:', {
-          pages: project.pages.length,
-          assets: project.assets.length,
-          globalCssLength: project.globalStyles.length,
-        });
+        const result = await parseTemplate(file, true); // true = debug mode
         
-        // Convert project to editor format
-        const { html, css, assets } = projectToEditorFormat(project);
-        
-        console.log('[ZIP Import V2] 📄 Editor format:', {
-          htmlLength: html.length,
-          cssLength: css.length,
-          assetsCount: assets.length,
+        console.log('[ZIP Import] ✅ SimpleParser V3 complete:', {
+          htmlLength: result.html.length,
+          cssLength: result.css.length,
+          stats: result.stats,
         });
         
         // Set content directly in editor
-        console.log('[ZIP Import V2] 🎯 Setting components in editor...');
+        console.log('[ZIP Import] 🎯 Setting components in editor...');
         
         // Wait a bit for canvas to be ready
         await new Promise(resolve => setTimeout(resolve, 100));
         
         // Set HTML directly in editor
-        grapeEditorRef.current?.setComponents(html);
+        grapeEditorRef.current?.setComponents(result.html);
         
         // Set CSS directly in editor
-        if (css.trim()) {
-          grapeEditorRef.current?.setStyle(css);
+        if (result.css.trim()) {
+          grapeEditorRef.current?.setStyle(result.css);
         }
         
-        console.log('[ZIP Import V2] ✅ Components and styles set in editor');
+        console.log('[ZIP Import] ✅ Components and styles set in editor');
         
         // Update progress to complete
         setImportProgress({
           stage: 'complete',
           progress: 100,
-          message: `✅ Imported ${project.pages.length} page(s), ${project.assets.length} asset(s)!`,
+          message: `✅ Import complete! HTML: ${(result.html.length / 1024).toFixed(1)}KB, CSS: ${(result.css.length / 1024).toFixed(1)}KB`,
         });
         
         // Close progress dialog after a delay
         setTimeout(() => {
           setShowImportProgress(false);
           setImportProgress(null);
-          console.log('[ZIP Import V2] ✅ Import workflow complete!');
+          console.log('[ZIP Import] ✅ Import workflow complete!');
         }, 2000);
         
       } catch (error) {
-        console.error('[ZIP Import V2] ❌ Import failed:', error);
-        console.error('[ZIP Import V2] Error details:', {
+        console.error('[ZIP Import] ❌ Import failed:', error);
+        console.error('[ZIP Import] Error details:', {
           message: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
-          code: error instanceof ParserError ? error.code : undefined,
         });
         
         // Show error in progress dialog
