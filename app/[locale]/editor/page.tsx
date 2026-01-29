@@ -1154,16 +1154,36 @@ export default function EditorPage() {
                           }}
                         >
                           <div className="aspect-video bg-gray-50 rounded mb-2 flex items-center justify-center overflow-hidden relative">
-                            {component.thumbnail ? (
-                              <img 
-                                src={component.thumbnail} 
-                                alt={component.name}
-                                className="w-full h-full object-cover rounded"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <span className="text-gray-400 capitalize">{component.category}</span>
-                            )}
+                            {(() => {
+                              const htmlContent = typeof component.html === 'string' ? component.html : String(component.html || '');
+                              const cssContent = component.css || '';
+                              const previewHtml = htmlContent.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+                              const previewSrcDoc = `<!doctype html><html><head><style>${cssContent}</style></head><body>${previewHtml}</body></html>`;
+
+                              if (component.thumbnail) {
+                                return (
+                                  <img
+                                    src={component.thumbnail}
+                                    alt={component.name}
+                                    className="w-full h-full object-cover rounded"
+                                    loading="lazy"
+                                  />
+                                );
+                              }
+
+                              if (!previewHtml.trim()) {
+                                return <span className="text-gray-400 capitalize">{component.category}</span>;
+                              }
+
+                              return (
+                                <iframe
+                                  title={`Preview of ${component.name}`}
+                                  srcDoc={previewSrcDoc}
+                                  className="w-full h-full border-0 rounded"
+                                  sandbox=""
+                                />
+                              );
+                            })()}
                           </div>
                           <h4 className="font-medium text-sm">{component.name}</h4>
                           <p className="text-xs text-gray-500 mt-1">

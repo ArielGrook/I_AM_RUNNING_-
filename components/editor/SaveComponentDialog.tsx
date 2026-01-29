@@ -47,6 +47,281 @@ const componentSchema = ComponentSaveFormSchema;
 
 type ComponentFormData = ComponentSaveFormData;
 
+type SelectorSets = {
+  classes: Set<string>;
+  ids: Set<string>;
+  tags: Set<string>;
+};
+
+const GLOBAL_TAGS = new Set(['html', 'body', '*']);
+
+function extractSelectorsFromHtml(html: string): SelectorSets {
+  const classes = new Set<string>();
+  const ids = new Set<string>();
+  const tags = new Set<string>();
+
+  if (typeof window === 'undefined' || !html.trim()) {
+    return { classes, ids, tags };
+  }
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const elements = Array.from(doc.body?.querySelectorAll('*') ?? []);
+
+    elements.forEach((el) => {
+      el.classList.forEach((className) => classes.add(className));
+      if (el.id) {
+        ids.add(el.id);
+      }
+      const tagName = el.tagName?.toLowerCase();
+      if (tagName) {
+        tags.add(tagName);
+      }
+    });
+  } catch {
+    // If parsing fails, fall back to empty selector sets
+  }
+
+  return { classes, ids, tags };
+}
+
+function selectorMatchesSets(selectorText: string, sets: SelectorSets): boolean {
+  if (!selectorText.trim()) return false;
+
+  const classMatches = selectorText.match(/\.([a-zA-Z0-9_-]+)/g) || [];
+  for (const match of classMatches) {
+    const className = match.slice(1);
+    if (sets.classes.has(className)) {
+      return true;
+    }
+  }
+
+  const idMatches = selectorText.match(/#([a-zA-Z0-9_-]+)/g) || [];
+  for (const match of idMatches) {
+    const idName = match.slice(1);
+    if (sets.ids.has(idName)) {
+      return true;
+    }
+  }
+
+  const attrIdRegex = /\[id[~|^$*]?=['"]?([a-zA-Z0-9_-]+)['"]?\]/g;
+  let attrMatch;
+  while ((attrMatch = attrIdRegex.exec(selectorText)) !== null) {
+    if (sets.ids.has(attrMatch[1])) {
+      return true;
+    }
+  }
+
+  const attrClassRegex = /\[class[~|^$*]?=['"]?([a-zA-Z0-9_-]+)['"]?\]/g;
+  while ((attrMatch = attrClassRegex.exec(selectorText)) !== null) {
+    if (sets.classes.has(attrMatch[1])) {
+      return true;
+    }
+  }
+
+  const tagRegex = /(^|[\s>+~,(])([a-zA-Z][a-zA-Z0-9-]*)/g;
+  let tagMatch;
+  while ((tagMatch = tagRegex.exec(selectorText)) !== null) {
+    const tagName = tagMatch[2].toLowerCase();
+    if (!GLOBAL_TAGS.has(tagName) && sets.tags.has(tagName)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function extractAnimationNames(cssBody: string): Set<string> {
+  const animationNames = new Set<string>();
+  const animationRegex = /animation(?:-name)?\s*:\s*([^;]+);?/gi;
+  const ignoreTokens = new Set([
+    'none',
+    'inherit',
+    'initial',
+    'unset',
+    'linear',
+    'ease',
+    'ease-in',
+    'ease-out',
+    'ease-in-out',
+    'infinite',
+    'normal',
+    'reverse',
+    'alternate',
+    'alternate-reverse',
+    'forwards',
+    'backwards',
+    'both',
+    'running',
+    'paused',
+  ]);
+
+  let match;
+  while ((match = animationRegex.exec(cssBody)) !== null) {
+    const value = match[1] || '';
+    const parts = value.split(',');
+    parts.forEach((part) => {
+      const tokens = part.trim().split(/\s+/);
+      for (const token of tokens) {
+        if (!token) continue;
+        if (ignoreTokens.has(token)) continue;
+        if (/^-?\d/.test(token)) continue;
+        if (/ms|s$/.test(token)) continue;
+        animationNames.add(token);
+        break;
+      }
+    });
+  }
+
+  return animationNames;
+}
+
+function findMatchingBrace(css: string, startIndex: number): number {
+  let depth = 0;
+  for (let i = startIndex; i < css.length; i += 1) {
+    const char = css[i];
+    if (char === '{') depth += 1;
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+}
+
+function extractAtRuleBlocks(css: string, ruleName: string): { remaining: string; blocks: string[]; namedBlocks?: Map<string, string> } {
+  const blocks: string[] = [];
+  const namedBlocks = new Map<string, string>();
+  let result = '';
+  let cursor = 0;
+  const regex = new RegExp(`${ruleName}\\s+([^\\s{]+)?\\s*\\{`, 'gi');
+  let match;
+
+  while ((match = regex.exec(css)) !== null) {
+    const start = match.index;
+    const braceStart = css.indexOf('{', start);
+    if (braceStart === -1) continue;
+    const braceEnd = findMatchingBrace(css, braceStart);
+    if (braceEnd === -1) continue;
+
+    result += css.slice(cursor, start);
+    const block = css.slice(start, braceEnd + 1);
+    blocks.push(block);
+    if (match[1]) {
+      namedBlocks.set(match[1], block);
+    }
+    cursor = braceEnd + 1;
+  }
+
+  result += css.slice(cursor);
+  return { remaining: result, blocks, namedBlocks: namedBlocks.size > 0 ? namedBlocks : undefined };
+}
+
+function filterCssForSelectors(css: string, sets: SelectorSets): { css: string; animations: Set<string> } {
+  const output: string[] = [];
+  const animations = new Set<string>();
+  let i = 0;
+
+  while (i < css.length) {
+    if (/\s/.test(css[i])) {
+      i += 1;
+      continue;
+    }
+
+    if (css[i] === '@') {
+      const atRuleStart = i;
+      const braceIndex = css.indexOf('{', atRuleStart);
+      const semiIndex = css.indexOf(';', atRuleStart);
+
+      if (semiIndex !== -1 && (braceIndex === -1 || semiIndex < braceIndex)) {
+        output.push(css.slice(atRuleStart, semiIndex + 1));
+        i = semiIndex + 1;
+        continue;
+      }
+
+      if (braceIndex === -1) {
+        break;
+      }
+
+      const braceEnd = findMatchingBrace(css, braceIndex);
+      if (braceEnd === -1) {
+        break;
+      }
+
+      const atRuleHeader = css.slice(atRuleStart, braceIndex).trim();
+      const inner = css.slice(braceIndex + 1, braceEnd);
+      const isConditional = /@media|@supports|@container/i.test(atRuleHeader);
+
+      if (isConditional) {
+        const filteredInner = filterCssForSelectors(inner, sets);
+        if (filteredInner.css.trim()) {
+          output.push(`${atRuleHeader} {\n${filteredInner.css}\n}`);
+          filteredInner.animations.forEach((name) => animations.add(name));
+        }
+      }
+
+      i = braceEnd + 1;
+      continue;
+    }
+
+    const selectorStart = i;
+    const braceIndex = css.indexOf('{', selectorStart);
+    if (braceIndex === -1) {
+      break;
+    }
+    const braceEnd = findMatchingBrace(css, braceIndex);
+    if (braceEnd === -1) {
+      break;
+    }
+
+    const selectorText = css.slice(selectorStart, braceIndex).trim();
+    const body = css.slice(braceIndex + 1, braceEnd).trim();
+
+    if (selectorMatchesSets(selectorText, sets)) {
+      output.push(`${selectorText} { ${body} }`);
+      extractAnimationNames(body).forEach((name) => animations.add(name));
+    }
+
+    i = braceEnd + 1;
+  }
+
+  return { css: output.join('\n'), animations };
+}
+
+function extractComponentCss(html: string, fullCss: string): string {
+  if (!fullCss.trim()) return '';
+
+  const sets = extractSelectorsFromHtml(html);
+  if (sets.classes.size === 0 && sets.ids.size === 0 && sets.tags.size === 0) {
+    return '';
+  }
+
+  const keyframesExtracted = extractAtRuleBlocks(fullCss, '@keyframes');
+  const fontFaceExtracted = extractAtRuleBlocks(keyframesExtracted.remaining, '@font-face');
+  const filtered = filterCssForSelectors(fontFaceExtracted.remaining, sets);
+
+  const filteredBlocks: string[] = [];
+  if (fontFaceExtracted.blocks.length > 0) {
+    filteredBlocks.push(fontFaceExtracted.blocks.join('\n'));
+  }
+
+  if (filtered.css.trim()) {
+    filteredBlocks.push(filtered.css.trim());
+  }
+
+  if (filtered.animations.size > 0 && keyframesExtracted.namedBlocks) {
+    filtered.animations.forEach((name) => {
+      const block = keyframesExtracted.namedBlocks?.get(name);
+      if (block) {
+        filteredBlocks.push(block);
+      }
+    });
+  }
+
+  return filteredBlocks.join('\n').trim();
+}
+
 interface SaveComponentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -110,15 +385,18 @@ export function SaveComponentDialog({
       // Extract HTML from selected component (matches legacy: selected.toHTML())
       const componentHtml = selected.toHTML();
       
-      // Extract ALL CSS from editor (matches legacy: editor.getCss())
+      // Extract only CSS for selected component (avoid saving entire page)
       const editorCss = editor.getCss();
+      const componentCss = extractComponentCss(componentHtml, editorCss);
 
       // Set extracted values
       setExtractedHtml(componentHtml);
-      setExtractedCss(editorCss);
+      setExtractedCss(componentCss);
 
       // Combine HTML and CSS (matches legacy format)
-      const combinedHtml = `${componentHtml}<style>${editorCss}</style>`;
+      const combinedHtml = componentCss
+        ? `${componentHtml}<style>${componentCss}</style>`
+        : componentHtml;
       
       // Set form value
       setValue('html', combinedHtml);
@@ -231,8 +509,9 @@ export function SaveComponentDialog({
         throw new Error('Component HTML is empty. Please ensure the component has content.');
       }
 
-      // Get fresh CSS from editor - this captures ALL CSS rules from the style manager
-      const currentCss = editor.getCss() || '';
+      // Get CSS for selected component only (avoid saving full page CSS)
+      const editorCss = editor.getCss() || '';
+      const currentCss = extractComponentCss(componentHtml, editorCss);
       
       // Clean HTML - remove any inline style tags since CSS is saved separately
       // This ensures clean separation: html = structure, css = styling
