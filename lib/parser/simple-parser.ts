@@ -284,17 +284,18 @@ export async function parseTemplate(
       }
       
       // Extract body content AFTER script replacement
-      // КРИТИЧЕСКИ ВАЖНО: Скрипты остаются там, где они были (head или body)
-      // Дубликаты уже удалены выше
+      // КРИТИЧЕСКИ ВАЖНО: Скрипты уже обработаны (CDN/base64) и дубликаты удалены выше
       const body = doc.querySelector('body');
-      let bodyHtml = body ? body.innerHTML : htmlContent;
+      const bodyContent = body ? body.innerHTML : htmlContent;
       
-      // Также извлекаем скрипты из head и добавляем их в bodyHtml
-      // (они уже обработаны и дубликаты удалены)
+      // Collect scripts from head in correct order: libraries first, then inline config
       const head = doc.querySelector('head');
-      const headScripts = head ? head.querySelectorAll('script[src]') : [];
-      if (headScripts.length > 0) {
-        const headScriptsHtml: string[] = [];
+      const headScriptsHtml: string[] = [];
+      const headInlineScriptsHtml: string[] = [];
+      
+      if (head) {
+        // 1. Collect head script[src] tags (libraries - must load FIRST)
+        const headScripts = head.querySelectorAll('script[src]');
         headScripts.forEach(script => {
           const src = script.getAttribute('src');
           if (!src) return;
@@ -310,12 +311,34 @@ export async function parseTemplate(
           headScriptsHtml.push(`<script${attrsStr}></script>`);
         });
         
-        // Добавляем скрипты из head в конец bodyHtml
-        if (headScriptsHtml.length > 0) {
-          bodyHtml += '\n' + headScriptsHtml.join('\n');
-          log(`   📦 Added ${headScriptsHtml.length} script(s) from head to body`);
-        }
+        // 2. Collect head inline scripts (config/setup - load AFTER libraries, BEFORE body)
+        const headInlineScripts = head.querySelectorAll('script:not([src])');
+        headInlineScripts.forEach(script => {
+          const scriptHtml = script.toString();
+          if (scriptHtml.trim()) {
+            headInlineScriptsHtml.push(scriptHtml);
+          }
+        });
       }
+      
+      // 3. Build HTML in correct order: head scripts → head inline → body content
+      // This ensures libraries load before initialization code that uses them
+      let bodyHtml = '';
+      
+      // First: head script[src] tags (libraries like GSAP, AOS, jQuery, etc.)
+      if (headScriptsHtml.length > 0) {
+        bodyHtml += headScriptsHtml.join('\n') + '\n';
+        log(`   📦 Added ${headScriptsHtml.length} script[src] tag(s) from head (libraries)`);
+      }
+      
+      // Second: head inline scripts (config, setup code)
+      if (headInlineScriptsHtml.length > 0) {
+        bodyHtml += headInlineScriptsHtml.join('\n') + '\n';
+        log(`   📦 Added ${headInlineScriptsHtml.length} inline script(s) from head (config)`);
+      }
+      
+      // Third: body content (includes body scripts that use the libraries)
+      bodyHtml += bodyContent;
       
       // Replace image paths with base64
       bodyHtml = replaceHtmlAssetPaths(bodyHtml, imageMap);
