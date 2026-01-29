@@ -457,12 +457,63 @@ export async function parseTemplate(
 /**
  * CDN mappings for common libraries
  */
+/**
+ * CDN URLs for script tags: when a local script path contains the key (substring match),
+ * the src is replaced with the CDN URL so the template works without the original file.
+ */
 const SCRIPT_CDN_MAP: Record<string, string> = {
+  // Original: UI and carousel libraries
   'jquery': 'https://code.jquery.com/jquery-3.6.0.min.js',
   'bootstrap': 'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js',
   'owl.carousel': 'https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js',
   'slick': 'https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js',
   'isotope': 'https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.min.js',
+
+  // Animation libraries (check scrolltrigger before gsap for correct CDN)
+  'scrolltrigger': 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js',
+  'gsap': 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js',
+  'aos': 'https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js',
+  'lottie': 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js',
+  'anime': 'https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js',
+
+  // Sliders / carousels
+  'swiper': 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+  'splide': 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js',
+  'glide': 'https://cdn.jsdelivr.net/npm/@glidejs/glide@3.6.0/dist/glide.min.js',
+
+  // Scroll libraries
+  'scrollmagic': 'https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.8/ScrollMagic.min.js',
+  'locomotive': 'https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js',
+  'scrollreveal': 'https://unpkg.com/scrollreveal@4.0.9/dist/scrollreveal.min.js',
+
+  // UI / overlay libraries
+  'lightbox': 'https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js',
+  'magnific': 'https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/jquery.magnific-popup.min.js',
+  'fancybox': 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js',
+
+  // 3D / canvas
+  'three': 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+  'p5': 'https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js',
+
+  // Utilities
+  'waypoints': 'https://cdnjs.cloudflare.com/ajax/libs/waypoints/4.0.1/noframework.waypoints.min.js',
+  'typed': 'https://cdn.jsdelivr.net/npm/typed.js@2.0.16/dist/typed.umd.js',
+  'countup': 'https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.min.js',
+  'particles': 'https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js',
+  'chart': 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+};
+
+/**
+ * CDN URLs for link[href] stylesheet tags: when a local CSS path contains the key,
+ * it can be replaced with the CDN URL. Used for library styles not in the ZIP.
+ */
+const CSS_CDN_MAP: Record<string, string> = {
+  'aos': 'https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css',
+  'swiper': 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+  'animate': 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css',
+  'lightbox': 'https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.min.css',
+  'fancybox': 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css',
+  'splide': 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css',
 };
 
 /**
