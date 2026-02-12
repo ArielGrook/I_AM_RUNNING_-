@@ -607,7 +607,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         const html = editor.getHtml();
         const css = editor.getCss();
         
-        // Update project store
+        // Update project store - CRITICAL: persist HTML in components so load works
         if (currentProject) {
           const currentPage = currentProject.pages[0];
           if (currentPage) {
@@ -615,7 +615,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
               pages: [
                 {
                   ...currentPage,
-                  components: [], // TODO: Parse HTML to components
+                  components: html ? [{ id: 'main', type: 'wrapper', category: 'custom', props: { html } }] : [],
                   styles: css,
                 },
               ],

@@ -152,6 +152,7 @@ export default function EditorPage() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [loadedFromSupabase, setLoadedFromSupabase] = useState(false);
+  const supabaseLoadedProjectIdRef = useRef<string | null>(null);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
   const searchParams = useSearchParams();
 
@@ -238,6 +239,7 @@ export default function EditorPage() {
           const project = await loadProjectFromSupabase(projectId);
           if (project) {
             console.log('✅ Found project:', project.name, project.id);
+            supabaseLoadedProjectIdRef.current = project.id;
             loadProject(project);
             setLoadedFromSupabase(true);
             return;
@@ -257,6 +259,7 @@ export default function EditorPage() {
 
         const latestProject = projects[0];
         console.log('✅ Found latest project:', latestProject.name, latestProject.id);
+        supabaseLoadedProjectIdRef.current = latestProject.id;
         loadProject(latestProject);
       } catch (error) {
         console.error('❌ Error loading from Supabase:', error);
@@ -267,6 +270,53 @@ export default function EditorPage() {
 
     loadInitialProject();
   }, [isAuthenticated, loadedFromSupabase, searchParams, loadProject]);
+
+  // CRITICAL: After loading from Supabase, explicitly push project into GrapesJS editor
+  // (GrapeEditor sync may run before editor is ready or project has components format)
+  useEffect(() => {
+    const projectId = supabaseLoadedProjectIdRef.current;
+    if (!projectId || !currentProject || currentProject.id !== projectId || !grapeEditorRef.current) return;
+
+    const firstPage = currentProject.pages[0];
+    if (!firstPage) return;
+
+    const extractHtmlFromProject = (): string => {
+      const comps = firstPage.components;
+      if (typeof comps === 'string') return comps;
+      if (Array.isArray(comps) && comps.length > 0) {
+        return comps
+          .map((c: { props?: { html?: string } }) => c?.props?.html || '')
+          .filter(Boolean)
+          .join('\n');
+      }
+      return '';
+    };
+
+    const html = extractHtmlFromProject();
+    const css = [currentProject.globalStyles, firstPage.styles].filter(Boolean).join('\n');
+    if (!html && !css) return;
+
+    const pushToEditor = () => {
+      if (!grapeEditorRef.current) return;
+      try {
+        console.log('🎨 Loading project into GrapesJS editor...');
+        if (html) grapeEditorRef.current.setComponents(html);
+        if (css) grapeEditorRef.current.setStyle(css);
+        const editor = grapeEditorRef.current.getEditor();
+        const wrapper = editor?.getWrapper?.();
+        const count = wrapper?.components?.()?.length ?? 0;
+        console.log('✅ Project data loaded into editor');
+        console.log('📊 Components in editor:', count);
+      } catch (error) {
+        console.error('❌ Failed to load into editor:', error);
+      } finally {
+        supabaseLoadedProjectIdRef.current = null;
+      }
+    };
+
+    const t = setTimeout(pushToEditor, 500);
+    return () => clearTimeout(t);
+  }, [currentProject]);
 
   // Check for chat query parameter on mount
   useEffect(() => {
