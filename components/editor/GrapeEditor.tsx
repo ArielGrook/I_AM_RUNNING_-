@@ -955,27 +955,35 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
   return (
     <div className="h-full w-full relative">
       <style jsx global>{`
-        /* Center GrapesJS canvas */
+        /* Canvas - fill space, no side padding */
         .gjs-cv-canvas {
-          margin: 0 auto;
-          display: flex;
-          justify-content: center;
-          align-items: flex-start;
-          min-height: 100%;
-          padding-top: 20px;
+          margin: 0 !important;
+          padding: 0 !important;
+          display: flex !important;
+          justify-content: flex-start !important;
+          align-items: flex-start !important;
+          min-height: 100% !important;
+          width: 100% !important;
+        }
+        
+        .gjs-cv-canvas__frames {
+          padding: 0 !important;
+          margin: 0 !important;
+          width: 100% !important;
+          display: flex !important;
+        }
+        
+        .gjs-frame-wrapper {
+          margin: 0 !important;
+          width: 100% !important;
+          min-width: 100% !important;
         }
         
         .gjs-frame {
-          margin: 0 auto;
+          margin: 0 !important;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          border-radius: 4px;
-        }
-        
-        /* Ensure canvas wrapper is centered */
-        .gjs-cv-canvas__frames {
-          display: flex;
-          justify-content: center;
-          width: 100%;
+          border-radius: 0;
+          min-width: 100%;
         }
         
         /* Hide default GrapesJS panels that duplicate our UI */

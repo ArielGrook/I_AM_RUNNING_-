@@ -1317,19 +1317,19 @@ export default function EditorPage() {
               inset-y-0 left-0 
               z-40 md:z-auto
               transition-all duration-300
-              ${leftPanelOpen ? 'w-80 translate-x-0' : 'w-80 -translate-x-full md:w-0 md:translate-x-0'}
+              ${leftPanelOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full md:w-0 md:translate-x-0'}
               overflow-hidden
             `}>
-              <div className="h-full bg-white dark:bg-[#2d2d2d] border-r border-gray-200 dark:border-[#404040] flex flex-col shadow-lg md:shadow-none">
-                <div className="p-4 border-b">
-                  <h3 className="font-semibold text-lg mb-3">{t('components')}</h3>
+              <div className="h-full bg-white dark:bg-[#2d2d2d] border-r border-gray-200 dark:border-[#404040] flex flex-col shadow-lg md:shadow-none editor-left-panel">
+                <div className="p-4 border-b border-gray-200 dark:border-[#404040]">
+                  <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-[#FF6B35]">{t('components')}</h3>
                   <div className="flex flex-wrap gap-1">
                     <button
                       onClick={() => setSelectedCategory(null)}
                       className={`px-3 py-1 text-xs rounded-full transition ${
                         selectedCategory === null
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100 hover:bg-gray-200'
+                          ? 'bg-[#FF6B35] text-white'
+                          : 'bg-gray-100 dark:bg-[#3a3a3a] hover:bg-gray-200 dark:hover:bg-[#4a4a4a] text-gray-700 dark:text-[#e5e5e5]'
                       }`}
                     >
                       {t('all')}
@@ -1340,8 +1340,8 @@ export default function EditorPage() {
                         onClick={() => setSelectedCategory(cat)}
                         className={`px-3 py-1 text-xs rounded-full transition capitalize ${
                           selectedCategory === cat
-                            ? 'bg-primary text-white'
-                            : 'bg-gray-100 hover:bg-gray-200'
+                            ? 'bg-[#FF6B35] text-white'
+                            : 'bg-gray-100 dark:bg-[#3a3a3a] hover:bg-gray-200 dark:hover:bg-[#4a4a4a] text-gray-700 dark:text-[#e5e5e5]'
                         }`}
                       >
                         {cat}
@@ -1371,7 +1371,7 @@ export default function EditorPage() {
                       {filteredComponents.map((component) => (
                         <div
                           key={component.id}
-                          className="border rounded-lg p-3 hover:border-primary cursor-move transition group"
+                          className="border border-[#FF6B35] rounded-lg p-3 hover:border-[#e55a28] bg-white dark:bg-[#3a3a3a] cursor-move transition group"
                           draggable
                           onDragStart={(e) => {
                             // CRITICAL: Provide actual HTML to GrapesJS, not JSON
@@ -1386,7 +1386,7 @@ export default function EditorPage() {
                             e.dataTransfer.setData('text/plain', payload);
                           }}
                         >
-                          <div className="aspect-video bg-gray-50 rounded mb-2 flex items-center justify-center overflow-hidden relative">
+                          <div className="aspect-video bg-gray-50 dark:bg-[#2d2d2d] rounded mb-2 flex items-center justify-center overflow-hidden relative">
                             {(() => {
                               const htmlContent = typeof component.html === 'string' ? component.html : String(component.html || '');
                               const cssContent = component.css || '';
@@ -1405,7 +1405,7 @@ export default function EditorPage() {
                               }
 
                               if (!previewHtml.trim()) {
-                                return <span className="text-gray-400 capitalize">{component.category}</span>;
+                                return <span className="text-gray-400 dark:text-[#9ca3af] capitalize">{component.category}</span>;
                               }
 
                               return (
@@ -1418,12 +1418,12 @@ export default function EditorPage() {
                               );
                             })()}
                           </div>
-                          <h4 className="font-medium text-sm">{component.name}</h4>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <h4 className="font-medium text-sm text-gray-900 dark:text-[#e5e5e5]">{component.name}</h4>
+                          <p className="text-xs text-gray-500 dark:text-[#9ca3af] mt-1">
                             {component.description || `${component.category} component`}
                           </p>
                           {component.style && (
-                            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-gray-100 rounded capitalize">
+                            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-[#4a4a4a] dark:text-[#FF6B35] rounded capitalize">
                               {component.style}
                             </span>
                           )}
@@ -1494,7 +1494,7 @@ export default function EditorPage() {
               inset-y-0 right-0 
               z-40 md:z-auto
               transition-all duration-300
-              ${rightPanelOpen ? 'w-80 translate-x-0' : 'w-80 translate-x-full md:w-0 md:translate-x-0'}
+              ${rightPanelOpen ? 'w-64 translate-x-0' : 'w-64 translate-x-full md:w-0 md:translate-x-0'}
               overflow-hidden
             `}>
               <div className="h-full bg-white dark:bg-[#2d2d2d] border-l border-gray-200 dark:border-[#404040] flex flex-col shadow-lg md:shadow-none">

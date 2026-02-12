@@ -48,7 +48,7 @@
 .dark .gjs-blocks-c .gjs-block {
   background-color: #3a3a3a !important;
   color: #e5e5e5 !important;
-  border: 1px solid #4a4a4a !important;
+  border: 1px solid #FF6B35 !important;
 }
 
 .dark .gjs-block__media,
@@ -66,9 +66,10 @@
 
 .dark .gjs-block-category .gjs-title {
   background-color: #3a3a3a !important;
-  color: #e5e5e5 !important;
+  color: #FF6B35 !important;
   padding: 8px 12px;
   border-bottom: 2px solid #FF6B35;
+  font-weight: 600 !important;
 }
 
 .dark .gjs-block * {
@@ -258,7 +259,28 @@
   background-color: #2d2d2d !important;
 }
 
-/* Canvas - keep content area light for design preview */
+/* Canvas - no padding/margins, fill space */
+.gjs-cv-canvas,
+.dark .gjs-cv-canvas {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.gjs-cv-canvas__frames {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.gjs-frame-wrapper {
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+.gjs-cv-canvas-bg {
+  padding: 0 !important;
+}
+
+/* Canvas - keep content area for design preview */
 .dark .gjs-cv-canvas {
   background-color: #1a1a1a !important;
 }
@@ -430,6 +452,50 @@
 }
 
 .dark .gradient-builder button.border-gray-200:hover {
+  border-color: #e55a28 !important;
+}
+
+/* Hide CSS Output label */
+.gradient-builder .gradient-css-output label,
+.gradient-builder .gradient-css-output .gjs-label {
+  display: none !important;
+}
+
+/* ===== LIGHT MODE - Orange accents ===== */
+.gjs-block-category .gjs-title {
+  color: #FF6B35 !important;
+  border-bottom: 2px solid #FF6B35 !important;
+  font-weight: 600 !important;
+}
+
+.gjs-block {
+  border: 1px solid #FF6B35 !important;
+}
+
+.gjs-block:hover {
+  border-color: #e55a28 !important;
+}
+
+.gjs-pn-btn:hover {
+  color: #FF6B35 !important;
+}
+
+.gjs-pn-btn.gjs-pn-active {
+  background-color: #FF6B35 !important;
+  color: white !important;
+}
+
+.gjs-layer.gjs-selected {
+  background-color: #FF6B35 !important;
+  color: white !important;
+}
+
+/* Editor left panel - light mode orange */
+.editor-left-panel .border.rounded-lg {
+  border-color: #FF6B35 !important;
+}
+
+.editor-left-panel .border.rounded-lg:hover {
   border-color: #e55a28 !important;
 }
 
