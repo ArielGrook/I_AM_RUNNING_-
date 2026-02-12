@@ -44,7 +44,7 @@ import {
   incrementDemoProjectCount,
 } from '@/lib/utils/demo-mode';
 import { getUserPackage, hasFeatureAccess } from '@/lib/utils/user-package';
-import { saveProjectToSupabase } from '@/lib/store/supabase-sync';
+import { saveProjectToSupabase, loadProjectFromSupabase, listProjectsFromSupabase } from '@/lib/store/supabase-sync';
 import dynamic from 'next/dynamic';
 
 // Lazy load heavy components for better performance
@@ -151,6 +151,7 @@ export default function EditorPage() {
   const [currentDevice, setCurrentDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [loadedFromSupabase, setLoadedFromSupabase] = useState(false);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
   const searchParams = useSearchParams();
 
@@ -203,6 +204,12 @@ export default function EditorPage() {
       await saveProjectToSupabase(currentProject);
       console.log('[Manual Save] ✅ Project saved to Supabase');
 
+      // Update URL with project ID (for reload/refresh to load this project)
+      if (currentProject.id) {
+        const newUrl = `/${locale}/editor?id=${currentProject.id}`;
+        window.history.replaceState({}, '', newUrl);
+      }
+
       setSaveStatus('saved');
       setStoreSaveStatus('saved');
       setSaveSuccess(true);
@@ -215,7 +222,51 @@ export default function EditorPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject]);
+  }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale]);
+
+  // Load project from Supabase when editor opens (by ID from URL or latest)
+  useEffect(() => {
+    if (!isAuthenticated || loadedFromSupabase) return;
+
+    async function loadInitialProject() {
+      try {
+        const projectId = searchParams.get('id');
+
+        if (projectId) {
+          // Load specific project by ID from URL
+          console.log('📂 Loading project by ID:', projectId);
+          const project = await loadProjectFromSupabase(projectId);
+          if (project) {
+            console.log('✅ Found project:', project.name, project.id);
+            loadProject(project);
+            setLoadedFromSupabase(true);
+            return;
+          }
+          console.log('⚠️ Project not found, falling back to latest');
+        }
+
+        // Load latest project
+        console.log('📂 Loading projects from Supabase...');
+        const projects = await listProjectsFromSupabase();
+
+        if (!projects || projects.length === 0) {
+          console.log('No projects in Supabase, using localStorage or creating new');
+          setLoadedFromSupabase(true);
+          return;
+        }
+
+        const latestProject = projects[0];
+        console.log('✅ Found latest project:', latestProject.name, latestProject.id);
+        loadProject(latestProject);
+      } catch (error) {
+        console.error('❌ Error loading from Supabase:', error);
+      } finally {
+        setLoadedFromSupabase(true);
+      }
+    }
+
+    loadInitialProject();
+  }, [isAuthenticated, loadedFromSupabase, searchParams, loadProject]);
 
   // Check for chat query parameter on mount
   useEffect(() => {
