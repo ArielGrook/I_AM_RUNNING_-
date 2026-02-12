@@ -152,6 +152,7 @@ export default function EditorPage() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [loadedFromSupabase, setLoadedFromSupabase] = useState(false);
+  const [dbVersion, setDbVersion] = useState<number>(0); // Tracks the DB version for correct increment
   const supabaseLoadedProjectIdRef = useRef<string | null>(null);
   const loadedProjectDataRef = useRef<{ projectData: Record<string, unknown>; loadedFrom: 'data' | 'contract' } | null>(null);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
@@ -240,9 +241,9 @@ export default function EditorPage() {
 
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      console.log('💾 Saving project to Supabase...');
+      console.log(`💾 Saving project to Supabase (current version: ${dbVersion})...`);
 
-      let result: { data?: { id: string }; error?: unknown };
+      let result: { data?: { id: string; version: number }; error?: unknown };
 
       if (pages.length > 0) {
         // Multi-page: sync active page from editor, build full projectData with ALL pages
@@ -259,9 +260,9 @@ export default function EditorPage() {
             name: p.name,
           })),
         };
-        result = await saveProjectToSupabase(currentProject, null, fullProjectData);
+        result = await saveProjectToSupabase(currentProject, null, fullProjectData, null, dbVersion);
       } else {
-        result = await saveProjectToSupabase(currentProject, grapesEditor);
+        result = await saveProjectToSupabase(currentProject, grapesEditor, null, null, dbVersion);
       }
 
       if (result.error) {
@@ -271,7 +272,13 @@ export default function EditorPage() {
         return;
       }
 
-      console.log('[Manual Save] ✅ Project saved to Supabase');
+      // Update local version state with the new version from Supabase
+      if (result.data?.version) {
+        setDbVersion(result.data.version);
+        console.log(`[Manual Save] ✅ Project saved (version: ${result.data.version})`);
+      } else {
+        console.log('[Manual Save] ✅ Project saved to Supabase');
+      }
 
       if (currentProject.id) {
         const newUrl = `/${locale}/editor?id=${currentProject.id}`;
@@ -289,7 +296,7 @@ export default function EditorPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale, pages, activePage]);
+  }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale, pages, activePage, dbVersion]);
 
   // Load project from Supabase when editor opens - One-Way Ejection
   // No project ID → redirect to dashboard (user must choose project there)
@@ -316,7 +323,10 @@ export default function EditorPage() {
           return;
         }
 
-        console.log('✅ Found project:', loaded.name, `(loaded from ${loaded.loadedFrom})`);
+        console.log('✅ Found project:', loaded.name, `(loaded from ${loaded.loadedFrom}, version: ${loaded.version ?? 0})`);
+
+        // Store the DB version for correct increment on save
+        setDbVersion(loaded.version ?? 0);
 
         loadedProjectDataRef.current = {
           projectData: loaded.projectData as Record<string, unknown>,

@@ -77,8 +77,9 @@ export async function saveProjectToSupabase(
   project: Project,
   editorInstance?: GrapesJSEditorLike | null,
   fullProjectData?: Record<string, unknown> | null,
-  metadataUpdate?: ProjectMetadataUpdate | null
-): Promise<{ data?: { id: string }; error?: unknown }> {
+  metadataUpdate?: ProjectMetadataUpdate | null,
+  currentVersion?: number
+): Promise<{ data?: { id: string; version: number }; error?: unknown }> {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -111,8 +112,9 @@ export async function saveProjectToSupabase(
       metadata?: Record<string, unknown>;
     };
 
-    // Increment version on every save
-    const newVersion = (projectWithMeta.version || 0) + 1;
+    // Increment version on every save — use explicit currentVersion param (not project.version which is undefined)
+    const newVersion = (currentVersion ?? projectWithMeta.version ?? 0) + 1;
+    console.log(`💾 Version: ${currentVersion ?? projectWithMeta.version ?? 0} → ${newVersion}`);
 
     const payload: Record<string, unknown> = {
       id: project.id,
@@ -143,15 +145,18 @@ export async function saveProjectToSupabase(
 
     const { data, error } = await supabase
       .from('projects')
-      .upsert(payload, { onConflict: 'id' });
+      .upsert(payload, { onConflict: 'id' })
+      .select('id, version')
+      .single();
 
     if (error) {
       console.error('Failed to save project to Supabase:', error);
       return { error };
     }
 
-    console.log(`✅ Project saved (version ${newVersion})`);
-    return { data: data ? { id: project.id } : undefined };
+    const savedVersion = (data as { id: string; version: number } | null)?.version ?? newVersion;
+    console.log(`✅ Project saved (version ${savedVersion})`);
+    return { data: { id: project.id, version: savedVersion } };
   } catch (error) {
     console.error('Supabase sync error:', error);
     return { error };
