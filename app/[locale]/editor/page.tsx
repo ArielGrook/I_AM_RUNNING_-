@@ -46,6 +46,7 @@ import {
 import { getUserPackage, hasFeatureAccess } from '@/lib/utils/user-package';
 import { saveProjectToSupabase, loadProjectFromSupabase, listProjectsFromSupabase, type LoadedProject } from '@/lib/store/supabase-sync';
 import dynamic from 'next/dynamic';
+import './editor-dark-mode.css';
 
 // Lazy load heavy components for better performance
 const ChatPanel = dynamic(() => import('@/components/editor/ChatPanel').then(mod => ({ default: mod.ChatPanel })), {
@@ -102,10 +103,10 @@ export default function EditorPage() {
   // Show loading while checking auth
   if (authLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
+      <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading editor...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading editor...</p>
         </div>
       </div>
     );
@@ -156,6 +157,39 @@ export default function EditorPage() {
   const loadedProjectDataRef = useRef<{ projectData: Record<string, unknown>; loadedFrom: 'data' | 'contract' } | null>(null);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
   const searchParams = useSearchParams();
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Sync dark mode with dashboard preference (localStorage + document class)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isDark = document.documentElement.classList.contains('dark');
+    setDarkMode(isDark);
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const isDarkNow = document.documentElement.classList.contains('dark');
+          setDarkMode(isDarkNow);
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const toggleDarkMode = () => {
+    const next = !darkMode;
+    setDarkMode(next);
+    document.documentElement.classList.toggle('dark', next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', next.toString());
+    }
+  };
 
   // Check demo mode
   const isDemo = isDemoMode();
@@ -176,6 +210,7 @@ export default function EditorPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   
   // Manual save function (localStorage + Supabase) - One-Way Ejection
+  // Multi-page: when pages.length > 0, builds full projectData with ALL pages before save
   const handleManualSave = useCallback(async () => {
     if (!currentProject || isSaving) return;
 
@@ -207,10 +242,28 @@ export default function EditorPage() {
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       console.log('💾 Saving project to Supabase...');
-      console.log('📊 Editor instance:', !!grapesEditor);
 
-      // CRITICAL: Pass GrapesJS editor to get native format → writes ONLY to data
-      const result = await saveProjectToSupabase(currentProject, grapesEditor);
+      let result: { data?: { id: string }; error?: unknown };
+
+      if (pages.length > 0) {
+        // Multi-page: sync active page from editor, build full projectData with ALL pages
+        const pagesCopy = pages.map((p, i) =>
+          i === activePage
+            ? { ...p, html: grapesEditor.getHtml?.() ?? p.html, css: grapesEditor.getCss?.() ?? p.css }
+            : p
+        );
+        const fullProjectData = {
+          ...grapesEditor.getProjectData?.(),
+          pages: pagesCopy.map((p) => ({
+            component: p.html,
+            styles: p.css,
+            name: p.name,
+          })),
+        };
+        result = await saveProjectToSupabase(currentProject, null, fullProjectData);
+      } else {
+        result = await saveProjectToSupabase(currentProject, grapesEditor);
+      }
 
       if (result.error) {
         console.error('❌ Save failed:', result.error);
@@ -237,7 +290,7 @@ export default function EditorPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale]);
+  }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale, pages, activePage]);
 
   // Load project from Supabase when editor opens - One-Way Ejection
   // No project ID → redirect to dashboard (user must choose project there)
@@ -291,6 +344,7 @@ export default function EditorPage() {
   }, [isAuthenticated, loadedFromSupabase, searchParams, loadProject, router, locale]);
 
   // Push projectData into GrapesJS editor - One-Way Ejection
+  // Multi-page: restores all pages to state and loads first page into canvas
   useEffect(() => {
     const payload = loadedProjectDataRef.current;
     if (!payload || !grapeEditorRef.current) return;
@@ -307,7 +361,27 @@ export default function EditorPage() {
       try {
         console.log('🎨 Loading project data into GrapesJS...');
 
-        if (loadedFrom === 'data' && projectData && typeof projectData === 'object') {
+        const rawPages = projectData?.pages as Array<{ component?: string; styles?: string; name?: string }> | undefined;
+        const pagesCount = rawPages?.length ?? 0;
+
+        if (pagesCount > 1) {
+          // Multi-page: restore all pages to state, load first into canvas
+          const restoredPages = rawPages!.map((p) => ({
+            name: p.name || 'Page',
+            html: typeof p.component === 'string' ? p.component : '',
+            css: typeof p.styles === 'string' ? p.styles : '',
+          }));
+          setPages(restoredPages);
+          setActivePage(0);
+          const first = restoredPages[0];
+          if (first?.html) editor.setComponents(first.html);
+          if (first?.css) editor.setStyle(first.css);
+          setImportResult({ css: '' }); // Each page has its own full styles
+          console.log(`✅ Loaded ${pagesCount} page(s) into editor`);
+          restoredPages.forEach((p, idx) => {
+            console.log(`  Page ${idx + 1}:`, p.name || 'Untitled');
+          });
+        } else if (loadedFrom === 'data' && projectData && typeof projectData === 'object') {
           try {
             editor.loadProjectData(projectData);
             const wrapper = editor.getWrapper?.();
@@ -329,8 +403,8 @@ export default function EditorPage() {
     };
 
     function fallbackSetComponents(ed: ReturnType<typeof grapeEditorRef.current.getEditor>, pd: Record<string, unknown>) {
-      const pages = pd?.pages as Array<{ component?: string; components?: unknown; styles?: string }> | undefined;
-      const first = pages?.[0];
+      const pdPages = pd?.pages as Array<{ component?: string; components?: unknown; styles?: string }> | undefined;
+      const first = pdPages?.[0];
       let html = '';
       let css = '';
 
@@ -979,20 +1053,20 @@ export default function EditorPage() {
   return (
     <ErrorBoundary>
       <div 
-        className="h-screen flex flex-col bg-gray-50"
+        className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between transition-colors duration-200">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild className="text-gray-700 hover:text-gray-900 hover:bg-gray-100">
+            <Button variant="ghost" size="sm" asChild className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
               <Link href={`/${locale}/dashboard`}>
-                <ArrowLeft className="w-4 h-4 mr-1 text-gray-700" />
-                <span className="text-gray-700">{t('dashboard')}</span>
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                <span>{t('dashboard')}</span>
               </Link>
             </Button>
-            <div className="h-6 w-px bg-gray-300" />
-            <h1 className="font-semibold text-lg text-gray-900">
+            <div className="h-6 w-px bg-gray-300 dark:bg-gray-600" />
+            <h1 className="font-semibold text-lg text-gray-900 dark:text-white">
               {currentProject?.name || t('newProject')}
             </h1>
             {currentProject && (
@@ -1125,6 +1199,21 @@ export default function EditorPage() {
                 <div className="hidden md:block h-6 w-px bg-gray-300 mx-1" />
               </>
             )}
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+              title={darkMode ? t('lightTheme') || 'Светлая тема' : t('darkTheme') || 'Тёмная тема'}
+            >
+              {darkMode ? (
+                <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
             <LanguageSwitcher />
             <Button 
               size="sm" 
@@ -1351,18 +1440,18 @@ export default function EditorPage() {
             {/* Toggle Left Panel */}
             <button
               onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-              className="w-6 bg-white border-y border-r hover:bg-gray-50 flex items-center justify-center z-10 md:z-auto"
+              className="w-6 bg-white dark:bg-gray-800 border-y border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center z-10 md:z-auto transition-colors duration-200"
               aria-label={leftPanelOpen ? 'Hide panel' : 'Show panel'}
             >
               {isRTL ? (leftPanelOpen ? '→' : '←') : (leftPanelOpen ? '←' : '→')}
             </button>
             
             {/* Center - Canvas with Grape.js */}
-            <div className="flex-1 bg-gray-100 overflow-hidden relative flex flex-col">
+            <div className="flex-1 bg-gray-100 dark:bg-gray-900 overflow-hidden relative flex flex-col transition-colors duration-200">
               {/* Page Tabs (only show if multiple pages) */}
               {pages.length > 1 && (
-                <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-2 overflow-x-auto">
-                  <span className="text-sm text-gray-500 mr-2">Pages:</span>
+                <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex items-center gap-2 overflow-x-auto">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">Pages:</span>
                   {pages.map((page, index) => (
                     <button
                       key={index}
@@ -1371,7 +1460,7 @@ export default function EditorPage() {
                         px-3 py-1.5 text-sm font-medium rounded-md transition-colors
                         ${activePage === index
                           ? 'bg-orange-500 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }
                       `}
                     >
@@ -1388,6 +1477,7 @@ export default function EditorPage() {
                 initialCss={currentProject.pages[0]?.styles || ''}
                 isRTL={isRTL}
                 components={components}
+                darkMode={darkMode}
               />
               </div>
             </div>
@@ -1395,7 +1485,7 @@ export default function EditorPage() {
             {/* Toggle Right Panel */}
             <button
               onClick={() => setRightPanelOpen(!rightPanelOpen)}
-              className="w-6 bg-white border-y border-l hover:bg-gray-50 flex items-center justify-center z-10 md:z-auto"
+              className="w-6 bg-white dark:bg-gray-800 border-y border-l border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center z-10 md:z-auto transition-colors duration-200"
               aria-label={rightPanelOpen ? 'Hide panel' : 'Show panel'}
             >
               {isRTL ? (rightPanelOpen ? '←' : '→') : (rightPanelOpen ? '→' : '←')}
@@ -1424,13 +1514,13 @@ export default function EditorPage() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
             <div className="text-center">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Plus className="w-8 h-8 text-gray-400" />
+              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Plus className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('startBuilding')}</h3>
-              <p className="text-gray-600 mb-4">{t('dragComponents')}</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('startBuilding')}</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{t('dragComponents')}</p>
               <Button onClick={() => setShowProjectForm(true)}>
                 {t('createProject')}
               </Button>

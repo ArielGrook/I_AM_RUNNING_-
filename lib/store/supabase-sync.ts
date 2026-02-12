@@ -58,10 +58,12 @@ function getProjectData(row: ProjectRow): Project | null {
 /**
  * Save project to Supabase - One-Way Ejection
  * Writes ONLY to data field (GrapesJS native format). Does NOT touch contract.
+ * When fullProjectData is provided (e.g. multi-page from editor), uses it to save ALL pages.
  */
 export async function saveProjectToSupabase(
   project: Project,
-  editorInstance?: GrapesJSEditorLike | null
+  editorInstance?: GrapesJSEditorLike | null,
+  fullProjectData?: Record<string, unknown> | null
 ): Promise<{ data?: { id: string }; error?: unknown }> {
   try {
     const user = await getCurrentUser();
@@ -71,9 +73,14 @@ export async function saveProjectToSupabase(
 
     let dataToSave: Record<string, unknown> | null = null;
 
-    if (editorInstance?.getProjectData) {
+    if (fullProjectData && typeof fullProjectData === 'object') {
+      dataToSave = fullProjectData;
+      const pagesCount = (fullProjectData.pages as unknown[] | undefined)?.length ?? 0;
+      console.log('💾 Saving project with pages:', pagesCount);
+    } else if (editorInstance?.getProjectData) {
       dataToSave = editorInstance.getProjectData();
-      console.log('💾 Saving GrapesJS native format to data field');
+      const pagesCount = (dataToSave?.pages as unknown[] | undefined)?.length ?? 0;
+      console.log('💾 Saving GrapesJS native format to data field, pages:', pagesCount);
     } else if ((project as Project & { data?: unknown }).data && typeof (project as Project & { data?: unknown }).data === 'object') {
       dataToSave = (project as Project & { data: Record<string, unknown> }).data;
     }

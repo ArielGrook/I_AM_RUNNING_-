@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/providers/theme-provider';
 import { LoadingProvider } from '@/components/providers/loading-provider';
 import { CookieConsentWrapper } from '@/components/CookieConsentWrapper';
 import { AuthProvider } from '@/lib/hooks/useAuth';
+import { DarkModeInit } from '@/components/DarkModeInit';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -69,6 +70,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <DarkModeInit />
           <AuthProvider>
             <LoadingProvider>
               {children}

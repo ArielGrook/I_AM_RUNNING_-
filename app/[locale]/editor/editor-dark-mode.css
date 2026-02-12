@@ -1,0 +1,170 @@
+/* Dark mode for GrapesJS editor - syncs with document.documentElement.classList.contains('dark') */
+.dark .gjs-one-bg {
+  background-color: #1f2937 !important;
+}
+
+.dark .gjs-two-bg {
+  background-color: #111827 !important;
+}
+
+.dark .gjs-three-bg {
+  background-color: #374151 !important;
+}
+
+.dark .gjs-four-bg {
+  background-color: #4b5563 !important;
+}
+
+/* Panels */
+.dark .gjs-pn-panel {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+.dark .gjs-pn-btn {
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-pn-btn:hover {
+  background-color: #374151 !important;
+}
+
+.dark .gjs-pn-btn.gjs-pn-active {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+/* Blocks */
+.dark .gjs-blocks-c {
+  background-color: #1f2937 !important;
+}
+
+.dark .gjs-block {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-block:hover {
+  background-color: #4b5563 !important;
+}
+
+/* Layers */
+.dark .gjs-layers {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-layer {
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-layer:hover {
+  background-color: #374151 !important;
+}
+
+.dark .gjs-layer.gjs-selected {
+  background-color: #3b82f6 !important;
+}
+
+/* Style Manager */
+.dark .gjs-sm-sectors {
+  background-color: #1f2937 !important;
+}
+
+.dark .gjs-sm-sector {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+.dark .gjs-sm-title {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-sm-property {
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-field {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-field:focus {
+  border-color: #3b82f6 !important;
+}
+
+/* Canvas - keep content area slightly lighter for contrast */
+.dark .gjs-cv-canvas {
+  background-color: #111827 !important;
+}
+
+.dark .gjs-frame-wrapper {
+  background-color: white; /* Keep canvas content light for design preview */
+}
+
+/* Toolbar */
+.dark .gjs-toolbar {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+.dark .gjs-toolbar-item {
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-toolbar-item:hover {
+  background-color: #374151 !important;
+}
+
+/* Modals */
+.dark .gjs-mdl-dialog {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-mdl-header {
+  background-color: #374151 !important;
+}
+
+.dark .gjs-mdl-content {
+  background-color: #1f2937 !important;
+}
+
+/* Inputs and selects within GrapesJS */
+.dark .gjs-editor input[type="text"],
+.dark .gjs-editor input[type="number"],
+.dark .gjs-editor select,
+.dark .gjs-editor textarea {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-editor input:focus,
+.dark .gjs-editor select:focus,
+.dark .gjs-editor textarea:focus {
+  border-color: #3b82f6 !important;
+  outline: none;
+}
+
+/* Block categories */
+.dark .gjs-block-category .gjs-title {
+  color: #f3f4f6 !important;
+}
+
+.dark .gjs-block-label {
+  color: #f3f4f6 !important;
+}
+
+/* Smooth transitions */
+.gjs-pn-panel,
+.gjs-block,
+.gjs-layer,
+.gjs-sm-sector,
+.gjs-pn-btn,
+.gjs-toolbar-item {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}

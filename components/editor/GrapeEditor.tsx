@@ -37,6 +37,7 @@ interface GrapeEditorProps {
   initialCss?: string;
   isRTL?: boolean;
   components?: SupabaseComponent[]; // Supabase components to register as blocks
+  darkMode?: boolean; // Sync with dashboard/editor dark mode (document.documentElement.classList 'dark')
 }
 
 /**
@@ -112,7 +113,7 @@ function addResponsiveClasses(component: any) {
 }
 
 export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
-  ({ onUpdate, initialHtml = '', initialCss = '', isRTL = false, components }, ref) => {
+  ({ onUpdate, initialHtml = '', initialCss = '', isRTL = false, components, darkMode: darkModeProp }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const grapesEditorRef = useRef<grapesjs.Editor | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -121,7 +122,8 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
   const lastSyncedProjectRef = useRef<string | null>(null);
   const { currentProject, updateProject } = useProjectStore();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  // Prefer darkMode prop (syncs with dashboard/editor toggle) over next-themes
+  const isDark = darkModeProp !== undefined ? darkModeProp : theme === 'dark';
 
   // Undo/Redo handlers
   const handleUndo = useCallback(() => {
