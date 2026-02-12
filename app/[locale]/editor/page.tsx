@@ -1494,12 +1494,12 @@ export default function EditorPage() {
               inset-y-0 right-0 
               z-40 md:z-auto
               transition-all duration-300
-              ${rightPanelOpen ? 'w-[450px] translate-x-0' : 'w-[450px] translate-x-full md:w-0 md:translate-x-0'}
+              ${rightPanelOpen ? 'w-80 translate-x-0' : 'w-80 translate-x-full md:w-0 md:translate-x-0'}
               overflow-hidden
             `}>
               <div className="h-full bg-white dark:bg-[#2d2d2d] border-l border-gray-200 dark:border-[#404040] flex flex-col shadow-lg md:shadow-none">
                 <div className="p-4 border-b">
-                  <h3 className="font-semibold text-lg text-gray-900">{t('properties')}</h3>
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-[#e5e5e5]">{t('properties')}</h3>
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <StyleManager 
