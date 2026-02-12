@@ -67,7 +67,6 @@ const PreviewModal = dynamic(() => import('@/components/editor/PreviewModal').th
 export default function EditorPage() {
   const t = useTranslations('EditorPage');
   const locale = useLocale();
-  const isRTL = locale === 'he' || locale === 'ar';
   const router = useRouter();
   const { isAuthenticated, loading: authLoading, canAccessEditor, role } = useAuth();
   
@@ -1054,7 +1053,6 @@ export default function EditorPage() {
     <ErrorBoundary>
       <div 
         className="h-screen flex flex-col bg-gray-50 dark:bg-[#1a1a1a] transition-colors duration-200"
-        dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Header */}
         <header className="bg-white dark:bg-[#2d2d2d] border-b border-gray-200 dark:border-[#404040] px-4 py-3 flex items-center justify-between transition-colors duration-200">
@@ -1443,7 +1441,7 @@ export default function EditorPage() {
               className="w-6 bg-white dark:bg-[#2d2d2d] border-y border-r border-gray-200 dark:border-[#404040] hover:bg-gray-50 dark:hover:bg-[#3a3a3a] flex items-center justify-center z-10 md:z-auto transition-colors duration-200"
               aria-label={leftPanelOpen ? 'Hide panel' : 'Show panel'}
             >
-              {isRTL ? (leftPanelOpen ? '→' : '←') : (leftPanelOpen ? '←' : '→')}
+              {leftPanelOpen ? '←' : '→'}
             </button>
             
             {/* Center - Canvas with Grape.js */}
@@ -1475,7 +1473,6 @@ export default function EditorPage() {
                 onUpdate={handleEditorUpdate}
                 initialHtml={currentProject.pages[0]?.components?.[0]?.props?.html || ''}
                 initialCss={currentProject.pages[0]?.styles || ''}
-                isRTL={isRTL}
                 components={components}
                 darkMode={darkMode}
               />
@@ -1488,7 +1485,7 @@ export default function EditorPage() {
               className="w-6 bg-white dark:bg-[#2d2d2d] border-y border-l border-gray-200 dark:border-[#404040] hover:bg-gray-50 dark:hover:bg-[#3a3a3a] flex items-center justify-center z-10 md:z-auto transition-colors duration-200"
               aria-label={rightPanelOpen ? 'Hide panel' : 'Show panel'}
             >
-              {isRTL ? (rightPanelOpen ? '←' : '→') : (rightPanelOpen ? '→' : '←')}
+              {rightPanelOpen ? '→' : '←'}
             </button>
             
             {/* Right Panel - Style Manager */}
@@ -1578,7 +1575,6 @@ export default function EditorPage() {
           open={showPreview}
           onOpenChange={setShowPreview}
           previewUrl={previewUrl}
-          isRTL={isRTL}
           watermarked={previewWatermarked}
           projectName={currentProject?.name || 'Preview'}
         />

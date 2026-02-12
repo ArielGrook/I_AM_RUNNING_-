@@ -35,7 +35,6 @@ interface GrapeEditorProps {
   onUpdate?: (html: string, css: string) => void;
   initialHtml?: string;
   initialCss?: string;
-  isRTL?: boolean;
   components?: SupabaseComponent[]; // Supabase components to register as blocks
   darkMode?: boolean; // Sync with dashboard/editor dark mode (document.documentElement.classList 'dark')
 }
@@ -113,7 +112,7 @@ function addResponsiveClasses(component: any) {
 }
 
 export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
-  ({ onUpdate, initialHtml = '', initialCss = '', isRTL = false, components, darkMode: darkModeProp }, ref) => {
+  ({ onUpdate, initialHtml = '', initialCss = '', components, darkMode: darkModeProp }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const grapesEditorRef = useRef<grapesjs.Editor | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -646,7 +645,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         grapesEditorRef.current = null;
       }
     };
-  }, [isRTL, components]); // Re-initialize if RTL or components change
+  }, [components]); // Re-initialize when components change
 
   // Apply dark theme to editor when site theme changes
   useEffect(() => {
@@ -954,7 +953,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
   }), [handleUndo, handleRedo, canUndo, canRedo]);
 
   return (
-    <div className="h-full w-full relative" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="h-full w-full relative">
       <style jsx global>{`
         /* Center GrapesJS canvas */
         .gjs-cv-canvas {

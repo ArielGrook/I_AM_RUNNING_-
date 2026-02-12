@@ -19,7 +19,6 @@ interface PreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   previewUrl: string | null;
-  isRTL?: boolean;
   watermarked?: boolean;
   projectName?: string;
 }
@@ -28,7 +27,6 @@ export function PreviewModal({
   open,
   onOpenChange,
   previewUrl,
-  isRTL = false,
   watermarked = false,
   projectName = 'Preview',
 }: PreviewModalProps) {
@@ -62,7 +60,7 @@ export function PreviewModal({
       setIsLoading(false);
       // Try to inject watermark script
       try {
-        injectWatermarkScript(iframe, isRTL);
+        injectWatermarkScript(iframe, false);
       } catch (error) {
         // Cross-origin or other error - watermark is already in HTML
         console.warn('Could not inject watermark script:', error);
@@ -79,7 +77,7 @@ export function PreviewModal({
     return () => {
       iframe.removeEventListener('load', handleLoad);
     };
-  }, [open, watermarked, isRTL]);
+  }, [open, watermarked]);
 
   // Reset state and clean up blob URL when modal closes
   useEffect(() => {
@@ -158,7 +156,6 @@ export function PreviewModal({
             className="w-full h-full border-0"
             title={`Preview of ${projectName}`}
             sandbox="allow-same-origin allow-scripts"
-            style={{ direction: isRTL ? 'rtl' : 'ltr' }}
           />
         </div>
         

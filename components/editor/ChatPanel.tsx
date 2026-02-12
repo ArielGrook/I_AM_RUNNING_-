@@ -33,7 +33,6 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const t = useTranslations('Chat');
   const locale = useLocale();
-  const isRTL = locale === 'he' || locale === 'ar';
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -184,10 +183,8 @@ export function ChatPanel({
     <div
       className={cn(
         'chat-panel fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-lg flex flex-col z-50',
-        isRTL && 'right-auto left-0 border-l-0 border-r',
         className
       )}
-      dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Header */}
       <div className="chat-panel-header flex items-center justify-between p-4 border-b border-gray-200 bg-white">
