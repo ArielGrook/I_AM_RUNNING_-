@@ -30,7 +30,7 @@ export default function HomePage() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="text-lg px-8 py-4">
-                <Link href="/editor">
+                <Link href="/en/dashboard">
                   Start Building
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
@@ -99,7 +99,7 @@ export default function HomePage() {
             Join thousands of creators who are already building with AI.
           </p>
           <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-4">
-            <Link href="/editor">
+            <Link href="/en/dashboard">
               Get Started Now
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>

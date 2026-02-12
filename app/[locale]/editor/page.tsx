@@ -86,7 +86,7 @@ export default function EditorPage() {
     
     if (!isAuthenticated) {
       console.log('🚫 Editor: Not authenticated, redirecting to login');
-      router.push('/auth/login?redirect=/editor');
+      router.push(`/${locale}/auth/login?redirect=/${locale}/dashboard`);
       return;
     }
     
@@ -240,34 +240,26 @@ export default function EditorPage() {
   }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale]);
 
   // Load project from Supabase when editor opens - One-Way Ejection
+  // No project ID → redirect to dashboard (user must choose project there)
   useEffect(() => {
     if (!isAuthenticated || loadedFromSupabase) return;
 
     async function loadInitialProject() {
       try {
-        let projectId = searchParams.get('id');
+        const projectId = searchParams.get('id');
 
         if (!projectId) {
-          const projects = await listProjectsFromSupabase();
-          if (projects.length === 0) {
-            console.log('No projects in Supabase, using localStorage or creating new');
-            setLoadedFromSupabase(true);
-            return;
-          }
-          projectId = projects[0].id;
+          console.log('⚠️ No project ID, redirecting to dashboard');
+          router.push(`/${locale}/dashboard`);
+          setLoadedFromSupabase(true);
+          return;
         }
 
         console.log('📂 Loading project from Supabase:', projectId);
-        let loaded = await loadProjectFromSupabase(projectId);
-        if (!loaded && projectId === searchParams.get('id')) {
-          console.log('⚠️ Project not found by ID, trying latest');
-          const projects = await listProjectsFromSupabase();
-          if (projects.length > 0) {
-            loaded = await loadProjectFromSupabase(projects[0].id);
-          }
-        }
+        const loaded = await loadProjectFromSupabase(projectId);
         if (!loaded) {
-          console.log('⚠️ No project to load');
+          console.log('⚠️ Project not found, redirecting to dashboard');
+          router.push(`/${locale}/dashboard`);
           setLoadedFromSupabase(true);
           return;
         }
@@ -296,7 +288,7 @@ export default function EditorPage() {
     }
 
     loadInitialProject();
-  }, [isAuthenticated, loadedFromSupabase, searchParams, loadProject]);
+  }, [isAuthenticated, loadedFromSupabase, searchParams, loadProject, router, locale]);
 
   // Push projectData into GrapesJS editor - One-Way Ejection
   useEffect(() => {
@@ -994,7 +986,7 @@ export default function EditorPage() {
         <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild className="text-gray-700 hover:text-gray-900 hover:bg-gray-100">
-              <Link href="/">
+              <Link href={`/${locale}/dashboard`}>
                 <ArrowLeft className="w-4 h-4 mr-1 text-gray-700" />
                 <span className="text-gray-700">{t('dashboard')}</span>
               </Link>

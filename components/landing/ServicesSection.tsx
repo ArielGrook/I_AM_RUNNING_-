@@ -79,7 +79,7 @@ export function ServicesSection() {
           </div>
           
           <Link
-            href="/editor"
+            href={`/${locale}/dashboard`}
             className={`relative z-10 bg-white text-[#FF6B35] px-6 py-3 sm:px-8 sm:py-4 rounded-full font-bold hover:scale-105 hover:shadow-xl transition-all duration-300 inline-flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             {t('getAccess')}

@@ -31,7 +31,7 @@ export function HeroSection() {
     if (!isAuthenticated) {
       console.log('🚫 Not authenticated, redirecting to login');
       e.preventDefault();
-      router.push('/auth/login?redirect=/editor');
+      router.push(`/${locale}/auth/login?redirect=/${locale}/dashboard`);
       return;
     }
     
@@ -42,8 +42,8 @@ export function HeroSection() {
       return;
     }
     
-    console.log('✅ Editor access OK, navigating...');
-    router.push('/editor');
+    console.log('✅ Editor access OK, navigating to dashboard...');
+    router.push(`/${locale}/dashboard`);
   };
 
   const handleChatClick = () => {
