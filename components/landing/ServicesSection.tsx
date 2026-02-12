@@ -8,7 +8,6 @@ import { ArrowRight } from 'lucide-react';
 export function ServicesSection() {
   const t = useTranslations('Landing.services');
   const locale = useLocale();
-  const isRTL = locale === 'he';
 
   const services = [
     { icon: '🌐', title: t('service1'), desc: t('service1Desc') },
@@ -22,7 +21,6 @@ export function ServicesSection() {
   return (
     <section 
       className="py-16 sm:py-24 bg-white dark:bg-black"
-      dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <motion.div
@@ -70,9 +68,9 @@ export function ServicesSection() {
           {/* Shimmer effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_3s_infinite] pointer-events-none" />
           
-          <div className={`flex items-center gap-4 relative z-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className="flex items-center gap-4 relative z-10">
             <span className="text-4xl sm:text-5xl opacity-90">👥</span>
-            <div className={isRTL ? 'text-right' : ''}>
+            <div>
               <p className="text-base sm:text-lg mb-1">{t('freelancerCta')}</p>
               <div className="text-2xl sm:text-3xl font-black">{t('freelancerPrice')}</div>
             </div>
@@ -80,10 +78,10 @@ export function ServicesSection() {
           
           <Link
             href={`/${locale}/dashboard`}
-            className={`relative z-10 bg-white text-[#FF6B35] px-6 py-3 sm:px-8 sm:py-4 rounded-full font-bold hover:scale-105 hover:shadow-xl transition-all duration-300 inline-flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}
+            className="relative z-10 bg-white text-[#FF6B35] px-6 py-3 sm:px-8 sm:py-4 rounded-full font-bold hover:scale-105 hover:shadow-xl transition-all duration-300 inline-flex items-center gap-2"
           >
             {t('getAccess')}
-            <ArrowRight className={`w-5 h-5 ${isRTL ? 'rotate-180' : ''}`} />
+            <ArrowRight className="w-5 h-5" />
           </Link>
         </motion.div>
       </div>

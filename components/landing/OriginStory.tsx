@@ -1,23 +1,20 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 
 export function OriginStory() {
   const t = useTranslations('Landing.origin');
-  const locale = useLocale();
-  const isRTL = locale === 'he';
 
   return (
     <section 
       className="py-16 sm:py-24 bg-white dark:bg-black"
-      dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Content */}
           <motion.div
-            initial={{ opacity: 0, x: isRTL ? 30 : -30 }}
+            initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
@@ -31,7 +28,7 @@ export function OriginStory() {
             <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
               {t('content')}
             </p>
-            <div className={`p-4 sm:p-6 bg-gradient-to-r ${isRTL ? 'from-orange-50 border-r-4' : 'from-orange-50 border-l-4'} dark:from-orange-950/30 border-[#FF6B35] rounded-r-xl`}>
+            <div className="p-4 sm:p-6 bg-gradient-to-r from-orange-50 border-l-4 dark:from-orange-950/30 border-[#FF6B35] rounded-r-xl">
               <p className="text-base sm:text-lg italic text-gray-700 dark:text-gray-200">
                 "{t('highlight')}"
               </p>
@@ -40,7 +37,7 @@ export function OriginStory() {
 
           {/* Visual */}
           <motion.div
-            initial={{ opacity: 0, x: isRTL ? -30 : 30 }}
+            initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}

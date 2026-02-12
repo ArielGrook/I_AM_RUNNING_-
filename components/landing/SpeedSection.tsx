@@ -1,12 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 
 export function SpeedSection() {
   const t = useTranslations('Landing.speed');
-  const locale = useLocale();
-  const isRTL = locale === 'he';
 
   const steps = [
     { icon: '⚡', label: t('concept') },
@@ -17,7 +15,6 @@ export function SpeedSection() {
   return (
     <section 
       className="py-16 sm:py-24 bg-white dark:bg-black"
-      dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <motion.div
@@ -45,7 +42,7 @@ export function SpeedSection() {
           className="bg-gray-50 dark:bg-[#262626] rounded-3xl p-6 sm:p-10"
         >
           {/* Steps Timeline */}
-          <div className={`flex justify-center items-center gap-4 md:gap-8 flex-wrap mb-10 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className="flex justify-center items-center gap-4 md:gap-8 flex-wrap mb-10">
             {steps.map((step, i) => (
               <div key={step.label} className="flex items-center gap-4 md:gap-8">
                 <motion.div
@@ -61,7 +58,7 @@ export function SpeedSection() {
                   <span className="mt-2 text-sm sm:text-base font-bold text-gray-900 dark:text-white">{step.label}</span>
                 </motion.div>
                 {i < steps.length - 1 && (
-                  <span className={`text-3xl text-[#FF6B35] font-bold hidden md:block ${isRTL ? 'rotate-180' : ''}`}>→</span>
+                  <span className="text-3xl text-[#FF6B35] font-bold hidden md:block">→</span>
                 )}
               </div>
             ))}

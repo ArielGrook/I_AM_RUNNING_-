@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 export function PricingSection() {
   const t = useTranslations('Landing.pricing');
   const locale = useLocale();
-  const isRTL = locale === 'he';
 
   const comparisons = [
     { label: t('buildSpeed'), us: t('buildSpeedUs'), them: t('buildSpeedThem') },
@@ -21,7 +20,6 @@ export function PricingSection() {
   return (
     <section 
       className="py-16 sm:py-24 bg-gray-50 dark:bg-black"
-      dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <motion.div

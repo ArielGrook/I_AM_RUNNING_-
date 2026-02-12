@@ -16,7 +16,6 @@ export function HeroSection() {
   const t = useTranslations('Landing.hero');
   const tPricing = useTranslations('Landing.pricing');
   const locale = useLocale();
-  const isRTL = locale === 'he';
   const { isAuthenticated, canAccessEditor, role } = useAuth();
   const router = useRouter();
 
@@ -49,7 +48,6 @@ export function HeroSection() {
   return (
     <header 
       className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-[#FF4500] via-[#FF6B35] to-[#FF4500] text-white flex flex-col"
-      dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Animated background */}
       <div className="absolute inset-0 pointer-events-none">
@@ -90,7 +88,7 @@ export function HeroSection() {
               >
                 <Link href="/auth/signup">
                   {t('signUp')}
-                  <ArrowRight className={`h-3 w-3 sm:h-4 sm:w-4 ${isRTL ? 'mr-1 sm:mr-2 rotate-180' : 'ml-1 sm:ml-2'}`} />
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
                 </Link>
               </Button>
             </>
@@ -152,7 +150,7 @@ export function HeroSection() {
                 className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full sm:min-w-[200px]"
               >
                 {t('enterEditor')}
-                <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             )}
 
@@ -166,7 +164,7 @@ export function HeroSection() {
               >
                 <Link href={`/${locale}/subscription?reason=editor_access&current_role=1`}>
                   {tPricing('upgradePlan')}
-                  <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                  <ArrowRight className="h-5 w-5 ml-2" />
                 </Link>
               </Button>
             )}
@@ -180,7 +178,7 @@ export function HeroSection() {
               >
                 <Link href="/auth/signup">
                   Get Started Free
-                  <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                  <ArrowRight className="h-5 w-5 ml-2" />
                 </Link>
               </Button>
             )}

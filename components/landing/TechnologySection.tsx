@@ -1,12 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 
 export function TechnologySection() {
   const t = useTranslations('Landing.technology');
-  const locale = useLocale();
-  const isRTL = locale === 'he';
 
   const features = [
     { icon: '🧩', title: t('feature1') },
@@ -19,7 +17,6 @@ export function TechnologySection() {
   return (
     <section 
       className="py-16 sm:py-24 bg-gray-50 dark:bg-black"
-      dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <motion.div
