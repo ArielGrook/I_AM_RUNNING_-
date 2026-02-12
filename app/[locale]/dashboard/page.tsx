@@ -143,8 +143,14 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className="w-64 bg-white dark:bg-[#2d2d2d] border-r border-gray-200 dark:border-[#404040] fixed h-full flex flex-col">
         <div className="p-6">
-          <Link href={`/${locale}`} className="text-gray-600 dark:text-[#9ca3af] hover:text-gray-900 dark:hover:text-[#e5e5e5] text-sm mb-4 inline-block">
-            ← {t('backHome')}
+          <Link
+            href={`/${locale}`}
+            className="flex items-center gap-2 px-4 py-2 bg-[#FF6B35] hover:bg-[#e55a28] text-white rounded-lg font-medium transition-colors mb-4 inline-flex w-fit"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span>{t('backHome')}</span>
           </Link>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-[#e5e5e5] mb-8">{t('title')}</h2>
 
@@ -248,7 +254,7 @@ export default function DashboardPage() {
               <div className="bg-white dark:bg-[#2d2d2d] rounded-xl p-6 shadow-sm border border-gray-200 dark:border-[#404040]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-[#9ca3af] mb-1">{t('totalProjects')}</p>
+                    <p className="text-sm text-orange-600 dark:text-orange-400 mb-1 font-medium">{t('totalProjects')}</p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-[#e5e5e5]">{projects.length}</p>
                   </div>
                   <div className="w-12 h-12 bg-orange-100 dark:bg-[#3a3a3a] rounded-lg flex items-center justify-center flex-shrink-0">
@@ -262,7 +268,7 @@ export default function DashboardPage() {
               <div className="bg-white dark:bg-[#2d2d2d] rounded-xl p-6 shadow-sm border border-gray-200 dark:border-[#404040]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-[#9ca3af] mb-1">{t('lastUpdated')}</p>
+                    <p className="text-sm text-orange-600 dark:text-orange-400 mb-1 font-medium">{t('lastUpdated')}</p>
                     <p className="text-lg font-semibold text-gray-900 dark:text-[#e5e5e5]">
                       {projects.length > 0
                         ? formatDistanceToNow(new Date(projects[0].updated_at), { addSuffix: true, locale: locale === 'ru' ? ru : undefined })
@@ -280,7 +286,7 @@ export default function DashboardPage() {
               <div className="bg-white dark:bg-[#2d2d2d] rounded-xl p-6 shadow-sm border border-gray-200 dark:border-[#404040]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-[#9ca3af] mb-1">{t('activeProjects')}</p>
+                    <p className="text-sm text-orange-600 dark:text-orange-400 mb-1 font-medium">{t('activeProjects')}</p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-[#e5e5e5]">
                       {projects.filter((p) => p.status === 'draft' || !p.status).length}
                     </p>

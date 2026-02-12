@@ -17,7 +17,7 @@ export function HeroSection() {
   const tPricing = useTranslations('Landing.pricing');
   const locale = useLocale();
   const isRTL = locale === 'he';
-  const { isAuthenticated, canUseChat, canAccessEditor, role } = useAuth();
+  const { isAuthenticated, canAccessEditor, role } = useAuth();
   const router = useRouter();
 
   const handleEditorClick = (e: React.MouseEvent) => {
@@ -44,11 +44,6 @@ export function HeroSection() {
     
     console.log('✅ Editor access OK, navigating to dashboard...');
     router.push(`/${locale}/dashboard`);
-  };
-
-  const handleChatClick = () => {
-    // Navigate to dedicated chat page
-    router.push('/chat');
   };
 
   return (
@@ -149,18 +144,6 @@ export function HeroSection() {
             transition={{ delay: 0.8 }}
             className="pt-6 flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            {/* Chat button - show for registered users (role >= 1) */}
-            {canUseChat && (
-              <Button
-                onClick={handleChatClick}
-                size="lg"
-                className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full sm:min-w-[200px]"
-              >
-                {t('enterChat')}
-                <ArrowRight className={`h-5 w-5 ${isRTL ? 'mr-2 rotate-180' : 'ml-2'}`} />
-              </Button>
-            )}
-
             {/* Editor button - only for role >= 2 */}
             {canAccessEditor && (
               <Button
