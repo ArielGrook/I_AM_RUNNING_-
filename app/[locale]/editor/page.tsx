@@ -44,6 +44,7 @@ import {
   incrementDemoProjectCount,
 } from '@/lib/utils/demo-mode';
 import { getUserPackage, hasFeatureAccess } from '@/lib/utils/user-package';
+import { saveProjectToSupabase } from '@/lib/store/supabase-sync';
 import dynamic from 'next/dynamic';
 
 // Lazy load heavy components for better performance
@@ -171,33 +172,41 @@ export default function EditorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   
-  // Manual save function
+  // Manual save function (localStorage + Supabase)
   const handleManualSave = useCallback(async () => {
     if (!currentProject || isSaving) return;
-    
+
+    if (!canSave) {
+      setShowPackageSelector(true);
+      return;
+    }
+
     setIsSaving(true);
     setSaveSuccess(false);
     setSaveStatus('saving');
     setStoreSaveStatus('saving');
-    
+
     try {
-      // Force Zustand to persist by updating timestamp
+      // Force Zustand to persist by updating timestamp (localStorage backup)
       updateProject({
         metadata: {
           ...currentProject.metadata,
           updatedAt: new Date().toISOString(),
         },
       });
-      
+
       // Brief delay to ensure persist completes
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Save to Supabase (if authenticated)
+      console.log('💾 Saving project to Supabase...');
+      await saveProjectToSupabase(currentProject);
+      console.log('[Manual Save] ✅ Project saved to Supabase');
+
       setSaveStatus('saved');
       setStoreSaveStatus('saved');
       setSaveSuccess(true);
-      console.log('[Manual Save] ✅ Project saved to localStorage');
-      
-      // Reset success indicator after 2 seconds
+
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('[Manual Save] ❌ Failed:', error);
@@ -206,7 +215,7 @@ export default function EditorPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [currentProject, isSaving, setSaveStatus, setStoreSaveStatus, updateProject]);
+  }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject]);
 
   // Check for chat query parameter on mount
   useEffect(() => {
