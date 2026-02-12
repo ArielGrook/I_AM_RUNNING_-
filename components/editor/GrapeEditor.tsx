@@ -679,81 +679,81 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       });
     };
 
-    // Toolbar and panels
+    // Toolbar and panels - gray/orange theme (like Claude)
     applyThemeToElements('.gjs-pn-panel, .gjs-toolbar, .gjs-pn-panels', {
-      backgroundColor: '#262626',
-      color: '#ffffff',
-      borderColor: '#525151'
+      backgroundColor: '#2d2d2d',
+      color: '#e5e5e5',
+      borderColor: '#404040'
     }, {
       backgroundColor: '#ffffff',
-      color: '#1f2937',
+      color: '#1a1a1a',
       borderColor: '#e5e7eb'
     });
 
     // Block manager and layer manager
     applyThemeToElements('.gjs-block-category, .gjs-blocks-c, .gjs-layer', {
-      backgroundColor: '#262626',
-      color: '#ffffff'
+      backgroundColor: '#2d2d2d',
+      color: '#e5e5e5'
     }, {
       backgroundColor: '#f9fafb',
-      color: '#1f2937'
+      color: '#1a1a1a'
     });
 
     // Style manager
     applyThemeToElements('.gjs-sm-sector, .gjs-sm-properties, .gjs-trt-traits', {
-      backgroundColor: '#262626',
-      color: '#ffffff'
+      backgroundColor: '#2d2d2d',
+      color: '#e5e5e5'
     }, {
       backgroundColor: '#ffffff',
-      color: '#1f2937'
+      color: '#1a1a1a'
     });
 
     // Buttons and controls
     applyThemeToElements('.gjs-pn-btn, .gjs-toolbar-item, button', {
-      backgroundColor: isDark ? '#525151' : '#f9fafb',
-      color: isDark ? '#ffffff' : '#1f2937',
-      borderColor: isDark ? '#525151' : '#d1d5db'
+      backgroundColor: isDark ? '#3a3a3a' : '#f9fafb',
+      color: isDark ? '#e5e5e5' : '#1a1a1a',
+      borderColor: isDark ? '#404040' : '#d1d5db'
     }, {
       backgroundColor: '#f9fafb',
-      color: '#1f2937',
+      color: '#1a1a1a',
       borderColor: '#d1d5db'
     });
 
     // Active/hover states
     applyThemeToElements('.gjs-pn-btn:hover, .gjs-toolbar-item:hover', {
-      backgroundColor: isDark ? '#525151' : '#f3f4f6'
+      backgroundColor: isDark ? '#3a3a3a' : '#f3f4f6'
     }, {
       backgroundColor: '#f3f4f6'
     });
 
     // Input fields and selects
     applyThemeToElements('input, select, textarea', {
-      backgroundColor: isDark ? '#525151' : '#ffffff',
-      color: isDark ? '#ffffff' : '#1f2937',
-      borderColor: isDark ? '#525151' : '#d1d5db'
+      backgroundColor: isDark ? '#3a3a3a' : '#ffffff',
+      color: isDark ? '#e5e5e5' : '#1a1a1a',
+      borderColor: isDark ? '#404040' : '#d1d5db'
     }, {
       backgroundColor: '#ffffff',
-      color: '#1f2937',
+      color: '#1a1a1a',
       borderColor: '#d1d5db'
     });
 
-    // Specific GrapesJS elements
+    // Specific GrapesJS elements - orange accent
     applyThemeToElements('.gjs-badge, .gjs-com-badge', {
-      backgroundColor: '#F97316',
+      backgroundColor: '#FF6B35',
       color: '#ffffff'
     }, {
-      backgroundColor: '#F97316',
+      backgroundColor: '#FF6B35',
       color: '#ffffff'
     });
 
     // Modal dialogs
     applyThemeToElements('.gjs-mdl-dialog', {
-      backgroundColor: '#262626',
-      color: '#ffffff',
-      borderColor: '#525151'
+      backgroundColor: '#2d2d2d',
+      color: '#e5e5e5',
+      borderColor: '#404040'
     }, {
       backgroundColor: '#ffffff',
-      color: '#1f2937',
+      color: '#1a1a1a',
       borderColor: '#e5e7eb'
     });
 

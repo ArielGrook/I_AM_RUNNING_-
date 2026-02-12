@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
@@ -18,6 +19,7 @@ interface Project {
 }
 
 export default function DashboardPage() {
+  const t = useTranslations('Dashboard');
   const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
@@ -102,7 +104,7 @@ export default function DashboardPage() {
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    if (!confirm('Вы уверены, что хотите удалить этот проект?')) return;
+    if (!confirm(t('deleteConfirm'))) return;
 
     const supabase = createSupabaseClient();
     const { error } = await supabase
@@ -112,7 +114,7 @@ export default function DashboardPage() {
 
     if (error) {
       console.error('Failed to delete project:', error);
-      alert('Не удалось удалить проект');
+      alert(t('deleteError'));
     } else {
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
     }
@@ -120,8 +122,8 @@ export default function DashboardPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-xl text-gray-600 dark:text-gray-400">Загрузка...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a]">
+        <div className="text-xl text-gray-600 dark:text-[#e5e5e5]">{t('loading')}</div>
       </div>
     );
   }
@@ -137,76 +139,76 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-[#1a1a1a]">
       {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 fixed h-full flex flex-col">
+      <aside className="w-64 bg-white dark:bg-[#2d2d2d] border-r border-gray-200 dark:border-[#404040] fixed h-full flex flex-col">
         <div className="p-6">
-          <Link href={`/${locale}`} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm mb-4 inline-block">
-            ← На главную
+          <Link href={`/${locale}`} className="text-gray-600 dark:text-[#9ca3af] hover:text-gray-900 dark:hover:text-[#e5e5e5] text-sm mb-4 inline-block">
+            ← {t('backHome')}
           </Link>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Dashboard</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-[#e5e5e5] mb-8">{t('title')}</h2>
 
           <nav className="space-y-2">
             <button
               onClick={() => setActiveTab('projects')}
               className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${
                 activeTab === 'projects'
-                  ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-orange-50 dark:bg-[#3a3a3a] text-orange-600 dark:text-orange-400'
+                  : 'text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-100 dark:hover:bg-[#3a3a3a]'
               }`}
             >
               <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
               </svg>
-              <span className="font-medium">Проекты</span>
+              <span className="font-medium">{t('tabs.projects')}</span>
             </button>
 
             <button
               onClick={() => setActiveTab('settings')}
               className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${
                 activeTab === 'settings'
-                  ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-orange-50 dark:bg-[#3a3a3a] text-orange-600 dark:text-orange-400'
+                  : 'text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-100 dark:hover:bg-[#3a3a3a]'
               }`}
             >
               <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span className="font-medium">Настройки</span>
+              <span className="font-medium">{t('tabs.settings')}</span>
             </button>
 
             <button
               onClick={() => setActiveTab('billing')}
               className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${
                 activeTab === 'billing'
-                  ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-orange-50 dark:bg-[#3a3a3a] text-orange-600 dark:text-orange-400'
+                  : 'text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-100 dark:hover:bg-[#3a3a3a]'
               }`}
             >
               <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
-              <span className="font-medium">Подписка</span>
+              <span className="font-medium">{t('tabs.billing')}</span>
             </button>
 
             <button
               onClick={() => setActiveTab('help')}
               className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 ${
                 activeTab === 'help'
-                  ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-orange-50 dark:bg-[#3a3a3a] text-orange-600 dark:text-orange-400'
+                  : 'text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-100 dark:hover:bg-[#3a3a3a]'
               }`}
             >
               <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="font-medium">Помощь</span>
+              <span className="font-medium">{t('tabs.help')}</span>
             </button>
 
             <button
               onClick={toggleDarkMode}
-              className="w-full text-left px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-3"
+              className="w-full text-left px-4 py-3 rounded-lg text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-100 dark:hover:bg-[#3a3a3a] transition-colors flex items-center gap-3"
             >
               {darkMode ? (
                 <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,21 +219,21 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
               )}
-              <span className="font-medium">{darkMode ? 'Светлая' : 'Тёмная'} тема</span>
+              <span className="font-medium">{darkMode ? t('theme.light') : t('theme.dark')}</span>
             </button>
           </nav>
         </div>
 
-        <div className="mt-auto p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="mt-auto p-4 border-t border-gray-200 dark:border-[#404040]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
               {user?.email?.[0]?.toUpperCase() ?? '?'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              <p className="text-sm font-medium text-gray-900 dark:text-[#e5e5e5] truncate">
                 {user?.email ?? ''}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Freelancer</p>
+              <p className="text-xs text-gray-500 dark:text-[#9ca3af]">{t('freelancer')}</p>
             </div>
           </div>
         </div>
@@ -243,48 +245,48 @@ export default function DashboardPage() {
           <>
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="bg-white dark:bg-[#2d2d2d] rounded-xl p-6 shadow-sm border border-gray-200 dark:border-[#404040]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Всего проектов</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{projects.length}</p>
+                    <p className="text-sm text-gray-600 dark:text-[#9ca3af] mb-1">{t('totalProjects')}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-[#e5e5e5]">{projects.length}</p>
                   </div>
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-[#3a3a3a] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                     </svg>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="bg-white dark:bg-[#2d2d2d] rounded-xl p-6 shadow-sm border border-gray-200 dark:border-[#404040]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Последнее обновление</p>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <p className="text-sm text-gray-600 dark:text-[#9ca3af] mb-1">{t('lastUpdated')}</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-[#e5e5e5]">
                       {projects.length > 0
-                        ? formatDistanceToNow(new Date(projects[0].updated_at), { addSuffix: true, locale: ru })
-                        : 'Нет проектов'}
+                        ? formatDistanceToNow(new Date(projects[0].updated_at), { addSuffix: true, locale: locale === 'ru' ? ru : undefined })
+                        : t('noProjects')}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-[#3a3a3a] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="bg-white dark:bg-[#2d2d2d] rounded-xl p-6 shadow-sm border border-gray-200 dark:border-[#404040]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Активных проектов</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-sm text-gray-600 dark:text-[#9ca3af] mb-1">{t('activeProjects')}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-[#e5e5e5]">
                       {projects.filter((p) => p.status === 'draft' || !p.status).length}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-[#3a3a3a] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
@@ -292,21 +294,21 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Projects Grid */}
+            {/* Projects Grid - Create New card always first, no separate empty state */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* New Project Card */}
+              {/* New Project Card - always visible */}
               <button
                 onClick={handleCreateNew}
-                className="group relative bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-xl p-8 hover:border-blue-500 dark:hover:border-blue-500 transition-all hover:shadow-lg min-h-[280px] flex flex-col items-center justify-center"
+                className="group relative bg-gradient-to-br from-orange-50 to-orange-100 dark:from-[#2d2d2d] dark:to-[#3a3a3a] border-2 border-dashed border-orange-300 dark:border-[#404040] rounded-xl p-8 hover:border-orange-500 dark:hover:border-orange-500 transition-all hover:shadow-lg min-h-[280px] flex flex-col items-center justify-center"
               >
-                <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 bg-orange-100 dark:bg-[#3a3a3a] rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <svg className="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Создать проект</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                  Начните новый проект с нуля или импортируйте шаблон
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-[#e5e5e5] mb-2">{t('createNew')}</h3>
+                <p className="text-sm text-gray-600 dark:text-[#9ca3af] text-center">
+                  {t('createNewHint')}
                 </p>
               </button>
 
@@ -314,17 +316,17 @@ export default function DashboardPage() {
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  className="group bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1"
+                  className="group bg-white dark:bg-[#2d2d2d] rounded-xl shadow-sm border border-gray-200 dark:border-[#404040] overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1"
                 >
-                  <div className="h-32 bg-gradient-to-br from-blue-500 to-purple-600 relative">
+                  <div className="h-32 bg-gradient-to-br from-orange-400 to-orange-600 dark:from-[#3a3a3a] dark:to-[#4a4a4a] relative">
                     <div className="absolute top-3 right-3 flex gap-2">
                       <span
                         className={`px-2 py-1 rounded-md text-xs font-medium ${
                           project.source === 'wizard'
-                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                            ? 'bg-green-100 dark:bg-[#3a3a3a] text-green-800 dark:text-green-400'
                             : project.source === 'editor'
-                              ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                              : 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
+                              ? 'bg-orange-100 dark:bg-[#3a3a3a] text-orange-800 dark:text-orange-400'
+                              : 'bg-gray-100 dark:bg-[#3a3a3a] text-gray-800 dark:text-[#9ca3af]'
                         }`}
                       >
                         {project.source === 'wizard' ? 'Wizard' : project.source === 'editor' ? 'Editor' : 'Interactive'}
@@ -333,34 +335,34 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                      {project.name || 'Без названия'}
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-[#e5e5e5] mb-2 line-clamp-2">
+                      {project.name || t('untitled')}
                     </h3>
 
                     {project.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">{project.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-[#9ca3af] mb-4 line-clamp-2">{project.description}</p>
                     )}
 
-                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-[#9ca3af] mb-4">
                       <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>
-                        {formatDistanceToNow(new Date(project.updated_at), { addSuffix: true, locale: ru })}
+                        {formatDistanceToNow(new Date(project.updated_at), { addSuffix: true, locale: locale === 'ru' ? ru : undefined })}
                       </span>
                     </div>
 
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditProject(project.id)}
-                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                        className="flex-1 px-4 py-2 bg-[#FF6B35] hover:bg-[#e55a28] text-white rounded-lg font-medium transition-colors"
                       >
-                        Редактировать
+                        {t('edit')}
                       </button>
                       <button
                         onClick={() => handleDeleteProject(project.id)}
                         className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                        aria-label="Удалить"
+                        aria-label={t('delete')}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -371,44 +373,32 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-
-            {projects.length === 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center border border-gray-200 dark:border-gray-700 mt-6">
-                <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">У вас пока нет проектов</p>
-                <button
-                  onClick={handleCreateNew}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Создать первый проект →
-                </button>
-              </div>
-            )}
           </>
         )}
 
         {activeTab === 'settings' && (
           <div className="max-w-2xl">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Настройки</h2>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
-              <p className="text-gray-600 dark:text-gray-400">Раздел в разработке...</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-[#e5e5e5] mb-6">{t('tabs.settings')}</h2>
+            <div className="bg-white dark:bg-[#2d2d2d] rounded-xl p-8 border border-gray-200 dark:border-[#404040]">
+              <p className="text-gray-600 dark:text-[#9ca3af]">{t('placeholders.settings')}</p>
             </div>
           </div>
         )}
 
         {activeTab === 'billing' && (
           <div className="max-w-2xl">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Подписка и Биллинг</h2>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
-              <p className="text-gray-600 dark:text-gray-400">Раздел в разработке...</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-[#e5e5e5] mb-6">{t('tabs.billing')}</h2>
+            <div className="bg-white dark:bg-[#2d2d2d] rounded-xl p-8 border border-gray-200 dark:border-[#404040]">
+              <p className="text-gray-600 dark:text-[#9ca3af]">{t('placeholders.billing')}</p>
             </div>
           </div>
         )}
 
         {activeTab === 'help' && (
           <div className="max-w-2xl">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Помощь</h2>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
-              <p className="text-gray-600 dark:text-gray-400">Раздел в разработке...</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-[#e5e5e5] mb-6">{t('tabs.help')}</h2>
+            <div className="bg-white dark:bg-[#2d2d2d] rounded-xl p-8 border border-gray-200 dark:border-[#404040]">
+              <p className="text-gray-600 dark:text-[#9ca3af]">{t('placeholders.help')}</p>
             </div>
           </div>
         )}

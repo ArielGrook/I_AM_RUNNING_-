@@ -1,4 +1,37 @@
 {
+  "Dashboard": {
+    "title": "My Projects",
+    "subtitle": "Manage your websites and projects",
+    "createNew": "Create new project",
+    "createNewHint": "Start from scratch or import a template",
+    "totalProjects": "Total Projects",
+    "lastUpdated": "Last Updated",
+    "activeProjects": "Active Projects",
+    "noProjects": "No projects",
+    "edit": "Edit",
+    "delete": "Delete",
+    "backHome": "Back to Home",
+    "tabs": {
+      "projects": "Projects",
+      "settings": "Settings",
+      "billing": "Subscription",
+      "help": "Help"
+    },
+    "theme": {
+      "dark": "Dark theme",
+      "light": "Light theme"
+    },
+    "freelancer": "Freelancer",
+    "placeholders": {
+      "settings": "Section in development...",
+      "billing": "Section in development...",
+      "help": "Section in development..."
+    },
+    "deleteConfirm": "Are you sure you want to delete this project?",
+    "deleteError": "Could not delete project",
+    "loading": "Loading...",
+    "untitled": "Untitled"
+  },
   "EditorPage": {
     "dashboard": "Dashboard",
     "newProject": "New Project",
@@ -19,7 +52,9 @@
     "import": "Import",
     "export": "Export",
     "saveComponent": "Save Component",
-    "rename": "Rename"
+    "rename": "Rename",
+    "lightTheme": "Light theme",
+    "darkTheme": "Dark theme"
   },
   "Chat": {
     "title": "AI Assistant",

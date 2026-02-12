@@ -103,7 +103,7 @@ export default function EditorPage() {
   // Show loading while checking auth
   if (authLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a]">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading editor...</p>
@@ -1053,11 +1053,11 @@ export default function EditorPage() {
   return (
     <ErrorBoundary>
       <div 
-        className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200"
+        className="h-screen flex flex-col bg-gray-50 dark:bg-[#1a1a1a] transition-colors duration-200"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between transition-colors duration-200">
+        <header className="bg-white dark:bg-[#2d2d2d] border-b border-gray-200 dark:border-[#404040] px-4 py-3 flex items-center justify-between transition-colors duration-200">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" asChild className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
               <Link href={`/${locale}/dashboard`}>
@@ -1065,7 +1065,7 @@ export default function EditorPage() {
                 <span>{t('dashboard')}</span>
               </Link>
             </Button>
-            <div className="h-6 w-px bg-gray-300 dark:bg-gray-600" />
+            <div className="h-6 w-px bg-gray-300 dark:bg-[#404040]" />
             <h1 className="font-semibold text-lg text-gray-900 dark:text-white">
               {currentProject?.name || t('newProject')}
             </h1>
@@ -1201,7 +1201,7 @@ export default function EditorPage() {
             )}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+              className="p-2 rounded-lg bg-gray-200 dark:bg-[#3a3a3a] hover:bg-gray-300 dark:hover:bg-[#4a4a4a] transition-colors duration-200"
               title={darkMode ? t('lightTheme') || 'Светлая тема' : t('darkTheme') || 'Тёмная тема'}
             >
               {darkMode ? (
@@ -1322,7 +1322,7 @@ export default function EditorPage() {
               ${leftPanelOpen ? 'w-80 translate-x-0' : 'w-80 -translate-x-full md:w-0 md:translate-x-0'}
               overflow-hidden
             `}>
-              <div className="h-full bg-white dark:bg-gray-900 border-r flex flex-col shadow-lg md:shadow-none">
+              <div className="h-full bg-white dark:bg-[#2d2d2d] border-r border-gray-200 dark:border-[#404040] flex flex-col shadow-lg md:shadow-none">
                 <div className="p-4 border-b">
                   <h3 className="font-semibold text-lg mb-3">{t('components')}</h3>
                   <div className="flex flex-wrap gap-1">
@@ -1440,17 +1440,17 @@ export default function EditorPage() {
             {/* Toggle Left Panel */}
             <button
               onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-              className="w-6 bg-white dark:bg-gray-800 border-y border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center z-10 md:z-auto transition-colors duration-200"
+              className="w-6 bg-white dark:bg-[#2d2d2d] border-y border-r border-gray-200 dark:border-[#404040] hover:bg-gray-50 dark:hover:bg-[#3a3a3a] flex items-center justify-center z-10 md:z-auto transition-colors duration-200"
               aria-label={leftPanelOpen ? 'Hide panel' : 'Show panel'}
             >
               {isRTL ? (leftPanelOpen ? '→' : '←') : (leftPanelOpen ? '←' : '→')}
             </button>
             
             {/* Center - Canvas with Grape.js */}
-            <div className="flex-1 bg-gray-100 dark:bg-gray-900 overflow-hidden relative flex flex-col transition-colors duration-200">
+            <div className="flex-1 bg-gray-100 dark:bg-[#1a1a1a] overflow-hidden relative flex flex-col transition-colors duration-200">
               {/* Page Tabs (only show if multiple pages) */}
               {pages.length > 1 && (
-                <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2 flex items-center gap-2 overflow-x-auto">
+                <div className="bg-white dark:bg-[#2d2d2d] border-b border-gray-200 dark:border-[#404040] px-4 py-2 flex items-center gap-2 overflow-x-auto">
                   <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">Pages:</span>
                   {pages.map((page, index) => (
                     <button
@@ -1460,7 +1460,7 @@ export default function EditorPage() {
                         px-3 py-1.5 text-sm font-medium rounded-md transition-colors
                         ${activePage === index
                           ? 'bg-orange-500 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          : 'bg-gray-100 dark:bg-[#3a3a3a] text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-200 dark:hover:bg-[#4a4a4a]'
                         }
                       `}
                     >
@@ -1485,7 +1485,7 @@ export default function EditorPage() {
             {/* Toggle Right Panel */}
             <button
               onClick={() => setRightPanelOpen(!rightPanelOpen)}
-              className="w-6 bg-white dark:bg-gray-800 border-y border-l border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center z-10 md:z-auto transition-colors duration-200"
+              className="w-6 bg-white dark:bg-[#2d2d2d] border-y border-l border-gray-200 dark:border-[#404040] hover:bg-gray-50 dark:hover:bg-[#3a3a3a] flex items-center justify-center z-10 md:z-auto transition-colors duration-200"
               aria-label={rightPanelOpen ? 'Hide panel' : 'Show panel'}
             >
               {isRTL ? (rightPanelOpen ? '←' : '→') : (rightPanelOpen ? '→' : '←')}
@@ -1500,7 +1500,7 @@ export default function EditorPage() {
               ${rightPanelOpen ? 'w-[450px] translate-x-0' : 'w-[450px] translate-x-full md:w-0 md:translate-x-0'}
               overflow-hidden
             `}>
-              <div className="h-full bg-white dark:bg-gray-900 border-l flex flex-col shadow-lg md:shadow-none">
+              <div className="h-full bg-white dark:bg-[#2d2d2d] border-l border-gray-200 dark:border-[#404040] flex flex-col shadow-lg md:shadow-none">
                 <div className="p-4 border-b">
                   <h3 className="font-semibold text-lg text-gray-900">{t('properties')}</h3>
                 </div>
@@ -1514,9 +1514,9 @@ export default function EditorPage() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a]">
             <div className="text-center">
-              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gray-200 dark:bg-[#3a3a3a] rounded-full flex items-center justify-center mx-auto mb-4">
                 <Plus className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('startBuilding')}</h3>

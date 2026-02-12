@@ -1,4 +1,5 @@
 {
+  "Dashboard":{"title":"הפרויקטים שלי","subtitle":"נהל את האתרים והפרויקטים שלך","createNew":"צור פרויקט חדש","createNewHint":"התחל מאפס או ייבא תבנית","totalProjects":"סך הכל פרויקטים","lastUpdated":"עודכן לאחרונה","activeProjects":"פרויקטים פעילים","noProjects":"אין פרויקטים","edit":"ערוך","delete":"מחק","backHome":"חזרה לדף הבית","tabs":{"projects":"פרויקטים","settings":"הגדרות","billing":"מנוי","help":"עזרה"},"theme":{"dark":"מצב כהה","light":"מצב בהיר"},"freelancer":"Freelancer","placeholders":{"settings":"החלק בפיתוח...","billing":"החלק בפיתוח...","help":"החלק בפיתוח..."},"deleteConfirm":"האם אתה בטוח שברצונך למחוק פרויקט זה?","deleteError":"לא ניתן למחוק את הפרויקט","loading":"טוען...","untitled":"ללא כותרת"},
   "EditorPage": {
     "dashboard": "לוח בקרה",
     "newProject": "פרויקט חדש",
@@ -19,7 +20,9 @@
     "import": "ייבוא",
     "export": "ייצוא",
     "saveComponent": "שמור רכיב",
-    "rename": "שנה שם"
+    "rename": "שנה שם",
+    "lightTheme": "מצב בהיר",
+    "darkTheme": "מצב כהה"
   },
   "Chat": {
     "title": "עוזר AI",

@@ -1,4 +1,5 @@
 {
+  "Dashboard":{"title":"Мои Проекты","subtitle":"Управляйте своими сайтами и проектами","createNew":"Создать проект","createNewHint":"Начните с нуля или импортируйте шаблон","totalProjects":"Всего проектов","lastUpdated":"Последнее обновление","activeProjects":"Активных проектов","noProjects":"Нет проектов","edit":"Редактировать","delete":"Удалить","backHome":"На главную","tabs":{"projects":"Проекты","settings":"Настройки","billing":"Подписка","help":"Помощь"},"theme":{"dark":"Тёмная тема","light":"Светлая тема"},"freelancer":"Freelancer","placeholders":{"settings":"Раздел в разработке...","billing":"Раздел в разработке...","help":"Раздел в разработке..."},"deleteConfirm":"Вы уверены, что хотите удалить этот проект?","deleteError":"Не удалось удалить проект","loading":"Загрузка...","untitled":"Без названия"},
   "EditorPage": {
     "dashboard": "Главная",
     "newProject": "Новый проект",
@@ -19,7 +20,9 @@
     "import": "Импорт",
     "export": "Экспорт",
     "saveComponent": "Сохранить компонент",
-    "rename": "Переименовать"
+    "rename": "Переименовать",
+    "lightTheme": "Светлая тема",
+    "darkTheme": "Тёмная тема"
   },
   "Chat": {
     "title": "AI Ассистент",
