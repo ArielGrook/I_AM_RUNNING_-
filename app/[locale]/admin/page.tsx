@@ -20,15 +20,12 @@ import {
   Eye, 
   LogOut, 
   RefreshCw,
-  Filter,
   Search,
 } from 'lucide-react';
-import { getCurrentUser, signIn, signOut, requireAdmin } from '@/lib/supabase/auth';
 import { subscribeToProjects, unsubscribe, type ProjectUpdate } from '@/lib/supabase/realtime';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { generateProjectPreview, getCachedPreview } from '@/lib/utils/preview';
 import { cn } from '@/lib/utils';
-import type { AuthUser } from '@/lib/supabase/auth';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface Project {
@@ -54,13 +51,11 @@ export default function AdminPage() {
   const isRTL = locale === 'he' || locale === 'ar';
   const router = useRouter();
 
-  const [user, setUser] = useState<AuthUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginInput, setLoginInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [showLogin, setShowLogin] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -68,14 +63,13 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [realtimeChannel, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
 
-  // Check authentication on mount
   useEffect(() => {
-    checkAuth();
+    setIsLoading(false);
   }, []);
 
   // Subscribe to realtime updates when authenticated
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
+    if (isAuthenticated) {
       const channel = subscribeToProjects((update) => {
         handleRealtimeUpdate(update);
       });
@@ -87,60 +81,26 @@ export default function AdminPage() {
         }
       };
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated]);
 
-  const checkAuth = async () => {
-    try {
-      const currentUser = await getCurrentUser();
-      if (currentUser && currentUser.role === 'admin') {
-        setUser(currentUser);
-        setIsAuthenticated(true);
-        loadData();
-      } else {
-        setShowLogin(true);
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setShowLogin(true);
-    } finally {
-      setIsLoading(false);
+  const handleLogin = () => {
+    if (loginInput === 'admin' && passwordInput === 'super.admin') {
+      setIsAuthenticated(true);
+      setError('');
+      loadData();
+    } else {
+      setError('Invalid credentials');
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError('');
-
-    try {
-      const { user: authUser } = await signIn(email, password);
-      const currentUser = await getCurrentUser();
-      
-      if (currentUser && currentUser.role === 'admin') {
-        setUser(currentUser);
-        setIsAuthenticated(true);
-        setShowLogin(false);
-        loadData();
-      } else {
-        setLoginError('Admin access required');
-        await signOut();
-      }
-    } catch (error) {
-      setLoginError(error instanceof Error ? error.message : 'Login failed');
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      setIsAuthenticated(false);
-      setUser(null);
-      setShowLogin(true);
-      if (realtimeChannel) {
-        unsubscribe(realtimeChannel);
-        setRealtimeChannel(null);
-      }
-    } catch (error) {
-      console.error('Logout failed:', error);
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setLoginInput('');
+    setPasswordInput('');
+    setError('');
+    if (realtimeChannel) {
+      unsubscribe(realtimeChannel);
+      setRealtimeChannel(null);
     }
   };
 
@@ -215,39 +175,39 @@ export default function AdminPage() {
     );
   }
 
-  if (showLogin) {
+  if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
-        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold mb-6 text-center">{t('loginTitle')}</h1>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">{t('email')}</label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">{t('password')}</label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full"
-              />
-            </div>
-            {loginError && (
-              <div className="text-red-500 text-sm">{loginError}</div>
-            )}
-            <Button type="submit" className="w-full">
-              {t('login')}
-            </Button>
-          </form>
+      <div className="flex items-center justify-center min-h-screen bg-gray-100" dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="bg-white p-8 rounded-lg shadow-md w-96">
+          <h1 className="text-2xl font-bold mb-6">Admin Login</h1>
+
+          <input
+            type="text"
+            placeholder="Login"
+            value={loginInput}
+            onChange={(e) => setLoginInput(e.target.value)}
+            className="w-full p-2 border rounded mb-3"
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+            className="w-full p-2 border rounded mb-3"
+          />
+
+          {error && (
+            <p className="text-red-500 text-sm mb-3">{error}</p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleLogin}
+            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          >
+            Login
+          </button>
         </div>
       </div>
     );
@@ -263,7 +223,7 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold">{t('title')}</h1>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">{user?.email}</span>
+            <span className="text-sm text-gray-600">admin</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               {t('logout')}
