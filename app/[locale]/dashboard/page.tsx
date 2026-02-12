@@ -16,6 +16,10 @@ interface Project {
   updated_at: string;
   source?: 'wizard' | 'editor' | 'interactive' | null;
   status?: string | null;
+  tags?: string[];
+  category?: string;
+  visibility?: 'private' | 'public' | 'unlisted';
+  version?: number;
 }
 
 export default function DashboardPage() {
@@ -29,6 +33,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('projects');
   const [darkMode, setDarkMode] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editTags, setEditTags] = useState('');
+  const [editCategory, setEditCategory] = useState('general');
+  const [editVisibility, setEditVisibility] = useState<'private' | 'public' | 'unlisted'>('private');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -56,7 +64,7 @@ export default function DashboardPage() {
       const supabase = createSupabaseClient();
       const { data, error } = await supabase
         .from('projects')
-        .select('id, name, description, updated_at, source, status')
+        .select('id, name, description, updated_at, source, status, tags, category, visibility, version')
         .eq('user_id', uid)
         .order('updated_at', { ascending: false });
 
@@ -118,6 +126,46 @@ export default function DashboardPage() {
       alert(t('deleteError'));
     } else {
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
+    }
+  };
+
+  const openEditModal = (project: Project) => {
+    setEditingProject(project);
+    setEditTags(project.tags?.join(', ') || '');
+    setEditCategory(project.category || 'general');
+    setEditVisibility(project.visibility || 'private');
+  };
+
+  const handleUpdateMetadata = async () => {
+    if (!editingProject) return;
+
+    const tags = editTags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    const supabase = createSupabaseClient();
+    const { error } = await supabase
+      .from('projects')
+      .update({
+        tags,
+        category: editCategory,
+        visibility: editVisibility,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', editingProject.id);
+
+    if (!error) {
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === editingProject.id
+            ? { ...p, tags, category: editCategory, visibility: editVisibility }
+            : p
+        )
+      );
+      setEditingProject(null);
+    } else {
+      console.error('Failed to update metadata:', error);
     }
   };
 
@@ -347,8 +395,32 @@ export default function DashboardPage() {
                     </h3>
 
                     {project.description && (
-                      <p className="text-sm text-gray-600 dark:text-[#9ca3af] mb-4 line-clamp-2">{project.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-[#9ca3af] mb-3 line-clamp-2">{project.description}</p>
                     )}
+
+                    {/* Tags */}
+                    {project.tags && project.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {project.tags.map((tag: string) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-0.5 text-xs font-medium rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Category + Version row */}
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-[#9ca3af] mb-2">
+                      {project.category && project.category !== 'general' && (
+                        <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#3a3a3a]">
+                          {t(`categories.${project.category}`)}
+                        </span>
+                      )}
+                      <span>v{project.version || 1}</span>
+                    </div>
 
                     <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-[#9ca3af] mb-4">
                       <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -367,8 +439,18 @@ export default function DashboardPage() {
                         {t('edit')}
                       </button>
                       <button
+                        onClick={() => openEditModal(project)}
+                        className="px-3 py-2 bg-gray-100 dark:bg-[#3a3a3a] hover:bg-gray-200 dark:hover:bg-[#4a4a4a] text-gray-600 dark:text-[#9ca3af] rounded-lg transition-colors"
+                        aria-label={t('settings')}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </button>
+                      <button
                         onClick={() => handleDeleteProject(project.id)}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
                         aria-label={t('delete')}
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,6 +492,78 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Metadata Edit Modal */}
+      {editingProject && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#2d2d2d] rounded-xl p-6 max-w-md w-full shadow-2xl border border-gray-200 dark:border-[#404040]">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-[#e5e5e5] mb-6">{t('settings')}</h3>
+
+            {/* Tags */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2 text-orange-600 dark:text-orange-400">
+                {t('meta.tags')}
+              </label>
+              <input
+                type="text"
+                value={editTags}
+                onChange={(e) => setEditTags(e.target.value)}
+                className="w-full px-3 py-2 border border-orange-300 dark:border-[#FF6B35] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="landing, business, portfolio"
+              />
+            </div>
+
+            {/* Category */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2 text-orange-600 dark:text-orange-400">
+                {t('meta.category')}
+              </label>
+              <select
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value)}
+                className="w-full px-3 py-2 border border-orange-300 dark:border-[#FF6B35] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="general">{t('categories.general')}</option>
+                <option value="business">{t('categories.business')}</option>
+                <option value="portfolio">{t('categories.portfolio')}</option>
+                <option value="ecommerce">{t('categories.ecommerce')}</option>
+                <option value="blog">{t('categories.blog')}</option>
+              </select>
+            </div>
+
+            {/* Visibility */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2 text-orange-600 dark:text-orange-400">
+                {t('meta.visibility')}
+              </label>
+              <select
+                value={editVisibility}
+                onChange={(e) => setEditVisibility(e.target.value as 'private' | 'public' | 'unlisted')}
+                className="w-full px-3 py-2 border border-orange-300 dark:border-[#FF6B35] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="private">{t('visibility.private')}</option>
+                <option value="unlisted">{t('visibility.unlisted')}</option>
+                <option value="public">{t('visibility.public')}</option>
+              </select>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleUpdateMetadata}
+                className="flex-1 px-4 py-2.5 bg-[#FF6B35] hover:bg-[#e55a28] text-white rounded-lg font-medium transition-colors"
+              >
+                {t('save')}
+              </button>
+              <button
+                onClick={() => setEditingProject(null)}
+                className="px-4 py-2.5 bg-gray-200 dark:bg-[#3a3a3a] hover:bg-gray-300 dark:hover:bg-[#4a4a4a] text-gray-700 dark:text-[#e5e5e5] rounded-lg font-medium transition-colors"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

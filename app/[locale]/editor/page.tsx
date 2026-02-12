@@ -918,9 +918,17 @@ export default function EditorPage() {
     
     console.log(`[Page Switch] Switching to page ${pageIndex}: ${page.name}`);
     
+    // CRITICAL: Save current page edits BEFORE switching
+    const editor = grapeEditorRef.current.getEditor?.() ?? grapeEditorRef.current;
+    const currentHtml = editor.getHtml?.() ?? '';
+    const currentCss = editor.getCss?.() ?? '';
+    setPages(prev => prev.map((p, i) =>
+      i === activePage ? { ...p, html: currentHtml, css: currentCss } : p
+    ));
+    
     setActivePage(pageIndex);
     
-    // Update editor content
+    // Update editor content with the new page
     grapeEditorRef.current.setComponents(page.html);
     
     // Set CSS (shared CSS + page-specific CSS)
@@ -930,7 +938,7 @@ export default function EditorPage() {
     if (combinedCss) {
       grapeEditorRef.current.setStyle(combinedCss);
     }
-  }, [pages, importResult]);
+  }, [pages, activePage, importResult]);
   
   // Handle preview generation
   const handlePreview = async () => {

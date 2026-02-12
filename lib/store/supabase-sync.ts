@@ -22,6 +22,11 @@ type ProjectRow = {
   preview_token?: string | null;
   source?: string | null;
   status?: string | null;
+  tags?: string[];
+  category?: string;
+  visibility?: 'private' | 'public' | 'unlisted';
+  version?: number;
+  metadata?: Record<string, unknown>;
   [key: string]: unknown;
 };
 
@@ -55,15 +60,24 @@ function getProjectData(row: ProjectRow): Project | null {
   return projectData as Project;
 }
 
+/** Optional metadata to save alongside the project */
+export type ProjectMetadataUpdate = {
+  tags?: string[];
+  category?: string;
+  visibility?: 'private' | 'public' | 'unlisted';
+};
+
 /**
  * Save project to Supabase - One-Way Ejection
  * Writes ONLY to data field (GrapesJS native format). Does NOT touch contract.
  * When fullProjectData is provided (e.g. multi-page from editor), uses it to save ALL pages.
+ * Supports optional metadata (tags, category, visibility) and auto-increments version.
  */
 export async function saveProjectToSupabase(
   project: Project,
   editorInstance?: GrapesJSEditorLike | null,
-  fullProjectData?: Record<string, unknown> | null
+  fullProjectData?: Record<string, unknown> | null,
+  metadataUpdate?: ProjectMetadataUpdate | null
 ): Promise<{ data?: { id: string }; error?: unknown }> {
   try {
     const user = await getCurrentUser();
@@ -90,7 +104,15 @@ export async function saveProjectToSupabase(
       preview_token?: string;
       source?: string;
       status?: string;
+      version?: number;
+      tags?: string[];
+      category?: string;
+      visibility?: string;
+      metadata?: Record<string, unknown>;
     };
+
+    // Increment version on every save
+    const newVersion = (projectWithMeta.version || 0) + 1;
 
     const payload: Record<string, unknown> = {
       id: project.id,
@@ -101,8 +123,22 @@ export async function saveProjectToSupabase(
       source: 'editor',
       status: projectWithMeta.status ?? 'draft',
       preview_token: projectWithMeta.preview_token ?? crypto.randomUUID(),
+      version: newVersion,
       updated_at: new Date().toISOString(),
     };
+
+    // Include metadata fields if provided
+    if (metadataUpdate?.tags !== undefined) payload.tags = metadataUpdate.tags;
+    if (metadataUpdate?.category !== undefined) payload.category = metadataUpdate.category;
+    if (metadataUpdate?.visibility !== undefined) payload.visibility = metadataUpdate.visibility;
+
+    // Merge metadata JSON
+    const mergedMetadata = {
+      ...(projectWithMeta.metadata || {}),
+      lastModified: new Date().toISOString(),
+    };
+    payload.metadata = mergedMetadata;
+
     // CRITICAL: Do NOT include contract - it stays as-is from wizard
 
     const { data, error } = await supabase
@@ -114,6 +150,7 @@ export async function saveProjectToSupabase(
       return { error };
     }
 
+    console.log(`✅ Project saved (version ${newVersion})`);
     return { data: data ? { id: project.id } : undefined };
   } catch (error) {
     console.error('Supabase sync error:', error);
@@ -129,6 +166,11 @@ export type LoadedProject = {
   user_id: string;
   projectData: Project | Record<string, unknown>;
   loadedFrom: 'data' | 'contract';
+  tags?: string[];
+  category?: string;
+  visibility?: 'private' | 'public' | 'unlisted';
+  version?: number;
+  metadata?: Record<string, unknown>;
   [key: string]: unknown;
 };
 
@@ -156,11 +198,13 @@ export async function loadProjectFromSupabase(
     const { projectData, loadedFrom } = getProjectDataFromRow(row as ProjectRow);
     if (!projectData) return null;
 
+    const typedRow = row as ProjectRow;
     console.log(
       loadedFrom === 'data'
         ? '✅ Loading from data (editor state)'
         : '⚠️ Loading from contract (wizard state)'
     );
+    console.log(`📊 Version: ${typedRow.version ?? 1}, Category: ${typedRow.category ?? 'general'}, Tags: ${typedRow.tags?.join(', ') || 'none'}`);
 
     return {
       ...row,

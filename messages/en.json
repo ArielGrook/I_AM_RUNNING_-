@@ -35,6 +35,26 @@
       "wizard": "Wizard",
       "editor": "Editor",
       "interactive": "Interactive"
+    },
+    "settings": "Project Settings",
+    "save": "Save",
+    "cancel": "Cancel",
+    "meta": {
+      "tags": "Tags (comma-separated)",
+      "category": "Category",
+      "visibility": "Visibility"
+    },
+    "categories": {
+      "general": "General",
+      "business": "Business",
+      "portfolio": "Portfolio",
+      "ecommerce": "E-commerce",
+      "blog": "Blog"
+    },
+    "visibility": {
+      "private": "Private",
+      "unlisted": "Unlisted (by link)",
+      "public": "Public"
     }
   },
   "EditorPage": {
