@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { ru, enUS, he } from 'date-fns/locale';
 import Link from 'next/link';
 
 interface Project {
@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
+  const dateLocale = locale === 'ru' ? ru : locale === 'he' ? he : enUS;
   const { user, loading: authLoading, isAuthenticated, canAccessEditor } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -271,7 +272,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-orange-600 dark:text-orange-400 mb-1 font-medium">{t('lastUpdated')}</p>
                     <p className="text-lg font-semibold text-gray-900 dark:text-[#e5e5e5]">
                       {projects.length > 0
-                        ? formatDistanceToNow(new Date(projects[0].updated_at), { addSuffix: true, locale: locale === 'ru' ? ru : undefined })
+                        ? formatDistanceToNow(new Date(projects[0].updated_at), { addSuffix: true, locale: dateLocale })
                         : t('noProjects')}
                     </p>
                   </div>
@@ -335,7 +336,7 @@ export default function DashboardPage() {
                               : 'bg-gray-100 dark:bg-[#3a3a3a] text-gray-800 dark:text-[#9ca3af]'
                         }`}
                       >
-                        {project.source === 'wizard' ? 'Wizard' : project.source === 'editor' ? 'Editor' : 'Interactive'}
+                        {project.source === 'wizard' ? t('source.wizard') : project.source === 'editor' ? t('source.editor') : t('source.interactive')}
                       </span>
                     </div>
                   </div>
@@ -354,7 +355,7 @@ export default function DashboardPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>
-                        {formatDistanceToNow(new Date(project.updated_at), { addSuffix: true, locale: locale === 'ru' ? ru : undefined })}
+                        {formatDistanceToNow(new Date(project.updated_at), { addSuffix: true, locale: dateLocale })}
                       </span>
                     </div>
 

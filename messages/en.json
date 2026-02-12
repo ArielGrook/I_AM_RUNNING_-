@@ -30,7 +30,12 @@
     "deleteConfirm": "Are you sure you want to delete this project?",
     "deleteError": "Could not delete project",
     "loading": "Loading...",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "source": {
+      "wizard": "Wizard",
+      "editor": "Editor",
+      "interactive": "Interactive"
+    }
   },
   "EditorPage": {
     "dashboard": "Dashboard",
