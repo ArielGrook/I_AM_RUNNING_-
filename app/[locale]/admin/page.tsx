@@ -42,6 +42,8 @@ interface Project {
 interface User {
   id: string;
   email?: string;
+  full_name?: string;
+  company?: string;
   created_at: string;
 }
 
@@ -118,11 +120,14 @@ export default function AdminPage() {
       if (projectsError) throw projectsError;
       setProjects(projectsData || []);
 
-      // Load users (from auth.users via RPC or separate query)
-      // Note: Direct access to auth.users requires service role
-      // For now, extract unique user_ids from projects
-      const userIds = new Set((projectsData || []).map(p => p.user_id));
-      setUsers(Array.from(userIds).map(id => ({ id, created_at: '' })));
+      // Load users from users table (Roadmap v4.0)
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, email, full_name, company, created_at')
+        .order('created_at', { ascending: false });
+
+      if (usersError) throw usersError;
+      setUsers(usersData || []);
     } catch (error) {
       console.error('Failed to load data:', error);
     }
@@ -257,11 +262,12 @@ export default function AdminPage() {
                       key={u.id}
                       onClick={() => setSelectedUserId(u.id)}
                       className={cn(
-                        'w-full text-left px-2 py-1 rounded text-sm',
+                        'w-full text-left px-2 py-1 rounded text-sm truncate',
                         selectedUserId === u.id ? 'bg-primary text-primary-foreground' : 'hover:bg-gray-100'
                       )}
+                      title={u.email || u.id}
                     >
-                      {u.id.substring(0, 8)}...
+                      {u.email || u.full_name || `${u.id.substring(0, 8)}...`}
                     </button>
                   ))}
                 </div>
