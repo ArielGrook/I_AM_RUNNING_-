@@ -14,15 +14,11 @@ export default async function LocaleLayout({
   if (!locales.includes(locale as any)) notFound();
 
   // Providing all messages to the client
-  // side is the easiest way to get started
   const messages = await getMessages();
-
-  // Determine RTL for Hebrew and Arabic
-  const isRTL = locale === 'he' || locale === 'ar';
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <div lang={locale} dir={isRTL ? 'rtl' : 'ltr'}>
+      <div lang={locale}>
         {children}
       </div>
     </NextIntlClientProvider>

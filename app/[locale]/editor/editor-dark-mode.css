@@ -43,9 +43,22 @@
   border-bottom: 1px solid #4a4a4a !important;
 }
 
-/* Component Library Blocks - NO white backgrounds */
-.dark .gjs-blocks-c,
+/* Component Library Blocks - FORCE dark backgrounds, NO white */
+.dark .gjs-block,
+.dark .gjs-blocks-c .gjs-block {
+  background-color: #3a3a3a !important;
+  color: #e5e5e5 !important;
+  border: 1px solid #4a4a4a !important;
+}
+
+.dark .gjs-block__media,
+.dark .gjs-block-label {
+  background-color: transparent !important;
+  color: #e5e5e5 !important;
+}
+
 .dark .gjs-block-category,
+.dark .gjs-blocks-c,
 .dark .gjs-block-categories {
   background-color: #2d2d2d !important;
   color: #e5e5e5 !important;
@@ -54,24 +67,12 @@
 .dark .gjs-block-category .gjs-title {
   background-color: #3a3a3a !important;
   color: #e5e5e5 !important;
-  border-bottom: 2px solid #FF6B35 !important;
+  padding: 8px 12px;
+  border-bottom: 2px solid #FF6B35;
 }
 
-.dark .gjs-block {
-  background-color: #3a3a3a !important;
-  border: 1px solid #4a4a4a !important;
-  color: #e5e5e5 !important;
-}
-
-.dark .gjs-block *,
-.dark .gjs-block-category * {
-  background-color: transparent !important;
+.dark .gjs-block * {
   color: inherit !important;
-}
-
-.dark .gjs-block-label {
-  color: #e5e5e5 !important;
-  background-color: transparent !important;
 }
 
 .dark .gjs-block:hover {
@@ -122,8 +123,10 @@
   border-bottom: 1px solid #FF6B35 !important;
 }
 
+/* Properties panel - readable text */
 .dark .gjs-sm-property,
-.dark .gjs-sm-label {
+.dark .gjs-sm-label,
+.dark .gjs-sm-field-label {
   color: #e5e5e5 !important;
   background-color: transparent !important;
 }
@@ -141,6 +144,9 @@
 
 /* Input fields - dark bg + light text */
 .dark .gjs-field,
+.dark .gjs-field-integer,
+.dark .gjs-field-select,
+.dark .gjs-select,
 .dark .gjs-sm-field,
 .dark .gjs-sm-input,
 .dark .gjs-editor input[type="text"],
@@ -149,6 +155,19 @@
 .dark .gjs-editor textarea {
   background-color: #3a3a3a !important;
   border: 1px solid #4a4a4a !important;
+  color: #e5e5e5 !important;
+}
+
+/* Dropdowns */
+.dark select,
+.dark .gjs-select {
+  background-color: #3a3a3a !important;
+  color: #e5e5e5 !important;
+}
+
+.dark select option,
+.dark .gjs-select option {
+  background-color: #2d2d2d !important;
   color: #e5e5e5 !important;
 }
 
