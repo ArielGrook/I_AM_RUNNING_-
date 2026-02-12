@@ -44,7 +44,7 @@ import {
   incrementDemoProjectCount,
 } from '@/lib/utils/demo-mode';
 import { getUserPackage, hasFeatureAccess } from '@/lib/utils/user-package';
-import { saveProjectToSupabase, loadProjectFromSupabase, listProjectsFromSupabase } from '@/lib/store/supabase-sync';
+import { saveProjectToSupabase, loadProjectFromSupabase, listProjectsFromSupabase, type LoadedProject } from '@/lib/store/supabase-sync';
 import dynamic from 'next/dynamic';
 
 // Lazy load heavy components for better performance
@@ -153,6 +153,7 @@ export default function EditorPage() {
   const [canRedo, setCanRedo] = useState(false);
   const [loadedFromSupabase, setLoadedFromSupabase] = useState(false);
   const supabaseLoadedProjectIdRef = useRef<string | null>(null);
+  const loadedProjectDataRef = useRef<{ projectData: Record<string, unknown>; loadedFrom: 'data' | 'contract' } | null>(null);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
   const searchParams = useSearchParams();
 
@@ -174,12 +175,18 @@ export default function EditorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   
-  // Manual save function (localStorage + Supabase)
+  // Manual save function (localStorage + Supabase) - One-Way Ejection
   const handleManualSave = useCallback(async () => {
     if (!currentProject || isSaving) return;
 
     if (!canSave) {
       setShowPackageSelector(true);
+      return;
+    }
+
+    const grapesEditor = grapeEditorRef.current?.getEditor();
+    if (!grapesEditor) {
+      console.error('❌ Cannot save: editor not initialized');
       return;
     }
 
@@ -197,15 +204,23 @@ export default function EditorPage() {
         },
       });
 
-      // Brief delay to ensure persist completes
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      // Save to Supabase (if authenticated)
       console.log('💾 Saving project to Supabase...');
-      await saveProjectToSupabase(currentProject);
+      console.log('📊 Editor instance:', !!grapesEditor);
+
+      // CRITICAL: Pass GrapesJS editor to get native format → writes ONLY to data
+      const result = await saveProjectToSupabase(currentProject, grapesEditor);
+
+      if (result.error) {
+        console.error('❌ Save failed:', result.error);
+        setSaveStatus('error');
+        setStoreSaveStatus('error');
+        return;
+      }
+
       console.log('[Manual Save] ✅ Project saved to Supabase');
 
-      // Update URL with project ID (for reload/refresh to load this project)
       if (currentProject.id) {
         const newUrl = `/${locale}/editor?id=${currentProject.id}`;
         window.history.replaceState({}, '', newUrl);
@@ -214,7 +229,6 @@ export default function EditorPage() {
       setSaveStatus('saved');
       setStoreSaveStatus('saved');
       setSaveSuccess(true);
-
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error('[Manual Save] ❌ Failed:', error);
@@ -225,42 +239,55 @@ export default function EditorPage() {
     }
   }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale]);
 
-  // Load project from Supabase when editor opens (by ID from URL or latest)
+  // Load project from Supabase when editor opens - One-Way Ejection
   useEffect(() => {
     if (!isAuthenticated || loadedFromSupabase) return;
 
     async function loadInitialProject() {
       try {
-        const projectId = searchParams.get('id');
+        let projectId = searchParams.get('id');
 
-        if (projectId) {
-          // Load specific project by ID from URL
-          console.log('📂 Loading project by ID:', projectId);
-          const project = await loadProjectFromSupabase(projectId);
-          if (project) {
-            console.log('✅ Found project:', project.name, project.id);
-            supabaseLoadedProjectIdRef.current = project.id;
-            loadProject(project);
+        if (!projectId) {
+          const projects = await listProjectsFromSupabase();
+          if (projects.length === 0) {
+            console.log('No projects in Supabase, using localStorage or creating new');
             setLoadedFromSupabase(true);
             return;
           }
-          console.log('⚠️ Project not found, falling back to latest');
+          projectId = projects[0].id;
         }
 
-        // Load latest project
-        console.log('📂 Loading projects from Supabase...');
-        const projects = await listProjectsFromSupabase();
-
-        if (!projects || projects.length === 0) {
-          console.log('No projects in Supabase, using localStorage or creating new');
+        console.log('📂 Loading project from Supabase:', projectId);
+        let loaded = await loadProjectFromSupabase(projectId);
+        if (!loaded && projectId === searchParams.get('id')) {
+          console.log('⚠️ Project not found by ID, trying latest');
+          const projects = await listProjectsFromSupabase();
+          if (projects.length > 0) {
+            loaded = await loadProjectFromSupabase(projects[0].id);
+          }
+        }
+        if (!loaded) {
+          console.log('⚠️ No project to load');
           setLoadedFromSupabase(true);
           return;
         }
 
-        const latestProject = projects[0];
-        console.log('✅ Found latest project:', latestProject.name, latestProject.id);
-        supabaseLoadedProjectIdRef.current = latestProject.id;
-        loadProject(latestProject);
+        console.log('✅ Found project:', loaded.name, `(loaded from ${loaded.loadedFrom})`);
+
+        loadedProjectDataRef.current = {
+          projectData: loaded.projectData as Record<string, unknown>,
+          loadedFrom: loaded.loadedFrom,
+        };
+        supabaseLoadedProjectIdRef.current = loaded.id;
+
+        const now = new Date().toISOString();
+        loadProject({
+          id: loaded.id,
+          name: loaded.name,
+          description: loaded.description ?? '',
+          pages: [{ id: '1', name: 'Home', slug: 'index', components: [], styles: '' }],
+          metadata: { createdAt: now, updatedAt: now, version: '1.0.0' },
+        });
       } catch (error) {
         console.error('❌ Error loading from Supabase:', error);
       } finally {
@@ -271,48 +298,65 @@ export default function EditorPage() {
     loadInitialProject();
   }, [isAuthenticated, loadedFromSupabase, searchParams, loadProject]);
 
-  // CRITICAL: After loading from Supabase, explicitly push project into GrapesJS editor
-  // (GrapeEditor sync may run before editor is ready or project has components format)
+  // Push projectData into GrapesJS editor - One-Way Ejection
   useEffect(() => {
-    const projectId = supabaseLoadedProjectIdRef.current;
-    if (!projectId || !currentProject || currentProject.id !== projectId || !grapeEditorRef.current) return;
+    const payload = loadedProjectDataRef.current;
+    if (!payload || !grapeEditorRef.current) return;
 
-    const firstPage = currentProject.pages[0];
-    if (!firstPage) return;
-
-    const extractHtmlFromProject = (): string => {
-      const comps = firstPage.components;
-      if (typeof comps === 'string') return comps;
-      if (Array.isArray(comps) && comps.length > 0) {
-        return comps
-          .map((c: { props?: { html?: string } }) => c?.props?.html || '')
-          .filter(Boolean)
-          .join('\n');
-      }
-      return '';
-    };
-
-    const html = extractHtmlFromProject();
-    const css = [currentProject.globalStyles, firstPage.styles].filter(Boolean).join('\n');
-    if (!html && !css) return;
+    const grapesEditor = grapeEditorRef.current.getEditor();
+    if (!grapesEditor) return;
 
     const pushToEditor = () => {
       if (!grapeEditorRef.current) return;
+      const editor = grapeEditorRef.current.getEditor();
+      if (!editor) return;
+
+      const { projectData, loadedFrom } = payload;
       try {
-        console.log('🎨 Loading project into GrapesJS editor...');
-        if (html) grapeEditorRef.current.setComponents(html);
-        if (css) grapeEditorRef.current.setStyle(css);
-        const editor = grapeEditorRef.current.getEditor();
-        const wrapper = editor?.getWrapper?.();
-        const count = wrapper?.components?.()?.length ?? 0;
-        console.log('✅ Project data loaded into editor');
-        console.log('📊 Components in editor:', count);
+        console.log('🎨 Loading project data into GrapesJS...');
+
+        if (loadedFrom === 'data' && projectData && typeof projectData === 'object') {
+          try {
+            editor.loadProjectData(projectData);
+            const wrapper = editor.getWrapper?.();
+            const count = wrapper?.components?.()?.length ?? 0;
+            console.log('✅ Project loaded into editor (GrapesJS native)');
+            console.log('📊 Components in editor:', count);
+          } catch {
+            fallbackSetComponents(editor, projectData);
+          }
+        } else {
+          fallbackSetComponents(editor, projectData);
+        }
       } catch (error) {
         console.error('❌ Failed to load into editor:', error);
       } finally {
+        loadedProjectDataRef.current = null;
         supabaseLoadedProjectIdRef.current = null;
       }
     };
+
+    function fallbackSetComponents(ed: ReturnType<typeof grapeEditorRef.current.getEditor>, pd: Record<string, unknown>) {
+      const pages = pd?.pages as Array<{ component?: string; components?: unknown; styles?: string }> | undefined;
+      const first = pages?.[0];
+      let html = '';
+      let css = '';
+
+      if (first?.component && typeof first.component === 'string') {
+        html = first.component;
+      } else if (Array.isArray(first?.components)) {
+        html = (first!.components as Array<{ props?: { html?: string } }>)
+          .map((c) => c?.props?.html || '')
+          .filter(Boolean)
+          .join('\n');
+      }
+      if (first?.styles) css = String(first.styles);
+      else if (pd?.globalStyles) css = String(pd.globalStyles);
+
+      if (html) grapeEditorRef.current!.setComponents(html);
+      if (css) grapeEditorRef.current!.setStyle(css);
+      console.log('✅ Project loaded into editor (fallback setComponents)');
+    }
 
     const t = setTimeout(pushToEditor, 500);
     return () => clearTimeout(t);
