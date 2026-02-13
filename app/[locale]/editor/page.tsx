@@ -158,6 +158,7 @@ export default function EditorPage() {
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
   const searchParams = useSearchParams();
   const [darkMode, setDarkMode] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
 
   // Sync dark mode with dashboard preference (localStorage + document class)
   useEffect(() => {
@@ -1214,6 +1215,25 @@ export default function EditorPage() {
                 </div>
                 <div className="hidden md:block h-6 w-px bg-gray-300 mx-1" />
               </>
+            )}
+            {currentProject && (
+              <Button
+                size="sm"
+                variant={showGrid ? 'default' : 'outline'}
+                onClick={() => {
+                  const editor = grapeEditorRef.current?.getEditor();
+                  if (editor) {
+                    editor.Commands.run('sw-visibility');
+                    setShowGrid((prev) => !prev);
+                  }
+                }}
+                className={showGrid ? 'h-8 px-3 bg-orange-500 text-white hover:bg-orange-600' : 'h-8 px-3 border-gray-300 text-gray-700 hover:bg-gray-100'}
+                title={showGrid ? (t('hideGrid') || 'Скрыть сетку') : (t('showGrid') || 'Показать сетку')}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </Button>
             )}
             <button
               onClick={toggleDarkMode}

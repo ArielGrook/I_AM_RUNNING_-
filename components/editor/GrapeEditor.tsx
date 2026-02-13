@@ -278,6 +278,13 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           appendTo: '#blocks-container',
           blocks: [], // EMPTY - blocks added after init succeeds
         },
+
+        // Sorter config - allow drop zones between and below components
+        sorter: {
+          wmargin: 0,
+          nested: true,
+          freeze: false,
+        },
       });
       
       console.log('8. ✅ GrapesJS init SUCCEEDED with minimal config!');
@@ -444,6 +451,11 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       // Ensure existing components are draggable/selectable after load
       editor.on('load', () => {
         try {
+          // Ensure wrapper (root) accepts drops everywhere
+          const wrapper = editor.getWrapper?.();
+          if (wrapper) {
+            wrapper.set({ droppable: true });
+          }
           editor.getComponents().each((cmp: any) => {
             cmp.set({
               draggable: true,
@@ -552,6 +564,20 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       
       editor.on('canvas:frame:loaded', () => {
         console.log('13. Canvas frame loaded event fired');
+        
+        // Enable drop zones everywhere - allow drop between/below components
+        try {
+          const body = editor.Canvas.getBody?.();
+          if (body) {
+            body.classList.add('droppable');
+          }
+          const wrapper = editor.getWrapper?.();
+          if (wrapper) {
+            wrapper.set({ droppable: true });
+          }
+        } catch (e) {
+          console.warn('Failed to set canvas droppable:', e);
+        }
         
         // Canvas frame is now fully loaded and ready
         const canvasWrapper = editor.Canvas.getWrapperEl();

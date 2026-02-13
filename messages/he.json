@@ -22,7 +22,9 @@
     "saveComponent": "שמור רכיב",
     "rename": "שנה שם",
     "lightTheme": "מצב בהיר",
-    "darkTheme": "מצב כהה"
+    "darkTheme": "מצב כהה",
+    "hideGrid": "הסתר רשת",
+    "showGrid": "הצג רשת"
   },
   "Chat": {
     "title": "עוזר AI",

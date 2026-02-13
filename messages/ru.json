@@ -22,7 +22,9 @@
     "saveComponent": "Сохранить компонент",
     "rename": "Переименовать",
     "lightTheme": "Светлая тема",
-    "darkTheme": "Тёмная тема"
+    "darkTheme": "Тёмная тема",
+    "hideGrid": "Скрыть сетку",
+    "showGrid": "Показать сетку"
   },
   "Chat": {
     "title": "AI Ассистент",

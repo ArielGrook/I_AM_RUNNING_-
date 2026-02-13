@@ -79,7 +79,9 @@
     "saveComponent": "Save Component",
     "rename": "Rename",
     "lightTheme": "Light theme",
-    "darkTheme": "Dark theme"
+    "darkTheme": "Dark theme",
+    "hideGrid": "Hide grid",
+    "showGrid": "Show grid"
   },
   "Chat": {
     "title": "AI Assistant",
