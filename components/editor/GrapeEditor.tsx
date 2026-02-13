@@ -240,9 +240,13 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
         // Canvas configuration - CRITICAL: Load Tailwind CSS so components render properly
         canvas: {
           styles: [
-            'https://cdn.tailwindcss.com', // Tailwind CSS for component styling
+            // Compiled Tailwind CSS (not the Play CDN JS file)
+            'https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/src/css/preflight.css',
+            'https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.5.10/src/styles.css',
           ],
           scripts: [
+            // Tailwind Play CDN (JIT compiler) - must be in scripts, not styles
+            'https://cdn.tailwindcss.com',
             'https://code.jquery.com/jquery-3.6.0.min.js',
             'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js',
           ],
