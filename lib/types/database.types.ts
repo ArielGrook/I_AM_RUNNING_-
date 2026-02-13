@@ -237,7 +237,7 @@ export interface Database {
           id: string
           component_number: number
           name: string
-          category: 'header' | 'hero' | 'footer' | 'section' | 'button' | 'form' | 'navigation' | 'custom' | 'auth' | 'database'
+          category: 'header' | 'hero' | 'footer' | 'section' | 'button' | 'form' | 'navigation' | 'custom' | 'auth' | 'database' | 'product-card' | 'cart'
           block_type: string | null
           variant_name: string | null
           style: string | null
@@ -261,6 +261,11 @@ export interface Database {
           is_public: boolean
           is_premium: boolean
           usage_count: number
+          slug: string | null
+          component_path: string | null
+          animation_preset: string | null
+          has_mobile_variant: boolean
+          accessibility_score: number | null
           created_at: string
           updated_at: string
         }
@@ -268,7 +273,7 @@ export interface Database {
           id?: string
           component_number?: never
           name: string
-          category: 'header' | 'hero' | 'footer' | 'section' | 'button' | 'form' | 'navigation' | 'custom' | 'auth' | 'database'
+          category: 'header' | 'hero' | 'footer' | 'section' | 'button' | 'form' | 'navigation' | 'custom' | 'auth' | 'database' | 'product-card' | 'cart'
           block_type?: string | null
           variant_name?: string | null
           style?: string | null
@@ -292,6 +297,11 @@ export interface Database {
           is_public?: boolean
           is_premium?: boolean
           usage_count?: number
+          slug?: string | null
+          component_path?: string | null
+          animation_preset?: string | null
+          has_mobile_variant?: boolean
+          accessibility_score?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -299,7 +309,7 @@ export interface Database {
           id?: string
           component_number?: never
           name?: string
-          category?: 'header' | 'hero' | 'footer' | 'section' | 'button' | 'form' | 'navigation' | 'custom' | 'auth' | 'database'
+          category?: 'header' | 'hero' | 'footer' | 'section' | 'button' | 'form' | 'navigation' | 'custom' | 'auth' | 'database' | 'product-card' | 'cart'
           block_type?: string | null
           variant_name?: string | null
           style?: string | null
@@ -323,6 +333,11 @@ export interface Database {
           is_public?: boolean
           is_premium?: boolean
           usage_count?: number
+          slug?: string | null
+          component_path?: string | null
+          animation_preset?: string | null
+          has_mobile_variant?: boolean
+          accessibility_score?: number | null
           created_at?: string
           updated_at?: string
         }

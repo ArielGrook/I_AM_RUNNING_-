@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const ComponentSchema = z.object({
   id: z.string(),
   type: z.string(),
-  category: z.enum(['header', 'hero', 'footer', 'section', 'button', 'form', 'navigation', 'custom']),
+  category: z.enum(['header', 'hero', 'footer', 'section', 'button', 'form', 'navigation', 'custom', 'product-card', 'cart']),
   props: z.record(z.any()).optional(),
   children: z.array(z.lazy(() => ComponentSchema)).optional(),
   styles: z.record(z.string()).optional(),

@@ -16,7 +16,7 @@ import { componentCatalog } from './catalog'; // Fallback to static catalog
 export interface SupabaseComponent {
   id: string;
   name: string;
-  category: Category;
+  category: Category | 'product-card' | 'cart';
   style?: ComponentStyle; // Updated to use ComponentStyle
   type?: string;
   html: string;
@@ -28,6 +28,9 @@ export interface SupabaseComponent {
   user_id?: string;
   is_public: boolean;
   usage_count: number;
+  slug?: string;
+  component_path?: string;
+  animation_preset?: string;
   created_at: string;
   updated_at: string;
 }
