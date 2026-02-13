@@ -1,3 +1,5 @@
+import React from 'react'
+
 /**
  * Hero1 - E-commerce Hero Section
  *

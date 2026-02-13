@@ -1,3 +1,5 @@
+import React from 'react'
+
 /**
  * Footer1 - E-commerce Footer
  *

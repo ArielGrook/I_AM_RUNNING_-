@@ -1,3 +1,5 @@
+import React from 'react'
+
 /**
  * Header1 - Modern E-commerce Header
  *

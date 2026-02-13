@@ -1,3 +1,5 @@
+import React from 'react'
+
 /**
  * Cart1 - Shopping Cart Component
  *

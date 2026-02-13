@@ -1,3 +1,5 @@
+import React from 'react'
+
 /**
  * ProductCard1 - E-commerce Product Card
  *
