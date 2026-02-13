@@ -16,7 +16,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2, FilePlus, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2, FilePlus } from 'lucide-react';
 import Link from 'next/link';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GrapeEditor, type GrapeEditorRef } from '@/components/editor/GrapeEditor';
@@ -153,13 +153,24 @@ export default function EditorPage() {
   const [canRedo, setCanRedo] = useState(false);
   const [loadedFromSupabase, setLoadedFromSupabase] = useState(false);
   const [dbVersion, setDbVersion] = useState<number>(0); // Tracks the DB version for correct increment
-  const [showOutlines, setShowOutlines] = useState(true); // Toggle component outlines in canvas
   const supabaseLoadedProjectIdRef = useRef<string | null>(null);
   const loadedProjectDataRef = useRef<{ projectData: Record<string, unknown>; loadedFrom: 'data' | 'contract' } | null>(null);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
   const searchParams = useSearchParams();
   const [darkMode, setDarkMode] = useState(false);
-  const [showGrid, setShowGrid] = useState(true);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [projectName, setProjectName] = useState(currentProject?.name || 'Untitled');
+
+  // Sync projectName when currentProject changes
+  useEffect(() => {
+    setProjectName(currentProject?.name || 'Untitled');
+  }, [currentProject?.name]);
+
+  const handleUpdateProjectName = useCallback(async (newName: string) => {
+    if (!currentProject?.id) return;
+    await supabase.from('projects').update({ name: newName }).eq('id', currentProject.id);
+    updateProject({ name: newName });
+  }, [currentProject, updateProject]);
 
   // Sync dark mode with dashboard preference (localStorage + document class)
   useEffect(() => {
@@ -1084,9 +1095,37 @@ export default function EditorPage() {
               </Link>
             </Button>
             <div className="h-6 w-px bg-gray-300 dark:bg-[#404040]" />
-            <h1 className="font-semibold text-lg text-gray-900 dark:text-white">
-              {currentProject?.name || t('newProject')}
-            </h1>
+            {currentProject ? (
+              !isEditingName ? (
+                <span
+                  onDoubleClick={() => setIsEditingName(true)}
+                  className="px-3 py-2 font-medium text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3a3a] rounded transition-colors"
+                  title="Double click чтобы изменить"
+                >
+                  {projectName}
+                </span>
+              ) : (
+                <input
+                  type="text"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  onBlur={() => {
+                    setIsEditingName(false);
+                    if (currentProject) handleUpdateProjectName(projectName);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setIsEditingName(false);
+                      handleUpdateProjectName(projectName);
+                    }
+                  }}
+                  className="px-3 py-2 border border-orange-600 rounded bg-white dark:bg-[#2d2d2d] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  autoFocus
+                />
+              )
+            ) : (
+              <h1 className="font-semibold text-lg text-gray-900 dark:text-white">{t('newProject')}</h1>
+            )}
             {currentProject && (
               <Button
                 size="sm"
@@ -1217,25 +1256,6 @@ export default function EditorPage() {
                 <div className="hidden md:block h-6 w-px bg-gray-300 mx-1" />
               </>
             )}
-            {currentProject && (
-              <Button
-                size="sm"
-                variant={showGrid ? 'default' : 'outline'}
-                onClick={() => {
-                  const editor = grapeEditorRef.current?.getEditor();
-                  if (editor) {
-                    editor.Commands.run('sw-visibility');
-                    setShowGrid((prev) => !prev);
-                  }
-                }}
-                className={showGrid ? 'h-8 px-3 bg-orange-500 text-white hover:bg-orange-600' : 'h-8 px-3 border-gray-300 text-gray-700 hover:bg-gray-100'}
-                title={showGrid ? (t('hideGrid') || 'Скрыть сетку') : (t('showGrid') || 'Показать сетку')}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </Button>
-            )}
             <button
               onClick={toggleDarkMode}
               className="p-2 rounded-lg bg-gray-200 dark:bg-[#3a3a3a] hover:bg-gray-300 dark:hover:bg-[#4a4a4a] transition-colors duration-200"
@@ -1325,22 +1345,6 @@ export default function EditorPage() {
                 >
                   <FilePlus className="w-4 h-4 mr-2" />
                   {t('addPage') || '+ Page'}
-                </Button>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const editor = grapeEditorRef.current?.getEditor();
-                    if (editor?.Commands?.run) {
-                      editor.Commands.run('sw-visibility');
-                      setShowOutlines(!showOutlines);
-                    }
-                  }}
-                  title={showOutlines ? (t('hideGrid') || 'Hide outlines') : (t('showGrid') || 'Show outlines')}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                >
-                  <LayoutGrid className="w-4 h-4 mr-2" />
-                  {showOutlines ? (t('hideGrid') || 'Hide grid') : (t('showGrid') || 'Show grid')}
                 </Button>
                 <Button 
                   size="sm"
