@@ -158,19 +158,17 @@ export default function EditorPage() {
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
   const searchParams = useSearchParams();
   const [darkMode, setDarkMode] = useState(false);
+  
+  // Editable project name
   const [isEditingName, setIsEditingName] = useState(false);
   const [projectName, setProjectName] = useState(currentProject?.name || 'Untitled');
-
-  // Sync projectName when currentProject changes
+  
+  // Sync project name with currentProject
   useEffect(() => {
-    setProjectName(currentProject?.name || 'Untitled');
+    if (currentProject?.name) {
+      setProjectName(currentProject.name);
+    }
   }, [currentProject?.name]);
-
-  const handleUpdateProjectName = useCallback(async (newName: string) => {
-    if (!currentProject?.id) return;
-    await supabase.from('projects').update({ name: newName }).eq('id', currentProject.id);
-    updateProject({ name: newName });
-  }, [currentProject, updateProject]);
 
   // Sync dark mode with dashboard preference (localStorage + document class)
   useEffect(() => {
@@ -310,6 +308,25 @@ export default function EditorPage() {
       setIsSaving(false);
     }
   }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale, pages, activePage, dbVersion]);
+
+  // Handle project name update
+  const handleUpdateProjectName = useCallback(async (newName: string) => {
+    if (!currentProject?.id || !newName.trim()) return;
+    
+    try {
+      await supabase
+        .from('projects')
+        .update({ name: newName.trim() })
+        .eq('id', currentProject.id);
+      
+      // Update local state
+      updateProject({ name: newName.trim() });
+      setProjectName(newName.trim());
+      console.log('[Editor] ✅ Project name updated:', newName.trim());
+    } catch (error) {
+      console.error('[Editor] ❌ Failed to update project name:', error);
+    }
+  }, [currentProject?.id, updateProject]);
 
   // Load project from Supabase when editor opens - One-Way Ejection
   // No project ID → redirect to dashboard (user must choose project there)
@@ -1099,8 +1116,13 @@ export default function EditorPage() {
               !isEditingName ? (
                 <span
                   onDoubleClick={() => setIsEditingName(true)}
+<<<<<<< Updated upstream
                   className="px-3 py-2 font-medium text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-[#3a3a3a] rounded transition-colors"
                   title="Double click чтобы изменить"
+=======
+                  className="px-3 py-2 font-semibold text-lg text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  title="Double click to edit"
+>>>>>>> Stashed changes
                 >
                   {projectName}
                 </span>
@@ -1111,20 +1133,30 @@ export default function EditorPage() {
                   onChange={(e) => setProjectName(e.target.value)}
                   onBlur={() => {
                     setIsEditingName(false);
-                    if (currentProject) handleUpdateProjectName(projectName);
+                    if (currentProject && projectName.trim()) {
+                      handleUpdateProjectName(projectName);
+                    }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       setIsEditingName(false);
-                      handleUpdateProjectName(projectName);
+                      if (projectName.trim()) {
+                        handleUpdateProjectName(projectName);
+                      }
+                    }
+                    if (e.key === 'Escape') {
+                      setIsEditingName(false);
+                      setProjectName(currentProject?.name || 'Untitled');
                     }
                   }}
-                  className="px-3 py-2 border border-orange-600 rounded bg-white dark:bg-[#2d2d2d] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="px-3 py-2 font-semibold text-lg border-2 border-orange-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                   autoFocus
                 />
               )
             ) : (
-              <h1 className="font-semibold text-lg text-gray-900 dark:text-white">{t('newProject')}</h1>
+              <h1 className="font-semibold text-lg text-gray-900 dark:text-white">
+                {t('newProject')}
+              </h1>
             )}
             {currentProject && (
               <Button
@@ -1377,14 +1409,6 @@ export default function EditorPage() {
                 </Button>
               </>
             )}
-            <Button 
-              size="sm"
-              onClick={() => setShowProjectForm(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              {currentProject ? t('rename') : t('newProject')}
-            </Button>
           </div>
         </header>
         
