@@ -16,7 +16,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2 } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2, FilePlus, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GrapeEditor, type GrapeEditorRef } from '@/components/editor/GrapeEditor';
@@ -153,6 +153,7 @@ export default function EditorPage() {
   const [canRedo, setCanRedo] = useState(false);
   const [loadedFromSupabase, setLoadedFromSupabase] = useState(false);
   const [dbVersion, setDbVersion] = useState<number>(0); // Tracks the DB version for correct increment
+  const [showOutlines, setShowOutlines] = useState(true); // Toggle component outlines in canvas
   const supabaseLoadedProjectIdRef = useRef<string | null>(null);
   const loadedProjectDataRef = useRef<{ projectData: Record<string, unknown>; loadedFrom: 'data' | 'contract' } | null>(null);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
@@ -1293,6 +1294,54 @@ export default function EditorPage() {
             </Button>
             {currentProject && (
               <>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const editor = grapeEditorRef.current?.getEditor();
+                    const grapeEditor = grapeEditorRef.current;
+                    if (!editor || !grapeEditor) return;
+                    const currentHtml = editor.getHtml?.() ?? '';
+                    const currentCss = editor.getCss?.() ?? '';
+                    if (pages.length === 0) {
+                      setPages([
+                        { name: 'Home', html: currentHtml, css: currentCss },
+                        { name: 'Page 2', html: '', css: '' },
+                      ]);
+                      setActivePage(1);
+                    } else {
+                      const updatedPages = pages.map((p, i) =>
+                        i === activePage ? { ...p, html: currentHtml, css: currentCss } : p
+                      );
+                      setPages([...updatedPages, { name: `Page ${pages.length + 1}`, html: '', css: '' }]);
+                      setActivePage(pages.length);
+                    }
+                    grapeEditor.setComponents('');
+                    grapeEditor.setStyle('');
+                    console.log('[Editor] + Page added');
+                  }}
+                  title={t('addPage') || 'Add page'}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                >
+                  <FilePlus className="w-4 h-4 mr-2" />
+                  {t('addPage') || '+ Page'}
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const editor = grapeEditorRef.current?.getEditor();
+                    if (editor?.Commands?.run) {
+                      editor.Commands.run('sw-visibility');
+                      setShowOutlines(!showOutlines);
+                    }
+                  }}
+                  title={showOutlines ? (t('hideGrid') || 'Hide outlines') : (t('showGrid') || 'Show outlines')}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                >
+                  <LayoutGrid className="w-4 h-4 mr-2" />
+                  {showOutlines ? (t('hideGrid') || 'Hide grid') : (t('showGrid') || 'Show grid')}
+                </Button>
                 <Button 
                   size="sm"
                   variant="outline"
