@@ -28,7 +28,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { GradientBuilder } from './GradientBuilder';
-import { getSupabaseClient } from '@/lib/supabase/client';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface StyleManagerProps {
   editor: any; // GrapesJS Editor instance
@@ -70,6 +70,15 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
     const match = val.match(/url\((['"]?)(.*?)\1\)/i);
     return match?.[2]?.trim() || '';
   }, [styles]);
+
+  // Update style on the selected component
+  // IMPORTANT: declared before callbacks that depend on it (avoids TDZ runtime errors)
+  const updateStyle = useCallback((property: string, value: string) => {
+    if (!selectedComponent) return;
+    
+    selectedComponent.addStyle({ [property]: value });
+    setStyles(prev => ({ ...prev, [property]: value }));
+  }, [selectedComponent]);
 
   const applyBackgroundImage = useCallback((imageUrl: string) => {
     const url = imageUrl.trim();
@@ -122,14 +131,6 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
     setBgUrlInput(current);
     setBgError(null);
   }, [getCurrentBackgroundImageUrl, selectedComponent]);
-
-  // Update style on the selected component
-  const updateStyle = useCallback((property: string, value: string) => {
-    if (!selectedComponent) return;
-    
-    selectedComponent.addStyle({ [property]: value });
-    setStyles(prev => ({ ...prev, [property]: value }));
-  }, [selectedComponent]);
 
   // Parse numeric value from style string
   const parseNumericValue = (value: string | undefined, defaultVal: number = 0): number => {
@@ -528,7 +529,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                             setBgError(null);
                             setIsUploadingBg(true);
                             try {
-                              const supabase = getSupabaseClient();
+                              const supabase = createClientComponentClient();
                               const safeName = file.name.replace(/[^\w.-]+/g, '_');
                               const id = (globalThis.crypto as any)?.randomUUID?.() || `${Date.now()}`;
                               const path = `backgrounds/${id}-${safeName}`;
