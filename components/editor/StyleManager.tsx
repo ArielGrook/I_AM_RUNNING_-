@@ -28,7 +28,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { GradientBuilder } from './GradientBuilder';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 interface StyleManagerProps {
   editor: any; // GrapesJS Editor instance
@@ -52,7 +52,6 @@ const PRESET_COLORS = [
 export function StyleManager({ editor, className }: StyleManagerProps) {
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
   const [styles, setStyles] = useState<Record<string, string>>({});
-  const [bgUrlInput, setBgUrlInput] = useState('');
   const [bgError, setBgError] = useState<string | null>(null);
   const [isUploadingBg, setIsUploadingBg] = useState(false);
   const [sections, setSections] = useState<StyleSection[]>([
@@ -127,8 +126,6 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
   // Sync bg URL input with selected component background image
   useEffect(() => {
-    const current = getCurrentBackgroundImageUrl();
-    setBgUrlInput(current);
     setBgError(null);
   }, [getCurrentBackgroundImageUrl, selectedComponent]);
 
@@ -529,7 +526,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                             setBgError(null);
                             setIsUploadingBg(true);
                             try {
-                              const supabase = createClientComponentClient();
+                              const supabase = getSupabaseClient();
                               const safeName = file.name.replace(/[^\w.-]+/g, '_');
                               const id = (globalThis.crypto as any)?.randomUUID?.() || `${Date.now()}`;
                               const path = `backgrounds/${id}-${safeName}`;
@@ -552,7 +549,6 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                               if (!publicUrl) throw new Error('Failed to get public URL for uploaded image');
 
                               applyBackgroundImage(publicUrl);
-                              setBgUrlInput(publicUrl);
                             } catch (err) {
                               const msg = err instanceof Error ? err.message : String(err);
                               setBgError(msg);
@@ -564,35 +560,6 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                           }}
                         />
                       </label>
-                    </div>
-                  </div>
-
-                  {/* URL Input */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-gray-600 dark:text-gray-300">Image URL</Label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="url"
-                        value={bgUrlInput}
-                        onChange={(e) => setBgUrlInput(e.target.value)}
-                        placeholder="https://example.com/image.jpg"
-                        className="flex-1 px-2 py-2 text-sm border border-gray-200 dark:border-[#404040] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 font-mono focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBgError(null);
-                          const url = bgUrlInput.trim();
-                          if (!/^https?:\/\//i.test(url)) {
-                            setBgError('URL must start with http:// or https://');
-                            return;
-                          }
-                          applyBackgroundImage(url);
-                        }}
-                        className="px-3 py-2 text-sm rounded border border-gray-200 dark:border-[#404040] bg-white dark:bg-[#2d2d2d] text-gray-700 dark:text-gray-200 hover:border-[#FF6B35] hover:text-[#FF6B35] transition-colors"
-                      >
-                        Apply
-                      </button>
                     </div>
                     {bgError && (
                       <p className="text-xs text-red-600 dark:text-red-400">{bgError}</p>
