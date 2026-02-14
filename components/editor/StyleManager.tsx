@@ -58,10 +58,11 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
   const [isUploadingBg, setIsUploadingBg] = useState(false);
   const assetsBucket =
     (process.env.NEXT_PUBLIC_SUPABASE_ASSETS_BUCKET as string | undefined) || DEFAULT_ASSETS_BUCKET;
+  // Default: don't auto-open sections on new selection (user can expand manually).
   const [sections, setSections] = useState<StyleSection[]>([
-    { id: 'dimensions', title: 'Dimensions', icon: <Maximize2 className="w-4 h-4" />, expanded: true },
+    { id: 'dimensions', title: 'Dimensions', icon: <Maximize2 className="w-4 h-4" />, expanded: false },
     { id: 'spacing', title: 'Spacing', icon: <Box className="w-4 h-4" />, expanded: false },
-    { id: 'colors', title: 'Colors & Background', icon: <Palette className="w-4 h-4" />, expanded: true },
+    { id: 'colors', title: 'Colors & Background', icon: <Palette className="w-4 h-4" />, expanded: false },
     { id: 'gradient', title: 'Gradient Builder', icon: <Blend className="w-4 h-4" />, expanded: false },
     { id: 'backgroundImage', title: 'Background Image', icon: <ImageIcon className="w-4 h-4" />, expanded: false },
     { id: 'typography', title: 'Typography', icon: <Type className="w-4 h-4" />, expanded: false },
@@ -147,20 +148,17 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
     ));
   };
 
-  if (!selectedComponent) {
-    return (
-      <div className={cn("p-4 text-center text-gray-500", className)}>
-        <Box className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-        <p className="text-sm">Select an element to edit its styles</p>
-      </div>
-    );
-  }
-
   const currentBgUrl = getCurrentBackgroundImageUrl();
 
   return (
     <div className={cn("style-manager overflow-y-auto", className)}>
-      {sections.map(section => (
+      {!selectedComponent ? (
+        <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+          <Box className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-500" />
+          <p className="text-sm">Select an element to edit its styles</p>
+        </div>
+      ) : (
+        sections.map(section => (
         <div
           key={section.id}
           className="border-b border-[#e5e5e5] dark:border-[#4a4a4a] last:border-b-0"
@@ -168,7 +166,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
           {/* Section Header */}
           <button
             onClick={() => toggleSection(section.id)}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#3a3a3a] transition-colors"
+            className="sm-section-toggle w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#3a3a3a] transition-colors"
           >
             <div className="flex items-center gap-2 text-gray-700 dark:text-[#e5e5e5]">
               {section.icon}
@@ -737,7 +735,8 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
             </div>
           )}
         </div>
-      ))}
+      ))
+      )}
     </div>
   );
 }
