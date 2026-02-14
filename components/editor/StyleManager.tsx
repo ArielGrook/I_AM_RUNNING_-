@@ -30,6 +30,8 @@ import {
 import { GradientBuilder } from './GradientBuilder';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
+const DEFAULT_ASSETS_BUCKET = 'project-assets';
+
 interface StyleManagerProps {
   editor: any; // GrapesJS Editor instance
   className?: string;
@@ -54,6 +56,8 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
   const [styles, setStyles] = useState<Record<string, string>>({});
   const [bgError, setBgError] = useState<string | null>(null);
   const [isUploadingBg, setIsUploadingBg] = useState(false);
+  const assetsBucket =
+    (process.env.NEXT_PUBLIC_SUPABASE_ASSETS_BUCKET as string | undefined) || DEFAULT_ASSETS_BUCKET;
   const [sections, setSections] = useState<StyleSection[]>([
     { id: 'dimensions', title: 'Dimensions', icon: <Maximize2 className="w-4 h-4" />, expanded: true },
     { id: 'spacing', title: 'Spacing', icon: <Box className="w-4 h-4" />, expanded: false },
@@ -532,17 +536,25 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                               const path = `backgrounds/${id}-${safeName}`;
 
                               const { error: uploadError } = await supabase.storage
-                                .from('project-assets')
+                                .from(assetsBucket)
                                 .upload(path, file, {
                                   cacheControl: '3600',
                                   upsert: true,
                                   contentType: file.type,
                                 });
 
-                              if (uploadError) throw uploadError;
+                              if (uploadError) {
+                                const msg = uploadError.message || String(uploadError);
+                                if (/bucket not found/i.test(msg)) {
+                                  throw new Error(
+                                    `Bucket not found: \"${assetsBucket}\". Create this bucket in Supabase Storage or set NEXT_PUBLIC_SUPABASE_ASSETS_BUCKET to an existing bucket name.`
+                                  );
+                                }
+                                throw uploadError;
+                              }
 
                               const { data } = supabase.storage
-                                .from('project-assets')
+                                .from(assetsBucket)
                                 .getPublicUrl(path);
 
                               const publicUrl = data?.publicUrl;

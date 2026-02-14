@@ -1610,7 +1610,7 @@ export default function EditorPage() {
               inset-y-0 right-0 
               z-40 md:z-auto
               transition-all duration-300
-              ${rightPanelOpen ? 'w-64 translate-x-0' : 'w-64 translate-x-full md:w-0 md:translate-x-0'}
+              ${rightPanelOpen ? 'w-80 translate-x-0' : 'w-80 translate-x-full md:w-0 md:translate-x-0'}
               overflow-hidden
             `}>
               <div className="h-full bg-white dark:bg-[#2d2d2d] border-l border-gray-200 dark:border-[#404040] flex flex-col shadow-lg md:shadow-none">
