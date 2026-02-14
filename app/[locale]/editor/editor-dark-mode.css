@@ -273,7 +273,8 @@
 
 .gjs-frame-wrapper {
   margin: 0 !important;
-  width: 100% !important;
+  /* Don't force full width with !important, it breaks GrapesJS device sizing */
+  width: 100%;
 }
 
 .gjs-cv-canvas-bg {
