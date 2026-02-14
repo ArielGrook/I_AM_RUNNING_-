@@ -561,7 +561,7 @@ html::-webkit-scrollbar {
 
 /* ===== SLIDER COMPONENT STYLING ===== */
 
-/* Slider wrapper - contains fill and input */
+/* Slider wrapper - tall enough to contain 16px thumb */
 .slider-wrapper {
   position: relative;
   display: flex;
@@ -570,67 +570,101 @@ html::-webkit-scrollbar {
 
 .slider-wrapper-horizontal {
   width: 100%;
-  height: 6px;
+  height: 20px;
 }
 
 .slider-wrapper-vertical {
-  width: 6px;
+  width: 20px;
   height: 100%;
   flex-direction: column;
 }
 
-/* Filled portion of slider */
+/* Track (background bar) - centered within wrapper */
+.slider-track {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: #e5e5e5;
+}
+
+.slider-wrapper-horizontal .slider-track {
+  left: 0;
+  right: 0;
+  height: 6px;
+  top: calc(50% - 3px);
+}
+
+.slider-wrapper-vertical .slider-track {
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  left: calc(50% - 3px);
+}
+
+/* Filled portion - same size/position as track */
 .slider-fill {
   position: absolute;
   background: #ff6b35;
-  border-radius: 3px;
+  border-radius: 9999px;
   pointer-events: none;
   z-index: 1;
-  transition: transform 0.1s ease-out;
-  will-change: transform;
   transform: scaleX(0);
 }
 
 .slider-wrapper-horizontal .slider-fill {
   left: 0;
-  top: 0;
-  height: 100%;
+  height: 6px;
   width: 100%;
+  top: calc(50% - 3px);
 }
 
 .slider-wrapper-vertical .slider-fill {
   bottom: 0;
-  left: 0;
-  width: 100%;
+  width: 6px;
   height: 100%;
+  left: calc(50% - 3px);
 }
 
-/* Base slider input styling - Orange theme */
+/* Native range input - stretched over entire wrapper */
 .slider-input {
-  position: relative;
+  position: absolute;
   z-index: 2;
+  left: 0;
+  top: 0;
   width: 100%;
-  height: 6px;
+  height: 100%;
   background: transparent;
-  border-radius: 3px;
   outline: none;
   -webkit-appearance: none;
   appearance: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  margin: 0;
+  padding: 0;
 }
 
-.slider-horizontal {
-  background: #e5e7eb;
+.slider-input:focus {
+  outline: none;
 }
 
-.slider-vertical {
-  width: 6px;
-  height: 100%;
-  background: #e5e7eb;
+.slider-input::-moz-focus-outer {
+  border: 0;
 }
 
-/* Webkit browsers (Chrome, Safari, Edge) */
+/* Transparent native tracks (our .slider-track div is the visual track) */
+.slider-input::-webkit-slider-runnable-track {
+  height: 6px;
+  background: transparent;
+  border-radius: 9999px;
+}
+
+.slider-input::-moz-range-track {
+  height: 6px;
+  background: transparent;
+  border-radius: 9999px;
+  border: none;
+}
+
+/* Thumb - Webkit */
 .slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -641,22 +675,23 @@ html::-webkit-scrollbar {
   border-radius: 50%;
   cursor: grab;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease;
+  margin-top: -5px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .slider-input::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
+  transform: scale(1.15);
   box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4);
-  background: #e55a28;
+  background: #ff8555;
 }
 
 .slider-input::-webkit-slider-thumb:active {
   cursor: grabbing;
-  transform: scale(1.15);
-  background: #d1491f;
+  transform: scale(1.2);
+  background: #e55a28;
 }
 
-/* Firefox */
+/* Thumb - Firefox */
 .slider-input::-moz-range-thumb {
   width: 16px;
   height: 16px;
@@ -665,23 +700,19 @@ html::-webkit-scrollbar {
   border-radius: 50%;
   cursor: grab;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .slider-input::-moz-range-thumb:hover {
-  transform: scale(1.1);
+  transform: scale(1.15);
   box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4);
-  background: #e55a28;
+  background: #ff8555;
 }
 
 .slider-input::-moz-range-thumb:active {
   cursor: grabbing;
-  transform: scale(1.15);
-  background: #d1491f;
-}
-
-.slider-input::-moz-range-track {
-  background: transparent;
+  transform: scale(1.2);
+  background: #e55a28;
 }
 
 /* ===== STYLE MANAGER MODERN UI ===== */
@@ -727,47 +758,54 @@ html::-webkit-scrollbar {
 }
 
 /* Color input styling */
-.style-manager input[type="color"] {
+.style-manager input[type="color"],
+.gradient-builder input[type="color"] {
   -webkit-appearance: none !important;
   appearance: none !important;
-  border: 2px solid #e5e7eb !important;
+  border: 1px solid #4a4a4a !important;
   border-radius: 6px !important;
   cursor: pointer !important;
   padding: 0 !important;
+  background: #f5f5f5 !important;
 }
 
-.style-manager input[type="color"]::-webkit-color-swatch-wrapper {
+.style-manager input[type="color"]::-webkit-color-swatch-wrapper,
+.gradient-builder input[type="color"]::-webkit-color-swatch-wrapper {
   padding: 2px !important;
 }
 
-.style-manager input[type="color"]::-webkit-color-swatch {
+.style-manager input[type="color"]::-webkit-color-swatch,
+.gradient-builder input[type="color"]::-webkit-color-swatch {
   border: none !important;
   border-radius: 4px !important;
 }
 
-/* Section headers */
-.style-manager button:hover {
+/* Section headers - ONLY toggle buttons, not color swatches */
+.style-manager .sm-section-toggle:hover {
   background-color: #f9fafb !important;
 }
 
 /* Input fields */
-.style-manager input[type="text"] {
-  background-color: #ffffff !important;
-  color: #1f2937 !important;
-  border: 1px solid #e5e7eb !important;
+.style-manager input[type="text"],
+.gradient-builder input[type="text"] {
+  background-color: #f5f5f5 !important;
+  color: #1a1a1a !important;
+  border: 1px solid #e5e5e5 !important;
   border-radius: 6px !important;
   font-size: 13px !important;
 }
 
-.style-manager input[type="text"]:focus {
-  border-color: #ff6b35 !important;
+.style-manager input[type="text"]:focus,
+.gradient-builder input[type="text"]:focus {
+  border-color: #FF6B35 !important;
   outline: none !important;
-  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2) !important;
 }
 
-/* Preset color buttons */
+/* Preset color swatch buttons */
 .style-manager button[title]:not(:empty) {
   transition: transform 0.15s ease !important;
+  /* Don't override backgroundColor - it's set via inline style */
 }
 
 /* Labels */

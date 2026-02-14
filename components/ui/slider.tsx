@@ -63,6 +63,7 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
   
   return (
     <div className={`slider-wrapper ${isVertical ? 'slider-wrapper-vertical' : 'slider-wrapper-horizontal'} ${className || ''}`}>
+      <div className="slider-track" />
       <div 
         className="slider-fill"
         style={{
@@ -89,4 +90,3 @@ export function Slider({ value, onValueChange, min, max, step = 1, className, or
     </div>
   )
 }
-
