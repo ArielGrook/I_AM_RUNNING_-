@@ -226,9 +226,9 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
         deviceManager: {
           devices: [
-            { name: 'Desktop', width: '1200px', widthMedia: '' },
-            { name: 'Tablet', width: '768px', widthMedia: '991px' },
-            { name: 'Mobile', width: '320px', widthMedia: '767px' },
+            { id: 'desktop', name: 'Desktop', width: '1200px', widthMedia: '' },
+            { id: 'tablet', name: 'Tablet', width: '768px', widthMedia: '991px' },
+            { id: 'mobile', name: 'Mobile', width: '320px', widthMedia: '767px' },
           ],
         },
         
@@ -423,7 +423,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       });
       
       // Set default device to Desktop for consistent preview
-      editor.setDevice('Desktop');
+      editor.setDevice('desktop');
 
       // CRITICAL: Initialize UndoManager immediately so undo/redo buttons work from start
       const um = editor.UndoManager;

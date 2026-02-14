@@ -1127,19 +1127,21 @@ export default function EditorPage() {
         className="h-screen flex flex-col bg-gray-50 dark:bg-[#1a1a1a] transition-colors duration-200"
       >
         {/* Header */}
-        <header className="bg-white dark:bg-[#2d2d2d] border-b border-gray-200 dark:border-[#404040] px-4 py-3 flex items-center justify-between gap-2 flex-wrap transition-colors duration-200">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+        <header className="bg-white dark:bg-[#2d2d2d] border-b border-gray-200 dark:border-[#404040] px-4 py-3 w-full transition-colors duration-200">
+          <div className="flex items-center justify-between gap-2 w-full min-w-0 flex-wrap">
             {/* Group 1: Dashboard */}
-            <Button variant="ghost" size="sm" asChild className="text-gray-700 dark:text-gray-300 hover:text-[#FF6B35] hover:bg-orange-50 dark:hover:bg-[#3a3a3a] shrink-0">
-              <Link href={`/${locale}/dashboard`}>
-                <ArrowLeft className="w-4 h-4" />
-                <span className="ml-1.5">{t('dashboard')}</span>
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button variant="ghost" size="sm" asChild className="text-gray-700 dark:text-gray-300 hover:text-[#FF6B35] hover:bg-orange-50 dark:hover:bg-[#3a3a3a]">
+                <Link href={`/${locale}/dashboard`}>
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="ml-1.5">{t('dashboard')}</span>
+                </Link>
+              </Button>
+            </div>
             <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0" aria-hidden />
 
             {/* Group 2: Project name + Save */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 min-w-0">
               {currentProject ? (
                 isEditingProjectName ? (
                   <input
@@ -1193,11 +1195,10 @@ export default function EditorPage() {
               )}
             </div>
             {userPackage && currentProject && (
-              <div className="hidden sm:inline-flex text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded shrink-0">
+              <div className="hidden sm:inline-flex text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded shrink-0 ml-1">
                 {userPackage.package_type} Package
               </div>
             )}
-
             <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0" aria-hidden />
 
             {/* Group 3: Theme + Language + Chat */}
@@ -1219,7 +1220,7 @@ export default function EditorPage() {
                   </svg>
                 )}
               </Button>
-              <LanguageSwitcher iconOnly />
+              <LanguageSwitcher iconOnly triggerClassName="border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#3a3a3a] hover:border-[#FF6B35]" />
               <Button
                 size="sm"
                 variant="outline"
@@ -1234,9 +1235,8 @@ export default function EditorPage() {
             <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0 hidden md:block" aria-hidden />
 
             {/* Group 4: Undo/Redo + Scale (devices) + Preview + Add page */}
-            {currentProject && (
-              <>
-                <div className="hidden md:flex items-center gap-1 shrink-0">
+            {currentProject ? (
+              <div className="hidden md:flex items-center gap-1 shrink-0">
                   <Button
                     size="sm"
                     variant="outline"
@@ -1263,7 +1263,7 @@ export default function EditorPage() {
                       variant="ghost"
                       onClick={() => {
                         const editor = grapeEditorRef.current?.getEditor();
-                        if (editor) { editor.setDevice('Desktop'); setCurrentDevice('desktop'); }
+                        if (editor) { editor.setDevice('desktop'); setCurrentDevice('desktop'); }
                       }}
                       className={`h-7 w-7 p-0 ${currentDevice === 'desktop' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
                       title="Desktop"
@@ -1275,7 +1275,7 @@ export default function EditorPage() {
                       variant="ghost"
                       onClick={() => {
                         const editor = grapeEditorRef.current?.getEditor();
-                        if (editor) { editor.setDevice('Tablet'); setCurrentDevice('tablet'); }
+                        if (editor) { editor.setDevice('tablet'); setCurrentDevice('tablet'); }
                       }}
                       className={`h-7 w-7 p-0 ${currentDevice === 'tablet' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
                       title="Tablet"
@@ -1287,7 +1287,7 @@ export default function EditorPage() {
                       variant="ghost"
                       onClick={() => {
                         const editor = grapeEditorRef.current?.getEditor();
-                        if (editor) { editor.setDevice('Mobile'); setCurrentDevice('mobile'); }
+                        if (editor) { editor.setDevice('mobile'); setCurrentDevice('mobile'); }
                       }}
                       className={`h-7 w-7 p-0 ${currentDevice === 'mobile' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
                       title="Mobile"
@@ -1331,12 +1331,11 @@ export default function EditorPage() {
                     <span className="ml-1.5 text-sm">{t('addPage')}</span>
                   </Button>
                 </div>
-              </>
-            )}
+            ) : null}
             <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0 hidden md:block" aria-hidden />
 
             {/* Group 5: Import + Export + Clear canvas + Save component */}
-            <div className="flex items-center gap-1 shrink-0 ml-auto md:ml-0">
+            <div className="flex items-center gap-1 shrink-0">
               <Button
                 size="sm"
                 variant="outline"

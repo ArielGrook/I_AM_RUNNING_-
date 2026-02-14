@@ -36,9 +36,11 @@ const languageNames: Record<string, string> = {
 
 interface LanguageSwitcherProps {
   iconOnly?: boolean;
+  /** When iconOnly, use this class to match toolbar icon buttons (e.g. Theme, Chat) */
+  triggerClassName?: string;
 }
 
-export function LanguageSwitcher({ iconOnly = false }: LanguageSwitcherProps = {}) {
+export function LanguageSwitcher({ iconOnly = false, triggerClassName }: LanguageSwitcherProps = {}) {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -51,10 +53,12 @@ export function LanguageSwitcher({ iconOnly = false }: LanguageSwitcherProps = {
     router.refresh();
   };
 
+  const buttonClass = iconOnly ? `h-8 w-8 p-0 ${triggerClassName ?? ''}`.trim() : (triggerClassName ?? '');
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className={iconOnly ? 'px-2' : ''} title={languageNames[locale] || locale.toUpperCase()}>
+        <Button variant="outline" size="sm" className={buttonClass || undefined} title={languageNames[locale] || locale.toUpperCase()}>
           <Globe className="w-4 h-4" />
           {!iconOnly && <span className="ml-2">{languageNames[locale] || locale.toUpperCase()}</span>}
         </Button>
