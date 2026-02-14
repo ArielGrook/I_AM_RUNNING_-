@@ -146,15 +146,22 @@
       "delete": "Delete"
     },
     "traits": {
-      "title": "Attributes",
-      "noTraits": "Select an element to edit its attributes",
+      "heading": "Element Properties",
+      "noTraits": "Select an element to edit its properties",
+      "noTraitsHint": "Click any element on the canvas",
       "id": "ID",
       "href": "Link URL",
-      "target": "Target",
+      "target": "Open In",
       "alt": "Alt Text",
       "src": "Source URL",
-      "title": "Title",
-      "placeholder": "Placeholder"
+      "titleAttr": "Title",
+      "placeholder": "Placeholder",
+      "descLink": "Edit link destination and behavior",
+      "descImage": "Edit image source and accessibility text",
+      "descInput": "Edit input field properties",
+      "descButton": "Edit button properties",
+      "descIframe": "Edit embedded content source",
+      "descGeneric": "Edit element attributes"
     }
   },
   "Chat": {

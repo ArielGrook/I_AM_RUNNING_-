@@ -18,8 +18,6 @@ import { cn } from '@/lib/utils';
 import { 
   Plus, 
   Trash2, 
-  Copy, 
-  Check,
   RotateCcw,
   Sparkles,
 } from 'lucide-react';
@@ -83,7 +81,6 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
     { id: '1', color: '#ff6b35', position: 0, opacity: 1 },
     { id: '2', color: '#f7931e', position: 100, opacity: 1 },
   ]);
-  const [copied, setCopied] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
 
   // Generate CSS gradient string
@@ -141,17 +138,6 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
     setColorStops(prev => prev.map(stop => 
       stop.id === id ? { ...stop, ...updates } : stop
     ));
-  };
-
-  // Copy gradient CSS
-  const copyGradient = async () => {
-    try {
-      await navigator.clipboard.writeText(gradientCSS);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
   };
 
   // Apply preset gradient
@@ -391,27 +377,12 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
           Apply Gradient
         </button>
         <button
-          onClick={copyGradient}
-          className="px-3 py-2 text-sm text-gray-700 dark:text-[#e5e5e5] hover:text-[#FF6B35] border border-[#e5e5e5] dark:border-[#4a4a4a] bg-[#f5f5f5] dark:bg-[#2d2d2d] hover:border-[#FF6B35] rounded-lg transition-colors flex items-center gap-1"
-        >
-          {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-        </button>
-        <button
           onClick={resetGradient}
           className="px-3 py-2 text-sm text-gray-700 dark:text-[#e5e5e5] hover:text-[#FF6B35] border border-[#e5e5e5] dark:border-[#4a4a4a] bg-[#f5f5f5] dark:bg-[#2d2d2d] hover:border-[#FF6B35] rounded-lg transition-colors"
           title="Reset"
         >
           <RotateCcw className="w-4 h-4" />
         </button>
-      </div>
-
-      {/* CSS Output - label hidden per design */}
-      <div className="space-y-1 gradient-css-output">
-        <div className="p-2 bg-gray-900 dark:bg-[#1a1a1a] rounded-lg overflow-x-auto border border-gray-700 dark:border-[#FF6B35]">
-          <code className="text-xs text-green-400 font-mono whitespace-pre-wrap break-all">
-            background: {gradientCSS};
-          </code>
-        </div>
       </div>
     </div>
   );

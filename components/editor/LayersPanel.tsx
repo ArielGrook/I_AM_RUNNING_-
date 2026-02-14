@@ -11,9 +11,14 @@ import {
   MousePointer,
   FormInput,
   Box,
+  Layers,
+  GripVertical,
+  Copy,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
 } from 'lucide-react';
 
-/** Minimal GrapesJS editor/component types for Layers panel */
 type GjsEditor = {
   getWrapper: () => GjsComponent | null;
   select: (component: GjsComponent) => void;
@@ -32,72 +37,51 @@ type GjsComponent = {
 };
 
 const ACCENT = '#FF6B35';
-const borderDark = '#4a4a4a';
-const borderLight = '#e5e5e5';
-const bgDark = '#2d2d2d';
-const bgLight = '#f5f5f5';
-const textDark = '#e5e5e5';
-const textLight = '#1a1a1a';
-const hoverDark = '#3a3a3a';
-const hoverLight = '#e5e5e5';
-const selectedBg = 'rgba(255, 107, 53, 0.2)';
+
+const TAG_COLORS: Record<string, string> = {
+  div: '#6b7280', section: '#6b7280',
+  header: '#8b5cf6', footer: '#8b5cf6', nav: '#8b5cf6',
+  h1: '#3b82f6', h2: '#3b82f6', h3: '#3b82f6', h4: '#3b82f6', h5: '#3b82f6', h6: '#3b82f6',
+  p: '#10b981', span: '#10b981', text: '#10b981',
+  a: '#f59e0b', button: '#f59e0b',
+  img: '#ec4899', video: '#ec4899',
+  input: '#06b6d4', textarea: '#06b6d4', select: '#06b6d4', form: '#06b6d4',
+  ul: '#6b7280', ol: '#6b7280', li: '#6b7280',
+  table: '#6b7280',
+};
 
 function getIconForTag(tagName: string, compType: string) {
   const t = (tagName || '').toLowerCase();
   const type = (compType || '').toLowerCase();
   if (t === 'div' || t === 'section') return Square;
-  if (t === 'header' || t === 'footer') return Layout;
+  if (t === 'header' || t === 'footer' || t === 'nav') return Layout;
   if (t === 'img' || type === 'image') return Image;
-  if (t === 'input' || type === 'input') return FormInput;
+  if (t === 'input' || t === 'textarea' || type === 'input') return FormInput;
   if (t === 'button' || t === 'a' || type === 'link') return MousePointer;
   if (['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'text'].includes(t) || type === 'text') return Type;
   return Box;
 }
 
-function getLabel(component: GjsComponent): string {
+function getContentPreview(component: GjsComponent): string {
+  const content = component.get?.('content') as string | undefined;
+  if (content && typeof content === 'string') {
+    const trimmed = content.replace(/\s+/g, ' ').trim();
+    if (trimmed.length > 0) return trimmed.length > 24 ? trimmed.slice(0, 24) + '...' : trimmed;
+  }
   const name = component.get?.('name') as string | undefined;
   if (name && String(name).trim()) return String(name).trim();
-  const tag = (component.get?.('tagName') as string) || 'div';
-  const type = (component.get?.('type') as string) || '';
-  if (type) return type;
-  return tag;
-}
-
-function getTagLabel(component: GjsComponent): string {
-  const tag = (component.get?.('tagName') as string) || 'div';
-  const type = (component.get?.('type') as string) || '';
-  if (type) return type;
-  return tag;
+  const classes = (component.get?.('classes') as unknown[]) || [];
+  if (Array.isArray(classes) && classes.length > 0) {
+    const first = typeof classes[0] === 'string' ? classes[0] : (classes[0] as { get?: (k: string) => string })?.get?.('name') || '';
+    if (first) return '.' + first;
+  }
+  return '';
 }
 
 export interface LayersPanelProps {
   editor: GjsEditor | null;
   isDark: boolean;
   className?: string;
-}
-
-/** Build flat list of { component, level } from wrapper for rendering */
-function buildTree(wrapper: GjsComponent | null): Array<{ component: GjsComponent; level: number }> {
-  if (!wrapper) return [];
-  const out: Array<{ component: GjsComponent; level: number }> = [];
-  const coll = wrapper.components?.();
-  if (!coll || typeof coll.length !== 'number') return [];
-  for (let i = 0; i < coll.length; i++) {
-    const comp = coll.at(i);
-    if (!comp) continue;
-    const walk = (c: GjsComponent, level: number) => {
-      out.push({ component: c, level });
-      const children = c.components?.();
-      if (children && children.length > 0) {
-        for (let j = 0; j < children.length; j++) {
-          const child = children.at(j);
-          if (child) walk(child, level + 1);
-        }
-      }
-    };
-    walk(comp, 0);
-  }
-  return out;
 }
 
 type VisibleRow = {
@@ -109,7 +93,6 @@ type VisibleRow = {
   indexInParent: number;
 };
 
-/** Get tree that respects expanded state: only show children when parent is expanded */
 function buildVisibleTree(
   wrapper: GjsComponent | null,
   expanded: Set<string>,
@@ -119,7 +102,6 @@ function buildVisibleTree(
   const out: VisibleRow[] = [];
   const coll = wrapper.components?.();
   if (!coll || typeof coll.length !== 'number') return [];
-
   const walk = (
     parentColl: { length: number; at: (i: number) => GjsComponent },
     level: number,
@@ -132,14 +114,7 @@ function buildVisibleTree(
       const children = comp.components?.();
       const hasChildren = !!(children && children.length > 0);
       const isExpanded = !hasChildren || expanded.has(id);
-      out.push({
-        component: comp,
-        level,
-        hasChildren,
-        isExpanded,
-        parentComponent,
-        indexInParent: i,
-      });
+      out.push({ component: comp, level, hasChildren, isExpanded, parentComponent, indexInParent: i });
       if (hasChildren && isExpanded && children) {
         walk(children, level + 1, comp);
       }
@@ -153,6 +128,15 @@ function componentId(component: GjsComponent): string {
   const cid = (component as { cid?: string }).cid;
   if (typeof cid === 'string') return cid;
   return `${component.get?.('tagName')}-${Math.random().toString(36).slice(2)}`;
+}
+
+function isDescendant(ancestor: GjsComponent, descendant: GjsComponent): boolean {
+  let p: GjsComponent | null = descendant;
+  while (p) {
+    if (p === ancestor) return true;
+    p = p.parent?.() ?? null;
+  }
+  return false;
 }
 
 interface LayerItemProps {
@@ -176,29 +160,17 @@ interface LayerItemProps {
 }
 
 function LayerItem({
-  component,
-  level,
-  hasChildren,
-  isExpanded,
-  isSelected,
-  isDark,
-  onSelect,
-  onToggleExpand,
-  onContextMenu,
-  dragState,
-  onDragStart,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  rowIndex,
-  parentComponent,
-  getId,
+  component, level, hasChildren, isExpanded, isSelected, isDark,
+  onSelect, onToggleExpand, onContextMenu, dragState,
+  onDragStart, onDragOver, onDragLeave, onDrop,
+  rowIndex, parentComponent,
 }: LayerItemProps) {
-  const pl = level * 16;
-  const tagName = (component.get?.('tagName') as string) || 'div';
-  const Icon = getIconForTag(tagName, (component.get?.('type') as string) || '');
-  const label = getLabel(component);
-  const tagLabel = getTagLabel(component);
+  const pl = level * 14;
+  const tagName = ((component.get?.('tagName') as string) || 'div').toLowerCase();
+  const compType = (component.get?.('type') as string) || '';
+  const Icon = getIconForTag(tagName, compType);
+  const preview = getContentPreview(component);
+  const tagColor = TAG_COLORS[tagName] || '#6b7280';
   const isDragging = dragState.dragging === component;
   const showDropBefore =
     dragState.dragging &&
@@ -210,11 +182,7 @@ function LayerItem({
   return (
     <>
       {showDropBefore && (
-        <div
-          className="h-0.5 w-full shrink-0"
-          style={{ background: ACCENT, marginLeft: pl }}
-          aria-hidden
-        />
+        <div className="h-0.5 w-full shrink-0" style={{ background: ACCENT, marginLeft: 12 + pl }} aria-hidden />
       )}
       <div
         role="treeitem"
@@ -222,74 +190,88 @@ function LayerItem({
         aria-selected={isSelected}
         draggable
         onDragStart={(e) => onDragStart(e, component)}
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          onDragOver(e, rowIndex, parentComponent);
-        }}
+        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; onDragOver(e, rowIndex, parentComponent); }}
         onDragLeave={onDragLeave}
-        onDrop={(e) => {
-          e.preventDefault();
-          onDrop(e, rowIndex, parentComponent);
-        }}
+        onDrop={(e) => { e.preventDefault(); onDrop(e, rowIndex, parentComponent); }}
         onClick={() => onSelect(component)}
         onContextMenu={(e) => onContextMenu(e, component)}
         className={`
-          flex items-center gap-2 py-2 px-3 text-sm border-b cursor-pointer select-none
-          transition-colors duration-150
-          ${isDark ? 'border-[#4a4a4a]' : 'border-[#e5e5e5]'}
-          ${isSelected ? '' : isDark ? 'hover:bg-[#3a3a3a]' : 'hover:bg-[#e5e5e5]'}
-          ${isDragging ? 'opacity-50' : ''}
+          group flex items-center gap-1.5 py-1.5 text-[13px] cursor-pointer select-none
+          transition-all duration-100
+          ${isDark ? 'border-b border-[#3a3a3a]' : 'border-b border-gray-100'}
+          ${isSelected ? '' : isDark ? 'hover:bg-[#3a3a3a]' : 'hover:bg-gray-50'}
+          ${isDragging ? 'opacity-40' : ''}
         `}
         style={{
-          paddingLeft: 12 + pl,
-          backgroundColor: isSelected ? selectedBg : undefined,
-          borderLeft: isSelected ? `3px solid ${ACCENT}` : undefined,
-          color: isDark ? textDark : textLight,
+          paddingLeft: 8 + pl,
+          paddingRight: 8,
+          backgroundColor: isSelected ? (isDark ? 'rgba(255,107,53,0.15)' : 'rgba(255,107,53,0.08)') : undefined,
+          borderLeft: isSelected ? `2px solid ${ACCENT}` : '2px solid transparent',
         }}
       >
+        {/* Tree line connector */}
+        {level > 0 && (
+          <span
+            className="absolute opacity-20"
+            style={{
+              left: 8 + (level - 1) * 14 + 6,
+              top: 0,
+              bottom: 0,
+              width: 1,
+              backgroundColor: isDark ? '#6a6a6a' : '#d1d5db',
+            }}
+          />
+        )}
+
+        {/* Drag handle (visible on hover) */}
+        <GripVertical className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-40 transition-opacity cursor-grab" />
+
+        {/* Expand/collapse */}
         <button
           type="button"
-          className="shrink-0 p-0.5 rounded hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-[#FF6B35]"
-          style={{ color: ACCENT }}
-          aria-label={isExpanded ? 'Collapse' : 'Expand'}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpand(component);
-          }}
+          className="shrink-0 p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 focus:outline-none"
+          onClick={(e) => { e.stopPropagation(); onToggleExpand(component); }}
         >
           {hasChildren ? (
-            isExpanded ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )
+            isExpanded
+              ? <ChevronDown className="w-3.5 h-3.5" style={{ color: ACCENT }} />
+              : <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
           ) : (
-            <span className="w-4 h-4 inline-block" aria-hidden />
+            <span className="w-3.5 h-3.5 inline-block" />
           )}
         </button>
-        <Icon className="w-4 h-4 shrink-0 opacity-90" style={{ color: isDark ? textDark : textLight }} />
-        <span className="truncate flex-1 min-w-0" title={label}>
-          {label}
-        </span>
+
+        {/* Icon */}
+        <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: isSelected ? ACCENT : (isDark ? '#9ca3af' : '#6b7280') }} />
+
+        {/* Tag badge */}
         <span
-          className="shrink-0 text-xs opacity-70"
-          style={{ color: isDark ? textDark : textLight }}
+          className="shrink-0 text-[10px] font-mono font-semibold px-1 py-0.5 rounded leading-none"
+          style={{
+            backgroundColor: isSelected ? ACCENT : tagColor,
+            color: '#fff',
+            opacity: isSelected ? 1 : 0.85,
+          }}
         >
-          {tagLabel}
+          {tagName.toUpperCase()}
         </span>
+
+        {/* Content preview */}
+        {preview && (
+          <span className="truncate text-xs text-gray-500 dark:text-gray-400 min-w-0">
+            {preview}
+          </span>
+        )}
+
+        {/* Child count */}
+        {hasChildren && (
+          <span className="ml-auto shrink-0 text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
+            {component.components?.()?.length || 0}
+          </span>
+        )}
       </div>
     </>
   );
-}
-
-function isDescendant(ancestor: GjsComponent, descendant: GjsComponent): boolean {
-  let p: GjsComponent | null = descendant;
-  while (p) {
-    if (p === ancestor) return true;
-    p = p.parent?.() ?? null;
-  }
-  return false;
 }
 
 export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps) {
@@ -299,7 +281,7 @@ export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps
   const [dragState, setDragState] = useState<{
     dragging: GjsComponent | null;
     dropIndex: number;
-    dropParent: GjsComponent | null; // parent component (or wrapper) where we would drop
+    dropParent: GjsComponent | null;
   }>({ dragging: null, dropIndex: -1, dropParent: null });
   const idCache = useRef<WeakMap<GjsComponent, string>>(new WeakMap());
 
@@ -316,16 +298,16 @@ export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps
 
   useEffect(() => {
     if (!editor) return;
-    const onSelect = (component: GjsComponent) => setSelected(component);
-    const onUpdate = () => refreshTree();
+    const onSelect = (...args: unknown[]) => { const c = args[0] as GjsComponent; setSelected(c); };
+    const onUpdate = (..._args: unknown[]) => refreshTree();
     editor.on('component:selected', onSelect);
     editor.on('component:add', onUpdate);
     editor.on('component:remove', onUpdate);
     editor.on('component:update', onUpdate);
     return () => {
       const off = (ed: GjsEditor, ev: string, fn: (...args: unknown[]) => void) => {
-        if (typeof (ed as unknown as { off?: (e: string, f: () => void) => void }).off === 'function') {
-          (ed as unknown as { off: (e: string, f: () => void) => void }).off(ev, fn);
+        if (typeof (ed as unknown as { off?: (e: string, f: (...a: unknown[]) => void) => void }).off === 'function') {
+          (ed as unknown as { off: (e: string, f: (...a: unknown[]) => void) => void }).off(ev, fn);
         }
       };
       off(editor, 'component:selected', onSelect);
@@ -337,20 +319,16 @@ export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps
 
   useEffect(() => {
     if (!editor) return;
-    const sel = editor.getSelected?.() ?? null;
-    setSelected(sel);
+    setSelected(editor.getSelected?.() ?? null);
   }, [editor, treeKey]);
 
   const wrapper = editor?.getWrapper?.() ?? null;
   const visibleRows = buildVisibleTree(wrapper, expanded, getId);
 
-  const handleSelect = useCallback(
-    (component: GjsComponent) => {
-      setSelected(component);
-      editor?.select?.(component);
-    },
-    [editor]
-  );
+  const handleSelect = useCallback((component: GjsComponent) => {
+    setSelected(component);
+    editor?.select?.(component);
+  }, [editor]);
 
   const toggleExpand = useCallback((component: GjsComponent) => {
     const id = componentId(component);
@@ -366,7 +344,6 @@ export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps
     setDragState({ dragging: component, dropIndex: -1, dropParent: null });
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', getId(component));
-    e.dataTransfer.setData('application/json', JSON.stringify({ type: 'gjs-layer', id: getId(component) }));
   }, [getId]);
 
   const handleDragOver = useCallback((_e: React.DragEvent, index: number, parent: GjsComponent | null) => {
@@ -381,28 +358,19 @@ export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps
     (e: React.DragEvent, targetIndex: number, targetParent: GjsComponent | null) => {
       e.preventDefault();
       const { dragging } = dragState;
-      if (!dragging || !editor) {
-        setDragState({ dragging: null, dropIndex: -1, dropParent: null });
-        return;
-      }
-      const wrapper = editor.getWrapper?.();
-      if (!wrapper) {
-        setDragState({ dragging: null, dropIndex: -1, dropParent: null });
-        return;
-      }
-      const parent = targetParent ?? wrapper;
+      if (!dragging || !editor) { setDragState({ dragging: null, dropIndex: -1, dropParent: null }); return; }
+      const wrapperNode = editor.getWrapper?.();
+      if (!wrapperNode) { setDragState({ dragging: null, dropIndex: -1, dropParent: null }); return; }
+      const parent = targetParent ?? wrapperNode;
       const coll = parent.components?.();
-      if (!coll) {
-        setDragState({ dragging: null, dropIndex: -1, dropParent: null });
-        return;
-      }
+      if (!coll) { setDragState({ dragging: null, dropIndex: -1, dropParent: null }); return; }
       const currentIndex = coll.indexOf?.(dragging);
       let newIndex = targetIndex;
       if (currentIndex >= 0 && parent === dragging.parent?.()) {
         if (targetIndex > currentIndex) newIndex = targetIndex - 1;
       }
-      if (typeof (dragging as GjsComponent).move === 'function') {
-        (dragging as GjsComponent).move(parent, Math.max(0, newIndex));
+      if (typeof dragging.move === 'function') {
+        dragging.move!(parent, Math.max(0, newIndex));
       }
       refreshTree();
       setDragState({ dragging: null, dropIndex: -1, dropParent: null });
@@ -410,11 +378,7 @@ export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps
     [dragState, editor, refreshTree]
   );
 
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    component: GjsComponent;
-  } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; component: GjsComponent } | null>(null);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, component: GjsComponent) => {
     e.preventDefault();
@@ -426,19 +390,13 @@ export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps
     const close = () => setContextMenu(null);
     window.addEventListener('click', close);
     window.addEventListener('contextmenu', close);
-    return () => {
-      window.removeEventListener('click', close);
-      window.removeEventListener('contextmenu', close);
-    };
+    return () => { window.removeEventListener('click', close); window.removeEventListener('contextmenu', close); };
   }, [contextMenu]);
 
   const runContextAction = useCallback(
     (action: 'duplicate' | 'delete' | 'moveUp' | 'moveDown') => {
       const comp = contextMenu?.component;
-      if (!comp || !editor) {
-        setContextMenu(null);
-        return;
-      }
+      if (!comp || !editor) { setContextMenu(null); return; }
       const parent = comp.parent?.();
       const coll = parent?.components?.();
       if (action === 'delete' && comp.remove) {
@@ -448,20 +406,14 @@ export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps
         if (parent && clone) {
           const idx = coll ? coll.indexOf(comp) + 1 : 0;
           const append = (parent as GjsComponent & { append?: (c: GjsComponent, opts?: { at?: number }) => unknown }).append;
-          if (typeof append === 'function') {
-            append.call(parent, clone, { at: idx });
-          }
+          if (typeof append === 'function') append.call(parent, clone, { at: idx });
         }
       } else if (action === 'moveUp' && coll && parent) {
         const i = coll.indexOf(comp);
-        if (i > 0 && typeof (comp as GjsComponent).move === 'function') {
-          (comp as GjsComponent).move(parent, i - 1);
-        }
+        if (i > 0 && typeof comp.move === 'function') comp.move(parent, i - 1);
       } else if (action === 'moveDown' && coll && parent) {
         const i = coll.indexOf(comp);
-        if (i >= 0 && i < coll.length - 1 && typeof (comp as GjsComponent).move === 'function') {
-          (comp as GjsComponent).move(parent, i + 1);
-        }
+        if (i >= 0 && i < coll.length - 1 && typeof comp.move === 'function') comp.move(parent, i + 1);
       }
       refreshTree();
       setContextMenu(null);
@@ -469,21 +421,19 @@ export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps
     [contextMenu, editor, refreshTree]
   );
 
-  const bg = isDark ? bgDark : bgLight;
-  const borderColor = isDark ? borderDark : borderLight;
-
   return (
     <div
       className={`flex flex-col h-full overflow-hidden ${className}`}
-      style={{ backgroundColor: bg, color: isDark ? textDark : textLight }}
+      style={{ color: isDark ? '#e5e5e5' : '#1a1a1a' }}
     >
-      <div
-        className="flex-1 overflow-y-auto border-t shrink-0"
-        style={{ borderColor }}
-      >
+      <div className="flex-1 overflow-y-auto relative">
         {visibleRows.length === 0 ? (
-          <div className="py-6 px-4 text-center text-sm opacity-70" style={{ color: isDark ? textDark : textLight }}>
-            No layers. Add components from the Components tab.
+          <div className="py-8 px-4 text-center">
+            <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-gray-100 dark:bg-[#3a3a3a] flex items-center justify-center">
+              <Layers className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+            </div>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Canvas is empty</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Drag components to start building</p>
           </div>
         ) : (
           <div role="tree" aria-label="Layers" key={treeKey}>
@@ -515,43 +465,30 @@ export function LayersPanel({ editor, isDark, className = '' }: LayersPanelProps
 
       {contextMenu && (
         <div
-          className="fixed z-[100] py-1 min-w-[160px] rounded-md shadow-lg text-sm border"
+          className="fixed z-[100] py-1 min-w-[160px] rounded-lg shadow-xl text-sm border backdrop-blur-sm"
           style={{
             left: contextMenu.x,
             top: contextMenu.y,
-            backgroundColor: isDark ? bgDark : bgLight,
-            borderColor,
-            color: isDark ? textDark : textLight,
+            backgroundColor: isDark ? 'rgba(45,45,45,0.95)' : 'rgba(255,255,255,0.95)',
+            borderColor: isDark ? '#4a4a4a' : '#e5e5e5',
           }}
         >
-          <button
-            type="button"
-            className="w-full text-left px-3 py-2 hover:bg-[#FF6B35]/20"
-            onClick={() => runContextAction('duplicate')}
-          >
-            Duplicate
-          </button>
-          <button
-            type="button"
-            className="w-full text-left px-3 py-2 hover:bg-[#FF6B35]/20"
-            onClick={() => runContextAction('moveUp')}
-          >
-            Move up
-          </button>
-          <button
-            type="button"
-            className="w-full text-left px-3 py-2 hover:bg-[#FF6B35]/20"
-            onClick={() => runContextAction('moveDown')}
-          >
-            Move down
-          </button>
-          <button
-            type="button"
-            className="w-full text-left px-3 py-2 text-red-500 hover:bg-red-500/20"
-            onClick={() => runContextAction('delete')}
-          >
-            Delete
-          </button>
+          {[
+            { action: 'duplicate' as const, label: 'Duplicate', icon: Copy, color: undefined },
+            { action: 'moveUp' as const, label: 'Move up', icon: ArrowUp, color: undefined },
+            { action: 'moveDown' as const, label: 'Move down', icon: ArrowDown, color: undefined },
+            { action: 'delete' as const, label: 'Delete', icon: Trash2, color: 'text-red-500' },
+          ].map(({ action, label, icon: MenuIcon, color }) => (
+            <button
+              key={action}
+              type="button"
+              className={`w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-[#FF6B35]/10 transition-colors ${color || ''}`}
+              onClick={() => runContextAction(action)}
+            >
+              <MenuIcon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
         </div>
       )}
     </div>
