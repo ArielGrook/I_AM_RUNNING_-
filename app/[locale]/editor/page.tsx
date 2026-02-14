@@ -309,6 +309,25 @@ export default function EditorPage() {
     }
   }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale, pages, activePage, dbVersion]);
 
+  // Handle project name update
+  const handleUpdateProjectName = useCallback(async (newName: string) => {
+    if (!currentProject?.id || !newName.trim()) return;
+    
+    try {
+      await supabase
+        .from('projects')
+        .update({ name: newName.trim() })
+        .eq('id', currentProject.id);
+      
+      // Update local state
+      updateProject({ name: newName.trim() });
+      setProjectName(newName.trim());
+      console.log('[Editor] ✅ Project name updated:', newName.trim());
+    } catch (error) {
+      console.error('[Editor] ❌ Failed to update project name:', error);
+    }
+  }, [currentProject?.id, updateProject]);
+
   // Load project from Supabase when editor opens - One-Way Ejection
   // No project ID → redirect to dashboard (user must choose project there)
   useEffect(() => {
@@ -1117,7 +1136,6 @@ export default function EditorPage() {
                 <span className="ml-1.5">{t('dashboard')}</span>
               </Link>
             </Button>
-
             <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0" aria-hidden />
 
             {/* Group 2: Project name + Save */}
@@ -1315,7 +1333,6 @@ export default function EditorPage() {
                 </div>
               </>
             )}
-
             <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0 hidden md:block" aria-hidden />
 
             {/* Group 5: Import + Export + Clear canvas + Save component */}
