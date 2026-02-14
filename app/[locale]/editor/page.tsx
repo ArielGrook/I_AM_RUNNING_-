@@ -29,6 +29,7 @@ import { getComponentCatalog, type SupabaseComponent } from '@/lib/components/su
 import { getPremiumComponents } from '@/components/library/premium-catalog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { parseTemplate } from '@/lib/parser/simple-parser';
+import { uploadParsedImages } from '@/lib/parser/upload-images';
 import type { ParseProgress } from '@/lib/parser/v2/types';
 import { SaveComponentDialog } from '@/components/editor/SaveComponentDialog';
 import { SearchInput } from '@/components/ui/search-input';
@@ -783,17 +784,41 @@ export default function EditorPage() {
         });
         
         const result = await parseTemplate(file, true); // true = debug mode
+
+        let pagesToUse = result.pages;
+        let cssToUse = result.css;
+        if (currentProject?.id) {
+          setImportProgress({
+            stage: 'upload',
+            progress: 52,
+            message: 'Uploading images to Storage...',
+          });
+          const uploaded = await uploadParsedImages(
+            currentProject.id,
+            result.pages,
+            result.css,
+            (uploadedCount, total) => {
+              setImportProgress({
+                stage: 'upload',
+                progress: 50 + Math.round((uploadedCount / total) * 40),
+                message: `Uploading images ${uploadedCount}/${total}...`,
+              });
+            },
+          );
+          pagesToUse = uploaded.pages;
+          cssToUse = uploaded.css;
+        }
         
         console.log('[ZIP Import] ✅ SimpleParser V3 complete:', {
-          pagesCount: result.pages.length,
-          cssLength: result.css.length,
+          pagesCount: pagesToUse.length,
+          cssLength: cssToUse.length,
           stats: result.stats,
         });
         
         // Store all pages for tab navigation
-        setPages(result.pages);
+        setPages(pagesToUse);
         setActivePage(0);
-        setImportResult({ css: result.css }); // Store CSS for page switching
+        setImportResult({ css: cssToUse }); // Store CSS for page switching
         
         // Set content directly in editor (first page)
         console.log('[ZIP Import] 🎯 Setting components in editor...');
@@ -801,8 +826,8 @@ export default function EditorPage() {
         // Wait a bit for canvas to be ready
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Set HTML from first page
-        const firstPage = result.pages[0];
+        // Use first page (Supabase image URLs if upload ran)
+        const firstPage = pagesToUse[0];
         
         // Count elements in original HTML
         const countElements = (html: string) => {
@@ -832,7 +857,7 @@ export default function EditorPage() {
         // Set CSS (shared CSS + first page CSS)
         // КРИТИЧЕСКИ ВАЖНО: CSS уже в HTML как <style> тег из парсера
         // setStyle добавляет CSS в canvas.styles, но основной CSS уже в HTML
-        const allCss = result.css + (firstPage.css ? '\n' + firstPage.css : '');
+        const allCss = cssToUse + (firstPage.css ? '\n' + firstPage.css : '');
         if (allCss.trim()) {
           console.log('[ZIP Import] 🎨 Setting additional CSS via setStyle (length:', allCss.length, 'chars)');
           grapeEditorRef.current?.setStyle(allCss);
@@ -909,14 +934,14 @@ export default function EditorPage() {
         }
         
         console.log('[ZIP Import] ✅ Components and styles set in editor');
-        console.log(`[ZIP Import] 📄 Loaded ${result.pages.length} page(s):`, result.pages.map((p: { name: string }) => p.name));
+        console.log(`[ZIP Import] 📄 Loaded ${pagesToUse.length} page(s):`, pagesToUse.map((p: { name: string }) => p.name));
         
         // Update progress to complete
-        const totalHtmlSize = result.pages.reduce((sum: number, p: { html: string }) => sum + p.html.length, 0);
+        const totalHtmlSize = pagesToUse.reduce((sum: number, p: { html: string }) => sum + p.html.length, 0);
         setImportProgress({
           stage: 'complete',
           progress: 100,
-          message: `✅ Import complete! ${result.pages.length} page(s), ${(totalHtmlSize / 1024).toFixed(1)}KB HTML, ${(result.css.length / 1024).toFixed(1)}KB CSS`,
+          message: `✅ Import complete! ${pagesToUse.length} page(s), ${(totalHtmlSize / 1024).toFixed(1)}KB HTML, ${(cssToUse.length / 1024).toFixed(1)}KB CSS`,
         });
         
         // Close progress dialog after a delay
