@@ -477,7 +477,7 @@ export default function EditorPage() {
     }
   }, [searchParams]);
 
-  // Sync undo/redo state from editor
+  // Sync undo/redo state from editor via event callback (no polling)
   useEffect(() => {
     if (!currentProject || !grapeEditorRef.current) {
       setCanUndo(false);
@@ -485,21 +485,17 @@ export default function EditorPage() {
       return;
     }
     
-    const updateUndoRedoState = () => {
-      if (grapeEditorRef.current) {
-        setCanUndo(grapeEditorRef.current.canUndo || false);
-        setCanRedo(grapeEditorRef.current.canRedo || false);
-      }
-    };
+    // Subscribe to undo/redo changes
+    const unsubscribe = grapeEditorRef.current.onUndoRedoChange((u, r) => {
+      setCanUndo(u);
+      setCanRedo(r);
+    });
     
-    // Update immediately
-    updateUndoRedoState();
+    // Set initial state
+    setCanUndo(grapeEditorRef.current.canUndo || false);
+    setCanRedo(grapeEditorRef.current.canRedo || false);
     
-    // Set up interval to check state periodically (editor updates state internally)
-    // Reduced frequency to 200ms for better performance
-    const interval = setInterval(updateUndoRedoState, 200);
-    
-    return () => clearInterval(interval);
+    return unsubscribe;
   }, [currentProject]);
   
   // Update state after undo/redo operations
@@ -982,14 +978,11 @@ export default function EditorPage() {
     }
   }, [pages, activePage, importResult]);
   
-  // Handle preview generation
+  // Handle preview generation (supports multi-page)
   const handlePreview = async () => {
     try {
       const editor = grapeEditorRef.current?.getEditor();
       if (!editor) throw new Error('Editor not ready');
-
-      const html = editor.getHtml();
-      const css = editor.getCss();
 
       const baseResponsiveCss = `
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow-x: hidden; }
@@ -999,21 +992,82 @@ export default function EditorPage() {
         @media (max-width: 767px) { .gjs-row > *, .row > * { width: 100% !important; } }
       `;
 
-      const doc = `<!doctype html>
-      <html lang=\"${locale}\">
-      <head>
-        <meta charset=\"UTF-8\" />
-        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
-        <style>${baseResponsiveCss}${css}</style>
-      </head>
-      <body>${html}</body>
-      </html>`;
+      if (pages.length > 1) {
+        // Multi-page: save current page edits, build combined preview
+        const currentHtml = editor.getHtml();
+        const currentCss = editor.getCss();
+        const allPages = pages.map((p, i) =>
+          i === activePage ? { ...p, html: currentHtml, css: currentCss } : p
+        );
 
-      const blob = new Blob([doc], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setPreviewWatermarked(false);
-      setShowPreview(true);
+        const pageNavStyle = `
+          .preview-page-nav { position: sticky; top: 0; z-index: 9999; display: flex; gap: 4px; padding: 8px 16px; background: #2d2d2d; border-bottom: 2px solid #FF6B35; }
+          .preview-page-nav button { padding: 6px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: #3a3a3a; color: #e5e5e5; transition: background 0.2s; }
+          .preview-page-nav button:hover { background: #4a4a4a; }
+          .preview-page-nav button.active { background: #FF6B35; color: white; }
+          .preview-page-section { display: none; }
+          .preview-page-section.active { display: block; }
+        `;
+
+        const pageSections = allPages.map((p, i) =>
+          `<div class="preview-page-section${i === 0 ? ' active' : ''}" data-page="${i}">${p.html}</div>`
+        ).join('\n');
+
+        const pageButtons = allPages.map((p, i) =>
+          `<button class="${i === 0 ? 'active' : ''}" onclick="switchPage(${i})">${p.name.replace('.html', '').replace('.htm', '')}</button>`
+        ).join('');
+
+        const switchScript = `<script>
+          function switchPage(idx) {
+            document.querySelectorAll('.preview-page-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.preview-page-nav button').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-page="'+idx+'"]').classList.add('active');
+            document.querySelectorAll('.preview-page-nav button')[idx].classList.add('active');
+          }
+        </script>`;
+
+        const allCss = allPages.map(p => p.css || '').join('\n');
+
+        const doc = `<!doctype html>
+        <html lang="${locale}">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <style>${baseResponsiveCss}${pageNavStyle}${allCss}</style>
+        </head>
+        <body>
+          <div class="preview-page-nav">${pageButtons}</div>
+          ${pageSections}
+          ${switchScript}
+        </body>
+        </html>`;
+
+        const blob = new Blob([doc], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+        setPreviewWatermarked(false);
+        setShowPreview(true);
+      } else {
+        // Single page preview
+        const html = editor.getHtml();
+        const css = editor.getCss();
+
+        const doc = `<!doctype html>
+        <html lang="${locale}">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <style>${baseResponsiveCss}${css}</style>
+        </head>
+        <body>${html}</body>
+        </html>`;
+
+        const blob = new Blob([doc], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+        setPreviewWatermarked(false);
+        setShowPreview(true);
+      }
     } catch (error) {
       console.error('Preview generation failed:', error);
       alert('Failed to generate preview. Please try again.');
@@ -1649,6 +1703,7 @@ export default function EditorPage() {
                   <StyleManager 
                     editor={grapeEditorRef.current?.getEditor()} 
                     className="h-full"
+                    t={(key: string) => t(key)}
                   />
                 </div>
               </div>

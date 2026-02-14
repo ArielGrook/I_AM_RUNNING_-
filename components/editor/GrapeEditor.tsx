@@ -29,6 +29,7 @@ export interface GrapeEditorRef {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onUndoRedoChange: (callback: (canUndo: boolean, canRedo: boolean) => void) => () => void;
 }
 
 interface GrapeEditorProps {
@@ -118,6 +119,7 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
   const [isReady, setIsReady] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const undoRedoCallbackRef = useRef<((canUndo: boolean, canRedo: boolean) => void) | null>(null);
   const lastSyncedProjectRef = useRef<string | null>(null);
   const { currentProject, updateProject } = useProjectStore();
   const { theme } = useTheme();
@@ -248,12 +250,11 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           scripts: [
             // Tailwind Play CDN (JIT compiler) - must be in scripts, not styles
             'https://cdn.tailwindcss.com',
-            'https://code.jquery.com/jquery-3.6.0.min.js',
-            'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js',
+
           ],
           frameStyle: `
             body {
-              min-height: 5000px;
+              min-height: 100vh;
               position: relative;
               background-color: #ffffff;
               margin: 0;
@@ -444,8 +445,11 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
       // Update undo/redo state whenever changes occur
       const updateUndoRedoState = () => {
-        setCanUndo(um.hasUndo());
-        setCanRedo(um.hasRedo());
+        const u = um.hasUndo();
+        const r = um.hasRedo();
+        setCanUndo(u);
+        setCanRedo(r);
+        undoRedoCallbackRef.current?.(u, r);
       };
 
       // Initial state check
@@ -598,7 +602,6 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           canvasWrapper.style.justifyContent = 'center';
           canvasWrapper.style.alignItems = 'flex-start';
           canvasWrapper.style.minHeight = '100%';
-          canvasWrapper.style.paddingTop = '20px';
           console.log('14. Canvas wrapper styled');
         }
         
@@ -693,109 +696,8 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     const editor = grapesEditorRef.current;
     if (!editor) return;
 
-    const canvas = editor.Canvas.getElement();
-    if (canvas) {
-      if (isDark) {
-        // Apply dark theme styles to canvas
-        canvas.style.backgroundColor = '#ffffff'; // Keep canvas white for content
-        canvas.style.color = '#1f2937'; // Dark text on canvas
-      } else {
-        // Apply light theme styles to canvas
-        canvas.style.backgroundColor = '#ffffff'; // Light background
-        canvas.style.color = '#1f2937'; // Dark text
-      }
-    }
-
-    // Apply theme to editor panels and UI elements
-    const applyThemeToElements = (selector: string, darkStyles: Record<string, string>, lightStyles: Record<string, string>) => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach((element) => {
-        const el = element as HTMLElement;
-        if (isDark) {
-          Object.assign(el.style, darkStyles);
-        } else {
-          Object.assign(el.style, lightStyles);
-        }
-      });
-    };
-
-    // Toolbar and panels - gray/orange theme (like Claude)
-    applyThemeToElements('.gjs-pn-panel, .gjs-toolbar, .gjs-pn-panels', {
-      backgroundColor: '#2d2d2d',
-      color: '#e5e5e5',
-      borderColor: '#404040'
-    }, {
-      backgroundColor: '#ffffff',
-      color: '#1a1a1a',
-      borderColor: '#e5e7eb'
-    });
-
-    // Block manager and layer manager
-    applyThemeToElements('.gjs-block-category, .gjs-blocks-c, .gjs-layer', {
-      backgroundColor: '#2d2d2d',
-      color: '#e5e5e5'
-    }, {
-      backgroundColor: '#f9fafb',
-      color: '#1a1a1a'
-    });
-
-    // Style manager
-    applyThemeToElements('.gjs-sm-sector, .gjs-sm-properties, .gjs-trt-traits', {
-      backgroundColor: '#2d2d2d',
-      color: '#e5e5e5'
-    }, {
-      backgroundColor: '#ffffff',
-      color: '#1a1a1a'
-    });
-
-    // Buttons and controls
-    applyThemeToElements('.gjs-pn-btn, .gjs-toolbar-item, button', {
-      backgroundColor: isDark ? '#3a3a3a' : '#f9fafb',
-      color: isDark ? '#e5e5e5' : '#1a1a1a',
-      borderColor: isDark ? '#404040' : '#d1d5db'
-    }, {
-      backgroundColor: '#f9fafb',
-      color: '#1a1a1a',
-      borderColor: '#d1d5db'
-    });
-
-    // Active/hover states
-    applyThemeToElements('.gjs-pn-btn:hover, .gjs-toolbar-item:hover', {
-      backgroundColor: isDark ? '#3a3a3a' : '#f3f4f6'
-    }, {
-      backgroundColor: '#f3f4f6'
-    });
-
-    // Input fields and selects
-    applyThemeToElements('input, select, textarea', {
-      backgroundColor: isDark ? '#3a3a3a' : '#ffffff',
-      color: isDark ? '#e5e5e5' : '#1a1a1a',
-      borderColor: isDark ? '#404040' : '#d1d5db'
-    }, {
-      backgroundColor: '#ffffff',
-      color: '#1a1a1a',
-      borderColor: '#d1d5db'
-    });
-
-    // Specific GrapesJS elements - orange accent
-    applyThemeToElements('.gjs-badge, .gjs-com-badge', {
-      backgroundColor: '#FF6B35',
-      color: '#ffffff'
-    }, {
-      backgroundColor: '#FF6B35',
-      color: '#ffffff'
-    });
-
-    // Modal dialogs
-    applyThemeToElements('.gjs-mdl-dialog', {
-      backgroundColor: '#2d2d2d',
-      color: '#e5e5e5',
-      borderColor: '#404040'
-    }, {
-      backgroundColor: '#ffffff',
-      color: '#1a1a1a',
-      borderColor: '#e5e7eb'
-    });
+  // Theme is handled entirely by CSS (editor-dark-mode.css + Tailwind classes)
+  // No JS-based theme application needed
 
   }, [isDark]);
 
@@ -991,6 +893,10 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
     redo: handleRedo,
     canUndo,
     canRedo,
+    onUndoRedoChange: (callback: (canUndo: boolean, canRedo: boolean) => void) => {
+      undoRedoCallbackRef.current = callback;
+      return () => { undoRedoCallbackRef.current = null; };
+    },
   }), [handleUndo, handleRedo, canUndo, canRedo]);
 
   return (

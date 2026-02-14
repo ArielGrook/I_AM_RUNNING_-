@@ -213,36 +213,13 @@
   border: 1px solid #FF6B35 !important;
 }
 
-/* Native input[type=range] (GrapesJS + our custom sliders) */
-.dark input[type="range"]::-webkit-slider-thumb {
-  background: #FF6B35 !important;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: none;
-  -webkit-appearance: none;
+/* Native input[type=range] thumb only - track handled by .slider-track div */
+.dark .slider-input::-webkit-slider-thumb {
+  border-color: #3a3a3a;
 }
 
-.dark input[type="range"]::-moz-range-thumb {
-  background: #FF6B35 !important;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: none;
-}
-
-.dark input[type="range"]::-webkit-slider-runnable-track {
-  background: #4a4a4a !important;
-  height: 6px;
-  border-radius: 3px;
-}
-
-.dark input[type="range"]::-moz-range-track {
-  background: #4a4a4a !important;
-  height: 6px;
-  border-radius: 3px;
+.dark .slider-input::-moz-range-thumb {
+  border-color: #3a3a3a;
 }
 
 /* Color picker - visible borders (GrapesJS only) */
@@ -415,9 +392,9 @@
 }
 
 /* ===== COLOR SWATCHES (both modes) ===== */
-/* Always visible dark border so white/light swatches don't vanish */
+/* Light mode: visible border so white/light swatches don't vanish */
 .style-manager button[title] {
-  border-color: #4a4a4a !important;
+  border-color: #d1d5db !important;
 }
 
 .dark .style-manager button[title] {

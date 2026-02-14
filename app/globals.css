@@ -584,7 +584,7 @@ html::-webkit-scrollbar {
   position: absolute;
   border-radius: 9999px;
   pointer-events: none;
-  background: #e5e5e5;
+  background: #cbd5e1;
 }
 
 .slider-wrapper-horizontal .slider-track {

@@ -33,8 +33,9 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 const DEFAULT_ASSETS_BUCKET = 'project-assets';
 
 interface StyleManagerProps {
-  editor: any; // GrapesJS Editor instance
+  editor: any;
   className?: string;
+  t?: (key: string) => string;
 }
 
 interface StyleSection {
@@ -51,7 +52,29 @@ const PRESET_COLORS = [
   '#000000', '#ffffff', '#1f2937', '#f3f4f6', '#fef3c7',
 ];
 
-export function StyleManager({ editor, className }: StyleManagerProps) {
+export function StyleManager({ editor, className, t: tProp }: StyleManagerProps) {
+  const t = tProp || ((key: string) => {
+    const fallback: Record<string, string> = {
+      'styleManager.dimensions': 'Dimensions', 'styleManager.spacing': 'Spacing',
+      'styleManager.colors': 'Colors & Background', 'styleManager.gradient': 'Gradient Builder',
+      'styleManager.backgroundImage': 'Background Image', 'styleManager.typography': 'Typography',
+      'styleManager.borders': 'Borders & Radius', 'styleManager.selectElement': 'Select an element to edit its styles',
+      'styleManager.width': 'Width', 'styleManager.height': 'Height', 'styleManager.maxWidth': 'Max Width',
+      'styleManager.padding': 'Padding', 'styleManager.margin': 'Margin',
+      'styleManager.paddingTop': 'Padding Top', 'styleManager.paddingBottom': 'Padding Bottom',
+      'styleManager.fontSize': 'Font Size', 'styleManager.fontWeight': 'Font Weight',
+      'styleManager.lineHeight': 'Line Height', 'styleManager.textAlign': 'Text Align',
+      'styleManager.textColor': 'Text Color', 'styleManager.backgroundColor': 'Background Color',
+      'styleManager.opacity': 'Opacity', 'styleManager.borderRadius': 'Border Radius',
+      'styleManager.borderWidth': 'Border Width', 'styleManager.borderColor': 'Border Color',
+      'styleManager.borderStyle': 'Border Style', 'styleManager.upload': 'Upload',
+      'styleManager.uploadImage': 'Upload Image', 'styleManager.uploading': 'Uploading...',
+      'styleManager.remove': 'Remove', 'styleManager.noBackgroundImage': 'No background image applied.',
+      'styleManager.size': 'Size', 'styleManager.position': 'Position',
+      'styleManager.repeat': 'Repeat', 'styleManager.attachment': 'Attachment',
+    };
+    return fallback[key] || key.split('.').pop() || key;
+  });
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
   const [styles, setStyles] = useState<Record<string, string>>({});
   const [bgError, setBgError] = useState<string | null>(null);
@@ -60,13 +83,13 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
     (process.env.NEXT_PUBLIC_SUPABASE_ASSETS_BUCKET as string | undefined) || DEFAULT_ASSETS_BUCKET;
   // Default: don't auto-open sections on new selection (user can expand manually).
   const [sections, setSections] = useState<StyleSection[]>([
-    { id: 'dimensions', title: 'Dimensions', icon: <Maximize2 className="w-4 h-4" />, expanded: false },
-    { id: 'spacing', title: 'Spacing', icon: <Box className="w-4 h-4" />, expanded: false },
-    { id: 'colors', title: 'Colors & Background', icon: <Palette className="w-4 h-4" />, expanded: false },
-    { id: 'gradient', title: 'Gradient Builder', icon: <Blend className="w-4 h-4" />, expanded: false },
-    { id: 'backgroundImage', title: 'Background Image', icon: <ImageIcon className="w-4 h-4" />, expanded: false },
-    { id: 'typography', title: 'Typography', icon: <Type className="w-4 h-4" />, expanded: false },
-    { id: 'borders', title: 'Borders & Radius', icon: <Square className="w-4 h-4" />, expanded: false },
+    { id: 'dimensions', title: 'styleManager.dimensions', icon: <Maximize2 className="w-4 h-4" />, expanded: false },
+    { id: 'spacing', title: 'styleManager.spacing', icon: <Box className="w-4 h-4" />, expanded: false },
+    { id: 'colors', title: 'styleManager.colors', icon: <Palette className="w-4 h-4" />, expanded: false },
+    { id: 'gradient', title: 'styleManager.gradient', icon: <Blend className="w-4 h-4" />, expanded: false },
+    { id: 'backgroundImage', title: 'styleManager.backgroundImage', icon: <ImageIcon className="w-4 h-4" />, expanded: false },
+    { id: 'typography', title: 'styleManager.typography', icon: <Type className="w-4 h-4" />, expanded: false },
+    { id: 'borders', title: 'styleManager.borders', icon: <Square className="w-4 h-4" />, expanded: false },
   ]);
 
   const getCurrentBackgroundImageUrl = useCallback((): string => {
@@ -155,7 +178,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
       {!selectedComponent ? (
         <div className="p-4 text-center text-gray-500 dark:text-gray-400">
           <Box className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-500" />
-          <p className="text-sm">Select an element to edit its styles</p>
+          <p className="text-sm">{t('styleManager.selectElement')}</p>
         </div>
       ) : (
         sections.map(section => (
@@ -170,7 +193,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
           >
             <div className="flex items-center gap-2 text-gray-700 dark:text-[#e5e5e5]">
               {section.icon}
-              <span className="font-medium text-sm">{section.title}</span>
+              <span className="font-medium text-sm">{t(section.title)}</span>
             </div>
             {section.expanded ? (
               <ChevronUp className="w-4 h-4 text-gray-400 dark:text-gray-300" />
@@ -187,7 +210,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                 <>
                   <div className="flex items-center gap-3">
                     <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-16 shrink-0">
-                      Width
+                      {t('styleManager.width')}
                     </Label>
                     <Slider
                       value={[parseNumericValue(styles.width, 100)]}
@@ -204,7 +227,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="flex items-center gap-3">
                     <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-16 shrink-0">
-                      Height
+                      {t('styleManager.height')}
                     </Label>
                     <Slider
                       value={[parseNumericValue(styles.height, 0)]}
@@ -221,7 +244,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="flex items-center gap-3">
                     <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-20 shrink-0">
-                      Max Width
+                      {t('styleManager.maxWidth')}
                     </Label>
                     <Slider
                       value={[parseNumericValue(styles['max-width'], 100)]}
@@ -243,7 +266,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                 <>
                   <div className="flex items-center gap-3">
                     <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-16 shrink-0">
-                      Padding
+                      {t('styleManager.padding')}
                     </Label>
                     <Slider
                       value={[parseNumericValue(styles.padding, 0)]}
@@ -260,7 +283,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="flex items-center gap-3">
                     <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-16 shrink-0">
-                      Margin
+                      {t('styleManager.margin')}
                     </Label>
                     <Slider
                       value={[parseNumericValue(styles.margin, 0)]}
@@ -277,7 +300,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Padding Top</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.paddingTop')}</Label>
                       <Slider
                         value={[parseNumericValue(styles['padding-top'], 0)]}
                         onValueChange={([v]) => updateStyle('padding-top', `${v}px`)}
@@ -288,7 +311,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Padding Bottom</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.paddingBottom')}</Label>
                       <Slider
                         value={[parseNumericValue(styles['padding-bottom'], 0)]}
                         onValueChange={([v]) => updateStyle('padding-bottom', `${v}px`)}
@@ -307,7 +330,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                 <>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Font Size</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.fontSize')}</Label>
                       <span className="text-xs text-gray-500 font-mono">
                         {styles['font-size'] || '16px'}
                       </span>
@@ -324,7 +347,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Font Weight</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.fontWeight')}</Label>
                       <span className="text-xs text-gray-500 font-mono">
                         {styles['font-weight'] || '400'}
                       </span>
@@ -341,7 +364,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Line Height</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.lineHeight')}</Label>
                       <span className="text-xs text-gray-500 font-mono">
                         {styles['line-height'] || '1.5'}
                       </span>
@@ -357,7 +380,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Text Align</Label>
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.textAlign')}</Label>
                     <div className="flex gap-1">
                       {[
                         { value: 'left', icon: <AlignLeft className="w-4 h-4" /> },
@@ -371,7 +394,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                             "flex-1 p-2 rounded border transition-colors",
                             styles['text-align'] === value
                               ? "bg-[#FF6B35] text-white border-[#FF6B35]"
-                              : "bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-[#FF6B35]"
+                              : "bg-white dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-gray-300 dark:border-[#4a4a4a] hover:border-[#FF6B35]"
                           )}
                         >
                           {icon}
@@ -386,19 +409,19 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
               {section.id === 'colors' && (
                 <>
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Text Color</Label>
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.textColor')}</Label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={styles.color || '#000000'}
                         onChange={(e) => updateStyle('color', e.target.value)}
-                        className="w-10 h-10 rounded cursor-pointer border border-[#4a4a4a] dark:border-[#6a6a6a] bg-[#f5f5f5] dark:bg-[#2d2d2d]"
+                        className="w-10 h-10 rounded cursor-pointer border border-gray-300 dark:border-[#6a6a6a] bg-white dark:bg-[#2d2d2d]"
                       />
                       <input
                         type="text"
                         value={styles.color || '#000000'}
                         onChange={(e) => updateStyle('color', e.target.value)}
-                        className="flex-1 px-2 py-1 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded font-mono bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
+                        className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-[#4a4a4a] rounded font-mono bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
                         placeholder="#000000"
                       />
                     </div>
@@ -424,19 +447,19 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Background Color</Label>
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.backgroundColor')}</Label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={styles['background-color'] || '#ffffff'}
                         onChange={(e) => updateStyle('background-color', e.target.value)}
-                        className="w-10 h-10 rounded cursor-pointer border border-[#4a4a4a] dark:border-[#6a6a6a] bg-[#f5f5f5] dark:bg-[#2d2d2d]"
+                        className="w-10 h-10 rounded cursor-pointer border border-gray-300 dark:border-[#6a6a6a] bg-white dark:bg-[#2d2d2d]"
                       />
                       <input
                         type="text"
                         value={styles['background-color'] || ''}
                         onChange={(e) => updateStyle('background-color', e.target.value)}
-                        className="flex-1 px-2 py-1 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded font-mono bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
+                        className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-[#4a4a4a] rounded font-mono bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
                         placeholder="transparent"
                       />
                     </div>
@@ -463,7 +486,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="flex items-center gap-3">
                     <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-16 shrink-0">
-                      Opacity
+                      {t('styleManager.opacity')}
                     </Label>
                     <Slider
                       value={[parseNumericValue(styles.opacity, 1) * 100]}
@@ -514,19 +537,19 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                           onClick={removeBackgroundImage}
                           className="px-2 py-1 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#e55a28] transition-colors shrink-0"
                         >
-                          Remove
+                          {t('styleManager.remove')}
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      No background image applied.
+                      {t('styleManager.noBackgroundImage')}
                     </div>
                   )}
 
                   {/* Upload */}
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600 dark:text-gray-300">Upload</Label>
+                    <Label className="text-xs text-gray-600 dark:text-gray-300">{t('styleManager.upload')}</Label>
                     <div className="flex items-center gap-2">
                       <label
                         className={cn(
@@ -534,7 +557,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                           "bg-[#FF6B35] text-white hover:bg-[#e55a28]"
                         )}
                       >
-                        {isUploadingBg ? 'Uploading...' : 'Upload Image'}
+                        {isUploadingBg ? t('styleManager.uploading') : t('styleManager.uploadImage')}
                         <input
                           type="file"
                           accept="image/*"
@@ -597,11 +620,11 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                   {/* Options */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label className="text-xs text-gray-600 dark:text-gray-300">Size</Label>
+                      <Label className="text-xs text-gray-600 dark:text-gray-300">{t('styleManager.size')}</Label>
                       <select
                         value={styles['background-size'] || 'cover'}
                         onChange={(e) => updateStyle('background-size', e.target.value)}
-                        className="w-full px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
+                        className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-[#4a4a4a] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
                       >
                         <option value="cover">cover</option>
                         <option value="contain">contain</option>
@@ -609,11 +632,11 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-gray-600 dark:text-gray-300">Position</Label>
+                      <Label className="text-xs text-gray-600 dark:text-gray-300">{t('styleManager.position')}</Label>
                       <select
                         value={styles['background-position'] || 'center'}
                         onChange={(e) => updateStyle('background-position', e.target.value)}
-                        className="w-full px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
+                        className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-[#4a4a4a] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
                       >
                         <option value="center">center</option>
                         <option value="top">top</option>
@@ -623,11 +646,11 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-gray-600 dark:text-gray-300">Repeat</Label>
+                      <Label className="text-xs text-gray-600 dark:text-gray-300">{t('styleManager.repeat')}</Label>
                       <select
                         value={styles['background-repeat'] || 'no-repeat'}
                         onChange={(e) => updateStyle('background-repeat', e.target.value)}
-                        className="w-full px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
+                        className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-[#4a4a4a] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
                       >
                         <option value="no-repeat">no-repeat</option>
                         <option value="repeat">repeat</option>
@@ -636,11 +659,11 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs text-gray-600 dark:text-gray-300">Attachment</Label>
+                      <Label className="text-xs text-gray-600 dark:text-gray-300">{t('styleManager.attachment')}</Label>
                       <select
                         value={styles['background-attachment'] || 'scroll'}
                         onChange={(e) => updateStyle('background-attachment', e.target.value)}
-                        className="w-full px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
+                        className="w-full px-2 py-2 text-sm border border-gray-300 dark:border-[#4a4a4a] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
                       >
                         <option value="scroll">scroll</option>
                         <option value="fixed">fixed</option>
@@ -655,7 +678,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                 <>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Border Radius</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.borderRadius')}</Label>
                       <span className="text-xs text-gray-500 font-mono">
                         {styles['border-radius'] || '0px'}
                       </span>
@@ -672,7 +695,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Border Width</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.borderWidth')}</Label>
                       <span className="text-xs text-gray-500 font-mono">
                         {styles['border-width'] || '0px'}
                       </span>
@@ -688,26 +711,26 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Border Color</Label>
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.borderColor')}</Label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={styles['border-color'] || '#e5e7eb'}
                         onChange={(e) => updateStyle('border-color', e.target.value)}
-                        className="w-10 h-10 rounded cursor-pointer border border-[#4a4a4a] dark:border-[#6a6a6a] bg-[#f5f5f5] dark:bg-[#2d2d2d]"
+                        className="w-10 h-10 rounded cursor-pointer border border-gray-300 dark:border-[#6a6a6a] bg-white dark:bg-[#2d2d2d]"
                       />
                       <input
                         type="text"
                         value={styles['border-color'] || '#e5e7eb'}
                         onChange={(e) => updateStyle('border-color', e.target.value)}
-                        className="flex-1 px-2 py-1 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded font-mono bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
+                        className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-[#4a4a4a] rounded font-mono bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
                         placeholder="#e5e7eb"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Border Style</Label>
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">{t('styleManager.borderStyle')}</Label>
                     <div className="flex gap-1">
                       {['none', 'solid', 'dashed', 'dotted'].map(style => (
                         <button
@@ -722,7 +745,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                             "flex-1 px-2 py-1.5 text-xs rounded border transition-colors capitalize",
                             styles['border-style'] === style
                               ? "bg-[#FF6B35] text-white border-[#FF6B35]"
-                              : "bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-[#FF6B35]"
+                              : "bg-white dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-gray-300 dark:border-[#4a4a4a] hover:border-[#FF6B35]"
                           )}
                         >
                           {style}
