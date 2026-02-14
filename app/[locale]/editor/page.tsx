@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/dialog';
 import { StyleManager } from '@/components/editor/StyleManager';
 import { LayersPanel } from '@/components/editor/LayersPanel';
+import { TraitsPanel } from '@/components/editor/TraitsPanel';
 import { Category } from '@/lib/types/project';
 import { supabase } from '@/lib/supabase/client';
 import { JsonContract } from '@/lib/types/chat';
@@ -1699,10 +1700,16 @@ export default function EditorPage() {
                 <div className="p-4 border-b">
                   <h3 className="font-semibold text-lg text-gray-900 dark:text-[#e5e5e5]">{t('properties')}</h3>
                 </div>
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-y-auto">
+                  <TraitsPanel
+                    editor={grapeEditorRef.current?.getEditor()}
+                    isDark={darkMode}
+                    t={(key: string) => t(key)}
+                  />
+                  <div className="border-t border-gray-200 dark:border-[#404040]" />
                   <StyleManager 
                     editor={grapeEditorRef.current?.getEditor()} 
-                    className="h-full"
+                    className=""
                     t={(key: string) => t(key)}
                   />
                 </div>
