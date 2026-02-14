@@ -1265,6 +1265,7 @@ export default function EditorPage() {
                         const editor = grapeEditorRef.current?.getEditor();
                         if (editor) {
                           editor.Commands?.run?.('set-device-desktop');
+                          editor.setDevice?.('desktop');
                           setCurrentDevice('desktop');
                         }
                       }}
@@ -1280,6 +1281,7 @@ export default function EditorPage() {
                         const editor = grapeEditorRef.current?.getEditor();
                         if (editor) {
                           editor.Commands?.run?.('set-device-tablet');
+                          editor.setDevice?.('tablet');
                           setCurrentDevice('tablet');
                         }
                       }}
@@ -1295,6 +1297,7 @@ export default function EditorPage() {
                         const editor = grapeEditorRef.current?.getEditor();
                         if (editor) {
                           editor.Commands?.run?.('set-device-mobile');
+                          editor.setDevice?.('mobile');
                           setCurrentDevice('mobile');
                         }
                       }}

@@ -226,9 +226,9 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
 
         deviceManager: {
           devices: [
-            { id: 'desktop', name: 'Desktop', width: '1200px', widthMedia: '' },
+            { id: 'desktop', name: 'Desktop', width: '', widthMedia: '' },
             { id: 'tablet', name: 'Tablet', width: '768px', widthMedia: '991px' },
-            { id: 'mobile', name: 'Mobile', width: '320px', widthMedia: '767px' },
+            { id: 'mobile', name: 'Mobile', width: '375px', widthMedia: '767px' },
           ],
         },
         
@@ -1000,30 +1000,34 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
           margin: 0 !important;
           padding: 0 !important;
           display: flex !important;
-          justify-content: flex-start !important;
+          justify-content: center !important;
           align-items: flex-start !important;
           min-height: 100% !important;
           width: 100% !important;
+          overflow: auto !important;
         }
         
         .gjs-cv-canvas__frames {
           padding: 0 !important;
           margin: 0 !important;
-          width: 100% !important;
+          width: auto !important;
+          min-width: 0 !important;
           display: flex !important;
         }
         
         .gjs-frame-wrapper {
-          margin: 0 !important;
-          width: 100% !important;
-          min-width: 100% !important;
+          margin: 0 auto !important;
+          width: auto !important;
+          min-width: 0 !important;
+          max-width: 100% !important;
         }
         
         .gjs-frame {
           margin: 0 !important;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
           border-radius: 0;
-          min-width: 100%;
+          min-width: 0 !important;
+          max-width: 100% !important;
         }
         
         /* Hide default GrapesJS panels that duplicate our UI */
