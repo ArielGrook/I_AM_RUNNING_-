@@ -425,6 +425,16 @@ export const GrapeEditor = forwardRef<GrapeEditorRef, GrapeEditorProps>(
       // Set default device to Desktop for consistent preview
       editor.setDevice('desktop');
 
+      // Register device commands so toolbar runCommand('set-device-desktop') etc. work
+      const deviceIds = ['desktop', 'tablet', 'mobile'] as const;
+      deviceIds.forEach((id) => {
+        editor.Commands.add(`set-device-${id}`, {
+          run: () => {
+            editor.setDevice(id);
+          },
+        });
+      });
+
       // CRITICAL: Initialize UndoManager immediately so undo/redo buttons work from start
       const um = editor.UndoManager;
       if (um && typeof um.start === 'function') {

@@ -1202,7 +1202,7 @@ export default function EditorPage() {
             <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0" aria-hidden />
 
             {/* Group 3: Theme + Language + Chat */}
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 size="sm"
                 variant="outline"
@@ -1236,7 +1236,7 @@ export default function EditorPage() {
 
             {/* Group 4: Undo/Redo + Scale (devices) + Preview + Add page */}
             {currentProject ? (
-              <div className="hidden md:flex items-center gap-1 shrink-0">
+              <div className="hidden md:flex items-center gap-2 shrink-0">
                   <Button
                     size="sm"
                     variant="outline"
@@ -1257,42 +1257,51 @@ export default function EditorPage() {
                   >
                     <Redo2 className="w-4 h-4" />
                   </Button>
-                  <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-[#3a3a3a] rounded p-0.5">
+                  <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#3a3a3a] rounded p-0.5">
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => {
                         const editor = grapeEditorRef.current?.getEditor();
-                        if (editor) { editor.setDevice('desktop'); setCurrentDevice('desktop'); }
+                        if (editor) {
+                          editor.Commands?.run?.('set-device-desktop');
+                          setCurrentDevice('desktop');
+                        }
                       }}
-                      className={`h-7 w-7 p-0 ${currentDevice === 'desktop' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                      className={`h-8 w-8 p-0 ${currentDevice === 'desktop' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
                       title="Desktop"
                     >
-                      <Monitor className="w-3.5 h-3.5" />
+                      <Monitor className="w-4 h-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => {
                         const editor = grapeEditorRef.current?.getEditor();
-                        if (editor) { editor.setDevice('tablet'); setCurrentDevice('tablet'); }
+                        if (editor) {
+                          editor.Commands?.run?.('set-device-tablet');
+                          setCurrentDevice('tablet');
+                        }
                       }}
-                      className={`h-7 w-7 p-0 ${currentDevice === 'tablet' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                      className={`h-8 w-8 p-0 ${currentDevice === 'tablet' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
                       title="Tablet"
                     >
-                      <Tablet className="w-3.5 h-3.5" />
+                      <Tablet className="w-4 h-4" />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => {
                         const editor = grapeEditorRef.current?.getEditor();
-                        if (editor) { editor.setDevice('mobile'); setCurrentDevice('mobile'); }
+                        if (editor) {
+                          editor.Commands?.run?.('set-device-mobile');
+                          setCurrentDevice('mobile');
+                        }
                       }}
-                      className={`h-7 w-7 p-0 ${currentDevice === 'mobile' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                      className={`h-8 w-8 p-0 ${currentDevice === 'mobile' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
                       title="Mobile"
                     >
-                      <Smartphone className="w-3.5 h-3.5" />
+                      <Smartphone className="w-4 h-4" />
                     </Button>
                   </div>
                   <Button
@@ -1335,7 +1344,7 @@ export default function EditorPage() {
             <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0 hidden md:block" aria-hidden />
 
             {/* Group 5: Import + Export + Clear canvas + Save component */}
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 size="sm"
                 variant="outline"
