@@ -26,6 +26,7 @@ import { useProjectStore } from '@/lib/store/project-store';
 // Manual save replaces auto-save - see handleManualSave function
 import { componentCatalog, getAllCategories } from '@/lib/components/catalog';
 import { getComponentCatalog, type SupabaseComponent } from '@/lib/components/supabase-catalog';
+import { getPremiumComponents } from '@/components/library/premium-catalog';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { parseTemplate } from '@/lib/parser/simple-parser';
 import type { ParseProgress } from '@/lib/parser/v2/types';
@@ -536,13 +537,16 @@ export default function EditorPage() {
     const loadComponents = async () => {
       setIsLoadingComponents(true);
       try {
-        const catalog = await getComponentCatalog(false); // Public components only for now
-        setComponents(catalog);
-        setFilteredComponents(catalog);
+        const premium = getPremiumComponents();
+        const catalog = await getComponentCatalog(false);
+        const premiumIds = new Set(premium.map(c => c.id));
+        const dbOnly = catalog.filter(c => !premiumIds.has(c.id));
+        const merged = [...premium, ...dbOnly];
+        setComponents(merged);
+        setFilteredComponents(merged);
       } catch (error) {
         console.error('Failed to load components:', error);
-        // Fallback to static catalog
-        const fallback = convertStaticCatalogToSupabase();
+        const fallback = getPremiumComponents();
         setComponents(fallback);
         setFilteredComponents(fallback);
       } finally {
