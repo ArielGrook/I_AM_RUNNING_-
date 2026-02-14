@@ -25,8 +25,10 @@ import {
   ChevronDown,
   ChevronUp,
   Blend,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { GradientBuilder } from './GradientBuilder';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 interface StyleManagerProps {
   editor: any; // GrapesJS Editor instance
@@ -50,14 +52,39 @@ const PRESET_COLORS = [
 export function StyleManager({ editor, className }: StyleManagerProps) {
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
   const [styles, setStyles] = useState<Record<string, string>>({});
+  const [bgUrlInput, setBgUrlInput] = useState('');
+  const [bgError, setBgError] = useState<string | null>(null);
+  const [isUploadingBg, setIsUploadingBg] = useState(false);
   const [sections, setSections] = useState<StyleSection[]>([
     { id: 'dimensions', title: 'Dimensions', icon: <Maximize2 className="w-4 h-4" />, expanded: true },
     { id: 'spacing', title: 'Spacing', icon: <Box className="w-4 h-4" />, expanded: false },
-    { id: 'typography', title: 'Typography', icon: <Type className="w-4 h-4" />, expanded: false },
     { id: 'colors', title: 'Colors & Background', icon: <Palette className="w-4 h-4" />, expanded: true },
     { id: 'gradient', title: 'Gradient Builder', icon: <Blend className="w-4 h-4" />, expanded: false },
+    { id: 'backgroundImage', title: 'Background Image', icon: <ImageIcon className="w-4 h-4" />, expanded: false },
+    { id: 'typography', title: 'Typography', icon: <Type className="w-4 h-4" />, expanded: false },
     { id: 'borders', title: 'Borders & Radius', icon: <Square className="w-4 h-4" />, expanded: false },
   ]);
+
+  const getCurrentBackgroundImageUrl = useCallback((): string => {
+    const val = styles['background-image'] || '';
+    const match = val.match(/url\((['"]?)(.*?)\1\)/i);
+    return match?.[2]?.trim() || '';
+  }, [styles]);
+
+  const applyBackgroundImage = useCallback((imageUrl: string) => {
+    const url = imageUrl.trim();
+    if (!url) return;
+    updateStyle('background-image', `url("${url}")`);
+    // Keep existing values if already set, otherwise apply safe defaults
+    if (!styles['background-size']) updateStyle('background-size', 'cover');
+    if (!styles['background-position']) updateStyle('background-position', 'center');
+    if (!styles['background-repeat']) updateStyle('background-repeat', 'no-repeat');
+    if (!styles['background-attachment']) updateStyle('background-attachment', 'scroll');
+  }, [styles, updateStyle]);
+
+  const removeBackgroundImage = useCallback(() => {
+    updateStyle('background-image', 'none');
+  }, [updateStyle]);
 
   // Listen for component selection changes
   useEffect(() => {
@@ -89,6 +116,13 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
     };
   }, [editor]);
 
+  // Sync bg URL input with selected component background image
+  useEffect(() => {
+    const current = getCurrentBackgroundImageUrl();
+    setBgUrlInput(current);
+    setBgError(null);
+  }, [getCurrentBackgroundImageUrl, selectedComponent]);
+
   // Update style on the selected component
   const updateStyle = useCallback((property: string, value: string) => {
     if (!selectedComponent) return;
@@ -119,6 +153,8 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
       </div>
     );
   }
+
+  const currentBgUrl = getCurrentBackgroundImageUrl();
 
   return (
     <div className={cn("style-manager overflow-y-auto", className)}>
@@ -431,6 +467,191 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                   value={styles.background || styles['background-image'] || ''}
                   onChange={(gradient) => updateStyle('background', gradient)}
                 />
+              )}
+
+              {/* BACKGROUND IMAGE SECTION */}
+              {section.id === 'backgroundImage' && (
+                <div className="space-y-4">
+                  {/* Preview */}
+                  {currentBgUrl ? (
+                    <div className="space-y-2">
+                      <div
+                        className="w-full h-24 rounded border border-gray-200 dark:border-[#404040] bg-gray-50 dark:bg-[#2d2d2d] overflow-hidden"
+                        style={{
+                          backgroundImage: `url("${currentBgUrl}")`,
+                          backgroundSize: (styles['background-size'] as any) || 'cover',
+                          backgroundPosition: (styles['background-position'] as any) || 'center',
+                          backgroundRepeat: (styles['background-repeat'] as any) || 'no-repeat',
+                          backgroundAttachment: (styles['background-attachment'] as any) || 'scroll',
+                        }}
+                        title={currentBgUrl}
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-mono truncate">
+                          {currentBgUrl}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={removeBackgroundImage}
+                          className="px-2 py-1 text-xs rounded border border-gray-200 dark:border-[#404040] text-gray-600 dark:text-gray-300 hover:border-[#FF6B35] hover:text-[#FF6B35] transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      No background image applied.
+                    </div>
+                  )}
+
+                  {/* Upload */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-gray-600 dark:text-gray-300">Upload</Label>
+                    <div className="flex items-center gap-2">
+                      <label
+                        className={cn(
+                          "inline-flex items-center justify-center px-3 py-2 text-sm rounded border transition-colors cursor-pointer",
+                          "border-gray-200 dark:border-[#404040] bg-white dark:bg-[#2d2d2d] text-gray-700 dark:text-gray-200",
+                          "hover:border-[#FF6B35] hover:text-[#FF6B35]"
+                        )}
+                      >
+                        {isUploadingBg ? 'Uploading...' : 'Upload Image'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isUploadingBg}
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setBgError(null);
+                            setIsUploadingBg(true);
+                            try {
+                              const supabase = getSupabaseClient();
+                              const safeName = file.name.replace(/[^\w.-]+/g, '_');
+                              const id = (globalThis.crypto as any)?.randomUUID?.() || `${Date.now()}`;
+                              const path = `backgrounds/${id}-${safeName}`;
+
+                              const { error: uploadError } = await supabase.storage
+                                .from('project-assets')
+                                .upload(path, file, {
+                                  cacheControl: '3600',
+                                  upsert: true,
+                                  contentType: file.type,
+                                });
+
+                              if (uploadError) throw uploadError;
+
+                              const { data } = supabase.storage
+                                .from('project-assets')
+                                .getPublicUrl(path);
+
+                              const publicUrl = data?.publicUrl;
+                              if (!publicUrl) throw new Error('Failed to get public URL for uploaded image');
+
+                              applyBackgroundImage(publicUrl);
+                              setBgUrlInput(publicUrl);
+                            } catch (err) {
+                              const msg = err instanceof Error ? err.message : String(err);
+                              setBgError(msg);
+                            } finally {
+                              setIsUploadingBg(false);
+                              // allow re-uploading same file
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* URL Input */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-gray-600 dark:text-gray-300">Image URL</Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={bgUrlInput}
+                        onChange={(e) => setBgUrlInput(e.target.value)}
+                        placeholder="https://example.com/image.jpg"
+                        className="flex-1 px-2 py-2 text-sm border border-gray-200 dark:border-[#404040] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 font-mono focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBgError(null);
+                          const url = bgUrlInput.trim();
+                          if (!/^https?:\/\//i.test(url)) {
+                            setBgError('URL must start with http:// or https://');
+                            return;
+                          }
+                          applyBackgroundImage(url);
+                        }}
+                        className="px-3 py-2 text-sm rounded border border-gray-200 dark:border-[#404040] bg-white dark:bg-[#2d2d2d] text-gray-700 dark:text-gray-200 hover:border-[#FF6B35] hover:text-[#FF6B35] transition-colors"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    {bgError && (
+                      <p className="text-xs text-red-600 dark:text-red-400">{bgError}</p>
+                    )}
+                  </div>
+
+                  {/* Options */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-600 dark:text-gray-300">Size</Label>
+                      <select
+                        value={styles['background-size'] || 'cover'}
+                        onChange={(e) => updateStyle('background-size', e.target.value)}
+                        className="w-full px-2 py-2 text-sm border border-gray-200 dark:border-[#404040] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                      >
+                        <option value="cover">cover</option>
+                        <option value="contain">contain</option>
+                        <option value="auto">auto</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-600 dark:text-gray-300">Position</Label>
+                      <select
+                        value={styles['background-position'] || 'center'}
+                        onChange={(e) => updateStyle('background-position', e.target.value)}
+                        className="w-full px-2 py-2 text-sm border border-gray-200 dark:border-[#404040] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                      >
+                        <option value="center">center</option>
+                        <option value="top">top</option>
+                        <option value="bottom">bottom</option>
+                        <option value="left">left</option>
+                        <option value="right">right</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-600 dark:text-gray-300">Repeat</Label>
+                      <select
+                        value={styles['background-repeat'] || 'no-repeat'}
+                        onChange={(e) => updateStyle('background-repeat', e.target.value)}
+                        className="w-full px-2 py-2 text-sm border border-gray-200 dark:border-[#404040] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                      >
+                        <option value="no-repeat">no-repeat</option>
+                        <option value="repeat">repeat</option>
+                        <option value="repeat-x">repeat-x</option>
+                        <option value="repeat-y">repeat-y</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-600 dark:text-gray-300">Attachment</Label>
+                      <select
+                        value={styles['background-attachment'] || 'scroll'}
+                        onChange={(e) => updateStyle('background-attachment', e.target.value)}
+                        className="w-full px-2 py-2 text-sm border border-gray-200 dark:border-[#404040] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                      >
+                        <option value="scroll">scroll</option>
+                        <option value="fixed">fixed</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* BORDERS SECTION */}
