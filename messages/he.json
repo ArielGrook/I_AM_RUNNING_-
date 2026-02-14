@@ -1,7 +1,7 @@
 {
   "Dashboard":{"title":"הפרויקטים שלי","subtitle":"נהל את האתרים והפרויקטים שלך","createNew":"צור פרויקט חדש","createNewHint":"התחל מאפס או ייבא תבנית","totalProjects":"סך הכל פרויקטים","lastUpdated":"עודכן לאחרונה","activeProjects":"פרויקטים פעילים","noProjects":"אין פרויקטים","edit":"ערוך","delete":"מחק","backHome":"חזרה לדף הבית","tabs":{"projects":"פרויקטים","settings":"הגדרות","billing":"מנוי","help":"עזרה"},"theme":{"dark":"מצב כהה","light":"מצב בהיר"},"freelancer":"Freelancer","placeholders":{"settings":"החלק בפיתוח...","billing":"החלק בפיתוח...","help":"החלק בפיתוח..."},"deleteConfirm":"האם אתה בטוח שברצונך למחוק פרויקט זה?","deleteError":"לא ניתן למחוק את הפרויקט","loading":"טוען...","untitled":"ללא כותרת","source":{"wizard":"אשף","editor":"עורך","interactive":"אינטראקטיבי"},"settings":"הגדרות פרויקט","save":"שמור","cancel":"ביטול","meta":{"tags":"תגיות (מופרדות בפסיק)","category":"קטגוריה","visibility":"נראות"},"categories":{"general":"כללי","business":"עסקי","portfolio":"תיק עבודות","ecommerce":"מסחר אלקטרוני","blog":"בלוג"},"visibility":{"private":"פרטי","unlisted":"לפי קישור","public":"ציבורי"}},
   "EditorPage": {
-    "dashboard": "לוח בקרה",
+    "dashboard": "חשבון אישי",
     "newProject": "פרויקט חדש",
     "saving": "שומר...",
     "saved": "נשמר",
@@ -25,7 +25,12 @@
     "darkTheme": "מצב כהה",
     "addPage": "+ דף",
     "hideGrid": "הסתר רשת",
-    "showGrid": "הצג רשת"
+    "showGrid": "הצג רשת",
+    "clearCanvas": "נקה את הבד",
+    "clearCanvasConfirmTitle": "האם אתה בטוח?",
+    "clearCanvasConfirmDescription": "פעולה זו תנקה את הבד.",
+    "clearCanvasConfirmYes": "כן",
+    "clearCanvasConfirmCancel": "ביטול"
   },
   "Chat": {
     "title": "עוזר AI",

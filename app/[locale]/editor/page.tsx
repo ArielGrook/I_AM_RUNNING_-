@@ -16,7 +16,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2, FilePlus, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2, LayoutTemplate, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GrapeEditor, type GrapeEditorRef } from '@/components/editor/GrapeEditor';
@@ -31,6 +31,14 @@ import { parseTemplate } from '@/lib/parser/simple-parser';
 import type { ParseProgress } from '@/lib/parser/v2/types';
 import { SaveComponentDialog } from '@/components/editor/SaveComponentDialog';
 import { SearchInput } from '@/components/ui/search-input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { StyleManager } from '@/components/editor/StyleManager';
 import { Category } from '@/lib/types/project';
 import { supabase } from '@/lib/supabase/client';
@@ -153,13 +161,14 @@ export default function EditorPage() {
   const [canRedo, setCanRedo] = useState(false);
   const [loadedFromSupabase, setLoadedFromSupabase] = useState(false);
   const [dbVersion, setDbVersion] = useState<number>(0); // Tracks the DB version for correct increment
-  const [showOutlines, setShowOutlines] = useState(true); // Toggle component outlines in canvas
   const supabaseLoadedProjectIdRef = useRef<string | null>(null);
   const loadedProjectDataRef = useRef<{ projectData: Record<string, unknown>; loadedFrom: 'data' | 'contract' } | null>(null);
   const grapeEditorRef = useRef<GrapeEditorRef>(null);
   const searchParams = useSearchParams();
   const [darkMode, setDarkMode] = useState(false);
-  const [showGrid, setShowGrid] = useState(true);
+  const [isEditingProjectName, setIsEditingProjectName] = useState(false);
+  const [projectNameInput, setProjectNameInput] = useState('');
+  const [showClearCanvasConfirm, setShowClearCanvasConfirm] = useState(false);
 
   // Sync dark mode with dashboard preference (localStorage + document class)
   useEffect(() => {
@@ -1053,6 +1062,30 @@ export default function EditorPage() {
     setShowSaveComponent(true);
   };
   
+  // Save project name on blur/Enter (double-click edit)
+  const saveProjectName = useCallback(() => {
+    if (!currentProject) return;
+    const name = projectNameInput.trim();
+    if (name) {
+      updateProject({ ...currentProject, name });
+    }
+    setIsEditingProjectName(false);
+    setProjectNameInput('');
+  }, [currentProject, projectNameInput, updateProject]);
+
+  const handleConfirmClearCanvas = useCallback(() => {
+    const editor = grapeEditorRef.current?.getEditor();
+    if (editor) {
+      editor.setComponents('');
+      editor.setStyle('');
+      setPages([]);
+      setActivePage(0);
+      setImportResult(null);
+      console.log('[Editor] 🗑️ Cleared canvas and page tabs');
+    }
+    setShowClearCanvasConfirm(false);
+  }, []);
+
   // Handle create project with demo limits
   const handleCreateProject = (name: string, description?: string) => {
     // Clear pages state when creating new project
@@ -1075,73 +1108,123 @@ export default function EditorPage() {
         className="h-screen flex flex-col bg-gray-50 dark:bg-[#1a1a1a] transition-colors duration-200"
       >
         {/* Header */}
-        <header className="bg-white dark:bg-[#2d2d2d] border-b border-gray-200 dark:border-[#404040] px-4 py-3 flex items-center justify-between transition-colors duration-200">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+        <header className="bg-white dark:bg-[#2d2d2d] border-b border-gray-200 dark:border-[#404040] px-4 py-3 flex items-center justify-between gap-2 flex-wrap transition-colors duration-200">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {/* Group 1: Dashboard */}
+            <Button variant="ghost" size="sm" asChild className="text-gray-700 dark:text-gray-300 hover:text-[#FF6B35] hover:bg-orange-50 dark:hover:bg-[#3a3a3a] shrink-0">
               <Link href={`/${locale}/dashboard`}>
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                <span>{t('dashboard')}</span>
+                <ArrowLeft className="w-4 h-4" />
+                <span className="ml-1.5">{t('dashboard')}</span>
               </Link>
             </Button>
-            <div className="h-6 w-px bg-gray-300 dark:bg-[#404040]" />
-            <h1 className="font-semibold text-lg text-gray-900 dark:text-white">
-              {currentProject?.name || t('newProject')}
-            </h1>
-            {currentProject && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleManualSave}
-                disabled={isSaving}
-                data-status={saveStatus}
-                className={`h-8 px-3 transition-all ${
-                  saveSuccess 
-                    ? 'bg-green-50 border-green-400 text-green-700' 
-                    : isSaving 
-                      ? 'bg-orange-50 border-orange-300 text-orange-600'
-                      : 'border-gray-300 text-gray-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600'
-                }`}
-              >
-                {isSaving ? (
-                  <>
-                    <span className="w-3 h-3 mr-2 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></span>
-                    Saving...
-                  </>
-                ) : saveSuccess ? (
-                  <>
-                    <Check className="w-4 h-4 mr-1" />
-                    Saved
-                  </>
+
+            <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0" aria-hidden />
+
+            {/* Group 2: Project name + Save */}
+            <div className="flex items-center gap-2 shrink-0">
+              {currentProject ? (
+                isEditingProjectName ? (
+                  <input
+                    type="text"
+                    value={projectNameInput}
+                    onChange={(e) => setProjectNameInput(e.target.value)}
+                    onBlur={saveProjectName}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveProjectName();
+                      if (e.key === 'Escape') {
+                        setProjectNameInput(currentProject?.name ?? '');
+                        setIsEditingProjectName(false);
+                      }
+                    }}
+                    className="h-8 px-2 text-base font-semibold text-gray-900 dark:text-white bg-gray-100 dark:bg-[#3a3a3a] border border-gray-300 dark:border-[#404040] rounded focus:outline-none focus:ring-2 focus:ring-[#FF6B35] min-w-[120px]"
+                    autoFocus
+                  />
                 ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-1" />
-                    Save Project
-                  </>
-                )}
-              </Button>
-            )}
-            {userPackage && (
-              <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                  <button
+                    type="button"
+                    onDoubleClick={() => {
+                      setProjectNameInput(currentProject?.name ?? '');
+                      setIsEditingProjectName(true);
+                    }}
+                    className="font-semibold text-lg text-gray-900 dark:text-white hover:text-[#FF6B35] truncate max-w-[200px] md:max-w-[280px] text-left"
+                    title="Double-click to rename"
+                  >
+                    {currentProject.name || t('newProject')}
+                  </button>
+                )
+              ) : (
+                <span className="font-semibold text-lg text-gray-500 dark:text-gray-400">{t('newProject')}</span>
+              )}
+              {currentProject && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleManualSave}
+                  disabled={isSaving}
+                  className="h-8 w-8 p-0 border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:bg-[#FF6B35] hover:border-[#FF6B35] hover:text-white"
+                  title={isSaving ? t('saving') : saveSuccess ? t('saved') : 'Save Project'}
+                >
+                  {isSaving ? (
+                    <span className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin block" />
+                  ) : saveSuccess ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                </Button>
+              )}
+            </div>
+            {userPackage && currentProject && (
+              <div className="hidden sm:inline-flex text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded shrink-0">
                 {userPackage.package_type} Package
               </div>
             )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* Undo/Redo Buttons */}
+
+            <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0" aria-hidden />
+
+            {/* Group 3: Theme + Language + Chat */}
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={toggleDarkMode}
+                className="h-8 w-8 p-0 border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#3a3a3a] hover:border-[#FF6B35]"
+                title={darkMode ? t('lightTheme') : t('darkTheme')}
+              >
+                {darkMode ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+              </Button>
+              <LanguageSwitcher iconOnly />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setChatOpen(!chatOpen)}
+                className="h-8 w-8 p-0 border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-[#3a3a3a] hover:border-[#FF6B35]"
+                title={t('chat')}
+              >
+                <MessageSquare className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0 hidden md:block" aria-hidden />
+
+            {/* Group 4: Undo/Redo + Scale (devices) + Preview + Add page */}
             {currentProject && (
               <>
-                <div className="hidden md:flex items-center gap-1">
+                <div className="hidden md:flex items-center gap-1 shrink-0">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={handleUndo}
                     disabled={!canUndo}
-                    className={`h-8 px-2 transition-colors ${
-                      canUndo 
-                        ? 'text-gray-700 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50 border-gray-300' 
-                        : 'text-gray-300 cursor-not-allowed border-gray-200'
-                    }`}
+                    className={`h-8 w-8 p-0 ${canUndo ? 'border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:border-[#FF6B35] hover:text-[#FF6B35]' : 'border-gray-200 dark:border-[#404040] text-gray-300 cursor-not-allowed'}`}
                     title="Undo (Ctrl+Z)"
                   >
                     <Undo2 className="w-4 h-4" />
@@ -1151,238 +1234,156 @@ export default function EditorPage() {
                     variant="outline"
                     onClick={handleRedo}
                     disabled={!canRedo}
-                    className={`h-8 px-2 transition-colors ${
-                      canRedo 
-                        ? 'text-gray-700 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50 border-gray-300' 
-                        : 'text-gray-300 cursor-not-allowed border-gray-200'
-                    }`}
+                    className={`h-8 w-8 p-0 ${canRedo ? 'border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:border-[#FF6B35] hover:text-[#FF6B35]' : 'border-gray-200 dark:border-[#404040] text-gray-300 cursor-not-allowed'}`}
                     title="Redo (Ctrl+Y)"
                   >
                     <Redo2 className="w-4 h-4" />
                   </Button>
+                  <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-[#3a3a3a] rounded p-0.5">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        const editor = grapeEditorRef.current?.getEditor();
+                        if (editor) { editor.setDevice('Desktop'); setCurrentDevice('desktop'); }
+                      }}
+                      className={`h-7 w-7 p-0 ${currentDevice === 'desktop' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                      title="Desktop"
+                    >
+                      <Monitor className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        const editor = grapeEditorRef.current?.getEditor();
+                        if (editor) { editor.setDevice('Tablet'); setCurrentDevice('tablet'); }
+                      }}
+                      className={`h-7 w-7 p-0 ${currentDevice === 'tablet' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                      title="Tablet"
+                    >
+                      <Tablet className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        const editor = grapeEditorRef.current?.getEditor();
+                        if (editor) { editor.setDevice('Mobile'); setCurrentDevice('mobile'); }
+                      }}
+                      className={`h-7 w-7 p-0 ${currentDevice === 'mobile' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
+                      title="Mobile"
+                    >
+                      <Smartphone className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handlePreview}
+                    className="h-8 w-8 p-0 border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:border-[#FF6B35] hover:text-[#FF6B35]"
+                    title={t('preview')}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const editor = grapeEditorRef.current?.getEditor();
+                      const grapeEditor = grapeEditorRef.current;
+                      if (!editor || !grapeEditor) return;
+                      const currentHtml = editor.getHtml?.() ?? '';
+                      const currentCss = editor.getCss?.() ?? '';
+                      if (pages.length === 0) {
+                        setPages([{ name: 'Home', html: currentHtml, css: currentCss }, { name: 'Page 2', html: '', css: '' }]);
+                        setActivePage(1);
+                      } else {
+                        const updatedPages = pages.map((p, i) => (i === activePage ? { ...p, html: currentHtml, css: currentCss } : p));
+                        setPages([...updatedPages, { name: `Page ${pages.length + 1}`, html: '', css: '' }]);
+                        setActivePage(pages.length);
+                      }
+                      grapeEditor.setComponents('');
+                      grapeEditor.setStyle('');
+                    }}
+                    className="h-8 px-2 border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:border-[#FF6B35] hover:text-[#FF6B35]"
+                    title={t('addPage')}
+                  >
+                    <LayoutTemplate className="w-4 h-4" />
+                    <span className="ml-1.5 text-sm">{t('addPage')}</span>
+                  </Button>
                 </div>
-                <div className="hidden md:block h-6 w-px bg-gray-300 mx-1" />
               </>
             )}
-            {/* Device Selector Buttons */}
-            {currentProject && (
-              <>
-                <div className="hidden md:flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                  <Button
-                    size="sm"
-                    variant={currentDevice === 'desktop' ? 'default' : 'ghost'}
-                    onClick={() => {
-                      const editor = grapeEditorRef.current?.getEditor();
-                      if (editor) {
-                        editor.setDevice('Desktop');
-                        setCurrentDevice('desktop');
-                      }
-                    }}
-                    className={`h-8 px-3 ${currentDevice === 'desktop' ? 'bg-orange-500 text-white hover:bg-orange-600' : 'text-gray-700 hover:bg-gray-200'}`}
-                    title="Desktop View"
-                  >
-                    <Monitor className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={currentDevice === 'tablet' ? 'default' : 'ghost'}
-                    onClick={() => {
-                      const editor = grapeEditorRef.current?.getEditor();
-                      if (editor) {
-                        editor.setDevice('Tablet');
-                        setCurrentDevice('tablet');
-                      }
-                    }}
-                    className={`h-8 px-3 ${currentDevice === 'tablet' ? 'bg-orange-500 text-white hover:bg-orange-600' : 'text-gray-700 hover:bg-gray-200'}`}
-                    title="Tablet View"
-                  >
-                    <Tablet className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={currentDevice === 'mobile' ? 'default' : 'ghost'}
-                    onClick={() => {
-                      const editor = grapeEditorRef.current?.getEditor();
-                      if (editor) {
-                        editor.setDevice('Mobile');
-                        setCurrentDevice('mobile');
-                      }
-                    }}
-                    className={`h-8 px-3 ${currentDevice === 'mobile' ? 'bg-orange-500 text-white hover:bg-orange-600' : 'text-gray-700 hover:bg-gray-200'}`}
-                    title="Mobile View"
-                  >
-                    <Smartphone className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="hidden md:block h-6 w-px bg-gray-300 mx-1" />
-              </>
-            )}
-            {currentProject && (
+
+            <div className="h-6 w-px bg-gray-300 dark:bg-[#404040] shrink-0 hidden md:block" aria-hidden />
+
+            {/* Group 5: Import + Export + Clear canvas + Save component */}
+            <div className="flex items-center gap-1 shrink-0 ml-auto md:ml-0">
               <Button
                 size="sm"
-                variant={showGrid ? 'default' : 'outline'}
-                onClick={() => {
-                  const editor = grapeEditorRef.current?.getEditor();
-                  if (editor) {
-                    editor.Commands.run('sw-visibility');
-                    setShowGrid((prev) => !prev);
-                  }
-                }}
-                className={showGrid ? 'h-8 px-3 bg-orange-500 text-white hover:bg-orange-600' : 'h-8 px-3 border-gray-300 text-gray-700 hover:bg-gray-100'}
-                title={showGrid ? (t('hideGrid') || 'Скрыть сетку') : (t('showGrid') || 'Показать сетку')}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </Button>
-            )}
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 rounded-lg bg-gray-200 dark:bg-[#3a3a3a] hover:bg-gray-300 dark:hover:bg-[#4a4a4a] transition-colors duration-200"
-              title={darkMode ? t('lightTheme') || 'Светлая тема' : t('darkTheme') || 'Тёмная тема'}
-            >
-              {darkMode ? (
-                <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
-            <LanguageSwitcher />
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => setChatOpen(!chatOpen)}
-              className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-            >
-              <MessageSquare className="w-4 h-4 mr-2" />
-              {t('chat')}
-            </Button>
-            {currentProject && (
-              <Button 
-                size="sm" 
                 variant="outline"
-                onClick={handlePreview}
-                className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                onClick={handleImport}
+                className="h-8 w-8 p-0 border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:border-[#FF6B35] hover:text-[#FF6B35]"
+                title={t('import')}
               >
-                <Eye className="w-4 h-4 mr-2" />
-                {t('preview') || 'Preview'}
+                <Upload className="w-4 h-4" />
               </Button>
-            )}
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={handleImport}
-              className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {t('import')}
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={handleExport}
-              disabled={!currentProject || !canSave}
-              title={!canSave ? 'Demo mode limit reached' : ''}
-              className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 disabled:text-gray-400 disabled:bg-gray-50"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {t('export')}
-            </Button>
-            {currentProject && (
-              <>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const editor = grapeEditorRef.current?.getEditor();
-                    const grapeEditor = grapeEditorRef.current;
-                    if (!editor || !grapeEditor) return;
-                    const currentHtml = editor.getHtml?.() ?? '';
-                    const currentCss = editor.getCss?.() ?? '';
-                    if (pages.length === 0) {
-                      setPages([
-                        { name: 'Home', html: currentHtml, css: currentCss },
-                        { name: 'Page 2', html: '', css: '' },
-                      ]);
-                      setActivePage(1);
-                    } else {
-                      const updatedPages = pages.map((p, i) =>
-                        i === activePage ? { ...p, html: currentHtml, css: currentCss } : p
-                      );
-                      setPages([...updatedPages, { name: `Page ${pages.length + 1}`, html: '', css: '' }]);
-                      setActivePage(pages.length);
-                    }
-                    grapeEditor.setComponents('');
-                    grapeEditor.setStyle('');
-                    console.log('[Editor] + Page added');
-                  }}
-                  title={t('addPage') || 'Add page'}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                >
-                  <FilePlus className="w-4 h-4 mr-2" />
-                  {t('addPage') || '+ Page'}
-                </Button>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const editor = grapeEditorRef.current?.getEditor();
-                    if (editor?.Commands?.run) {
-                      editor.Commands.run('sw-visibility');
-                      setShowOutlines(!showOutlines);
-                    }
-                  }}
-                  title={showOutlines ? (t('hideGrid') || 'Hide outlines') : (t('showGrid') || 'Show outlines')}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                >
-                  <LayoutGrid className="w-4 h-4 mr-2" />
-                  {showOutlines ? (t('hideGrid') || 'Hide grid') : (t('showGrid') || 'Show grid')}
-                </Button>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const editor = grapeEditorRef.current?.getEditor();
-                    if (editor) {
-                      editor.setComponents('');
-                      editor.setStyle('');
-                      // Clear pages and reset active page
-                      setPages([]);
-                      setActivePage(0);
-                      setImportResult(null);
-                      console.log('[Editor] 🗑️ Cleared canvas and page tabs');
-                    }
-                  }}
-                  title="Clear Canvas"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                >
-                  🗑️ Clear
-                </Button>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={handleSaveComponent}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {t('saveComponent')}
-                </Button>
-              </>
-            )}
-            <Button 
-              size="sm"
-              onClick={() => setShowProjectForm(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              {currentProject ? t('rename') : t('newProject')}
-            </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExport}
+                disabled={!currentProject || !canSave}
+                className="h-8 w-8 p-0 border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:border-[#FF6B35] hover:text-[#FF6B35] disabled:opacity-50 disabled:cursor-not-allowed"
+                title={t('export')}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+              {currentProject && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowClearCanvasConfirm(true)}
+                    className="h-8 px-2 border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:border-red-500 hover:text-red-500"
+                    title={t('clearCanvas')}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="ml-1.5 text-sm hidden sm:inline">{t('clearCanvas')}</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSaveComponent}
+                    className="h-8 px-2 border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:border-[#FF6B35] hover:text-[#FF6B35]"
+                    title={t('saveComponent')}
+                  >
+                    <Save className="w-4 h-4" />
+                    <span className="ml-1.5 text-sm">{t('saveComponent')}</span>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </header>
+
+        {/* Clear canvas confirmation */}
+        <Dialog open={showClearCanvasConfirm} onOpenChange={setShowClearCanvasConfirm}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t('clearCanvasConfirmTitle')}</DialogTitle>
+              <DialogDescription>{t('clearCanvasConfirmDescription')}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setShowClearCanvasConfirm(false)}>
+                {t('clearCanvasConfirmCancel')}
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmClearCanvas}>
+                {t('clearCanvasConfirmYes')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         
         {/* Main Editor Area */}
         {currentProject ? (

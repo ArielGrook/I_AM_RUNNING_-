@@ -82,7 +82,12 @@
     "darkTheme": "Dark theme",
     "addPage": "+ Page",
     "hideGrid": "Hide grid",
-    "showGrid": "Show grid"
+    "showGrid": "Show grid",
+    "clearCanvas": "Clear canvas",
+    "clearCanvasConfirmTitle": "Are you sure?",
+    "clearCanvasConfirmDescription": "This will clear the canvas.",
+    "clearCanvasConfirmYes": "Yes",
+    "clearCanvasConfirmCancel": "Cancel"
   },
   "Chat": {
     "title": "AI Assistant",

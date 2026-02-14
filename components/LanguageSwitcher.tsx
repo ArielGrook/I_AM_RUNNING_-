@@ -34,7 +34,11 @@ const languageNames: Record<string, string> = {
   hi: 'हिन्दी',
 };
 
-export function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  iconOnly?: boolean;
+}
+
+export function LanguageSwitcher({ iconOnly = false }: LanguageSwitcherProps = {}) {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -50,9 +54,9 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Globe className="w-4 h-4 mr-2" />
-          {languageNames[locale] || locale.toUpperCase()}
+        <Button variant="outline" size="sm" className={iconOnly ? 'px-2' : ''} title={languageNames[locale] || locale.toUpperCase()}>
+          <Globe className="w-4 h-4" />
+          {!iconOnly && <span className="ml-2">{languageNames[locale] || locale.toUpperCase()}</span>}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
