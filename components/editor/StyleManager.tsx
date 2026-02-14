@@ -161,20 +161,23 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
   return (
     <div className={cn("style-manager overflow-y-auto", className)}>
       {sections.map(section => (
-        <div key={section.id} className="border-b border-gray-100 last:border-b-0">
+        <div
+          key={section.id}
+          className="border-b border-[#e5e5e5] dark:border-[#4a4a4a] last:border-b-0"
+        >
           {/* Section Header */}
           <button
             onClick={() => toggleSection(section.id)}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#3a3a3a] transition-colors"
           >
-            <div className="flex items-center gap-2 text-gray-700">
+            <div className="flex items-center gap-2 text-gray-700 dark:text-[#e5e5e5]">
               {section.icon}
               <span className="font-medium text-sm">{section.title}</span>
             </div>
             {section.expanded ? (
-              <ChevronUp className="w-4 h-4 text-gray-400" />
+              <ChevronUp className="w-4 h-4 text-gray-400 dark:text-gray-300" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400 dark:text-gray-300" />
             )}
           </button>
 
@@ -184,55 +187,55 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
               {/* DIMENSIONS SECTION */}
               {section.id === 'dimensions' && (
                 <>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Width</Label>
-                      <span className="text-xs text-gray-500 font-mono">
-                        {styles.width || 'auto'}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-16 shrink-0">
+                      Width
+                    </Label>
                     <Slider
                       value={[parseNumericValue(styles.width, 100)]}
                       onValueChange={([v]) => updateStyle('width', `${v}%`)}
                       max={100}
                       min={0}
                       step={1}
-                      className="w-full"
+                      className="flex-1 min-w-0"
                     />
+                    <span className="text-xs text-gray-500 dark:text-gray-300 font-mono w-16 text-right shrink-0 truncate">
+                      {styles.width || 'auto'}
+                    </span>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Height</Label>
-                      <span className="text-xs text-gray-500 font-mono">
-                        {styles.height || 'auto'}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-16 shrink-0">
+                      Height
+                    </Label>
                     <Slider
                       value={[parseNumericValue(styles.height, 0)]}
                       onValueChange={([v]) => updateStyle('height', v > 0 ? `${v}px` : 'auto')}
                       max={500}
                       min={0}
                       step={5}
-                      className="w-full"
+                      className="flex-1 min-w-0"
                     />
+                    <span className="text-xs text-gray-500 dark:text-gray-300 font-mono w-16 text-right shrink-0 truncate">
+                      {styles.height || 'auto'}
+                    </span>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Max Width</Label>
-                      <span className="text-xs text-gray-500 font-mono">
-                        {styles['max-width'] || 'none'}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-20 shrink-0">
+                      Max Width
+                    </Label>
                     <Slider
                       value={[parseNumericValue(styles['max-width'], 100)]}
                       onValueChange={([v]) => updateStyle('max-width', `${v}%`)}
                       max={100}
                       min={0}
                       step={1}
-                      className="w-full"
+                      className="flex-1 min-w-0"
                     />
+                    <span className="text-xs text-gray-500 dark:text-gray-300 font-mono w-16 text-right shrink-0 truncate">
+                      {styles['max-width'] || 'none'}
+                    </span>
                   </div>
                 </>
               )}
@@ -240,43 +243,43 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
               {/* SPACING SECTION */}
               {section.id === 'spacing' && (
                 <>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Padding</Label>
-                      <span className="text-xs text-gray-500 font-mono">
-                        {styles.padding || '0px'}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-16 shrink-0">
+                      Padding
+                    </Label>
                     <Slider
                       value={[parseNumericValue(styles.padding, 0)]}
                       onValueChange={([v]) => updateStyle('padding', `${v}px`)}
                       max={100}
                       min={0}
                       step={2}
-                      className="w-full"
+                      className="flex-1 min-w-0"
                     />
+                    <span className="text-xs text-gray-500 dark:text-gray-300 font-mono w-16 text-right shrink-0 truncate">
+                      {styles.padding || '0px'}
+                    </span>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Margin</Label>
-                      <span className="text-xs text-gray-500 font-mono">
-                        {styles.margin || '0px'}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-16 shrink-0">
+                      Margin
+                    </Label>
                     <Slider
                       value={[parseNumericValue(styles.margin, 0)]}
                       onValueChange={([v]) => updateStyle('margin', `${v}px`)}
                       max={100}
                       min={0}
                       step={2}
-                      className="w-full"
+                      className="flex-1 min-w-0"
                     />
+                    <span className="text-xs text-gray-500 dark:text-gray-300 font-mono w-16 text-right shrink-0 truncate">
+                      {styles.margin || '0px'}
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label className="text-xs text-gray-600">Padding Top</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Padding Top</Label>
                       <Slider
                         value={[parseNumericValue(styles['padding-top'], 0)]}
                         onValueChange={([v]) => updateStyle('padding-top', `${v}px`)}
@@ -287,7 +290,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs text-gray-600">Padding Bottom</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Padding Bottom</Label>
                       <Slider
                         value={[parseNumericValue(styles['padding-bottom'], 0)]}
                         onValueChange={([v]) => updateStyle('padding-bottom', `${v}px`)}
@@ -306,7 +309,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                 <>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Font Size</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Font Size</Label>
                       <span className="text-xs text-gray-500 font-mono">
                         {styles['font-size'] || '16px'}
                       </span>
@@ -323,7 +326,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Font Weight</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Font Weight</Label>
                       <span className="text-xs text-gray-500 font-mono">
                         {styles['font-weight'] || '400'}
                       </span>
@@ -340,7 +343,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Line Height</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Line Height</Label>
                       <span className="text-xs text-gray-500 font-mono">
                         {styles['line-height'] || '1.5'}
                       </span>
@@ -356,7 +359,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600">Text Align</Label>
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Text Align</Label>
                     <div className="flex gap-1">
                       {[
                         { value: 'left', icon: <AlignLeft className="w-4 h-4" /> },
@@ -369,8 +372,8 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                           className={cn(
                             "flex-1 p-2 rounded border transition-colors",
                             styles['text-align'] === value
-                              ? "bg-orange-500 text-white border-orange-500"
-                              : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                              ? "bg-[#FF6B35] text-white border-[#FF6B35]"
+                              : "bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-[#FF6B35]"
                           )}
                         >
                           {icon}
@@ -385,80 +388,96 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
               {section.id === 'colors' && (
                 <>
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600">Text Color</Label>
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Text Color</Label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={styles.color || '#000000'}
                         onChange={(e) => updateStyle('color', e.target.value)}
-                        className="w-10 h-10 rounded cursor-pointer border border-gray-200"
+                        className="w-10 h-10 rounded cursor-pointer border border-[#4a4a4a] dark:border-[#6a6a6a] bg-[#f5f5f5] dark:bg-[#2d2d2d]"
                       />
                       <input
                         type="text"
                         value={styles.color || '#000000'}
                         onChange={(e) => updateStyle('color', e.target.value)}
-                        className="flex-1 px-2 py-1 text-sm border border-gray-200 rounded font-mono"
+                        className="flex-1 px-2 py-1 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded font-mono bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
                         placeholder="#000000"
                       />
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {PRESET_COLORS.slice(0, 10).map(color => (
-                        <button
-                          key={color}
-                          onClick={() => updateStyle('color', color)}
-                          className="w-6 h-6 rounded border border-gray-200 hover:scale-110 transition-transform"
-                          style={{ backgroundColor: color }}
-                          title={color}
-                        />
-                      ))}
+                      {PRESET_COLORS.slice(0, 10).map(color => {
+                        const current = (styles.color || '#000000').toLowerCase();
+                        const isSelected = current === color.toLowerCase();
+                        return (
+                          <button
+                            key={color}
+                            onClick={() => updateStyle('color', color)}
+                            aria-pressed={isSelected}
+                            className={cn(
+                              "w-6 h-6 rounded border hover:scale-110 transition-transform",
+                              isSelected ? "border-2 border-[#FF6B35]" : "border-[#4a4a4a] dark:border-[#6a6a6a]"
+                            )}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600">Background Color</Label>
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Background Color</Label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={styles['background-color'] || '#ffffff'}
                         onChange={(e) => updateStyle('background-color', e.target.value)}
-                        className="w-10 h-10 rounded cursor-pointer border border-gray-200"
+                        className="w-10 h-10 rounded cursor-pointer border border-[#4a4a4a] dark:border-[#6a6a6a] bg-[#f5f5f5] dark:bg-[#2d2d2d]"
                       />
                       <input
                         type="text"
                         value={styles['background-color'] || ''}
                         onChange={(e) => updateStyle('background-color', e.target.value)}
-                        className="flex-1 px-2 py-1 text-sm border border-gray-200 rounded font-mono"
+                        className="flex-1 px-2 py-1 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded font-mono bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
                         placeholder="transparent"
                       />
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {PRESET_COLORS.map(color => (
-                        <button
-                          key={color}
-                          onClick={() => updateStyle('background-color', color)}
-                          className="w-6 h-6 rounded border border-gray-200 hover:scale-110 transition-transform"
-                          style={{ backgroundColor: color }}
-                          title={color}
-                        />
-                      ))}
+                      {PRESET_COLORS.map(color => {
+                        const current = (styles['background-color'] || '').toLowerCase();
+                        const isSelected = current === color.toLowerCase();
+                        return (
+                          <button
+                            key={color}
+                            onClick={() => updateStyle('background-color', color)}
+                            aria-pressed={isSelected}
+                            className={cn(
+                              "w-6 h-6 rounded border hover:scale-110 transition-transform",
+                              isSelected ? "border-2 border-[#FF6B35]" : "border-[#4a4a4a] dark:border-[#6a6a6a]"
+                            )}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Opacity</Label>
-                      <span className="text-xs text-gray-500 font-mono">
-                        {Math.round(parseNumericValue(styles.opacity, 1) * 100)}%
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5] w-16 shrink-0">
+                      Opacity
+                    </Label>
                     <Slider
                       value={[parseNumericValue(styles.opacity, 1) * 100]}
                       onValueChange={([v]) => updateStyle('opacity', `${v / 100}`)}
                       max={100}
                       min={0}
                       step={5}
-                      className="w-full"
+                      className="flex-1 min-w-0"
                     />
+                    <span className="text-xs text-gray-500 dark:text-gray-300 font-mono w-16 text-right shrink-0">
+                      {Math.round(parseNumericValue(styles.opacity, 1) * 100)}%
+                    </span>
                   </div>
                 </>
               )}
@@ -495,7 +514,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                         <button
                           type="button"
                           onClick={removeBackgroundImage}
-                          className="px-2 py-1 text-xs rounded border border-gray-200 dark:border-[#404040] text-gray-600 dark:text-gray-300 hover:border-[#FF6B35] hover:text-[#FF6B35] transition-colors"
+                          className="px-2 py-1 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#e55a28] transition-colors shrink-0"
                         >
                           Remove
                         </button>
@@ -513,9 +532,8 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                     <div className="flex items-center gap-2">
                       <label
                         className={cn(
-                          "inline-flex items-center justify-center px-3 py-2 text-sm rounded border transition-colors cursor-pointer",
-                          "border-gray-200 dark:border-[#404040] bg-white dark:bg-[#2d2d2d] text-gray-700 dark:text-gray-200",
-                          "hover:border-[#FF6B35] hover:text-[#FF6B35]"
+                          "inline-flex items-center justify-center px-3 py-2 text-sm rounded transition-colors cursor-pointer",
+                          "bg-[#FF6B35] text-white hover:bg-[#e55a28]"
                         )}
                       >
                         {isUploadingBg ? 'Uploading...' : 'Upload Image'}
@@ -585,7 +603,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                       <select
                         value={styles['background-size'] || 'cover'}
                         onChange={(e) => updateStyle('background-size', e.target.value)}
-                        className="w-full px-2 py-2 text-sm border border-gray-200 dark:border-[#404040] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                        className="w-full px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
                       >
                         <option value="cover">cover</option>
                         <option value="contain">contain</option>
@@ -597,7 +615,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                       <select
                         value={styles['background-position'] || 'center'}
                         onChange={(e) => updateStyle('background-position', e.target.value)}
-                        className="w-full px-2 py-2 text-sm border border-gray-200 dark:border-[#404040] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                        className="w-full px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
                       >
                         <option value="center">center</option>
                         <option value="top">top</option>
@@ -611,7 +629,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                       <select
                         value={styles['background-repeat'] || 'no-repeat'}
                         onChange={(e) => updateStyle('background-repeat', e.target.value)}
-                        className="w-full px-2 py-2 text-sm border border-gray-200 dark:border-[#404040] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                        className="w-full px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
                       >
                         <option value="no-repeat">no-repeat</option>
                         <option value="repeat">repeat</option>
@@ -624,7 +642,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                       <select
                         value={styles['background-attachment'] || 'scroll'}
                         onChange={(e) => updateStyle('background-attachment', e.target.value)}
-                        className="w-full px-2 py-2 text-sm border border-gray-200 dark:border-[#404040] rounded bg-white dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                        className="w-full px-2 py-2 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/30 focus:border-[#FF6B35]"
                       >
                         <option value="scroll">scroll</option>
                         <option value="fixed">fixed</option>
@@ -639,7 +657,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                 <>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Border Radius</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Border Radius</Label>
                       <span className="text-xs text-gray-500 font-mono">
                         {styles['border-radius'] || '0px'}
                       </span>
@@ -656,7 +674,7 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-gray-600">Border Width</Label>
+                      <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Border Width</Label>
                       <span className="text-xs text-gray-500 font-mono">
                         {styles['border-width'] || '0px'}
                       </span>
@@ -672,26 +690,26 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600">Border Color</Label>
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Border Color</Label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
                         value={styles['border-color'] || '#e5e7eb'}
                         onChange={(e) => updateStyle('border-color', e.target.value)}
-                        className="w-10 h-10 rounded cursor-pointer border border-gray-200"
+                        className="w-10 h-10 rounded cursor-pointer border border-[#4a4a4a] dark:border-[#6a6a6a] bg-[#f5f5f5] dark:bg-[#2d2d2d]"
                       />
                       <input
                         type="text"
                         value={styles['border-color'] || '#e5e7eb'}
                         onChange={(e) => updateStyle('border-color', e.target.value)}
-                        className="flex-1 px-2 py-1 text-sm border border-gray-200 rounded font-mono"
+                        className="flex-1 px-2 py-1 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] rounded font-mono bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
                         placeholder="#e5e7eb"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-gray-600">Border Style</Label>
+                    <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Border Style</Label>
                     <div className="flex gap-1">
                       {['none', 'solid', 'dashed', 'dotted'].map(style => (
                         <button
@@ -705,8 +723,8 @@ export function StyleManager({ editor, className }: StyleManagerProps) {
                           className={cn(
                             "flex-1 px-2 py-1.5 text-xs rounded border transition-colors capitalize",
                             styles['border-style'] === style
-                              ? "bg-orange-500 text-white border-orange-500"
-                              : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                              ? "bg-[#FF6B35] text-white border-[#FF6B35]"
+                              : "bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-[#FF6B35]"
                           )}
                         >
                           {style}

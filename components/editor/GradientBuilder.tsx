@@ -78,6 +78,7 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
   const [type, setType] = useState<GradientType>('linear');
   const [angle, setAngle] = useState(135);
   const [radialPosition, setRadialPosition] = useState('center');
+  const [activeStopId, setActiveStopId] = useState<string | null>(null);
   const [colorStops, setColorStops] = useState<ColorStop[]>([
     { id: '1', color: '#ff6b35', position: 0, opacity: 1 },
     { id: '2', color: '#f7931e', position: 100, opacity: 1 },
@@ -174,13 +175,13 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
     <div className={cn("gradient-builder space-y-4", className)}>
       {/* Live Preview */}
       <div 
-        className="w-full h-24 rounded-lg border border-gray-200 dark:border-[#FF6B35] shadow-inner bg-transparent dark:bg-[#2d2d2d]"
+        className="w-full h-24 rounded-lg border border-[#e5e5e5] dark:border-[#4a4a4a] shadow-inner bg-transparent dark:bg-[#2d2d2d]"
         style={{ background: gradientCSS }}
       />
 
       {/* Gradient Type Selector */}
       <div className="space-y-2">
-        <Label className="text-xs text-gray-600 dark:text-[#FF6B35]">Gradient Type</Label>
+        <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Gradient Type</Label>
         <div className="flex gap-1">
           {(['linear', 'radial', 'conic'] as GradientType[]).map(t => (
             <button
@@ -189,8 +190,8 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
               className={cn(
                 "flex-1 px-3 py-1.5 text-xs font-medium rounded border transition-all capitalize",
                 type === t
-                  ? "bg-orange-500 text-white border-orange-500"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                  ? "bg-[#FF6B35] text-white border-[#FF6B35]"
+                  : "bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-[#FF6B35]"
               )}
             >
               {t}
@@ -203,7 +204,7 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
       {type === 'linear' && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-gray-600 dark:text-[#FF6B35]">Direction</Label>
+            <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Direction</Label>
             <span className="text-xs text-gray-500 font-mono">{angle}°</span>
           </div>
           <Slider
@@ -223,8 +224,8 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
                 className={cn(
                   "w-8 h-8 text-sm rounded border transition-all",
                   angle === preset.value
-                    ? "bg-orange-500 text-white border-orange-500"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                    ? "bg-[#FF6B35] text-white border-[#FF6B35]"
+                    : "bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-[#FF6B35]"
                 )}
               >
                 {preset.label}
@@ -236,7 +237,7 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
 
       {(type === 'radial' || type === 'conic') && (
         <div className="space-y-2">
-          <Label className="text-xs text-gray-600 dark:text-[#FF6B35]">Position</Label>
+          <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Position</Label>
           <div className="grid grid-cols-4 gap-1">
             {RADIAL_POSITIONS.map(pos => (
               <button
@@ -245,8 +246,8 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
                 className={cn(
                   "px-2 py-1.5 text-xs rounded border transition-all",
                   radialPosition === pos.value
-                    ? "bg-orange-500 text-white border-orange-500"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                    ? "bg-[#FF6B35] text-white border-[#FF6B35]"
+                    : "bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-[#FF6B35]"
                 )}
               >
                 {pos.label}
@@ -256,7 +257,7 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
           {type === 'conic' && (
             <>
               <div className="flex items-center justify-between mt-3">
-                <Label className="text-xs text-gray-600 dark:text-[#FF6B35]">Start Angle</Label>
+                <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Start Angle</Label>
                 <span className="text-xs text-gray-500 font-mono">{angle}°</span>
               </div>
               <Slider
@@ -275,10 +276,10 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
       {/* Color Stops */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-xs text-gray-600 dark:text-[#FF6B35]">Color Stops</Label>
+          <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Color Stops</Label>
           <button
             onClick={addColorStop}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-[#FF6B35] text-white hover:bg-[#e55a28] rounded transition-colors"
           >
             <Plus className="w-3 h-3" />
             Add
@@ -287,12 +288,23 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
 
         <div className="space-y-3">
           {colorStops.map((stop, index) => (
-            <div key={stop.id} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-[#2d2d2d] rounded-lg border border-transparent dark:border-[#FF6B35]">
+            <div
+              key={stop.id}
+              onMouseDown={() => setActiveStopId(stop.id)}
+              onFocusCapture={() => setActiveStopId(stop.id)}
+              className={cn(
+                "flex items-center gap-2 p-2 rounded-lg border transition-colors",
+                "bg-[#f5f5f5] dark:bg-[#2d2d2d]",
+                activeStopId === stop.id
+                  ? "border-2 border-[#FF6B35]"
+                  : "border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-[#FF6B35]"
+              )}
+            >
               <input
                 type="color"
                 value={stop.color}
                 onChange={(e) => updateColorStop(stop.id, { color: e.target.value })}
-                className="w-8 h-8 rounded cursor-pointer border-0"
+                className="w-8 h-8 rounded cursor-pointer border border-[#FF6B35] bg-[#f5f5f5] dark:bg-[#2d2d2d]"
               />
               <div className="flex-1 space-y-1">
                 <div className="flex items-center gap-2">
@@ -300,9 +312,9 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
                     type="text"
                     value={stop.color}
                     onChange={(e) => updateColorStop(stop.id, { color: e.target.value })}
-                    className="w-20 px-2 py-1 text-xs font-mono border border-gray-200 dark:border-[#FF6B35] dark:bg-[#2d2d2d] dark:text-[#e5e5e5] rounded"
+                    className="w-20 px-2 py-1 text-xs font-mono border border-[#e5e5e5] dark:border-[#4a4a4a] bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] rounded focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
                   />
-                  <span className="text-xs text-gray-400 dark:text-[#FF6B35]">{stop.position}%</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-300">{stop.position}%</span>
                 </div>
                 <Slider
                   value={[stop.position]}
@@ -326,7 +338,8 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
                 {colorStops.length > 2 && (
                   <button
                     onClick={() => removeColorStop(stop.id)}
-                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-1 text-[#FF6B35] hover:text-[#e55a28] transition-colors"
+                    title="Remove stop"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -341,7 +354,7 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
       <div className="space-y-2">
         <button
           onClick={() => setShowPresets(!showPresets)}
-          className="flex items-center gap-2 text-xs text-gray-600 dark:text-[#FF6B35] hover:text-orange-600 dark:hover:text-[#e55a28] transition-colors"
+          className="flex items-center gap-2 text-xs text-gray-700 dark:text-[#e5e5e5] hover:text-[#FF6B35] transition-colors"
         >
           <Sparkles className="w-3 h-3" />
           {showPresets ? 'Hide Presets' : 'Show Presets'}
@@ -357,7 +370,7 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
                 title={preset.name}
               >
                 <div 
-                  className="w-full h-8 rounded border border-gray-200 hover:border-orange-400 transition-all hover:scale-105"
+                  className="w-full h-8 rounded border border-[#4a4a4a] dark:border-[#6a6a6a] hover:border-[#FF6B35] transition-all hover:scale-105"
                   style={{ background: preset.value }}
                 />
                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded">
@@ -373,19 +386,19 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
       <div className="flex gap-2">
         <button
           onClick={applyGradient}
-          className="flex-1 px-3 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-lg transition-colors"
+          className="flex-1 px-3 py-2 text-sm font-medium text-white bg-[#FF6B35] hover:bg-[#e55a28] rounded-lg transition-colors"
         >
           Apply Gradient
         </button>
         <button
           onClick={copyGradient}
-          className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors flex items-center gap-1"
+          className="px-3 py-2 text-sm text-gray-700 dark:text-[#e5e5e5] hover:text-[#FF6B35] border border-[#e5e5e5] dark:border-[#4a4a4a] bg-[#f5f5f5] dark:bg-[#2d2d2d] hover:border-[#FF6B35] rounded-lg transition-colors flex items-center gap-1"
         >
           {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
         </button>
         <button
           onClick={resetGradient}
-          className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"
+          className="px-3 py-2 text-sm text-gray-700 dark:text-[#e5e5e5] hover:text-[#FF6B35] border border-[#e5e5e5] dark:border-[#4a4a4a] bg-[#f5f5f5] dark:bg-[#2d2d2d] hover:border-[#FF6B35] rounded-lg transition-colors"
           title="Reset"
         >
           <RotateCcw className="w-4 h-4" />

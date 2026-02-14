@@ -213,13 +213,14 @@
   border: 1px solid #FF6B35 !important;
 }
 
-/* Slider thumb - ORANGE (native input[type=range]) */
+/* Native input[type=range] (GrapesJS + our custom sliders) */
 .dark input[type="range"]::-webkit-slider-thumb {
   background: #FF6B35 !important;
   width: 16px;
   height: 16px;
   border-radius: 50%;
   cursor: pointer;
+  border: none;
   -webkit-appearance: none;
 }
 
@@ -234,14 +235,14 @@
 
 .dark input[type="range"]::-webkit-slider-runnable-track {
   background: #4a4a4a !important;
-  height: 4px;
-  border-radius: 2px;
+  height: 6px;
+  border-radius: 3px;
 }
 
 .dark input[type="range"]::-moz-range-track {
   background: #4a4a4a !important;
-  height: 4px;
-  border-radius: 2px;
+  height: 6px;
+  border-radius: 3px;
 }
 
 /* Color picker - visible borders */
@@ -354,7 +355,7 @@
 
 .dark .style-manager .text-gray-700,
 .dark .style-manager .text-gray-600 {
-  color: #FF6B35 !important;
+  color: #e5e5e5 !important;
 }
 
 .dark .style-manager .text-gray-500 {
@@ -366,36 +367,144 @@
 }
 
 .dark .style-manager input[type="text"],
-.dark .style-manager input[type="color"] {
+.dark .style-manager input[type="color"],
+.dark .style-manager select,
+.dark .style-manager textarea {
   background-color: #2d2d2d !important;
   color: #e5e5e5 !important;
-  border: 1px solid #FF6B35 !important;
+  border: 1px solid #4a4a4a !important;
 }
 
 .dark .style-manager input[type="color"] {
-  border-width: 2px !important;
+  border-width: 1px !important;
 }
 
 .dark .style-manager .border-gray-200 {
-  border-color: #FF6B35 !important;
+  border-color: #4a4a4a !important;
 }
 
 .dark .style-manager button.bg-white {
   background-color: #2d2d2d !important;
   color: #e5e5e5 !important;
-  border-color: #FF6B35 !important;
+  border-color: #4a4a4a !important;
 }
 
 .dark .style-manager button.bg-white:hover {
   border-color: #e55a28 !important;
 }
 
-/* Color swatches - visible borders */
-.dark .style-manager button[title] {
+/* ===== CUSTOM SLIDERS + COLOR SWATCHES (both modes) ===== */
+/* Slider wrapper sizing: keeps thumb vertically centered */
+.style-manager .slider-wrapper-horizontal,
+.gradient-builder .slider-wrapper-horizontal {
+  height: 16px;
+}
+
+.style-manager .slider-wrapper-vertical,
+.gradient-builder .slider-wrapper-vertical {
+  height: 56px;
+}
+
+/* Slider track */
+.style-manager .slider-horizontal,
+.gradient-builder .slider-horizontal {
+  background: #e5e5e5 !important;
+}
+
+.style-manager .slider-vertical,
+.gradient-builder .slider-vertical {
+  background: #e5e5e5 !important;
+}
+
+.dark .style-manager .slider-horizontal,
+.dark .gradient-builder .slider-horizontal {
+  background: #4a4a4a !important;
+}
+
+.dark .style-manager .slider-vertical,
+.dark .gradient-builder .slider-vertical {
+  background: #4a4a4a !important;
+}
+
+/* Slider filled portion */
+.style-manager .slider-fill,
+.gradient-builder .slider-fill {
+  background: #FF6B35 !important;
+}
+
+/* Slider thumbs */
+.style-manager .slider-input::-webkit-slider-thumb,
+.gradient-builder .slider-input::-webkit-slider-thumb {
+  background: #FF6B35 !important;
+  border: none !important;
+}
+
+.style-manager .slider-input::-webkit-slider-thumb:hover,
+.gradient-builder .slider-input::-webkit-slider-thumb:hover {
+  background: #ff8555 !important;
+}
+
+.style-manager .slider-input::-moz-range-thumb,
+.gradient-builder .slider-input::-moz-range-thumb {
+  background: #FF6B35 !important;
+  border: none !important;
+}
+
+.style-manager .slider-input::-moz-range-thumb:hover,
+.gradient-builder .slider-input::-moz-range-thumb:hover {
+  background: #ff8555 !important;
+}
+
+/* StyleManager inputs (light mode): avoid white-on-white */
+.style-manager input[type="text"],
+.style-manager select,
+.style-manager textarea {
+  background-color: #f5f5f5 !important;
+  border-color: #e5e5e5 !important;
+  color: #1a1a1a !important;
+}
+
+.style-manager input[type="color"],
+.gradient-builder input[type="color"] {
+  background-color: #f5f5f5 !important;
   border: 1px solid #4a4a4a !important;
 }
 
-.dark .style-manager button[title]:hover {
+.dark .style-manager input[type="color"],
+.dark .gradient-builder input[type="color"] {
+  background-color: #2d2d2d !important;
+  border-color: #6a6a6a !important;
+}
+
+.style-manager input[type="color"]:focus,
+.gradient-builder input[type="color"]:focus {
+  outline: none !important;
+  border-color: #FF6B35 !important;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2) !important;
+}
+
+.style-manager input[type="text"]:focus,
+.style-manager select:focus,
+.style-manager textarea:focus {
+  border-color: #FF6B35 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2) !important;
+}
+
+/* Color swatches: always visible borders + selected orange */
+.style-manager button[title] {
+  border-color: #4a4a4a !important;
+}
+
+.dark .style-manager button[title] {
+  border-color: #6a6a6a !important;
+}
+
+.style-manager button[title][aria-pressed="true"] {
+  border: 2px solid #FF6B35 !important;
+}
+
+.style-manager button[title]:hover {
   border-color: #FF6B35 !important;
 }
 
