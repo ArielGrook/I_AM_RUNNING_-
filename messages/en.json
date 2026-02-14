@@ -65,6 +65,7 @@
     "error": "Error",
     "unsaved": "Unsaved",
     "components": "Components",
+    "layers": "Layers",
     "all": "All",
     "properties": "Properties",
     "selectElement": "Select an element to edit its properties",

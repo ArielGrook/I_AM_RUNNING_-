@@ -40,6 +40,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { StyleManager } from '@/components/editor/StyleManager';
+import { LayersPanel } from '@/components/editor/LayersPanel';
 import { Category } from '@/lib/types/project';
 import { supabase } from '@/lib/supabase/client';
 import { JsonContract } from '@/lib/types/chat';
@@ -126,6 +127,7 @@ export default function EditorPage() {
   
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [leftPanelTab, setLeftPanelTab] = useState<'components' | 'layers'>('components');
   
   // Close sidebars on mobile by default
   useEffect(() => {
@@ -1437,117 +1439,143 @@ export default function EditorPage() {
               overflow-hidden
             `}>
               <div className="h-full bg-white dark:bg-[#2d2d2d] border-r border-gray-200 dark:border-[#404040] flex flex-col shadow-lg md:shadow-none editor-left-panel">
-                <div className="p-4 border-b border-gray-200 dark:border-[#404040]">
-                  <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-[#FF6B35]">{t('components')}</h3>
-                  <div className="flex flex-wrap gap-1">
-                    <button
-                      onClick={() => setSelectedCategory(null)}
-                      className={`px-3 py-1 text-xs rounded-full transition ${
-                        selectedCategory === null
-                          ? 'bg-[#FF6B35] text-white'
-                          : 'bg-gray-100 dark:bg-[#3a3a3a] hover:bg-gray-200 dark:hover:bg-[#4a4a4a] text-gray-700 dark:text-[#e5e5e5]'
-                      }`}
-                    >
-                      {t('all')}
-                    </button>
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`px-3 py-1 text-xs rounded-full transition capitalize ${
-                          selectedCategory === cat
-                            ? 'bg-[#FF6B35] text-white'
-                            : 'bg-gray-100 dark:bg-[#3a3a3a] hover:bg-gray-200 dark:hover:bg-[#4a4a4a] text-gray-700 dark:text-[#e5e5e5]'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
+                {/* Tabs: Components | Layers */}
+                <div className="flex border-b border-gray-200 dark:border-[#404040] shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setLeftPanelTab('components')}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                      leftPanelTab === 'components'
+                        ? 'bg-[#FF6B35] text-white border-b-2 border-[#FF6B35]'
+                        : 'text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-100 dark:hover:bg-[#3a3a3a] border-b-2 border-transparent'
+                    }`}
+                  >
+                    {t('components')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLeftPanelTab('layers')}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                      leftPanelTab === 'layers'
+                        ? 'bg-[#FF6B35] text-white border-b-2 border-[#FF6B35]'
+                        : 'text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-100 dark:hover:bg-[#3a3a3a] border-b-2 border-transparent'
+                    }`}
+                  >
+                    {t('layers')}
+                  </button>
                 </div>
-                
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {/* Search Input */}
-                  <SearchInput
-                    placeholder="Search components..."
-                    onSearch={handleSearch}
-                    debounceMs={300}
+
+                {leftPanelTab === 'layers' ? (
+                  <LayersPanel
+                    editor={grapeEditorRef.current?.getEditor() ?? null}
+                    isDark={darkMode}
+                    className="flex-1 min-h-0"
                   />
-                  
-                  {isLoadingComponents ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="text-gray-500">Loading components...</div>
-                    </div>
-                  ) : filteredComponents.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      {searchQuery ? 'No components found matching your search.' : 'No components found in this category.'}
-                    </div>
-                  ) : (
-                    <div className="grid gap-3">
-                      {filteredComponents.map((component) => (
-                        <div
-                          key={component.id}
-                          className="border border-[#FF6B35] rounded-lg p-3 hover:border-[#e55a28] bg-white dark:bg-[#3a3a3a] cursor-move transition group"
-                          draggable
-                          onDragStart={(e) => {
-                            // CRITICAL: Provide actual HTML to GrapesJS, not JSON
-                            // Previous implementation set JSON which rendered as text on canvas
-                            const htmlContent = typeof component.html === 'string' ? component.html : String(component.html || '');
-                            const cssContent = component.css || '';
-                            const payload = cssContent
-                              ? `<style>${cssContent}</style>\n${htmlContent}`
-                              : htmlContent;
-                            // Set both text/html and text/plain so GrapesJS can pick up the HTML
-                            e.dataTransfer.setData('text/html', payload);
-                            e.dataTransfer.setData('text/plain', payload);
-                          }}
+                ) : (
+                  <>
+                    <div className="p-4 border-b border-gray-200 dark:border-[#404040]">
+                      <div className="flex flex-wrap gap-1">
+                        <button
+                          onClick={() => setSelectedCategory(null)}
+                          className={`px-3 py-1 text-xs rounded-full transition ${
+                            selectedCategory === null
+                              ? 'bg-[#FF6B35] text-white'
+                              : 'bg-gray-100 dark:bg-[#3a3a3a] hover:bg-gray-200 dark:hover:bg-[#4a4a4a] text-gray-700 dark:text-[#e5e5e5]'
+                          }`}
                         >
-                          <div className="aspect-video bg-gray-50 dark:bg-[#2d2d2d] rounded mb-2 flex items-center justify-center overflow-hidden relative">
-                            {(() => {
-                              const htmlContent = typeof component.html === 'string' ? component.html : String(component.html || '');
-                              const cssContent = component.css || '';
-                              const previewHtml = htmlContent.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-                              const previewSrcDoc = `<!doctype html><html><head><style>${cssContent}</style></head><body>${previewHtml}</body></html>`;
-
-                              if (component.thumbnail) {
-                                return (
-                                  <img
-                                    src={component.thumbnail}
-                                    alt={component.name}
-                                    className="w-full h-full object-cover rounded"
-                                    loading="lazy"
-                                  />
-                                );
-                              }
-
-                              if (!previewHtml.trim()) {
-                                return <span className="text-gray-400 dark:text-[#9ca3af] capitalize">{component.category}</span>;
-                              }
-
-                              return (
-                                <iframe
-                                  title={`Preview of ${component.name}`}
-                                  srcDoc={previewSrcDoc}
-                                  className="w-full h-full border-0 rounded"
-                                  sandbox=""
-                                />
-                              );
-                            })()}
-                          </div>
-                          <h4 className="font-medium text-sm text-gray-900 dark:text-[#e5e5e5]">{component.name}</h4>
-                          <p className="text-xs text-gray-500 dark:text-[#9ca3af] mt-1">
-                            {component.description || `${component.category} component`}
-                          </p>
-                          {component.style && (
-                            <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-[#4a4a4a] dark:text-[#FF6B35] rounded capitalize">
-                              {component.style}
-                            </span>
-                          )}
-                        </div>
-                      ))}
+                          {t('all')}
+                        </button>
+                        {categories.map((cat) => (
+                          <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`px-3 py-1 text-xs rounded-full transition capitalize ${
+                              selectedCategory === cat
+                                ? 'bg-[#FF6B35] text-white'
+                                : 'bg-gray-100 dark:bg-[#3a3a3a] hover:bg-gray-200 dark:hover:bg-[#4a4a4a] text-gray-700 dark:text-[#e5e5e5]'
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      <SearchInput
+                        placeholder="Search components..."
+                        onSearch={handleSearch}
+                        debounceMs={300}
+                      />
+                      {isLoadingComponents ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="text-gray-500">Loading components...</div>
+                        </div>
+                      ) : filteredComponents.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          {searchQuery ? 'No components found matching your search.' : 'No components found in this category.'}
+                        </div>
+                      ) : (
+                        <div className="grid gap-3">
+                          {filteredComponents.map((component) => (
+                            <div
+                              key={component.id}
+                              className="border border-[#FF6B35] rounded-lg p-3 hover:border-[#e55a28] bg-white dark:bg-[#3a3a3a] cursor-move transition group"
+                              draggable
+                              onDragStart={(e) => {
+                                const htmlContent = typeof component.html === 'string' ? component.html : String(component.html || '');
+                                const cssContent = component.css || '';
+                                const payload = cssContent
+                                  ? `<style>${cssContent}</style>\n${htmlContent}`
+                                  : htmlContent;
+                                e.dataTransfer.setData('text/html', payload);
+                                e.dataTransfer.setData('text/plain', payload);
+                              }}
+                            >
+                              <div className="aspect-video bg-gray-50 dark:bg-[#2d2d2d] rounded mb-2 flex items-center justify-center overflow-hidden relative">
+                                {(() => {
+                                  const htmlContent = typeof component.html === 'string' ? component.html : String(component.html || '');
+                                  const cssContent = component.css || '';
+                                  const previewHtml = htmlContent.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+                                  const previewSrcDoc = `<!doctype html><html><head><style>${cssContent}</style></head><body>${previewHtml}</body></html>`;
+                                  if (component.thumbnail) {
+                                    return (
+                                      <img
+                                        src={component.thumbnail}
+                                        alt={component.name}
+                                        className="w-full h-full object-cover rounded"
+                                        loading="lazy"
+                                      />
+                                    );
+                                  }
+                                  if (!previewHtml.trim()) {
+                                    return <span className="text-gray-400 dark:text-[#9ca3af] capitalize">{component.category}</span>;
+                                  }
+                                  return (
+                                    <iframe
+                                      title={`Preview of ${component.name}`}
+                                      srcDoc={previewSrcDoc}
+                                      className="w-full h-full border-0 rounded"
+                                      sandbox=""
+                                    />
+                                  );
+                                })()}
+                              </div>
+                              <h4 className="font-medium text-sm text-gray-900 dark:text-[#e5e5e5]">{component.name}</h4>
+                              <p className="text-xs text-gray-500 dark:text-[#9ca3af] mt-1">
+                                {component.description || `${component.category} component`}
+                              </p>
+                              {component.style && (
+                                <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-[#4a4a4a] dark:text-[#FF6B35] rounded capitalize">
+                                  {component.style}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             
