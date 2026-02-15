@@ -1,15 +1,21 @@
 /**
  * Apply JSON Contract to Canvas
- * 
- * Converts JSON contracts from AI into Grape.js components.
- * 
- * Stage 3 Module 7: Chat with ChatGPT
+ *
+ * Legacy: was used for GrapesJS. Puck migration: editor no longer uses this;
+ * contract application to Puck data can be added in a future phase.
  */
 
 import { JsonContract } from '@/lib/types/chat';
 import { getComponentCatalog } from '@/lib/components/supabase-catalog';
 import { Category, StyleVariant } from '@/lib/types/project';
-import type grapesjs from 'grapesjs';
+
+/** Minimal editor interface (legacy GrapesJS shape; not used with Puck) */
+interface LegacyEditorLike {
+  addComponents: (html: string) => unknown;
+  getById: (id: string) => { set: (k: string, v: unknown) => void; remove: () => void } | undefined;
+  getCss: () => string;
+  setStyle: (css: string) => void;
+}
 
 /**
  * Find matching component from Supabase catalog
@@ -37,33 +43,27 @@ async function findMatchingComponent(
 }
 
 /**
- * Apply JSON contract to Grape.js editor
+ * Apply JSON contract to editor (legacy GrapesJS; not used with Puck)
  */
 export async function applyContractToEditor(
-  editor: grapesjs.Editor,
+  editor: LegacyEditorLike,
   contract: JsonContract
 ): Promise<void> {
   try {
     switch (contract.action) {
       case 'create':
-        // Add new components
         for (const component of contract.components) {
           let html = component.html;
-          
-          // If no HTML provided, try to find from catalog
           if (!html) {
             html = await findMatchingComponent(component.category, component.style) || '';
           }
-          
           if (html) {
-            // Add component to canvas
             editor.addComponents(html);
           }
         }
         break;
-        
+
       case 'update':
-        // Update existing components (by ID or selector)
         for (const component of contract.components) {
           if (component.id) {
             const model = editor.getById(component.id);
@@ -80,9 +80,8 @@ export async function applyContractToEditor(
           }
         }
         break;
-        
+
       case 'delete':
-        // Remove components
         for (const component of contract.components) {
           if (component.id) {
             const model = editor.getById(component.id);

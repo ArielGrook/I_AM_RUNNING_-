@@ -37,7 +37,10 @@ import { ComponentStyle } from '@/lib/constants/styles';
 import { ComponentTag } from '@/lib/constants/tags';
 import { saveComponent } from '@/lib/components/supabase-catalog';
 import { useToast } from '@/components/ui/use-toast';
-import { type GrapeEditorRef } from './GrapeEditor';
+/** Minimal editor ref for save-component (Puck migration: no longer GrapesJS) */
+export type EditorRefForSave = {
+  getEditor: () => { getSelected: () => unknown; getWrapper: () => unknown; getHtml?: () => string; getCss?: () => string } | null;
+};
 import { StyleSelector } from './StyleSelector';
 import { TagSelector } from './TagSelector';
 import { detectSmartNavigation } from '@/lib/utils/smart-navigation';
@@ -325,7 +328,7 @@ function extractComponentCss(html: string, fullCss: string): string {
 interface SaveComponentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editorRef?: React.RefObject<GrapeEditorRef>;
+  editorRef?: React.RefObject<EditorRefForSave>;
   initialCategory?: Category;
   onSaved?: () => void;
 }

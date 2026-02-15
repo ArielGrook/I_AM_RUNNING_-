@@ -87,12 +87,6 @@ const nextConfig = {
         cacheGroups: {
           default: false,
           vendors: false,
-          grapesjs: {
-            name: 'grapesjs',
-            test: /[\\/]node_modules[\\/](grapesjs)[\\/]/,
-            priority: 10,
-            reuseExistingChunk: true,
-          },
           framework: {
             name: 'framework',
             test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,

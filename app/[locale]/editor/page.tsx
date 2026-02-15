@@ -19,7 +19,9 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2, LayoutTemplate, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { GrapeEditor, type GrapeEditorRef } from '@/components/editor/GrapeEditor';
+import { PuckEditor, type PuckData } from '@/components/editor/PuckEditor';
+import { LayersPanelPuck } from '@/components/editor/LayersPanelPuck';
+import { puckConfig } from '@/lib/editor/puck-config';
 import { ProjectNameForm } from '@/components/editor/ProjectNameForm';
 import { ImportProgressDialog } from '@/components/editor/ImportProgressDialog';
 import { useProjectStore } from '@/lib/store/project-store';
@@ -41,9 +43,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { StyleManager } from '@/components/editor/StyleManager';
-import { LayersPanel } from '@/components/editor/LayersPanel';
-import { TraitsPanel } from '@/components/editor/TraitsPanel';
 import { Category } from '@/lib/types/project';
 import { supabase } from '@/lib/supabase/client';
 import { JsonContract } from '@/lib/types/chat';
@@ -146,9 +145,6 @@ export default function EditorPage() {
   const [importProgress, setImportProgress] = useState<ParseProgress | null>(null);
   const [showImportProgress, setShowImportProgress] = useState(false);
   
-  // Multi-page template support
-  const [pages, setPages] = useState<Array<{ name: string; html: string; css: string }>>([]);
-  const [activePage, setActivePage] = useState(0);
   const [showSaveComponent, setShowSaveComponent] = useState(false);
   const [components, setComponents] = useState<SupabaseComponent[]>([]);
   const [filteredComponents, setFilteredComponents] = useState<SupabaseComponent[]>([]);
@@ -168,8 +164,11 @@ export default function EditorPage() {
   const [dbVersion, setDbVersion] = useState<number>(0); // Tracks the DB version for correct increment
   const supabaseLoadedProjectIdRef = useRef<string | null>(null);
   const loadedProjectDataRef = useRef<{ projectData: Record<string, unknown>; loadedFrom: 'data' | 'contract' } | null>(null);
-  const grapeEditorRef = useRef<GrapeEditorRef>(null);
   const searchParams = useSearchParams();
+
+  // Puck editor state (replaces GrapesJS)
+  const [puckPages, setPuckPages] = useState<Array<{ name: string; data: PuckData }>>([{ name: 'Home', data: {} }]);
+  const [activePuckPage, setActivePuckPage] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [projectNameInput, setProjectNameInput] = useState('');
@@ -225,19 +224,12 @@ export default function EditorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   
-  // Manual save function (localStorage + Supabase) - One-Way Ejection
-  // Multi-page: when pages.length > 0, builds full projectData with ALL pages before save
+  // Manual save: persist Puck data to Supabase (One-Way Ejection)
   const handleManualSave = useCallback(async () => {
     if (!currentProject || isSaving) return;
 
     if (!canSave) {
       setShowPackageSelector(true);
-      return;
-    }
-
-    const grapesEditor = grapeEditorRef.current?.getEditor();
-    if (!grapesEditor) {
-      console.error('❌ Cannot save: editor not initialized');
       return;
     }
 
@@ -247,7 +239,6 @@ export default function EditorPage() {
     setStoreSaveStatus('saving');
 
     try {
-      // Force Zustand to persist by updating timestamp (localStorage backup)
       updateProject({
         metadata: {
           ...currentProject.metadata,
@@ -257,29 +248,14 @@ export default function EditorPage() {
 
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      console.log(`💾 Saving project to Supabase (current version: ${dbVersion})...`);
+      const currentData = puckPages[activePuckPage]?.data ?? {};
+      const fullProjectData: Record<string, unknown> =
+        puckPages.length > 1
+          ? { puck: currentData, pages: puckPages.map((p) => ({ name: p.name, data: p.data })) }
+          : { puck: currentData };
 
-      let result: { data?: { id: string; version: number }; error?: unknown };
-
-      if (pages.length > 0) {
-        // Multi-page: sync active page from editor, build full projectData with ALL pages
-        const pagesCopy = pages.map((p, i) =>
-          i === activePage
-            ? { ...p, html: grapesEditor.getHtml?.() ?? p.html, css: grapesEditor.getCss?.() ?? p.css }
-            : p
-        );
-        const fullProjectData = {
-          ...grapesEditor.getProjectData?.(),
-          pages: pagesCopy.map((p) => ({
-            component: p.html,
-            styles: p.css,
-            name: p.name,
-          })),
-        };
-        result = await saveProjectToSupabase(currentProject, null, fullProjectData, null, dbVersion);
-      } else {
-        result = await saveProjectToSupabase(currentProject, grapesEditor, null, null, dbVersion);
-      }
+      console.log(`💾 Saving Puck project to Supabase (version: ${dbVersion})...`);
+      const result = await saveProjectToSupabase(currentProject, null, fullProjectData, null, dbVersion);
 
       if (result.error) {
         console.error('❌ Save failed:', result.error);
@@ -288,7 +264,6 @@ export default function EditorPage() {
         return;
       }
 
-      // Update local version state with the new version from Supabase
       if (result.data?.version) {
         setDbVersion(result.data.version);
         console.log(`[Manual Save] ✅ Project saved (version: ${result.data.version})`);
@@ -312,7 +287,7 @@ export default function EditorPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale, pages, activePage, dbVersion]);
+  }, [currentProject, isSaving, canSave, setStoreSaveStatus, updateProject, locale, puckPages, activePuckPage, dbVersion]);
 
   // Handle project name update
   const handleUpdateProjectName = useCallback(async (newName: string) => {
@@ -326,7 +301,6 @@ export default function EditorPage() {
       
       // Update local state
       updateProject({ name: newName.trim() });
-      setProjectName(newName.trim());
       console.log('[Editor] ✅ Project name updated:', newName.trim());
     } catch (error) {
       console.error('[Editor] ❌ Failed to update project name:', error);
@@ -363,11 +337,31 @@ export default function EditorPage() {
         // Store the DB version for correct increment on save
         setDbVersion(loaded.version ?? 0);
 
+        const projectData = loaded.projectData as Record<string, unknown>;
         loadedProjectDataRef.current = {
-          projectData: loaded.projectData as Record<string, unknown>,
+          projectData,
           loadedFrom: loaded.loadedFrom,
         };
         supabaseLoadedProjectIdRef.current = loaded.id;
+
+        // Initialize Puck pages from saved data
+        const puckData = projectData?.puck;
+        const puckPagesArray = projectData?.pages as Array<{ name?: string; data?: PuckData }> | undefined;
+        if (Array.isArray(puckPagesArray) && puckPagesArray.length > 0) {
+          setPuckPages(
+            puckPagesArray.map((p) => ({
+              name: (p.name as string) || 'Page',
+              data: (p.data && typeof p.data === 'object' ? p.data : {}) as PuckData,
+            }))
+          );
+          setActivePuckPage(0);
+        } else if (puckData && typeof puckData === 'object' && Object.keys(puckData).length > 0) {
+          setPuckPages([{ name: 'Home', data: puckData as PuckData }]);
+          setActivePuckPage(0);
+        } else {
+          setPuckPages([{ name: 'Home', data: {} }]);
+          setActivePuckPage(0);
+        }
 
         const now = new Date().toISOString();
         loadProject({
@@ -387,90 +381,13 @@ export default function EditorPage() {
     loadInitialProject();
   }, [isAuthenticated, loadedFromSupabase, searchParams, loadProject, router, locale]);
 
-  // Push projectData into GrapesJS editor - One-Way Ejection
-  // Multi-page: restores all pages to state and loads first page into canvas
+  // Clear loaded ref after Puck state was set from loadInitialProject
   useEffect(() => {
-    const payload = loadedProjectDataRef.current;
-    if (!payload || !grapeEditorRef.current) return;
-
-    const grapesEditor = grapeEditorRef.current.getEditor();
-    if (!grapesEditor) return;
-
-    const pushToEditor = () => {
-      if (!grapeEditorRef.current) return;
-      const editor = grapeEditorRef.current.getEditor();
-      if (!editor) return;
-
-      const { projectData, loadedFrom } = payload;
-      try {
-        console.log('🎨 Loading project data into GrapesJS...');
-
-        const rawPages = projectData?.pages as Array<{ component?: string; styles?: string; name?: string }> | undefined;
-        const pagesCount = rawPages?.length ?? 0;
-
-        if (pagesCount > 1) {
-          // Multi-page: restore all pages to state, load first into canvas
-          const restoredPages = rawPages!.map((p) => ({
-            name: p.name || 'Page',
-            html: typeof p.component === 'string' ? p.component : '',
-            css: typeof p.styles === 'string' ? p.styles : '',
-          }));
-          setPages(restoredPages);
-          setActivePage(0);
-          const first = restoredPages[0];
-          if (first?.html) editor.setComponents(first.html);
-          if (first?.css) editor.setStyle(first.css);
-          setImportResult({ css: '' }); // Each page has its own full styles
-          console.log(`✅ Loaded ${pagesCount} page(s) into editor`);
-          restoredPages.forEach((p, idx) => {
-            console.log(`  Page ${idx + 1}:`, p.name || 'Untitled');
-          });
-        } else if (loadedFrom === 'data' && projectData && typeof projectData === 'object') {
-          try {
-            editor.loadProjectData(projectData);
-            const wrapper = editor.getWrapper?.();
-            const count = wrapper?.components?.()?.length ?? 0;
-            console.log('✅ Project loaded into editor (GrapesJS native)');
-            console.log('📊 Components in editor:', count);
-          } catch {
-            fallbackSetComponents(editor, projectData);
-          }
-        } else {
-          fallbackSetComponents(editor, projectData);
-        }
-      } catch (error) {
-        console.error('❌ Failed to load into editor:', error);
-      } finally {
-        loadedProjectDataRef.current = null;
-        supabaseLoadedProjectIdRef.current = null;
-      }
-    };
-
-    function fallbackSetComponents(ed: ReturnType<typeof grapeEditorRef.current.getEditor>, pd: Record<string, unknown>) {
-      const pdPages = pd?.pages as Array<{ component?: string; components?: unknown; styles?: string }> | undefined;
-      const first = pdPages?.[0];
-      let html = '';
-      let css = '';
-
-      if (first?.component && typeof first.component === 'string') {
-        html = first.component;
-      } else if (Array.isArray(first?.components)) {
-        html = (first!.components as Array<{ props?: { html?: string } }>)
-          .map((c) => c?.props?.html || '')
-          .filter(Boolean)
-          .join('\n');
-      }
-      if (first?.styles) css = String(first.styles);
-      else if (pd?.globalStyles) css = String(pd.globalStyles);
-
-      if (html) grapeEditorRef.current!.setComponents(html);
-      if (css) grapeEditorRef.current!.setStyle(css);
-      console.log('✅ Project loaded into editor (fallback setComponents)');
+    if (loadedFromSupabase && loadedProjectDataRef.current) {
+      loadedProjectDataRef.current = null;
+      supabaseLoadedProjectIdRef.current = null;
     }
-
-    const t = setTimeout(pushToEditor, 500);
-    return () => clearTimeout(t);
-  }, [currentProject]);
+  }, [loadedFromSupabase]);
 
   // Check for chat query parameter on mount
   useEffect(() => {
@@ -480,50 +397,10 @@ export default function EditorPage() {
     }
   }, [searchParams]);
 
-  // Sync undo/redo state from editor via event callback (no polling)
-  useEffect(() => {
-    if (!currentProject || !grapeEditorRef.current) {
-      setCanUndo(false);
-      setCanRedo(false);
-      return;
-    }
-    
-    // Subscribe to undo/redo changes
-    const unsubscribe = grapeEditorRef.current.onUndoRedoChange((u, r) => {
-      setCanUndo(u);
-      setCanRedo(r);
-    });
-    
-    // Set initial state
-    setCanUndo(grapeEditorRef.current.canUndo || false);
-    setCanRedo(grapeEditorRef.current.canRedo || false);
-    
-    return unsubscribe;
-  }, [currentProject]);
-  
-  // Update state after undo/redo operations
-  const handleUndo = useCallback(() => {
-    grapeEditorRef.current?.undo();
-    // Small delay to allow editor state to update
-    setTimeout(() => {
-      if (grapeEditorRef.current) {
-        setCanUndo(grapeEditorRef.current.canUndo || false);
-        setCanRedo(grapeEditorRef.current.canRedo || false);
-      }
-    }, 50);
-  }, []);
-  
-  const handleRedo = useCallback(() => {
-    grapeEditorRef.current?.redo();
-    // Small delay to allow editor state to update
-    setTimeout(() => {
-      if (grapeEditorRef.current) {
-        setCanUndo(grapeEditorRef.current.canUndo || false);
-        setCanRedo(grapeEditorRef.current.canRedo || false);
-      }
-    }, 50);
-  }, []);
-  
+  // Undo/redo: Puck has built-in history in its UI; toolbar buttons disabled for now
+  const handleUndo = useCallback(() => {}, []);
+  const handleRedo = useCallback(() => {}, []);
+
   // Load user package on mount
   useEffect(() => {
     const loadPackage = async () => {
@@ -585,27 +462,9 @@ export default function EditorPage() {
     setSearchQuery(query);
   };
   
-  // Handle JSON contract application
-  const handleApplyContract = async (contract: JsonContract) => {
-    if (!grapeEditorRef.current) {
-      console.error('Editor not available');
-      return;
-    }
-    
-    const editor = grapeEditorRef.current.getEditor();
-    if (!editor) {
-      console.error('Grape.js editor not initialized');
-      return;
-    }
-    
-    try {
-      await applyContractToEditor(editor, contract);
-      // Show success message
-      console.log('Contract applied successfully');
-    } catch (error) {
-      console.error('Failed to apply contract:', error);
-      alert('Failed to apply changes. Please try again.');
-    }
+  // Handle JSON contract application (Phase 3/4: apply to Puck data)
+  const handleApplyContract = async (_contract: JsonContract) => {
+    console.warn('Contract application not yet implemented for Puck editor');
   };
   
   // Convert static catalog to Supabase format (fallback)
@@ -670,129 +529,46 @@ export default function EditorPage() {
     }
   }, [currentProject, loadProject, isDemo, canCreate]);
   
-  // Handle Grape.js editor updates
-  const handleEditorUpdate = useCallback((html: string, css: string) => {
-    if (!currentProject) return;
-    
-    const currentPage = currentProject.pages[0];
-    if (currentPage) {
-      updateProject({
-        pages: [
-          {
-            ...currentPage,
-            styles: css,
-            // TODO: Parse HTML to components for better structure
-          },
-        ],
-      });
-    }
-  }, [currentProject, updateProject]);
+  // Puck data change: keep current page in sync
+  const handlePuckChange = useCallback(
+    (data: PuckData) => {
+      setPuckPages((prev) =>
+        prev.map((p, i) => (i === activePuckPage ? { ...p, data } : p))
+      );
+    },
+    [activePuckPage]
+  );
   
-  // Handle import with SimpleParser V3 (converts images to base64, injects CSS properly)
+  // Handle import: parse ZIP, upload images, inject first page as ImportedHTML block (Phase 4)
   const handleImport = async () => {
-    console.log('[ZIP Import] 🚀 handleImport() called');
-    
     if (!canSave) {
-      console.warn('[ZIP Import] ❌ Demo mode limit reached');
-      alert('Demo mode limit reached. Please upgrade to import projects.');
+      setShowPackageSelector(true);
       return;
     }
-    
-    // Check if FileReader is available (browser-only API)
     if (typeof window === 'undefined' || typeof FileReader === 'undefined') {
-      console.error('[ZIP Import] ❌ FileReader not available - must run in browser');
-      alert('Import requires browser environment. FileReader API not available.');
+      alert('Import requires browser environment.');
       return;
     }
-    
-    console.log('[ZIP Import] ✅ Creating file input dialog...');
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.zip';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        console.warn('[ZIP Import] ❌ No file selected');
-        return;
-      }
-      
-      console.log('[ZIP Import] ✅ File selected:', {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
-      
-      // Check file size (50MB max)
+      if (!file) return;
       const maxSize = 50 * 1024 * 1024;
       if (file.size > maxSize) {
-        console.error('[ZIP Import] ❌ File size exceeded:', file.size);
-        alert(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (${(maxSize / 1024 / 1024).toFixed(2)}MB)`);
+        alert(`File too large (max ${(maxSize / 1024 / 1024).toFixed(0)}MB).`);
         return;
       }
-      
-      console.log('[ZIP Import] 📊 Showing progress dialog...');
       setShowImportProgress(true);
-      setImportProgress({
-        stage: 'reading',
-        progress: 0,
-        message: 'Reading ZIP file...',
-      });
-      
+      setImportProgress({ stage: 'reading', progress: 0, message: 'Reading ZIP...' });
       try {
-        // Clear canvas FIRST
-        console.log('[ZIP Import] 🧹 Clearing canvas...');
-        if (grapeEditorRef.current) {
-          grapeEditorRef.current.clear();
-        }
-        // Clear pages state
-        setPages([]);
-        setActivePage(0);
-        setImportResult(null);
-        
-        // Wait for GrapesJS to create localStorage keys, then clear them
-        await new Promise(resolve => setTimeout(resolve, 150));
-        
-        // Clear ALL localStorage keys starting with 'gjs-' AFTER clearing canvas
-        console.log('[ZIP Import] 🗑️ Clearing ALL localStorage...');
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key?.startsWith('gjs-')) {
-            keysToRemove.push(key);
-          }
-        }
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-        console.log(`[ZIP Import] ✅ Cleared ${keysToRemove.length} localStorage keys`);
-        
-        // Also clear project-storage
-        localStorage.removeItem('project-storage');
-        
-        // Ensure editor is ready
-        const grapesEditor = grapeEditorRef.current?.getEditor();
-        if (!grapesEditor) {
-          throw new Error('Editor not ready. Please wait for editor to initialize.');
-        }
-        
-        // Use SimpleParser V3 to parse the ZIP file
-        console.log('[ZIP Import] 📦 Starting SimpleParser V3...');
-        
-        // Update progress
-        setImportProgress({
-          stage: 'html',
-          progress: 50,
-          message: 'Parsing ZIP file with SimpleParser V3...',
-        });
-        
-        const result = await parseTemplate(file, true); // true = debug mode
-
+        setImportProgress({ stage: 'html', progress: 50, message: 'Parsing ZIP...' });
+        const result = await parseTemplate(file, true);
         let pagesToUse = result.pages;
         let cssToUse = result.css;
         if (currentProject?.id) {
-          setImportProgress({
-            stage: 'upload',
-            progress: 52,
-            message: 'Uploading images to Storage...',
-          });
+          setImportProgress({ stage: 'upload', progress: 52, message: 'Uploading images...' });
           const uploaded = await uploadParsedImages(
             currentProject.id,
             result.pages,
@@ -808,163 +584,44 @@ export default function EditorPage() {
           pagesToUse = uploaded.pages;
           cssToUse = uploaded.css;
         }
-        
-        console.log('[ZIP Import] ✅ SimpleParser V3 complete:', {
-          pagesCount: pagesToUse.length,
-          cssLength: cssToUse.length,
-          stats: result.stats,
-        });
-        
-        // Store all pages for tab navigation
-        setPages(pagesToUse);
-        setActivePage(0);
-        setImportResult({ css: cssToUse }); // Store CSS for page switching
-        
-        // Set content directly in editor (first page)
-        console.log('[ZIP Import] 🎯 Setting components in editor...');
-        
-        // Wait a bit for canvas to be ready
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Use first page (Supabase image URLs if upload ran)
-        const firstPage = pagesToUse[0];
-        
-        // Count elements in original HTML
-        const countElements = (html: string) => {
-          const divs = (html.match(/<div/gi) || []).length;
-          const spans = (html.match(/<span/gi) || []).length;
-          const imgs = (html.match(/<img/gi) || []).length;
-          const scripts = (html.match(/<script/gi) || []).length;
-          const links = (html.match(/<a\s/gi) || []).length;
-          const buttons = (html.match(/<button/gi) || []).length;
-          const inputs = (html.match(/<input/gi) || []).length;
-          const tables = (html.match(/<table/gi) || []).length;
-          const sections = (html.match(/<section/gi) || []).length;
-          return { divs, spans, imgs, scripts, links, buttons, inputs, tables, sections };
+        const first = pagesToUse[0];
+        const fullHtml = first
+          ? `<style>${cssToUse}${first.css ? `\n${first.css}` : ''}</style>${first.html}`
+          : '';
+        const newBlock = {
+          type: 'ImportedHTML',
+          props: { html: fullHtml },
+          id: `imported-${Date.now()}`,
         };
-        
-        const originalStats = countElements(firstPage.html);
-        console.log('[ZIP Import] 📊 Original HTML statistics:', originalStats);
-        console.log(`[ZIP Import] 📏 Original HTML length: ${firstPage.html.length} chars`);
-        
-        // Set components in editor
-        // КРИТИЧЕСКИ ВАЖНО: Передаем HTML БЕЗ обработки - GrapesJS должен сохранить все элементы
-        console.log('[ZIP Import] 🎯 Setting components in editor (preserving all elements)...');
-        console.log('[ZIP Import] 📋 HTML preview (first 1000 chars):', firstPage.html.substring(0, 1000));
-        
-        grapeEditorRef.current?.setComponents(firstPage.html);
-        
-        // Set CSS (shared CSS + first page CSS)
-        // КРИТИЧЕСКИ ВАЖНО: CSS уже в HTML как <style> тег из парсера
-        // setStyle добавляет CSS в canvas.styles, но основной CSS уже в HTML
-        const allCss = cssToUse + (firstPage.css ? '\n' + firstPage.css : '');
-        if (allCss.trim()) {
-          console.log('[ZIP Import] 🎨 Setting additional CSS via setStyle (length:', allCss.length, 'chars)');
-          grapeEditorRef.current?.setStyle(allCss);
-        } else {
-          console.log('[ZIP Import] ℹ️ No additional CSS to set (CSS already in HTML <style> tag)');
-        }
-        
-        // Проверить что <style> тег присутствует в HTML
-        if (firstPage.html.includes('<style')) {
-          console.log('[ZIP Import] ✅ HTML contains <style> tag - CSS preserved in HTML');
-        } else {
-          console.warn('[ZIP Import] ⚠️ HTML does NOT contain <style> tag - CSS may be missing!');
-        }
-        
-        // Wait a bit for GrapesJS to process
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Count elements in editor after setComponents
-        // Reuse grapesEditor variable declared earlier (line 508)
-        if (grapesEditor) {
-          const components = grapesEditor.getComponents();
-          
-          // Recursively count all nested components
-          const countNestedComponents = (component: any): { divs: number; spans: number; imgs: number; total: number } => {
-            let divs = 0;
-            let spans = 0;
-            let imgs = 0;
-            let total = 1;
-            
-            const tagName = component.get?.('tagName')?.toLowerCase() || '';
-            if (tagName === 'div') divs = 1;
-            if (tagName === 'span') spans = 1;
-            if (tagName === 'img') imgs = 1;
-            
-            const children = component.components?.() || [];
-            children.forEach((child: any) => {
-              const childCount = countNestedComponents(child);
-              divs += childCount.divs;
-              spans += childCount.spans;
-              imgs += childCount.imgs;
-              total += childCount.total;
-            });
-            
-            return { divs, spans, imgs, total };
-          };
-          
-          const editorStats = components.reduce((acc: any, comp: any) => {
-            const stats = countNestedComponents(comp);
-            return {
-              divs: acc.divs + stats.divs,
-              spans: acc.spans + stats.spans,
-              imgs: acc.imgs + stats.imgs,
-              total: acc.total + stats.total,
-            };
-          }, { divs: 0, spans: 0, imgs: 0, total: 0 });
-          
-          console.log('[ZIP Import] 📊 Editor components statistics:', editorStats);
-          console.log(`[ZIP Import] 📏 Total components in editor: ${editorStats.total}`);
-          
-          // Compare original vs editor
-          const divDiff = originalStats.divs - editorStats.divs;
-          const spanDiff = originalStats.spans - editorStats.spans;
-          const imgDiff = originalStats.imgs - editorStats.imgs;
-          
-          if (divDiff > 0 || spanDiff > 0 || imgDiff > 0) {
-            console.warn(`[ZIP Import] ⚠️ ELEMENTS LOST:`, {
-              divs: `${originalStats.divs} → ${editorStats.divs} (lost: ${divDiff})`,
-              spans: `${originalStats.spans} → ${editorStats.spans} (lost: ${spanDiff})`,
-              imgs: `${originalStats.imgs} → ${editorStats.imgs} (lost: ${imgDiff})`,
-            });
-          } else {
-            console.log('[ZIP Import] ✅ All elements preserved!');
-          }
-        }
-        
-        console.log('[ZIP Import] ✅ Components and styles set in editor');
-        console.log(`[ZIP Import] 📄 Loaded ${pagesToUse.length} page(s):`, pagesToUse.map((p: { name: string }) => p.name));
-        
-        // Update progress to complete
-        const totalHtmlSize = pagesToUse.reduce((sum: number, p: { html: string }) => sum + p.html.length, 0);
+        setPuckPages((prev) =>
+          prev.map((p, i) =>
+            i === activePuckPage
+              ? {
+                  ...p,
+                  data: {
+                    ...p.data,
+                    content: Array.isArray(p.data?.content) ? [...(p.data.content as unknown[]), newBlock] : [newBlock],
+                  },
+                }
+              : p
+          )
+        );
         setImportProgress({
           stage: 'complete',
           progress: 100,
-          message: `✅ Import complete! ${pagesToUse.length} page(s), ${(totalHtmlSize / 1024).toFixed(1)}KB HTML, ${(cssToUse.length / 1024).toFixed(1)}KB CSS`,
+          message: `Imported ${pagesToUse.length} page(s) as block.`,
         });
-        
-        // Close progress dialog after a delay
         setTimeout(() => {
           setShowImportProgress(false);
           setImportProgress(null);
-          console.log('[ZIP Import] ✅ Import workflow complete!');
         }, 2000);
-        
-      } catch (error) {
-        console.error('[ZIP Import] ❌ Import failed:', error);
-        console.error('[ZIP Import] Error details:', {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        });
-        
-        // Show error in progress dialog
+      } catch (err) {
+        console.error('Import failed:', err);
         setImportProgress({
-          stage: 'complete', // Use 'complete' stage to show error state
+          stage: 'complete',
           progress: 0,
-          message: `❌ ${error instanceof Error ? error.message : 'Import failed'}`,
+          message: `Error: ${err instanceof Error ? err.message : 'Import failed'}`,
         });
-        
         setTimeout(() => {
           setShowImportProgress(false);
           setImportProgress(null);
@@ -974,130 +631,50 @@ export default function EditorPage() {
     input.click();
   };
   
-  // Store result for CSS access
-  const [importResult, setImportResult] = useState<{ css: string } | null>(null);
+  // Switch between Puck pages
+  const switchPuckPage = useCallback((pageIndex: number) => {
+    if (pageIndex < 0 || pageIndex >= puckPages.length) return;
+    setActivePuckPage(pageIndex);
+  }, [puckPages.length]);
   
-  // Switch between pages in multi-page template
-  const switchPage = useCallback((pageIndex: number) => {
-    if (pageIndex < 0 || pageIndex >= pages.length) return;
-    
-    const page = pages[pageIndex];
-    if (!page || !grapeEditorRef.current) return;
-    
-    console.log(`[Page Switch] Switching to page ${pageIndex}: ${page.name}`);
-    
-    // CRITICAL: Save current page edits BEFORE switching
-    const editor = grapeEditorRef.current.getEditor?.() ?? grapeEditorRef.current;
-    const currentHtml = editor.getHtml?.() ?? '';
-    const currentCss = editor.getCss?.() ?? '';
-    setPages(prev => prev.map((p, i) =>
-      i === activePage ? { ...p, html: currentHtml, css: currentCss } : p
-    ));
-    
-    setActivePage(pageIndex);
-    
-    // Update editor content with the new page
-    grapeEditorRef.current.setComponents(page.html);
-    
-    // Set CSS (shared CSS + page-specific CSS)
-    const allCss = importResult?.css || '';
-    const pageCss = page.css || '';
-    const combinedCss = (allCss + '\n' + pageCss).trim();
-    if (combinedCss) {
-      grapeEditorRef.current.setStyle(combinedCss);
-    }
-  }, [pages, activePage, importResult]);
-  
-  // Handle preview generation (supports multi-page)
+  // Handle preview: render current Puck page with Puck's Render component
   const handlePreview = async () => {
     try {
-      const editor = grapeEditorRef.current?.getEditor();
-      if (!editor) throw new Error('Editor not ready');
+      const data = puckPages[activePuckPage]?.data ?? {};
+      const { Render } = await import('@puckeditor/core');
+      const { createRoot } = await import('react-dom/client');
+      const React = await import('react');
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const root = createRoot(container);
+      root.render(
+        React.createElement(Render, { config: puckConfig, data })
+      );
+      await new Promise((r) => setTimeout(r, 150));
+      const html = container.innerHTML;
+      root.unmount();
+      document.body.removeChild(container);
 
       const baseResponsiveCss = `
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow-x: hidden; }
+        html, body { margin: 0; padding: 0; width: 100%; min-height: 100%; overflow-x: hidden; }
         img, video, iframe, canvas { max-width: 100%; height: auto; display: block; }
         section, div, header, footer { max-width: 100%; }
-        @media (max-width: 1199px) { .gjs-row, .row { flex-wrap: wrap; } }
-        @media (max-width: 767px) { .gjs-row > *, .row > * { width: 100% !important; } }
       `;
-
-      if (pages.length > 1) {
-        // Multi-page: save current page edits, build combined preview
-        const currentHtml = editor.getHtml();
-        const currentCss = editor.getCss();
-        const allPages = pages.map((p, i) =>
-          i === activePage ? { ...p, html: currentHtml, css: currentCss } : p
-        );
-
-        const pageNavStyle = `
-          .preview-page-nav { position: sticky; top: 0; z-index: 9999; display: flex; gap: 4px; padding: 8px 16px; background: #2d2d2d; border-bottom: 2px solid #FF6B35; }
-          .preview-page-nav button { padding: 6px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; background: #3a3a3a; color: #e5e5e5; transition: background 0.2s; }
-          .preview-page-nav button:hover { background: #4a4a4a; }
-          .preview-page-nav button.active { background: #FF6B35; color: white; }
-          .preview-page-section { display: none; }
-          .preview-page-section.active { display: block; }
-        `;
-
-        const pageSections = allPages.map((p, i) =>
-          `<div class="preview-page-section${i === 0 ? ' active' : ''}" data-page="${i}">${p.html}</div>`
-        ).join('\n');
-
-        const pageButtons = allPages.map((p, i) =>
-          `<button class="${i === 0 ? 'active' : ''}" onclick="switchPage(${i})">${p.name.replace('.html', '').replace('.htm', '')}</button>`
-        ).join('');
-
-        const switchScript = `<script>
-          function switchPage(idx) {
-            document.querySelectorAll('.preview-page-section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.preview-page-nav button').forEach(b => b.classList.remove('active'));
-            document.querySelector('[data-page="'+idx+'"]').classList.add('active');
-            document.querySelectorAll('.preview-page-nav button')[idx].classList.add('active');
-          }
-        </script>`;
-
-        const allCss = allPages.map(p => p.css || '').join('\n');
-
-        const doc = `<!doctype html>
-        <html lang="${locale}">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <style>${baseResponsiveCss}${pageNavStyle}${allCss}</style>
-        </head>
-        <body>
-          <div class="preview-page-nav">${pageButtons}</div>
-          ${pageSections}
-          ${switchScript}
-        </body>
-        </html>`;
-
-        const blob = new Blob([doc], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl(url);
-        setPreviewWatermarked(false);
-        setShowPreview(true);
-      } else {
-        // Single page preview
-        const html = editor.getHtml();
-        const css = editor.getCss();
-
-        const doc = `<!doctype html>
-        <html lang="${locale}">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <style>${baseResponsiveCss}${css}</style>
-        </head>
-        <body>${html}</body>
-        </html>`;
-
-        const blob = new Blob([doc], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl(url);
-        setPreviewWatermarked(false);
-        setShowPreview(true);
-      }
+      const doc = `<!doctype html>
+<html lang="${locale}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>${baseResponsiveCss}</style>
+</head>
+<body>${html}</body>
+</html>`;
+      const blob = new Blob([doc], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setPreviewWatermarked(false);
+      setShowPreview(true);
     } catch (error) {
       console.error('Preview generation failed:', error);
       alert('Failed to generate preview. Please try again.');
@@ -1139,32 +716,13 @@ export default function EditorPage() {
   // Get unique categories from loaded components
   const categories = Array.from(new Set(components.map(c => c.category))) as Category[];
   
-  // Handle save component (get HTML from Grape.js editor)
+  // Handle save component (Phase 3: save selected Puck block as component)
   const handleSaveComponent = () => {
     if (!canSave) {
-      alert('Demo mode limit reached. Please upgrade to save components.');
+      setShowPackageSelector(true);
       return;
     }
-    
-    if (!grapeEditorRef.current) {
-      alert('Editor not ready');
-      return;
-    }
-    
-    const editor = grapeEditorRef.current.getEditor();
-    if (!editor) {
-      alert('Editor not available');
-      return;
-    }
-    
-    // Check if a component is selected
-    const selected = editor.getSelected();
-    if (!selected) {
-      alert('Please select a component in the editor to save it.');
-      return;
-    }
-    
-    setShowSaveComponent(true);
+    alert('Save component will be available in Phase 3.');
   };
   
   // Save project name on blur/Enter (double-click edit)
@@ -1179,24 +737,16 @@ export default function EditorPage() {
   }, [currentProject, projectNameInput, updateProject]);
 
   const handleConfirmClearCanvas = useCallback(() => {
-    const editor = grapeEditorRef.current?.getEditor();
-    if (editor) {
-      editor.setComponents('');
-      editor.setStyle('');
-      setPages([]);
-      setActivePage(0);
-      setImportResult(null);
-      console.log('[Editor] 🗑️ Cleared canvas and page tabs');
-    }
+    setPuckPages([{ name: 'Home', data: {} }]);
+    setActivePuckPage(0);
     setShowClearCanvasConfirm(false);
+    console.log('[Editor] 🗑️ Cleared canvas (Puck)');
   }, []);
 
   // Handle create project with demo limits
   const handleCreateProject = (name: string, description?: string) => {
-    // Clear pages state when creating new project
-    setPages([]);
-    setActivePage(0);
-    setImportResult(null);
+    setPuckPages([{ name: 'Home', data: {} }]);
+    setActivePuckPage(0);
     if (!canCreate) {
       alert('Demo mode limit reached. You can only create 1 project in demo mode.');
       return;
@@ -1347,14 +897,7 @@ export default function EditorPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
-                        const editor = grapeEditorRef.current?.getEditor();
-                        if (editor) {
-                          editor.Commands?.run?.('set-device-desktop');
-                          editor.setDevice?.('desktop');
-                          setCurrentDevice('desktop');
-                        }
-                      }}
+                      onClick={() => setCurrentDevice('desktop')}
                       className={`h-8 w-8 p-0 ${currentDevice === 'desktop' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
                       title="Desktop"
                     >
@@ -1363,14 +906,7 @@ export default function EditorPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
-                        const editor = grapeEditorRef.current?.getEditor();
-                        if (editor) {
-                          editor.Commands?.run?.('set-device-tablet');
-                          editor.setDevice?.('tablet');
-                          setCurrentDevice('tablet');
-                        }
-                      }}
+                      onClick={() => setCurrentDevice('tablet')}
                       className={`h-8 w-8 p-0 ${currentDevice === 'tablet' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
                       title="Tablet"
                     >
@@ -1379,14 +915,7 @@ export default function EditorPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
-                        const editor = grapeEditorRef.current?.getEditor();
-                        if (editor) {
-                          editor.Commands?.run?.('set-device-mobile');
-                          editor.setDevice?.('mobile');
-                          setCurrentDevice('mobile');
-                        }
-                      }}
+                      onClick={() => setCurrentDevice('mobile')}
                       className={`h-8 w-8 p-0 ${currentDevice === 'mobile' ? 'bg-[#FF6B35] text-white' : 'text-gray-600 dark:text-gray-400'}`}
                       title="Mobile"
                     >
@@ -1406,21 +935,11 @@ export default function EditorPage() {
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const editor = grapeEditorRef.current?.getEditor();
-                      const grapeEditor = grapeEditorRef.current;
-                      if (!editor || !grapeEditor) return;
-                      const currentHtml = editor.getHtml?.() ?? '';
-                      const currentCss = editor.getCss?.() ?? '';
-                      if (pages.length === 0) {
-                        setPages([{ name: 'Home', html: currentHtml, css: currentCss }, { name: 'Page 2', html: '', css: '' }]);
-                        setActivePage(1);
-                      } else {
-                        const updatedPages = pages.map((p, i) => (i === activePage ? { ...p, html: currentHtml, css: currentCss } : p));
-                        setPages([...updatedPages, { name: `Page ${pages.length + 1}`, html: '', css: '' }]);
-                        setActivePage(pages.length);
-                      }
-                      grapeEditor.setComponents('');
-                      grapeEditor.setStyle('');
+                      setPuckPages((prev) => {
+                        const next = [...prev, { name: `Page ${prev.length + 1}`, data: {} }];
+                        setActivePuckPage(next.length - 1);
+                        return next;
+                      });
                     }}
                     className="h-8 px-2 border-gray-300 dark:border-[#404040] text-gray-700 dark:text-gray-300 hover:border-[#FF6B35] hover:text-[#FF6B35]"
                     title={t('addPage')}
@@ -1550,115 +1069,14 @@ export default function EditorPage() {
                 </div>
 
                 {leftPanelTab === 'layers' ? (
-                  <LayersPanel
-                    editor={grapeEditorRef.current?.getEditor() ?? null}
-                    isDark={darkMode}
+                  <LayersPanelPuck
+                    data={puckPages[activePuckPage]?.data ?? {}}
                     className="flex-1 min-h-0"
                   />
                 ) : (
-                  <>
-                    <div className="p-4 border-b border-gray-200 dark:border-[#404040]">
-                      <div className="flex flex-wrap gap-1">
-                        <button
-                          onClick={() => setSelectedCategory(null)}
-                          className={`px-3 py-1 text-xs rounded-full transition ${
-                            selectedCategory === null
-                              ? 'bg-[#FF6B35] text-white'
-                              : 'bg-gray-100 dark:bg-[#3a3a3a] hover:bg-gray-200 dark:hover:bg-[#4a4a4a] text-gray-700 dark:text-[#e5e5e5]'
-                          }`}
-                        >
-                          {t('all')}
-                        </button>
-                        {categories.map((cat) => (
-                          <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`px-3 py-1 text-xs rounded-full transition capitalize ${
-                              selectedCategory === cat
-                                ? 'bg-[#FF6B35] text-white'
-                                : 'bg-gray-100 dark:bg-[#3a3a3a] hover:bg-gray-200 dark:hover:bg-[#4a4a4a] text-gray-700 dark:text-[#e5e5e5]'
-                            }`}
-                          >
-                            {cat}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      <SearchInput
-                        placeholder="Search components..."
-                        onSearch={handleSearch}
-                        debounceMs={300}
-                      />
-                      {isLoadingComponents ? (
-                        <div className="flex items-center justify-center py-8">
-                          <div className="text-gray-500">Loading components...</div>
-                        </div>
-                      ) : filteredComponents.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          {searchQuery ? 'No components found matching your search.' : 'No components found in this category.'}
-                        </div>
-                      ) : (
-                        <div className="grid gap-3">
-                          {filteredComponents.map((component) => (
-                            <div
-                              key={component.id}
-                              className="border border-[#FF6B35] rounded-lg p-3 hover:border-[#e55a28] bg-white dark:bg-[#3a3a3a] cursor-move transition group"
-                              draggable
-                              onDragStart={(e) => {
-                                const htmlContent = typeof component.html === 'string' ? component.html : String(component.html || '');
-                                const cssContent = component.css || '';
-                                const payload = cssContent
-                                  ? `<style>${cssContent}</style>\n${htmlContent}`
-                                  : htmlContent;
-                                e.dataTransfer.setData('text/html', payload);
-                                e.dataTransfer.setData('text/plain', payload);
-                              }}
-                            >
-                              <div className="aspect-video bg-gray-50 dark:bg-[#2d2d2d] rounded mb-2 flex items-center justify-center overflow-hidden relative">
-                                {(() => {
-                                  const htmlContent = typeof component.html === 'string' ? component.html : String(component.html || '');
-                                  const cssContent = component.css || '';
-                                  const previewHtml = htmlContent.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-                                  const previewSrcDoc = `<!doctype html><html><head><style>${cssContent}</style></head><body>${previewHtml}</body></html>`;
-                                  if (component.thumbnail) {
-                                    return (
-                                      <img
-                                        src={component.thumbnail}
-                                        alt={component.name}
-                                        className="w-full h-full object-cover rounded"
-                                        loading="lazy"
-                                      />
-                                    );
-                                  }
-                                  if (!previewHtml.trim()) {
-                                    return <span className="text-gray-400 dark:text-[#9ca3af] capitalize">{component.category}</span>;
-                                  }
-                                  return (
-                                    <iframe
-                                      title={`Preview of ${component.name}`}
-                                      srcDoc={previewSrcDoc}
-                                      className="w-full h-full border-0 rounded"
-                                      sandbox=""
-                                    />
-                                  );
-                                })()}
-                              </div>
-                              <h4 className="font-medium text-sm text-gray-900 dark:text-[#e5e5e5]">{component.name}</h4>
-                              <p className="text-xs text-gray-500 dark:text-[#9ca3af] mt-1">
-                                {component.description || `${component.category} component`}
-                              </p>
-                              {component.style && (
-                                <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-[#4a4a4a] dark:text-[#FF6B35] rounded capitalize">
-                                  {component.style}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </>
+                  <div className="flex-1 overflow-y-auto p-4 text-sm text-gray-600 dark:text-gray-400">
+                    <p>Add blocks from the editor canvas. Use the component list in the center area to drag and drop blocks.</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -1675,35 +1093,31 @@ export default function EditorPage() {
             {/* Center - Canvas with Grape.js */}
             <div className="flex-1 bg-gray-100 dark:bg-[#1a1a1a] overflow-hidden relative flex flex-col transition-colors duration-200">
               {/* Page Tabs (only show if multiple pages) */}
-              {pages.length > 1 && (
+              {puckPages.length > 1 && (
                 <div className="bg-white dark:bg-[#2d2d2d] border-b border-gray-200 dark:border-[#404040] px-4 py-2 flex items-center gap-2 overflow-x-auto">
                   <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">Pages:</span>
-                  {pages.map((page, index) => (
+                  {puckPages.map((page, index) => (
                     <button
                       key={index}
-                      onClick={() => switchPage(index)}
+                      onClick={() => switchPuckPage(index)}
                       className={`
                         px-3 py-1.5 text-sm font-medium rounded-md transition-colors
-                        ${activePage === index
+                        ${activePuckPage === index
                           ? 'bg-orange-500 text-white'
                           : 'bg-gray-100 dark:bg-[#3a3a3a] text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-200 dark:hover:bg-[#4a4a4a]'
                         }
                       `}
                     >
-                      {page.name.replace('.html', '').replace('.htm', '')}
+                      {page.name}
                     </button>
                   ))}
                 </div>
               )}
               <div className="flex-1 overflow-hidden">
-                <GrapeEditor
-                ref={grapeEditorRef}
-                onUpdate={handleEditorUpdate}
-                initialHtml={currentProject.pages[0]?.components?.[0]?.props?.html || ''}
-                initialCss={currentProject.pages[0]?.styles || ''}
-                components={components}
-                darkMode={darkMode}
-              />
+                <PuckEditor
+                  data={puckPages[activePuckPage]?.data ?? {}}
+                  onChange={handlePuckChange}
+                />
               </div>
             </div>
             
@@ -1716,7 +1130,7 @@ export default function EditorPage() {
               {rightPanelOpen ? '→' : '←'}
             </button>
             
-            {/* Right Panel - Style Manager */}
+            {/* Right Panel - Puck has its own properties in the canvas; this panel is collapsed by default */}
             <div className={`
               fixed md:relative 
               inset-y-0 right-0 
@@ -1729,18 +1143,8 @@ export default function EditorPage() {
                 <div className="p-4 border-b">
                   <h3 className="font-semibold text-lg text-gray-900 dark:text-[#e5e5e5]">{t('properties')}</h3>
                 </div>
-                <div className="flex-1 overflow-y-auto">
-                  <TraitsPanel
-                    editor={grapeEditorRef.current?.getEditor()}
-                    isDark={darkMode}
-                    t={(key: string) => t(key)}
-                  />
-                  <div className="border-t border-gray-200 dark:border-[#404040]" />
-                  <StyleManager 
-                    editor={grapeEditorRef.current?.getEditor()} 
-                    className=""
-                    t={(key: string) => t(key)}
-                  />
+                <div className="flex-1 overflow-y-auto p-4 text-sm text-gray-500 dark:text-gray-400">
+                  Select a block in the canvas to edit its properties in the editor.
                 </div>
               </div>
             </div>
@@ -1779,10 +1183,9 @@ export default function EditorPage() {
         <SaveComponentDialog
           open={showSaveComponent}
           onOpenChange={setShowSaveComponent}
-          editorRef={grapeEditorRef}
+          editorRef={undefined}
           initialCategory={selectedCategory || 'custom'}
           onSaved={() => {
-            // Reload components after saving
             getComponentCatalog(false).then(setComponents).catch(console.error);
           }}
         />
