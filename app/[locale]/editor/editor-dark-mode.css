@@ -520,3 +520,27 @@
 .gjs-toolbar-item {
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
+
+/* ========== Puck editor theme: dark #1a1a1a + accent #FF6B35 ========== */
+.dark [data-puck-entry],
+.dark [data-puck-entry] * {
+  --puck-color-grey-01: #1a1a1a;
+  --puck-color-grey-02: #2d2d2d;
+  --puck-color-grey-03: #3a3a3a;
+  --puck-color-grey-04: #4a4a4a;
+  --puck-color-grey-05: #5a5a5a;
+  --puck-color-grey-06: #767676;
+  --puck-color-grey-07: #949494;
+  --puck-color-grey-08: #ababab;
+  --puck-color-grey-09: #c3c3c3;
+  --puck-color-grey-10: #dcdcdc;
+  --puck-color-grey-11: #efefef;
+  --puck-color-grey-12: #f5f5f5;
+  /* Primary/accent: orange #FF6B35 (reuse azure variables for buttons/focus) */
+  --puck-color-azure-02: #c44f1f;
+  --puck-color-azure-03: #e55a28;
+  --puck-color-azure-04: #FF6B35;
+  --puck-color-azure-05: #ff8555;
+  --puck-color-azure-11: #3a2a24;
+  --puck-color-azure-12: #2d221c;
+}

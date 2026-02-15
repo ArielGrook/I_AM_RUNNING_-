@@ -11,13 +11,13 @@
 
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { 
-  Plus, 
-  Trash2, 
+import {
+  Plus,
+  Trash2,
   RotateCcw,
   Sparkles,
 } from 'lucide-react';
@@ -33,6 +33,25 @@ interface GradientBuilderProps {
   value?: string;
   onChange: (gradient: string) => void;
   className?: string;
+}
+
+/** Parse linear-gradient(angle, stops) into state. Handles linear only; radial/conic keep defaults. */
+function parseLinearGradient(css: string): { angle: number; stops: ColorStop[] } | null {
+  const match = css.match(/linear-gradient\s*\(\s*(\d+)deg\s*,\s*(.+)\)/);
+  if (!match) return null;
+  const angle = parseInt(match[1], 10);
+  const stopsStr = match[2];
+  const stopRegex = /(?:rgba?\([^)]+\)|#[a-fA-F0-9]{3,8})\s+(\d+)%?/g;
+  const stops: ColorStop[] = [];
+  let m;
+  let i = 0;
+  while ((m = stopRegex.exec(stopsStr)) !== null) {
+    const color = m[0].replace(/\s+\d+%?$/, '').trim();
+    const position = parseInt(m[1], 10);
+    stops.push({ id: String(++i), color: color.startsWith('#') ? color : '#888888', position, opacity: 1 });
+  }
+  if (stops.length < 2) return null;
+  return { angle, stops };
 }
 
 type GradientType = 'linear' | 'radial' | 'conic';
@@ -105,10 +124,28 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
     }
   }, [type, angle, radialPosition, colorStops]);
 
-  // Update parent when gradient changes
-  const applyGradient = useCallback(() => {
-    onChange(gradientCSS);
-  }, [gradientCSS, onChange]);
+  // Hydrate from external value when it changes (e.g. when Puck loads saved data)
+  const prevValueRef = React.useRef<string | undefined>(value);
+  useEffect(() => {
+    if (typeof value !== 'string' || !value.trim() || value === prevValueRef.current) return;
+    prevValueRef.current = value;
+    const parsed = parseLinearGradient(value);
+    if (parsed) {
+      setAngle(parsed.angle);
+      setColorStops(parsed.stops);
+      setType('linear');
+    }
+  }, [value]);
+
+  // Sync to parent when gradient CSS changes; skip first mount if value already set (saved data)
+  const initialSyncDone = useRef(false);
+  useEffect(() => {
+    if (!initialSyncDone.current) {
+      initialSyncDone.current = true;
+      if (typeof value === 'string' && value.trim()) return;
+    }
+    if (gradientCSS !== value) onChange(gradientCSS);
+  }, [gradientCSS, value, onChange]);
 
   // Add new color stop
   const addColorStop = () => {
@@ -370,12 +407,6 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
 
       {/* Actions */}
       <div className="flex gap-2">
-        <button
-          onClick={applyGradient}
-          className="flex-1 px-3 py-2 text-sm font-medium text-white bg-[#FF6B35] hover:bg-[#e55a28] rounded-lg transition-colors"
-        >
-          Apply Gradient
-        </button>
         <button
           onClick={resetGradient}
           className="px-3 py-2 text-sm text-gray-700 dark:text-[#e5e5e5] hover:text-[#FF6B35] border border-[#e5e5e5] dark:border-[#4a4a4a] bg-[#f5f5f5] dark:bg-[#2d2d2d] hover:border-[#FF6B35] rounded-lg transition-colors"

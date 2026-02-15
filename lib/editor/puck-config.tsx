@@ -1,11 +1,16 @@
 /**
  * Puck editor component config.
  * Phase 1: Basic blocks. Phase 3: F03 premium components (Hero01, Header01, etc.) with fields → Tailwind.
+ * Custom fields: Gradient, Animation, Background Image, Typography (see components/editor).
  */
 
 'use client';
 
 import React from 'react';
+import { GradientBuilder } from '@/components/editor/GradientBuilder';
+import { AnimationControls, type AnimationValue } from '@/components/editor/AnimationControls';
+import { BackgroundImageField, type BackgroundImageValue } from '@/components/editor/BackgroundImageField';
+import { TypographyField, type TypographyValue } from '@/components/editor/TypographyField';
 
 const accentOptions = [
   { label: 'Orange', value: 'orange' },
@@ -74,6 +79,151 @@ export const puckConfig = {
           <p className="text-lg text-gray-600 dark:text-gray-400">{subtitle}</p>
         </section>
       ),
+    },
+    // Custom fields demo: gradient section
+    GradientSection: {
+      fields: {
+        backgroundGradient: {
+          type: 'custom',
+          label: 'Background gradient',
+          render: ({ value, onChange }: { value?: string; onChange: (v: string) => void }) => (
+            <GradientBuilder value={value} onChange={onChange} />
+          ),
+        },
+        title: { type: 'text', label: 'Title' },
+      },
+      defaultProps: {
+        backgroundGradient: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+        title: 'Gradient section',
+      },
+      render: (props: Record<string, unknown>) => (
+        <section
+          className="rounded-lg p-8 text-center min-h-[120px] flex items-center justify-center"
+          style={{ background: (props.backgroundGradient as string) || undefined }}
+        >
+          <h2 className="text-2xl font-bold text-white drop-shadow-md">{props.title as string}</h2>
+        </section>
+      ),
+    },
+    // Custom fields demo: animated block (data-animate attributes)
+    AnimatedBlock: {
+      fields: {
+        animation: {
+          type: 'custom',
+          label: 'Animation',
+          render: ({
+            value,
+            onChange,
+          }: {
+            value?: AnimationValue | null;
+            onChange: (v: AnimationValue) => void;
+          }) => <AnimationControls value={value} onChange={onChange} />,
+        },
+        children: { type: 'text', label: 'Content' },
+      },
+      defaultProps: {
+        animation: { type: 'fade-up', delay: 0, duration: 500 },
+        children: 'Animated content',
+      },
+      render: (props: Record<string, unknown>) => {
+        const anim = (props.animation as AnimationValue) || {};
+        const attrs: Record<string, string | number> = {};
+        if (anim.type) attrs['data-animate'] = anim.type;
+        if (anim.delay != null) attrs['data-animate-delay'] = String(anim.delay);
+        if (anim.duration != null) attrs['data-animate-duration'] = String(anim.duration);
+        return (
+          <div
+            className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900"
+            {...attrs}
+          >
+            {props.children as string}
+          </div>
+        );
+      },
+    },
+    // Custom fields demo: background image section
+    ImageBackgroundSection: {
+      fields: {
+        backgroundImage: {
+          type: 'custom',
+          label: 'Background image',
+          render: ({
+            value,
+            onChange,
+          }: {
+            value?: BackgroundImageValue | null;
+            onChange: (v: BackgroundImageValue) => void;
+          }) => <BackgroundImageField value={value} onChange={onChange} />,
+        },
+        title: { type: 'text', label: 'Title' },
+      },
+      defaultProps: {
+        backgroundImage: { url: '', opacity: 100, backgroundSize: 'cover', backgroundPosition: 'center' },
+        title: 'Image background',
+      },
+      render: (props: Record<string, unknown>) => {
+        const bg = (props.backgroundImage as BackgroundImageValue) || {};
+        const style: React.CSSProperties = {
+          opacity: (bg.opacity ?? 100) / 100,
+          backgroundSize: bg.backgroundSize ?? 'cover',
+          backgroundPosition: bg.backgroundPosition ?? 'center',
+        };
+        if (bg.url) style.backgroundImage = `url(${bg.url})`;
+        return (
+          <section
+            className="rounded-lg p-8 text-center min-h-[160px] flex items-center justify-center bg-gray-200 dark:bg-gray-800 bg-no-repeat"
+            style={style}
+          >
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white drop-shadow-md">
+              {props.title as string}
+            </h2>
+          </section>
+        );
+      },
+    },
+    // Custom fields demo: typography (grouped in one field)
+    StyledHeading: {
+      fields: {
+        title: { type: 'text', label: 'Title' },
+        typography: {
+          type: 'custom',
+          label: 'Typography',
+          render: ({
+            value,
+            onChange,
+          }: {
+            value?: TypographyValue | null;
+            onChange: (v: TypographyValue) => void;
+          }) => <TypographyField value={value} onChange={onChange} />,
+        },
+      },
+      defaultProps: {
+        title: 'Styled heading',
+        typography: {
+          fontSize: 24,
+          fontWeight: '700',
+          lineHeight: 1.3,
+          letterSpacing: 0,
+          color: '#000000',
+          textAlign: 'left',
+        },
+      },
+      render: (props: Record<string, unknown>) => {
+        const ty = (props.typography as TypographyValue) || {};
+        const style: React.CSSProperties = {
+          fontSize: ty.fontSize != null ? `${ty.fontSize}px` : undefined,
+          fontWeight: ty.fontWeight,
+          lineHeight: ty.lineHeight,
+          letterSpacing: ty.letterSpacing != null ? `${ty.letterSpacing}px` : undefined,
+          color: ty.color,
+          textAlign: ty.textAlign,
+        };
+        return (
+          <h2 className="m-0" style={style}>
+            {props.title as string}
+          </h2>
+        );
+      },
     },
     // F03: Hero01 – Gradient hero with CTAs
     Hero01: {
@@ -270,8 +420,8 @@ export const puckConfig = {
     },
   },
   categories: [
-    { title: 'Basic', components: ['HeadingBlock', 'TextBlock'] },
-    { title: 'Sections', components: ['HeroBlock', 'Hero01', 'Hero02', 'CTA01'] },
+    { title: 'Basic', components: ['HeadingBlock', 'TextBlock', 'StyledHeading'] },
+    { title: 'Sections', components: ['HeroBlock', 'GradientSection', 'ImageBackgroundSection', 'AnimatedBlock', 'Hero01', 'Hero02', 'CTA01'] },
     { title: 'Header', components: ['Header01'] },
     { title: 'Import', components: ['ImportedHTML'] },
   ],

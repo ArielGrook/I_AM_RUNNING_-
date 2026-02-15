@@ -15,7 +15,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { ArrowLeft, Plus, Download, Upload, Save, Check, MessageSquare, Eye, Monitor, Tablet, Smartphone, Undo2, Redo2, LayoutTemplate, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { PuckEditor, type PuckData } from '@/components/editor/PuckEditor';
+import { PuckEditor, type PuckData, type PuckUndoRedoApi } from '@/components/editor/PuckEditor';
 import { LayersPanelPuck } from '@/components/editor/LayersPanelPuck';
 import { puckConfig } from '@/lib/editor/puck-config';
 import { ProjectNameForm } from '@/components/editor/ProjectNameForm';
@@ -156,6 +156,7 @@ export default function EditorPage() {
   const [dbVersion, setDbVersion] = useState<number>(0); // Tracks the DB version for correct increment
   const supabaseLoadedProjectIdRef = useRef<string | null>(null);
   const loadedProjectDataRef = useRef<{ projectData: Record<string, unknown>; loadedFrom: 'data' | 'contract' } | null>(null);
+  const puckApiRef = useRef<PuckUndoRedoApi | null>(null);
   const searchParams = useSearchParams();
 
   // Puck editor state (replaces GrapesJS)
@@ -389,9 +390,31 @@ export default function EditorPage() {
     }
   }, [searchParams]);
 
-  // Undo/redo: Puck has built-in history in its UI; toolbar buttons disabled for now
-  const handleUndo = useCallback(() => {}, []);
-  const handleRedo = useCallback(() => {}, []);
+  const handleUndo = useCallback(() => {
+    puckApiRef.current?.undo();
+  }, []);
+  const handleRedo = useCallback(() => {
+    puckApiRef.current?.redo();
+  }, []);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!currentProject) return;
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z') {
+          e.preventDefault();
+          if (e.shiftKey) puckApiRef.current?.redo();
+          else puckApiRef.current?.undo();
+        } else if (e.key === 'y') {
+          e.preventDefault();
+          puckApiRef.current?.redo();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [currentProject]);
 
   // Load user package on mount
   useEffect(() => {
@@ -1119,6 +1142,11 @@ export default function EditorPage() {
                 <PuckEditor
                   data={puckPages[activePuckPage]?.data ?? {}}
                   onChange={handlePuckChange}
+                  puckApiRef={puckApiRef}
+                  onHistoryChange={(canUndo, canRedo) => {
+                    setCanUndo(canUndo);
+                    setCanRedo(canRedo);
+                  }}
                   className="h-full w-full min-w-0 min-h-0"
                 />
               </div>
