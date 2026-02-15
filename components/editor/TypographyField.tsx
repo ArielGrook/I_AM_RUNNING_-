@@ -1,7 +1,3 @@
-/**
- * Advanced typography field for Puck: font size, weight, line height, letter spacing, color, alignment.
- */
-
 'use client';
 
 import React, { useCallback } from 'react';

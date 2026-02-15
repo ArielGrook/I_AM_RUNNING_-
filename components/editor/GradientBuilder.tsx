@@ -15,9 +15,9 @@ import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import {
-  Plus,
-  Trash2,
+import { 
+  Plus, 
+  Trash2, 
   RotateCcw,
   Sparkles,
 } from 'lucide-react';
@@ -35,7 +35,8 @@ interface GradientBuilderProps {
   className?: string;
 }
 
-/** Parse linear-gradient(angle, stops) into state. Handles linear only; radial/conic keep defaults. */
+type GradientType = 'linear' | 'radial' | 'conic';
+
 function parseLinearGradient(css: string): { angle: number; stops: ColorStop[] } | null {
   const match = css.match(/linear-gradient\s*\(\s*(\d+)deg\s*,\s*(.+)\)/);
   if (!match) return null;
@@ -53,8 +54,6 @@ function parseLinearGradient(css: string): { angle: number; stops: ColorStop[] }
   if (stops.length < 2) return null;
   return { angle, stops };
 }
-
-type GradientType = 'linear' | 'radial' | 'conic';
 
 // Preset gradients library
 const PRESET_GRADIENTS = [
@@ -124,8 +123,7 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
     }
   }, [type, angle, radialPosition, colorStops]);
 
-  // Hydrate from external value when it changes (e.g. when Puck loads saved data)
-  const prevValueRef = React.useRef<string | undefined>(value);
+  const prevValueRef = useRef<string | undefined>(value);
   useEffect(() => {
     if (typeof value !== 'string' || !value.trim() || value === prevValueRef.current) return;
     prevValueRef.current = value;
@@ -137,7 +135,6 @@ export function GradientBuilder({ value, onChange, className }: GradientBuilderP
     }
   }, [value]);
 
-  // Sync to parent when gradient CSS changes; skip first mount if value already set (saved data)
   const initialSyncDone = useRef(false);
   useEffect(() => {
     if (!initialSyncDone.current) {

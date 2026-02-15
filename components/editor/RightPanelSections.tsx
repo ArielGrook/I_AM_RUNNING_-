@@ -1,9 +1,3 @@
-/**
- * Custom right-panel sections for Puck: Animations and Advanced Styles.
- * Renders above the default Puck fields when a component is selected.
- * Must be used inside Puck context (e.g. in overrides.fields).
- */
-
 'use client';
 
 import React, { useCallback } from 'react';
@@ -25,11 +19,7 @@ function getContentFromData(data: PuckData): Array<{ type?: string; props?: Reco
   return [];
 }
 
-function setContentInData(
-  data: PuckData,
-  index: number,
-  updateProps: (props: Record<string, unknown>) => Record<string, unknown>
-): PuckData {
+function setContentInData(data: PuckData, index: number, updateProps: (props: Record<string, unknown>) => Record<string, unknown>): PuckData {
   const content = getContentFromData(data);
   if (index < 0 || index >= content.length) return data;
   const nextContent = content.map((item, i) =>
@@ -41,35 +31,18 @@ function setContentInData(
     const props = root.props as Record<string, unknown>;
     const zone = props.zone as { content?: unknown[] } | undefined;
     if (zone?.content) {
-      return {
-        ...data,
-        root: {
-          ...root,
-          props: { ...props, zone: { ...zone, content: nextContent } },
-        },
-      };
+      return { ...data, root: { ...root, props: { ...props, zone: { ...zone, content: nextContent } } } };
     }
-    if (Array.isArray(props.content)) {
-      return { ...data, root: { ...root, props: { ...props, content: nextContent } } };
-    }
+    if (Array.isArray(props.content)) return { ...data, root: { ...root, props: { ...props, content: nextContent } } };
   }
   return { ...data, content: nextContent };
 }
 
-export function RightPanelSections({
-  itemSelector,
-  children,
-}: {
-  itemSelector: { index: number; zone?: string } | null;
-  children: React.ReactNode;
-}) {
-  const { appState, dispatch } = usePuck<PuckData>();
-  const { data } = appState;
+export function RightPanelSections({ itemSelector, children }: { itemSelector: { index: number; zone?: string } | null; children: React.ReactNode }) {
+  const { appState, dispatch } = usePuck();
+  const { data } = appState as { data: PuckData };
   const content = getContentFromData(data);
-  const selectedItem =
-    itemSelector != null && itemSelector.index >= 0 && itemSelector.index < content.length
-      ? content[itemSelector.index]
-      : null;
+  const selectedItem = itemSelector != null && itemSelector.index >= 0 && itemSelector.index < content.length ? content[itemSelector.index] : null;
   const selectedProps = (selectedItem?.props as Record<string, unknown>) || {};
   const index = itemSelector?.index ?? -1;
 
@@ -78,8 +51,7 @@ export function RightPanelSections({
       if (index < 0) return;
       dispatch({
         type: 'setData',
-        data: (prev: PuckData) =>
-          setContentInData(prev, index, (props) => ({ ...props, ...patch })),
+        data: (prev: PuckData) => setContentInData(prev, index, (props) => ({ ...props, ...patch })),
       } as { type: 'setData'; data: PuckData | ((prev: PuckData) => PuckData) });
     },
     [dispatch, index]
@@ -95,24 +67,14 @@ export function RightPanelSections({
   return (
     <div className="flex flex-col gap-6">
       <section className="space-y-3">
-        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          Animations
-        </h3>
-        <AnimationControls
-          value={animationValue}
-          onChange={(v) => setSelectedProps({ animation: v })}
-        />
+        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Animations</h3>
+        <AnimationControls value={animationValue} onChange={(v) => setSelectedProps({ animation: v })} />
       </section>
       <section className="space-y-3">
-        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          Advanced styles
-        </h3>
+        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Advanced styles</h3>
         <div className="space-y-2">
           <span className="text-xs text-gray-600 dark:text-[#e5e5e5]">Background gradient</span>
-          <GradientBuilder
-            value={backgroundGradient}
-            onChange={(v) => setSelectedProps({ backgroundGradient: v })}
-          />
+          <GradientBuilder value={backgroundGradient} onChange={(v) => setSelectedProps({ backgroundGradient: v })} />
         </div>
       </section>
       {children}

@@ -1,7 +1,3 @@
-/**
- * Background image upload field for Puck: Supabase Storage, preview, opacity, size, position.
- */
-
 'use client';
 
 import React, { useCallback, useRef, useState } from 'react';
@@ -66,10 +62,7 @@ export function BackgroundImageField({ value, onChange, className }: BackgroundI
       setUploading(true);
       try {
         const path = `editor/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-        const { error: uploadError } = await supabase.storage
-          .from(BUCKET)
-          .upload(path, file, { upsert: true, contentType: file.type });
-
+        const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: file.type });
         if (uploadError) {
           setError(uploadError.message);
           return;
@@ -86,19 +79,11 @@ export function BackgroundImageField({ value, onChange, className }: BackgroundI
     [update]
   );
 
-  const handleRemove = useCallback(() => {
-    update({ url: '' });
-  }, [update]);
+  const handleRemove = useCallback(() => update({ url: '' }), [update]);
 
   return (
     <div className={cn('background-image-field space-y-4', className)}>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleUpload}
-        className="hidden"
-      />
+      <input ref={inputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
       <div className="space-y-2">
         <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Background image</Label>
         <div className="flex gap-2">
@@ -112,12 +97,7 @@ export function BackgroundImageField({ value, onChange, className }: BackgroundI
             {uploading ? 'Uploading…' : 'Upload'}
           </button>
           {url && (
-            <button
-              type="button"
-              onClick={handleRemove}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-[#e5e5e5] border border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-red-500 rounded-lg transition-colors"
-              title="Remove background"
-            >
+            <button type="button" onClick={handleRemove} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-[#e5e5e5] border border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-red-500 rounded-lg" title="Remove">
               <Trash2 className="w-4 h-4" />
               Remove
             </button>
@@ -127,44 +107,19 @@ export function BackgroundImageField({ value, onChange, className }: BackgroundI
       </div>
       {url && (
         <>
-          <div
-            className="w-full h-24 rounded-lg border border-[#e5e5e5] dark:border-[#4a4a4a] bg-[#f5f5f5] dark:bg-[#2d2d2d] bg-cover bg-center"
-            style={{
-              backgroundImage: `url(${url})`,
-              opacity: opacity / 100,
-              backgroundSize,
-              backgroundPosition,
-            }}
-          />
+          <div className="w-full h-24 rounded-lg border border-[#e5e5e5] dark:border-[#4a4a4a] bg-cover bg-center" style={{ backgroundImage: `url(${url})`, opacity: opacity / 100, backgroundSize, backgroundPosition }} />
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Opacity (%)</Label>
               <span className="text-xs text-gray-500 font-mono">{opacity}</span>
             </div>
-            <Slider
-              value={[opacity]}
-              onValueChange={([v]) => update({ opacity: v })}
-              min={0}
-              max={100}
-              step={5}
-              className="w-full"
-            />
+            <Slider value={[opacity]} onValueChange={([v]) => update({ opacity: v })} min={0} max={100} step={5} className="w-full" />
           </div>
           <div className="space-y-2">
             <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Size</Label>
             <div className="flex gap-1">
               {(['cover', 'contain'] as const).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => update({ backgroundSize: s })}
-                  className={cn(
-                    'flex-1 px-3 py-1.5 text-xs font-medium rounded border transition-all capitalize',
-                    backgroundSize === s
-                      ? 'bg-[#FF6B35] text-white border-[#FF6B35]'
-                      : 'bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-[#FF6B35]'
-                  )}
-                >
+                <button key={s} type="button" onClick={() => update({ backgroundSize: s })} className={cn('flex-1 px-3 py-1.5 text-xs font-medium rounded border capitalize', backgroundSize === s ? 'bg-[#FF6B35] text-white border-[#FF6B35]' : 'bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-700 dark:text-[#e5e5e5] border-[#e5e5e5] dark:border-[#4a4a4a] hover:border-[#FF6B35]')}>
                   {s}
                 </button>
               ))}
@@ -172,15 +127,9 @@ export function BackgroundImageField({ value, onChange, className }: BackgroundI
           </div>
           <div className="space-y-2">
             <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Position</Label>
-            <select
-              value={backgroundPosition}
-              onChange={(e) => update({ backgroundPosition: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35]"
-            >
+            <select value={backgroundPosition} onChange={(e) => update({ backgroundPosition: e.target.value })} className="w-full px-3 py-2 text-sm border border-[#e5e5e5] dark:border-[#4a4a4a] bg-[#f5f5f5] dark:bg-[#2d2d2d] text-gray-800 dark:text-[#e5e5e5] rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20">
               {POSITION_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
           </div>

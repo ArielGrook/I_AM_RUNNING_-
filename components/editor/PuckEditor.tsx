@@ -31,20 +31,11 @@ export interface PuckEditorProps {
   onChange: (data: PuckData) => void;
   onPublish?: (data: PuckData) => void;
   className?: string;
-  /** Ref to receive Puck undo/redo API (for toolbar outside Puck). */
   puckApiRef?: React.MutableRefObject<PuckUndoRedoApi | null>;
-  /** Called when undo/redo availability changes. */
   onHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
 }
 
-export function PuckEditor({
-  data,
-  onChange,
-  onPublish,
-  className,
-  puckApiRef,
-  onHistoryChange,
-}: PuckEditorProps) {
+export function PuckEditor({ data, onChange, onPublish, className, puckApiRef, onHistoryChange }: PuckEditorProps) {
   const handleChange = useCallback(
     (newData: PuckData) => {
       onChange(newData);
@@ -74,22 +65,12 @@ export function PuckEditor({
       children: React.ReactNode;
       isLoading: boolean;
       itemSelector?: { index: number; zone?: string } | null;
-    }) => (
-      <RightPanelSections itemSelector={itemSelector ?? null}>
-        {children}
-      </RightPanelSections>
-    ),
+    }) => <RightPanelSections itemSelector={itemSelector ?? null}>{children}</RightPanelSections>,
   };
 
   return (
     <div className={className ?? 'h-full w-full min-w-0 flex-1 overflow-hidden'}>
-      <Puck
-        config={puckConfig}
-        data={data}
-        onChange={handleChange}
-        onPublish={handlePublish}
-        overrides={overrides}
-      />
+      <Puck config={puckConfig} data={data} onChange={handleChange} onPublish={handlePublish} overrides={overrides} />
     </div>
   );
 }

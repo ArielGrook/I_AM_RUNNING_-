@@ -1,8 +1,3 @@
-/**
- * Animation controls for Puck custom field.
- * Outputs data-animate, data-animate-delay, data-animate-duration on the component.
- */
-
 'use client';
 
 import React, { useCallback } from 'react';
@@ -50,9 +45,9 @@ export function AnimationControls({ value, onChange, className }: AnimationContr
     const el = document.querySelector('[data-puck-animation-preview="true"]');
     if (!el) return;
     el.removeAttribute('data-puck-animation-preview');
-    void el.offsetHeight;
+    void (el as HTMLElement).offsetHeight;
     el.setAttribute('data-puck-animation-preview', 'true');
-    const anim = el.getAnimations?.()?.[0];
+    const anim = (el as HTMLElement).getAnimations?.()?.[0];
     if (anim) {
       anim.cancel();
       anim.play();
@@ -80,34 +75,20 @@ export function AnimationControls({ value, onChange, className }: AnimationContr
           <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Delay (ms)</Label>
           <span className="text-xs text-gray-500 font-mono">{delay}</span>
         </div>
-        <Slider
-          value={[delay]}
-          onValueChange={([v]) => update({ delay: v })}
-          min={0}
-          max={2000}
-          step={50}
-          className="w-full"
-        />
+        <Slider value={[delay]} onValueChange={([v]) => update({ delay: v })} min={0} max={2000} step={50} className="w-full" />
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label className="text-xs text-gray-600 dark:text-[#e5e5e5]">Duration (ms)</Label>
           <span className="text-xs text-gray-500 font-mono">{duration}</span>
         </div>
-        <Slider
-          value={[duration]}
-          onValueChange={([v]) => update({ duration: v })}
-          min={200}
-          max={2000}
-          step={50}
-          className="w-full"
-        />
+        <Slider value={[duration]} onValueChange={([v]) => update({ duration: v })} min={200} max={2000} step={50} className="w-full" />
       </div>
       <button
         type="button"
         onClick={handlePreview}
         className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-[#e5e5e5] border border-[#e5e5e5] dark:border-[#4a4a4a] bg-[#f5f5f5] dark:bg-[#2d2d2d] hover:border-[#FF6B35] rounded-lg transition-colors"
-        title="Preview animation on selected component"
+        title="Preview animation"
       >
         <Play className="w-4 h-4" />
         Preview

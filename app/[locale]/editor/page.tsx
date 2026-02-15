@@ -397,7 +397,6 @@ export default function EditorPage() {
     puckApiRef.current?.redo();
   }, []);
 
-  // Keyboard shortcuts for undo/redo
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!currentProject) return;

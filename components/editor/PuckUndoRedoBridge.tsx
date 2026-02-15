@@ -1,8 +1,3 @@
-/**
- * Bridge to expose Puck's built-in undo/redo to the parent (toolbar outside Puck).
- * Renders nothing; must be used inside Puck (e.g. in overrides.header).
- */
-
 'use client';
 
 import React, { useEffect, useRef } from 'react';
@@ -28,12 +23,7 @@ export function PuckUndoRedoBridge({ apiRef, onHistoryChange }: PuckUndoRedoBrid
     const canUndo = history.hasPast;
     const canRedo = history.hasFuture;
     if (apiRef) {
-      apiRef.current = {
-        undo: history.back,
-        redo: history.forward,
-        canUndo,
-        canRedo,
-      };
+      apiRef.current = { undo: history.back, redo: history.forward, canUndo, canRedo };
     }
     if (onHistoryChange && (lastCanRef.current.canUndo !== canUndo || lastCanRef.current.canRedo !== canRedo)) {
       lastCanRef.current = { canUndo, canRedo };
