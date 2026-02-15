@@ -26,7 +26,9 @@ export const Toolbar = ({
   router: { push: (path: string) => void };
   isSaving: boolean;
 }) => {
-  const { query } = useEditor();
+  const { query, actions } = useEditor();
+  const canUndo = query.history.canUndo();
+  const canRedo = query.history.canRedo();
 
   const handleSave = () => {
     try {
@@ -62,6 +64,22 @@ export const Toolbar = ({
         className="px-4 py-2 bg-[#FF6B35] hover:bg-[#ff8555] rounded text-white disabled:opacity-50"
       >
         {isSaving ? '…' : '💾 Сохранить'}
+      </button>
+      <button
+        onClick={() => actions.history.undo()}
+        disabled={!canUndo}
+        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        title="Undo"
+      >
+        ↩ Undo
+      </button>
+      <button
+        onClick={() => actions.history.redo()}
+        disabled={!canRedo}
+        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        title="Redo"
+      >
+        ↪ Redo
       </button>
       <button
         onClick={onPreview}

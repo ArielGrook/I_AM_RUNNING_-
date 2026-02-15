@@ -15,11 +15,23 @@ import {
   saveProjectToSupabase,
   type LoadedProject,
 } from '@/lib/store/supabase-sync';
-import { Container, Text, Hero } from '@/lib/craft/components';
+import {
+  Container,
+  Text,
+  Hero,
+  Button,
+  Image,
+  Header,
+  CTA,
+  Features,
+  Footer,
+} from '@/lib/craft/components';
 import { Toolbox } from '@/components/craft/Toolbox';
+import { LayersPanel } from '@/components/craft/LayersPanel';
 import { SettingsPanel } from '@/components/craft/SettingsPanel';
 import { Viewport } from '@/components/craft/Viewport';
 import { Toolbar } from '@/components/craft/Toolbar';
+import { PreviewModal } from '@/components/craft/PreviewModal';
 
 type PageState = {
   id: string;
@@ -44,6 +56,8 @@ export default function EditorPage() {
   const [activePageId, setActivePageId] = useState('1');
   const [loadedProject, setLoadedProject] = useState<LoadedProject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewHTML, setPreviewHTML] = useState('');
 
   const activePage = pages.find((p) => p.id === activePageId);
 
@@ -137,7 +151,10 @@ export default function EditorPage() {
   );
 
   const handlePreview = () => {
-    console.log('Preview - will add modal later');
+    setPreviewHTML(
+      '<div style="padding:40px;text-align:center;">Preview - HTML serializer coming soon</div>'
+    );
+    setPreviewOpen(true);
   };
 
   const handlePageChange = useCallback(
@@ -186,7 +203,19 @@ export default function EditorPage() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-900">
-      <Editor resolver={{ Container, Text, Hero }}>
+      <Editor
+        resolver={{
+          Container,
+          Text,
+          Hero,
+          Button,
+          Image,
+          Header,
+          CTA,
+          Features,
+          Footer,
+        }}
+      >
         <Toolbar
           onSave={handleSaveFromEditor}
           onPreview={handlePreview}
@@ -200,6 +229,7 @@ export default function EditorPage() {
         />
         <div className="flex-1 flex min-h-0">
           <Toolbox />
+          <LayersPanel />
           <Viewport>
             <Frame key={activePageId} data={initialData}>
               {!initialData && (
@@ -225,6 +255,11 @@ export default function EditorPage() {
           </Viewport>
           <SettingsPanel />
         </div>
+        <PreviewModal
+          isOpen={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          data={previewHTML}
+        />
       </Editor>
     </div>
   );
