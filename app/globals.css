@@ -929,8 +929,19 @@ html::-webkit-scrollbar {
   color: #fdba74 !important;
 }
 
-
-
+/* Puck editor dark theme */
+[data-puck-root] {
+  --puck-color-grey-01: #f9fafb;
+  --puck-color-grey-02: #e5e7eb;
+  --puck-color-grey-03: #2d2d2d;
+  --puck-color-grey-04: #1f2937;
+  --puck-color-grey-05: #1a1a1a;
+  --puck-color-grey-06: #111827;
+  --puck-color-azure-04: #FF6B35;
+  --puck-color-azure-05: #ff8555;
+  background: #1a1a1a;
+  color: #e5e5e5;
+}
 
 
 
