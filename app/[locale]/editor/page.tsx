@@ -1,6 +1,5 @@
 /**
- * Minimal Puck Editor - clean slate.
- * Toolbar + Puck built-in UI. Multi-page, Supabase sync.
+ * Puck Editor - toolbar, layers, preview, multi-page, Supabase sync.
  */
 
 'use client';
@@ -8,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import '@puckeditor/core/puck.css';
 import config from '@/lib/puck/config';
+import { Render } from '@puckeditor/core';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -20,6 +20,79 @@ const PuckEditor = dynamic(
 );
 
 type PuckData = Record<string, unknown>;
+
+type ContentItem = { type?: string; props?: { id?: string; [key: string]: unknown } };
+
+function LayersPanel({
+  data,
+  onSelect,
+}: {
+  data: PuckData;
+  onSelect: (id: string) => void;
+}) {
+  const content = (data?.content as ContentItem[] | undefined) ?? [];
+
+  const renderItem = (item: ContentItem, depth = 0) => {
+    const id = item.props?.id as string | undefined;
+    const type = item.type ?? 'Component';
+    const key = id ?? `${type}-${depth}-${Math.random()}`;
+
+    return (
+      <div
+        key={key}
+        style={{ paddingLeft: `${depth * 16}px` }}
+        className="py-1 px-2 hover:bg-gray-700 cursor-pointer text-sm text-gray-300"
+        onClick={() => id && onSelect(id)}
+      >
+        {type}
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-56 bg-gray-800 border-r border-gray-700 overflow-y-auto shrink-0">
+      <div className="p-4 border-b border-gray-700 font-semibold text-white">Слои</div>
+      <div className="p-2">
+        {content.length === 0 ? (
+          <p className="text-gray-500 text-sm py-2">Пусто</p>
+        ) : (
+          content.map((item, i) => renderItem(item, 0))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PreviewModal({
+  isOpen,
+  onClose,
+  data,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  data: PuckData;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-7xl h-[90vh] rounded-lg overflow-hidden flex flex-col">
+        <div className="bg-gray-800 text-white p-4 flex justify-between items-center shrink-0">
+          <span className="font-semibold">Preview</span>
+          <button
+            onClick={onClose}
+            className="text-2xl leading-none hover:text-gray-300 transition"
+          >
+            ×
+          </button>
+        </div>
+        <div className="overflow-auto flex-1 bg-white">
+          <Render config={config} data={data} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 type PageState = {
   id: string;
@@ -44,6 +117,7 @@ export default function EditorPage() {
   const [activePageId, setActivePageId] = useState('1');
   const [loadedProject, setLoadedProject] = useState<LoadedProject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const activePage = pages.find((p) => p.id === activePageId);
 
@@ -82,7 +156,7 @@ export default function EditorPage() {
             data: (p.data && typeof p.data === 'object' ? p.data : { content: [], root: {} }) as PuckData,
           }))
         );
-        setActivePageId(pd.puck.activePageId || puckPages[0].id || '1');
+        setActivePageId(pd?.puck?.activePageId || puckPages[0].id || '1');
       }
     };
 
@@ -93,8 +167,19 @@ export default function EditorPage() {
     if (!projectId || !loadedProject || isSaving) return;
 
     setIsSaving(true);
+    const project = {
+      id: loadedProject.id,
+      name: loadedProject.name,
+      description: loadedProject.description,
+      pages: [],
+      metadata: {
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        version: '1.0.0',
+      },
+    } as Parameters<typeof saveProjectToSupabase>[0];
     const { error } = await saveProjectToSupabase(
-      { id: loadedProject.id, name: loadedProject.name, description: loadedProject.description, pages: [] },
+      project,
       null,
       { puck: { pages, activePageId } },
       null,
@@ -110,10 +195,7 @@ export default function EditorPage() {
     alert('Saved!');
   }, [projectId, loadedProject, pages, activePageId, isSaving]);
 
-  const handlePreview = () => {
-    console.log('Preview:', activePage?.data);
-    // TODO: Open preview modal
-  };
+  const handlePreview = () => setPreviewOpen(true);
 
   const handleAddPage = () => {
     const newId = String(Date.now());
@@ -191,16 +273,30 @@ export default function EditorPage() {
         </div>
       </div>
 
-      {/* PUCK EDITOR */}
-      <div className="flex-1 min-h-0">
+      {/* LAYERS + PUCK EDITOR */}
+      <div className="flex-1 flex min-h-0">
         {activePage && (
-          <PuckEditor
-            config={config}
-            data={activePage.data}
-            onChange={handlePuckChange}
-          />
+          <>
+            <LayersPanel
+              data={activePage.data}
+              onSelect={(id) => console.log('Selected:', id)}
+            />
+            <div className="flex-1 min-w-0">
+              <PuckEditor
+                config={config}
+                data={activePage.data}
+                onChange={handlePuckChange}
+              />
+            </div>
+          </>
         )}
       </div>
+
+      <PreviewModal
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        data={activePage?.data ?? { content: [], root: {} }}
+      />
     </div>
   );
 }
