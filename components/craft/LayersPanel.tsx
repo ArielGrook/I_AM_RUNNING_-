@@ -1,12 +1,17 @@
 'use client';
 
 import { useEditor } from '@craftjs/core';
-import { ROOT_NODE } from '@craftjs/utils';
 import React from 'react';
 
+const ROOT_NODE = 'ROOT';
+
 export const LayersPanel = () => {
-  const { query, actions } = useEditor();
+  const editor = useEditor();
   const nodes = useEditor((state) => state.nodes);
+
+  if (!editor?.query || !editor?.actions) return null;
+
+  const { query, actions } = editor;
 
   const getRootId = (): string | null => {
     try {
@@ -16,7 +21,9 @@ export const LayersPanel = () => {
     } catch {
       // ROOT may not exist
     }
-    const root = Object.values(nodes).find((n) => !n.data.parent);
+    const root = Object.values(nodes || {}).find(
+      (n) => n && n.data != null && n.data.parent == null
+    );
     return root?.id ?? null;
   };
 
