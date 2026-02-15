@@ -41,7 +41,7 @@ export function PuckEditor({ data, onChange, onPublish, className }: PuckEditorP
   );
 
   return (
-    <div className={className ?? 'h-full w-full'}>
+    <div className={className ?? 'h-full w-full min-w-0 flex-1 overflow-hidden'}>
       <Puck
         config={puckConfig}
         data={data}

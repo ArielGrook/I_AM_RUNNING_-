@@ -1,12 +1,8 @@
 /**
  * Editor Page
- * 
- * Main editor interface with Grape.js, project management, and component catalog.
- * 
- * Stage 1 Integration:
- * - Project System (store, auto-save, name form)
- * - Editor Structure (Grape.js with custom blocks)
- * - Error Boundary for stability
+ *
+ * Main editor interface with Puck: project management, multi-page, layers, save/load to Supabase.
+ * Left panel: Pages | Layers. Center/right: Puck canvas and built-in fields panel.
  */
 
 'use client';
@@ -128,17 +124,13 @@ export default function EditorPage() {
   }
   
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
-  const [leftPanelTab, setLeftPanelTab] = useState<'components' | 'layers'>('components');
-  
-  // Close sidebars on mobile by default
+  const [leftPanelTab, setLeftPanelTab] = useState<'pages' | 'layers'>('pages');
+
+  // Close left sidebar on mobile by default
   useEffect(() => {
     const isMobile = window.innerWidth < 768;
-    if (isMobile) {
-      setLeftPanelOpen(false);
-      setRightPanelOpen(false);
-    }
-  }, []); // Only run on mount
+    if (isMobile) setLeftPanelOpen(false);
+  }, []);
   
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -1021,18 +1013,15 @@ export default function EditorPage() {
         {/* Main Editor Area */}
         {currentProject ? (
           <div className="flex-1 flex overflow-hidden relative">
-            {/* Mobile Overlay */}
-            {(leftPanelOpen || rightPanelOpen) && (
-              <div 
+            {/* Mobile Overlay for left panel */}
+            {leftPanelOpen && (
+              <div
                 className="fixed inset-0 bg-black/50 z-30 md:hidden"
-                onClick={() => {
-                  setLeftPanelOpen(false);
-                  setRightPanelOpen(false);
-                }}
+                onClick={() => setLeftPanelOpen(false)}
               />
             )}
             
-            {/* Left Panel - Components */}
+            {/* Left Panel - Pages | Layers */}
             <div className={`
               fixed md:relative 
               inset-y-0 left-0 
@@ -1042,18 +1031,17 @@ export default function EditorPage() {
               overflow-hidden
             `}>
               <div className="h-full bg-white dark:bg-[#2d2d2d] border-r border-gray-200 dark:border-[#404040] flex flex-col shadow-lg md:shadow-none editor-left-panel">
-                {/* Tabs: Components | Layers */}
                 <div className="flex border-b border-gray-200 dark:border-[#404040] shrink-0">
                   <button
                     type="button"
-                    onClick={() => setLeftPanelTab('components')}
+                    onClick={() => setLeftPanelTab('pages')}
                     className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                      leftPanelTab === 'components'
+                      leftPanelTab === 'pages'
                         ? 'bg-[#FF6B35] text-white border-b-2 border-[#FF6B35]'
                         : 'text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-100 dark:hover:bg-[#3a3a3a] border-b-2 border-transparent'
                     }`}
                   >
-                    {t('components')}
+                    {t('pages')}
                   </button>
                   <button
                     type="button"
@@ -1074,8 +1062,22 @@ export default function EditorPage() {
                     className="flex-1 min-h-0"
                   />
                 ) : (
-                  <div className="flex-1 overflow-y-auto p-4 text-sm text-gray-600 dark:text-gray-400">
-                    <p>Add blocks from the editor canvas. Use the component list in the center area to drag and drop blocks.</p>
+                  <div className="flex-1 overflow-y-auto p-2">
+                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 px-2 pb-2">{t('pages')}</div>
+                    {puckPages.map((page, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => switchPuckPage(index)}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          activePuckPage === index
+                            ? 'bg-[#FF6B35] text-white'
+                            : 'text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-100 dark:hover:bg-[#3a3a3a]'
+                        }`}
+                      >
+                        {page.name}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1090,11 +1092,11 @@ export default function EditorPage() {
               {leftPanelOpen ? '←' : '→'}
             </button>
             
-            {/* Center - Canvas with Grape.js */}
-            <div className="flex-1 bg-gray-100 dark:bg-[#1a1a1a] overflow-hidden relative flex flex-col transition-colors duration-200">
+            {/* Puck area: full width so Puck can show its own fields panel on the right */}
+            <div className="flex-1 min-w-0 bg-gray-100 dark:bg-[#1a1a1a] overflow-hidden flex flex-col transition-colors duration-200">
               {/* Page Tabs (only show if multiple pages) */}
               {puckPages.length > 1 && (
-                <div className="bg-white dark:bg-[#2d2d2d] border-b border-gray-200 dark:border-[#404040] px-4 py-2 flex items-center gap-2 overflow-x-auto">
+                <div className="bg-white dark:bg-[#2d2d2d] border-b border-gray-200 dark:border-[#404040] px-4 py-2 flex items-center gap-2 overflow-x-auto shrink-0">
                   <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">Pages:</span>
                   {puckPages.map((page, index) => (
                     <button
@@ -1113,39 +1115,12 @@ export default function EditorPage() {
                   ))}
                 </div>
               )}
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
                 <PuckEditor
                   data={puckPages[activePuckPage]?.data ?? {}}
                   onChange={handlePuckChange}
+                  className="h-full w-full min-w-0 min-h-0"
                 />
-              </div>
-            </div>
-            
-            {/* Toggle Right Panel */}
-            <button
-              onClick={() => setRightPanelOpen(!rightPanelOpen)}
-              className="w-6 bg-white dark:bg-[#2d2d2d] border-y border-l border-gray-200 dark:border-[#404040] hover:bg-gray-50 dark:hover:bg-[#3a3a3a] flex items-center justify-center z-10 md:z-auto transition-colors duration-200"
-              aria-label={rightPanelOpen ? 'Hide panel' : 'Show panel'}
-            >
-              {rightPanelOpen ? '→' : '←'}
-            </button>
-            
-            {/* Right Panel - Puck has its own properties in the canvas; this panel is collapsed by default */}
-            <div className={`
-              fixed md:relative 
-              inset-y-0 right-0 
-              z-40 md:z-auto
-              transition-all duration-300
-              ${rightPanelOpen ? 'w-80 translate-x-0' : 'w-80 translate-x-full md:w-0 md:translate-x-0'}
-              overflow-hidden
-            `}>
-              <div className="h-full bg-white dark:bg-[#2d2d2d] border-l border-gray-200 dark:border-[#404040] flex flex-col shadow-lg md:shadow-none">
-                <div className="p-4 border-b">
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-[#e5e5e5]">{t('properties')}</h3>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 text-sm text-gray-500 dark:text-gray-400">
-                  Select a block in the canvas to edit its properties in the editor.
-                </div>
               </div>
             </div>
           </div>
