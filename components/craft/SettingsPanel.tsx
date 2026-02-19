@@ -2,6 +2,7 @@
 
 import { useEditor, useNode, NodeProvider } from '@craftjs/core';
 import React, { useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useEditorTheme } from './EditorThemeContext';
 
 // ── Accordion section ──────────────────────────────────
@@ -62,6 +63,7 @@ type SelectedInfo = {
 // ── Main panel ─────────────────────────────────────────
 export const SettingsPanel = () => {
   const { t } = useEditorTheme();
+  const { actions } = useEditor();
   const { selected } = useEditor((state): { selected: SelectedInfo } => {
     const currentNodeId = state.events.selected.values().next().value as string | undefined;
     if (!currentNodeId) return { selected: null };
@@ -79,10 +81,13 @@ export const SettingsPanel = () => {
   });
 
   return (
-    <div className={`w-72 border-l flex flex-col shrink-0 overflow-hidden ${t(
-      'bg-white border-gray-200',
-      'bg-[#1e1e1e] border-gray-700/60'
-    )}`}>
+    <div
+      className={`w-72 border-l flex flex-col shrink-0 ${t(
+        'bg-white border-gray-200',
+        'bg-[#1e1e1e] border-gray-700/60'
+      )}`}
+      style={{ height: '100%' }}
+    >
       {/* Header */}
       <div className={`flex items-center justify-between px-3 py-2 border-b shrink-0 ${t('border-gray-200', 'border-gray-700/60')}`}>
         <div className="flex items-center gap-2 min-w-0">
@@ -98,8 +103,8 @@ export const SettingsPanel = () => {
         )}
       </div>
 
-      {/* Body — only Settings (no Style tab) */}
-      <div className={`flex-1 overflow-y-auto custom-scrollbar ${t('text-gray-900', 'text-white')}`}>
+      {/* Body — scrollable */}
+      <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar ${t('text-gray-900', 'text-white')}`}>
         {!selected ? (
           <div className="text-sm text-gray-500 p-4">
             Select a component to edit its properties
@@ -114,6 +119,24 @@ export const SettingsPanel = () => {
           </div>
         )}
       </div>
+
+      {/* Delete button — always visible when a non-ROOT node is selected */}
+      {selected?.id && selected.id !== 'ROOT' && (
+        <div className="p-4 border-t border-gray-800 mt-auto shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('Delete this component?')) {
+                actions.delete(selected.id);
+              }
+            }}
+            className="w-full py-2 px-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-red-400 hover:text-red-300 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
+          >
+            <Trash2 size={14} />
+            Delete Component
+          </button>
+        </div>
+      )}
     </div>
   );
 };

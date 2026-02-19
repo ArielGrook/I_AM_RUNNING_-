@@ -2,6 +2,7 @@
 
 import { useNode, useEditor } from '@craftjs/core';
 import React, { useState } from 'react';
+import { Menu } from 'lucide-react';
 
 type LinkItem = { label: string; href: string };
 
@@ -67,7 +68,7 @@ export const Header = ({
       <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>
         {logoDisplay}
       </div>
-      <nav className="hidden md:flex" style={{ display: 'flex', gap: 32 }}>
+      <nav className="hidden md:flex gap-8">
         {(links ?? []).map((link, i) => (
           <a
             key={i}
@@ -85,21 +86,30 @@ export const Header = ({
           </a>
         ))}
       </nav>
-      <button
-        type="button"
-        style={{
-          background: '#FF6B35',
-          color: '#fff',
-          padding: '8px 20px',
-          borderRadius: 8,
-          fontSize: 14,
-          fontWeight: 600,
-          border: 'none',
-          cursor: 'pointer',
-        }}
-      >
-        Get Started
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button
+          type="button"
+          className="flex md:hidden p-2 text-white"
+          aria-label="Menu"
+        >
+          <Menu size={20} />
+        </button>
+        <button
+          type="button"
+          style={{
+            background: '#FF6B35',
+            color: '#fff',
+            padding: '8px 20px',
+            borderRadius: 8,
+            fontSize: 14,
+            fontWeight: 600,
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          Get Started
+        </button>
+      </div>
     </header>
   );
 };

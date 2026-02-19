@@ -2,7 +2,7 @@
 
 import { Element, useEditor } from '@craftjs/core';
 import React, { useState, useCallback } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, ChevronDown } from 'lucide-react';
 import {
   Container,
   Text,
@@ -31,34 +31,37 @@ const tabs: { id: TabId; label: string }[] = [
   { id: 'presets', label: '⚡ Presets' },
 ];
 
-const categories = [
+const categories: { key: 'basic' | 'sections' | 'navigation'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
   {
+    key: 'basic',
     title: 'Basic',
     items: [
-      { name: 'Container', label: 'Container', icon: '▦', component: Container, canvas: true, previewBg: '#1e293b' },
-      { name: 'Text',      label: 'Text',      icon: 'T',  component: Text,      canvas: false, previewBg: '#ffffff' },
-      { name: 'Button',    label: 'Button',   icon: '▣', component: Button,    canvas: false, previewBg: '#FF6B35' },
-      { name: 'Image',     label: 'Image',    icon: '🖼', component: Image,     canvas: false, previewBg: '#374151' },
-      { name: 'Divider',   label: 'Divider',  icon: '—',  component: Divider,   canvas: false, previewBg: '#1e293b' },
-      { name: 'Video',     label: 'Video',    icon: '▶️', component: Video,     canvas: false, previewBg: '#374151' },
+      { name: 'Container', label: 'Container', icon: '▦', component: Container, canvas: true },
+      { name: 'Text', label: 'Text', icon: 'T', component: Text, canvas: false },
+      { name: 'Button', label: 'Button', icon: '▣', component: Button, canvas: false },
+      { name: 'Image', label: 'Image', icon: '🖼', component: Image, canvas: false },
+      { name: 'Divider', label: 'Divider', icon: '—', component: Divider, canvas: false },
+      { name: 'Video', label: 'Video', icon: '▶️', component: Video, canvas: false },
     ],
   },
   {
+    key: 'sections',
     title: 'Sections',
     items: [
-      { name: 'Hero',         label: 'Hero',         icon: '◉', component: Hero,         canvas: true, previewBg: '#0f172a' },
-      { name: 'CTA',          label: 'CTA',          icon: '▶', component: CTA,          canvas: true, previewBg: '#FF6B35' },
-      { name: 'Features',     label: 'Features',     icon: '✦', component: Features,     canvas: true, previewBg: '#0f172a' },
-      { name: 'Testimonials', label: 'Testimonials', icon: '💬', component: Testimonials, canvas: true, previewBg: '#0a0f1e' },
-      { name: 'Pricing',      label: 'Pricing',      icon: '💰', component: Pricing,      canvas: true, previewBg: '#0f172a' },
-      { name: 'FAQ',          label: 'FAQ',          icon: '❓', component: FAQ,          canvas: true, previewBg: '#0a0f1e' },
+      { name: 'Hero', label: 'Hero', icon: '◉', component: Hero, canvas: true },
+      { name: 'CTA', label: 'CTA', icon: '▶', component: CTA, canvas: true },
+      { name: 'Features', label: 'Features', icon: '✦', component: Features, canvas: true },
+      { name: 'Testimonials', label: 'Testimonials', icon: '💬', component: Testimonials, canvas: true },
+      { name: 'Pricing', label: 'Pricing', icon: '💰', component: Pricing, canvas: true },
+      { name: 'FAQ', label: 'FAQ', icon: '❓', component: FAQ, canvas: true },
     ],
   },
   {
+    key: 'navigation',
     title: 'Navigation',
     items: [
-      { name: 'Header', label: 'Header', icon: '☰', component: Header, canvas: true, previewBg: '#0a0f1e' },
-      { name: 'Footer', label: 'Footer', icon: '▬', component: Footer, canvas: true, previewBg: '#020617' },
+      { name: 'Header', label: 'Header', icon: '☰', component: Header, canvas: true },
+      { name: 'Footer', label: 'Footer', icon: '▬', component: Footer, canvas: true },
     ],
   },
 ];
@@ -68,6 +71,9 @@ export const Toolbox = () => {
   const { t } = useEditorTheme();
   const [activeTab, setActiveTab] = useState<TabId>('components');
   const [importing, setImporting] = useState(false);
+  const [openGroups, setOpenGroups] = useState({ basic: true, sections: true, navigation: true });
+  const toggleGroup = (key: 'basic' | 'sections' | 'navigation') =>
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleZipImport = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,48 +167,53 @@ export const Toolbox = () => {
       </div>
       <div className="p-3 flex-1 min-h-0 overflow-y-auto">
         {activeTab === 'components' && (
-          <div className="space-y-5">
+          <div className="space-y-0">
             {categories.map((cat) => (
-              <div key={cat.title}>
-                <div className={`text-[10px] font-semibold uppercase tracking-widest mb-2 px-1 ${t('text-gray-400', 'text-gray-500')}`}>
-                  {cat.title}
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {cat.items.map((item) => (
-                    <div
-                      key={item.name}
-                      ref={(ref) => {
-                        if (ref) {
-                          connectors.create(
-                            ref,
-                            React.createElement(Element, {
-                              is: item.component,
-                              canvas: item.canvas,
-                            })
-                          );
-                        }
-                      }}
-                      className={`group relative cursor-grab active:cursor-grabbing rounded-lg border border-gray-700
-                        hover:border-orange-500 overflow-hidden transition-all select-none ${t(
-                          'bg-gray-50 border-gray-200',
-                          'bg-gray-800/60 border-gray-700/40'
-                        )}`}
-                    >
+              <div key={cat.key}>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(cat.key)}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider ${t(
+                    'text-gray-500 hover:text-gray-700',
+                    'text-gray-500 hover:text-gray-300'
+                  )}`}
+                >
+                  <span>{cat.title}</span>
+                  <ChevronDown
+                    size={10}
+                    className={openGroups[cat.key] ? 'rotate-180' : ''}
+                    style={{ transition: 'transform 0.15s' }}
+                  />
+                </button>
+                {openGroups[cat.key] && (
+                  <div className="pb-2 space-y-0.5">
+                    {cat.items.map((item) => (
                       <div
-                        style={{ background: item.previewBg ?? '#1e293b', height: 48 }}
-                        className="w-full flex items-center justify-center"
+                        key={item.name}
+                        ref={(ref) => {
+                          if (ref) {
+                            connectors.create(
+                              ref,
+                              React.createElement(Element, {
+                                is: item.component,
+                                canvas: item.canvas,
+                              })
+                            );
+                          }
+                        }}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab active:cursor-grabbing transition-colors group select-none ${t(
+                          'hover:bg-gray-100',
+                          'hover:bg-gray-800'
+                        )}`}
                       >
-                        <span style={{ fontSize: 20 }}>{item.icon}</span>
+                        <span className="text-lg w-6 text-center shrink-0">{item.icon}</span>
+                        <span className={`text-sm ${t('text-gray-600 group-hover:text-gray-900', 'text-gray-300 group-hover:text-white')}`}>
+                          {item.label}
+                        </span>
                       </div>
-                      <div className={`px-2 py-1.5 text-xs font-medium transition-colors ${t(
-                        'text-gray-600 group-hover:text-gray-900',
-                        'text-gray-300 group-hover:text-white'
-                      )}`}>
-                        {item.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

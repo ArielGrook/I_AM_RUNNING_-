@@ -363,8 +363,12 @@ export default function EditorPage() {
           {/* Left panel (Toolbox + Layers) with toggle */}
           {!previewMode && (
             <div
-              className="flex transition-all duration-200 shrink-0 border-r border-gray-700/60 overflow-hidden"
-              style={{ width: leftPanelOpen ? '30rem' : 0, minWidth: leftPanelOpen ? undefined : 0 }}
+              className="flex transition-all duration-200 shrink-0 overflow-hidden"
+              style={{
+                width: leftPanelOpen ? '30rem' : 0,
+                minWidth: leftPanelOpen ? undefined : 0,
+                borderRight: '1px solid rgba(255,255,255,0.08)',
+              }}
             >
               <div className="flex min-w-0 flex-1">
                 <Toolbox />
@@ -373,7 +377,21 @@ export default function EditorPage() {
               <button
                 type="button"
                 onClick={() => setLeftPanelOpen(!leftPanelOpen)}
-                className="flex items-center justify-center w-7 h-12 shrink-0 bg-[#1a1a1a] border-l border-gray-700/60 text-gray-400 hover:text-[#FF6B35] hover:bg-gray-800/80 transition-colors"
+                className="flex items-center justify-center w-7 h-12 shrink-0 transition-colors"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderLeft: '1px solid rgba(255,255,255,0.1)',
+                  color: '#94a3b8',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  e.currentTarget.style.color = '#FF6B35';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#94a3b8';
+                }}
                 title={leftPanelOpen ? 'Close left panel' : 'Open left panel'}
               >
                 {leftPanelOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
@@ -384,7 +402,21 @@ export default function EditorPage() {
             <button
               type="button"
               onClick={() => setLeftPanelOpen(true)}
-              className="fixed left-0 top-1/2 -translate-y-1/2 z-50 w-8 h-12 flex items-center justify-center bg-[#1a1a1a] border border-r-0 border-gray-700/60 rounded-r text-gray-400 hover:text-[#FF6B35] shadow-lg transition-colors"
+              className="fixed left-0 top-1/2 -translate-y-1/2 z-50 w-8 h-12 flex items-center justify-center rounded-r shadow-lg transition-colors"
+              style={{
+                background: '#1e293b',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderLeft: 'none',
+                color: '#94a3b8',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                e.currentTarget.style.color = '#FF6B35';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#1e293b';
+                e.currentTarget.style.color = '#94a3b8';
+              }}
               title="Open left panel"
             >
               <PanelLeftOpen size={16} />
@@ -412,13 +444,31 @@ export default function EditorPage() {
           {/* Right panel (Settings) with toggle */}
           {!previewMode && (
             <div
-              className="flex transition-all duration-200 shrink-0 border-l border-gray-700/60 overflow-hidden"
-              style={{ width: rightPanelOpen ? '19rem' : 0, minWidth: rightPanelOpen ? undefined : 0 }}
+              className="flex transition-all duration-200 shrink-0 overflow-hidden"
+              style={{
+                width: rightPanelOpen ? '19rem' : 0,
+                minWidth: rightPanelOpen ? undefined : 0,
+                borderLeft: '1px solid rgba(255,255,255,0.08)',
+              }}
             >
               <button
                 type="button"
                 onClick={() => setRightPanelOpen(!rightPanelOpen)}
-                className="flex items-center justify-center w-7 h-12 shrink-0 bg-[#1a1a1a] border-r border-gray-700/60 text-gray-400 hover:text-[#FF6B35] hover:bg-gray-800/80 transition-colors"
+                className="flex items-center justify-center w-7 h-12 shrink-0 transition-colors"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderLeft: 'none',
+                  color: '#94a3b8',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  e.currentTarget.style.color = '#FF6B35';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = '#94a3b8';
+                }}
                 title={rightPanelOpen ? 'Close right panel' : 'Open right panel'}
               >
                 {rightPanelOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
@@ -432,7 +482,21 @@ export default function EditorPage() {
             <button
               type="button"
               onClick={() => setRightPanelOpen(true)}
-              className="fixed right-0 top-1/2 -translate-y-1/2 z-50 w-8 h-12 flex items-center justify-center bg-[#1a1a1a] border border-l-0 border-gray-700/60 rounded-l text-gray-400 hover:text-[#FF6B35] shadow-lg transition-colors"
+              className="fixed right-0 top-1/2 -translate-y-1/2 z-50 w-8 h-12 flex items-center justify-center rounded-l shadow-lg transition-colors"
+              style={{
+                background: '#1e293b',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRight: 'none',
+                color: '#94a3b8',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                e.currentTarget.style.color = '#FF6B35';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#1e293b';
+                e.currentTarget.style.color = '#94a3b8';
+              }}
               title="Open right panel"
             >
               <PanelRightOpen size={16} />

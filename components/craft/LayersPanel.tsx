@@ -2,6 +2,7 @@
 
 import { useEditor } from '@craftjs/core';
 import React, { useState, useCallback } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useEditorTheme } from './EditorThemeContext';
 
 const ROOT_NODE = 'ROOT';
@@ -29,6 +30,7 @@ export const LayersPanel = () => {
   const { t } = useEditorTheme();
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [layersOpen, setLayersOpen] = useState(false);
 
   if (!editor?.query || !editor?.actions) return null;
   const { query, actions } = editor;
@@ -170,15 +172,26 @@ export const LayersPanel = () => {
       'bg-white border-gray-200',
       'bg-[#1e1e1e] border-gray-700/60'
     )}`}>
-      <div className={`px-3 py-2.5 border-b shrink-0 flex items-center gap-2 ${t('border-gray-200', 'border-gray-700/60')}`}>
-        <span className={`text-xs font-semibold tracking-wide ${t('text-gray-900', 'text-white')}`}>Layers</span>
-        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${t('bg-gray-100 text-gray-500', 'bg-gray-700 text-gray-400')}`}>
-          {(() => { try { const s = query.getState(); return Object.keys(s.nodes ?? {}).length; } catch { return 0; } })()}
-        </span>
-      </div>
-      <div className="flex-1 overflow-y-auto custom-scrollbar py-1 px-1 relative">
-        {renderNode(rootId, 0)}
-      </div>
+      <button
+        type="button"
+        onClick={() => setLayersOpen(!layersOpen)}
+        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider border-t ${t(
+          'text-gray-500 hover:text-gray-700 border-gray-200',
+          'text-gray-400 hover:text-white border-gray-800'
+        )}`}
+      >
+        <span>Layers</span>
+        <ChevronDown
+          size={12}
+          className={layersOpen ? 'rotate-180' : ''}
+          style={{ transition: 'transform 0.2s' }}
+        />
+      </button>
+      {layersOpen && (
+        <div className="max-h-48 overflow-y-auto custom-scrollbar py-1 px-1 relative">
+          {renderNode(rootId, 0)}
+        </div>
+      )}
     </div>
   );
 };
