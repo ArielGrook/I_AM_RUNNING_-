@@ -7,7 +7,7 @@ import { Button } from './Button';
 import { Container } from './Container';
 
 export const CTA = ({
-  bgColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  bgColor = 'linear-gradient(135deg, var(--palette-primary, #667eea) 0%, var(--palette-secondary, #764ba2) 100%)',
 }: {
   bgColor?: string;
 }) => {
@@ -17,7 +17,7 @@ export const CTA = ({
 
   return (
     <section
-      ref={(ref) => ref && connect(drag(ref))}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
       style={{
         background: bgColor,
         padding: '80px 40px',
@@ -61,7 +61,7 @@ const CTASettings = () => (
 CTA.craft = {
   displayName: 'CTA',
   props: {
-    bgColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    bgColor: 'linear-gradient(135deg, var(--palette-primary, #667eea) 0%, var(--palette-secondary, #764ba2) 100%)',
   },
   related: {
     settings: CTASettings,

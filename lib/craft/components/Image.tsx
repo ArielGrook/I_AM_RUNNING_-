@@ -20,7 +20,7 @@ export const Image = ({
 
   return (
     <div
-      ref={(ref) => ref && connect(drag(ref))}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
       style={{ display: 'block', width: width === '100%' ? '100%' : width }}
     >
       <img

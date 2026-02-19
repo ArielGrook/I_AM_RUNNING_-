@@ -32,6 +32,7 @@ import { SettingsPanel } from '@/components/craft/SettingsPanel';
 import { Viewport } from '@/components/craft/Viewport';
 import { Toolbar } from '@/components/craft/Toolbar';
 import { PreviewModal } from '@/components/craft/PreviewModal';
+import { RenderNode } from '@/components/craft/RenderNode';
 
 type PageState = {
   id: string;
@@ -181,11 +182,10 @@ export default function EditorPage() {
     setActivePageId(newId);
   };
 
-  const getInitialData = useCallback((): Record<string, unknown> | undefined => {
+  const getInitialData = useCallback((): string | undefined => {
     if (!activePage?.data) return undefined;
     try {
-      const decompressed = lz.decompress(activePage.data, { inputEncoding: 'Base64' });
-      return JSON.parse(decompressed) as Record<string, unknown>;
+      return lz.decompress(activePage.data, { inputEncoding: 'Base64' }) as string;
     } catch {
       return undefined;
     }
@@ -215,6 +215,7 @@ export default function EditorPage() {
           Features,
           Footer,
         }}
+        onRender={RenderNode}
       >
         <Toolbar
           onSave={handleSaveFromEditor}

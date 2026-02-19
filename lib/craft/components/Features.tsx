@@ -12,10 +12,10 @@ export const Features = () => {
 
   return (
     <section
-      ref={(ref) => ref && connect(drag(ref))}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
       style={{
         padding: '80px 40px',
-        background: '#f9fafb',
+        background: 'var(--palette-bg, #f9fafb)',
       }}
     >
       <Element

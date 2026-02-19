@@ -5,8 +5,8 @@ import React from 'react';
 
 export const Button = ({
   text = 'Click me',
-  bgColor = '#FF6B35',
-  textColor = '#ffffff',
+  bgColor = 'var(--palette-primary, #FF6B35)',
+  textColor = 'var(--palette-bg, #ffffff)',
   padding = '12px 32px',
   borderRadius = 8,
 }: {
@@ -22,7 +22,7 @@ export const Button = ({
 
   return (
     <button
-      ref={(ref) => ref && connect(drag(ref))}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
       type="button"
       style={{
         background: bgColor,
@@ -77,7 +77,7 @@ const ButtonSettings = () => {
           onChange={(e) =>
             setProp((props: Record<string, unknown>) => {
               props.bgColor = e.target.value;
-            })
+            }, 300)
           }
           className="w-full h-10 rounded bg-gray-700 border border-gray-600"
         />
@@ -90,7 +90,7 @@ const ButtonSettings = () => {
           onChange={(e) =>
             setProp((props: Record<string, unknown>) => {
               props.textColor = e.target.value;
-            })
+            }, 300)
           }
           className="w-full h-10 rounded bg-gray-700 border border-gray-600"
         />
@@ -107,7 +107,7 @@ const ButtonSettings = () => {
           onChange={(e) =>
             setProp((props: Record<string, unknown>) => {
               props.borderRadius = Number(e.target.value);
-            })
+            }, 500)
           }
           className="w-full"
         />
@@ -120,8 +120,8 @@ Button.craft = {
   displayName: 'Button',
   props: {
     text: 'Click me',
-    bgColor: '#FF6B35',
-    textColor: '#ffffff',
+    bgColor: 'var(--palette-primary, #FF6B35)',
+    textColor: 'var(--palette-bg, #ffffff)',
     padding: '12px 32px',
     borderRadius: 8,
   },

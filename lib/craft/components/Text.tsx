@@ -2,13 +2,13 @@
 
 import { useNode } from '@craftjs/core';
 import ContentEditable from 'react-contenteditable';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const Text = ({
   text = 'Click to edit',
   fontSize = 16,
   textAlign = 'left',
-  color = '#000000',
+  color = 'var(--palette-text, #000000)',
 }: {
   text?: string;
   fontSize?: number;
@@ -18,11 +18,24 @@ export const Text = ({
   const {
     connectors: { connect, drag },
     actions: { setProp },
-  } = useNode();
+    selected,
+  } = useNode((node) => ({
+    selected: node.events.selected,
+  }));
+
+  const [editable, setEditable] = useState(false);
+
+  useEffect(() => {
+    if (!selected) setEditable(false);
+  }, [selected]);
 
   return (
-    <div ref={(ref) => ref && connect(drag(ref))}>
+    <div
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      onClick={() => selected && setEditable(true)}
+    >
       <ContentEditable
+        disabled={!editable}
         html={text ?? 'Click to edit'}
         onChange={(e) =>
           setProp((props: Record<string, unknown>) => {
@@ -30,7 +43,7 @@ export const Text = ({
               /<\/?[^>]+(>|$)/g,
               ''
             );
-          })
+          }, 500)
         }
         tagName="p"
         style={{
@@ -38,6 +51,8 @@ export const Text = ({
           textAlign: (textAlign as React.CSSProperties['textAlign']) ?? 'left',
           color: color ?? '#000000',
           outline: 'none',
+          cursor: editable ? 'text' : 'move',
+          userSelect: editable ? 'text' : 'none',
         }}
       />
     </div>
@@ -68,7 +83,7 @@ const TextSettings = () => {
           onChange={(e) =>
             setProp((props: Record<string, unknown>) => {
               props.fontSize = Number(e.target.value);
-            })
+            }, 500)
           }
           className="w-full"
         />
@@ -97,7 +112,7 @@ const TextSettings = () => {
           onChange={(e) =>
             setProp((props: Record<string, unknown>) => {
               props.color = e.target.value;
-            })
+            }, 300)
           }
           className="w-full h-10 rounded bg-gray-700 border border-gray-600"
         />
@@ -112,7 +127,7 @@ Text.craft = {
     text: 'Click to edit',
     fontSize: 16,
     textAlign: 'left',
-    color: '#000000',
+    color: 'var(--palette-text, #000000)',
   },
   related: {
     settings: TextSettings,

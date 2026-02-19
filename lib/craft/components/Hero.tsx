@@ -6,7 +6,7 @@ import { Container } from './Container';
 import { Text } from './Text';
 
 export const Hero = ({
-  background = 'linear-gradient(135deg, #FF6B35 0%, #ff8555 100%)',
+  background = 'linear-gradient(135deg, var(--palette-primary, #FF6B35) 0%, var(--palette-accent, #ff8555) 100%)',
   minHeight = 400,
 }: {
   background?: string;
@@ -18,7 +18,7 @@ export const Hero = ({
 
   return (
     <div
-      ref={(ref) => ref && connect(drag(ref))}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
       style={{
         background,
         minHeight: `${minHeight}px`,
@@ -93,7 +93,7 @@ const HeroSettings = () => {
 Hero.craft = {
   displayName: 'Hero',
   props: {
-    background: 'linear-gradient(135deg, #FF6B35 0%, #ff8555 100%)',
+    background: 'linear-gradient(135deg, var(--palette-primary, #FF6B35) 0%, var(--palette-accent, #ff8555) 100%)',
     minHeight: 400,
   },
   related: {

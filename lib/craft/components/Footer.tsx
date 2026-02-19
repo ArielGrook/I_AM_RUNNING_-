@@ -4,14 +4,14 @@ import { useNode, Element } from '@craftjs/core';
 import React from 'react';
 import { Text } from './Text';
 
-export const Footer = ({ bgColor = '#1a1a1a' }: { bgColor?: string }) => {
+export const Footer = ({ bgColor = 'var(--palette-secondary, #1a1a1a)' }: { bgColor?: string }) => {
   const {
     connectors: { connect, drag },
   } = useNode();
 
   return (
     <footer
-      ref={(ref) => ref && connect(drag(ref))}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
       style={{
         background: bgColor,
         padding: '40px',
@@ -59,7 +59,7 @@ const FooterSettings = () => {
 Footer.craft = {
   displayName: 'Footer',
   props: {
-    bgColor: '#1a1a1a',
+    bgColor: 'var(--palette-secondary, #1a1a1a)',
   },
   related: {
     settings: FooterSettings,

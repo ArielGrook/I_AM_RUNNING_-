@@ -211,6 +211,238 @@ html::-webkit-scrollbar {
   }
 }
 
+/* ═══════════════════════════════════════════════════════
+   THEME SYSTEM — 16 Palettes via CSS Variables
+   Usage: apply [data-palette="sunset"] to canvas root
+   Variables: --palette-primary, --palette-secondary,
+              --palette-accent, --palette-bg, --palette-text
+   ═══════════════════════════════════════════════════════ */
+
+/* Default (no palette) */
+:root {
+  --palette-primary: #FF6B35;
+  --palette-secondary: #1a1a1a;
+  --palette-accent: #FF6B35;
+  --palette-bg: #ffffff;
+  --palette-text: #1a1a1a;
+}
+
+/* ── SOLID PALETTES ── */
+[data-palette="pure-black"] {
+  --palette-primary: #000000;
+  --palette-secondary: #111111;
+  --palette-accent: #ffffff;
+  --palette-bg: #000000;
+  --palette-text: #ffffff;
+}
+[data-palette="pure-white"] {
+  --palette-primary: #ffffff;
+  --palette-secondary: #f5f5f5;
+  --palette-accent: #333333;
+  --palette-bg: #ffffff;
+  --palette-text: #1a1a1a;
+}
+[data-palette="black-red"] {
+  --palette-primary: #1a1a1a;
+  --palette-secondary: #2d2d2d;
+  --palette-accent: #e53e3e;
+  --palette-bg: #1a1a1a;
+  --palette-text: #f5f5f5;
+}
+[data-palette="deep-blue"] {
+  --palette-primary: #1e3a8a;
+  --palette-secondary: #1e40af;
+  --palette-accent: #60a5fa;
+  --palette-bg: #0f172a;
+  --palette-text: #e2e8f0;
+}
+[data-palette="light-blue"] {
+  --palette-primary: #3b82f6;
+  --palette-secondary: #bfdbfe;
+  --palette-accent: #1d4ed8;
+  --palette-bg: #eff6ff;
+  --palette-text: #1e3a8a;
+}
+[data-palette="fresh-green"] {
+  --palette-primary: #16a34a;
+  --palette-secondary: #bbf7d0;
+  --palette-accent: #15803d;
+  --palette-bg: #f0fdf4;
+  --palette-text: #14532d;
+}
+[data-palette="pink-orange"] {
+  --palette-primary: #ec4899;
+  --palette-secondary: #fb923c;
+  --palette-accent: #f97316;
+  --palette-bg: #fff1f2;
+  --palette-text: #881337;
+}
+[data-palette="royal-purple"] {
+  --palette-primary: #7c3aed;
+  --palette-secondary: #a78bfa;
+  --palette-accent: #c4b5fd;
+  --palette-bg: #1e1b4b;
+  --palette-text: #ede9fe;
+}
+
+/* ── GRADIENT PALETTES ── */
+[data-palette="sunset"] {
+  --palette-primary: #f97316;
+  --palette-secondary: #ef4444;
+  --palette-accent: #fbbf24;
+  --palette-bg: #fff7ed;
+  --palette-text: #7c2d12;
+}
+[data-palette="ocean"] {
+  --palette-primary: #0ea5e9;
+  --palette-secondary: #6366f1;
+  --palette-accent: #38bdf8;
+  --palette-bg: #0c4a6e;
+  --palette-text: #e0f2fe;
+}
+[data-palette="forest"] {
+  --palette-primary: #22c55e;
+  --palette-secondary: #15803d;
+  --palette-accent: #86efac;
+  --palette-bg: #052e16;
+  --palette-text: #dcfce7;
+}
+[data-palette="night"] {
+  --palette-primary: #6366f1;
+  --palette-secondary: #4f46e5;
+  --palette-accent: #818cf8;
+  --palette-bg: #0f0f1a;
+  --palette-text: #e0e7ff;
+}
+[data-palette="steel"] {
+  --palette-primary: #64748b;
+  --palette-secondary: #475569;
+  --palette-accent: #94a3b8;
+  --palette-bg: #1e293b;
+  --palette-text: #f1f5f9;
+}
+[data-palette="arctic"] {
+  --palette-primary: #7dd3fc;
+  --palette-secondary: #bae6fd;
+  --palette-accent: #0ea5e9;
+  --palette-bg: #f0f9ff;
+  --palette-text: #0c4a6e;
+}
+[data-palette="fire"] {
+  --palette-primary: #ef4444;
+  --palette-secondary: #f97316;
+  --palette-accent: #fbbf24;
+  --palette-bg: #450a0a;
+  --palette-text: #fef2f2;
+}
+[data-palette="lavender"] {
+  --palette-primary: #a855f7;
+  --palette-secondary: #ec4899;
+  --palette-accent: #d946ef;
+  --palette-bg: #faf5ff;
+  --palette-text: #581c87;
+}
+
+/* ═══════════════════════════════════════════════════════
+   STYLE SYSTEM — 12 Styles via data-style attribute
+   Usage: apply [data-style="glassmorphism"] to canvas root
+   ═══════════════════════════════════════════════════════ */
+
+[data-style="clear"] {
+  --style-radius: 4px;
+  --style-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --style-font: 'Inter', system-ui, sans-serif;
+  --style-spacing: 1.6;
+}
+[data-style="dark"] {
+  --style-radius: 8px;
+  --style-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  --style-font: 'Inter', system-ui, sans-serif;
+  --style-spacing: 1.5;
+}
+[data-style="neon-futuristic"] {
+  --style-radius: 2px;
+  --style-shadow: 0 0 20px var(--palette-accent);
+  --style-font: 'Space Grotesk', monospace;
+  --style-spacing: 1.4;
+}
+[data-style="minimal"] {
+  --style-radius: 0px;
+  --style-shadow: none;
+  --style-font: 'Inter', system-ui, sans-serif;
+  --style-spacing: 1.8;
+}
+[data-style="elegant"] {
+  --style-radius: 2px;
+  --style-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  --style-font: 'Playfair Display', Georgia, serif;
+  --style-spacing: 1.7;
+}
+[data-style="bold"] {
+  --style-radius: 6px;
+  --style-shadow: 4px 4px 0px var(--palette-secondary);
+  --style-font: 'Inter', system-ui, sans-serif;
+  --style-spacing: 1.4;
+}
+[data-style="soft"] {
+  --style-radius: 24px;
+  --style-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  --style-font: 'Inter', system-ui, sans-serif;
+  --style-spacing: 1.7;
+}
+[data-style="corporate"] {
+  --style-radius: 4px;
+  --style-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  --style-font: 'Inter', system-ui, sans-serif;
+  --style-spacing: 1.5;
+}
+[data-style="creative"] {
+  --style-radius: 16px;
+  --style-shadow: 6px 6px 0px var(--palette-accent);
+  --style-font: 'Space Grotesk', system-ui, sans-serif;
+  --style-spacing: 1.6;
+}
+[data-style="playful"] {
+  --style-radius: 32px;
+  --style-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  --style-font: 'Inter', system-ui, sans-serif;
+  --style-spacing: 1.8;
+}
+[data-style="brutalist"] {
+  --style-radius: 0px;
+  --style-shadow: 4px 4px 0px #000000;
+  --style-font: 'Space Grotesk', monospace;
+  --style-spacing: 1.3;
+}
+[data-style="glassmorphism"] {
+  --style-radius: 16px;
+  --style-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  --style-font: 'Inter', system-ui, sans-serif;
+  --style-spacing: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════
+   CRAFT.JS EDITOR — Hover & Select Indicators
+   ═══════════════════════════════════════════════════════ */
+
+.craft-node-hovered {
+  outline: 1px dashed rgba(255, 107, 53, 0.6) !important;
+  outline-offset: 1px;
+}
+
+.craft-node-selected {
+  outline: 2px solid #FF6B35 !important;
+  outline-offset: 1px;
+}
+
+/* Glassmorphism card helper */
+[data-style="glassmorphism"] .glass-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 /* Custom styles for the application */
 .gjs-editor {
   font-family: system-ui, -apple-system, sans-serif;

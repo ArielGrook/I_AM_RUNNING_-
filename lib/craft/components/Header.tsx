@@ -6,7 +6,7 @@ import { Text } from './Text';
 import { Button } from './Button';
 
 export const Header = ({
-  bgColor = '#1a1a1a',
+  bgColor = 'var(--palette-secondary, #1a1a1a)',
   sticky = true,
 }: {
   bgColor?: string;
@@ -18,7 +18,7 @@ export const Header = ({
 
   return (
     <header
-      ref={(ref) => ref && connect(drag(ref))}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
       style={{
         background: bgColor,
         padding: '20px 40px',
@@ -81,7 +81,7 @@ const HeaderSettings = () => {
 Header.craft = {
   displayName: 'Header',
   props: {
-    bgColor: '#1a1a1a',
+    bgColor: 'var(--palette-secondary, #1a1a1a)',
     sticky: true,
   },
   related: {
