@@ -101,12 +101,12 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
           >
             <div
               ref={(ref) => { if (ref) connectors.select(ref, ''); }}
-              className={`min-h-screen bg-white transition-shadow duration-150 ${
+              className={`min-h-screen bg-white transition-all duration-200 ${
                 isDragging
-                  ? 'ring-2 ring-[#FF6B35]/50 shadow-[0_0_40px_rgba(255,107,53,0.15)]'
-                  : t('shadow-[0_0_40px_rgba(0,0,0,0.12)]', 'shadow-[0_0_60px_rgba(0,0,0,0.4)]')
+                  ? 'ring-2 ring-[#FF6B35]/60 ring-offset-2 ring-offset-transparent shadow-[0_0_50px_rgba(255,107,53,0.2)]'
+                  : t('shadow-[0_0_40px_rgba(0,0,0,0.1)]', 'shadow-[0_0_60px_rgba(0,0,0,0.4)]')
               }`}
-              style={{ borderRadius: device !== 'desktop' ? 8 : 0 }}
+              style={{ borderRadius: device !== 'desktop' ? 12 : 0 }}
             >
               {children}
             </div>

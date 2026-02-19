@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 export type EditorTheme = 'light' | 'dark';
 
@@ -19,8 +19,18 @@ const Ctx = createContext<EditorThemeContextType>({
 
 export const useEditorTheme = () => useContext(Ctx);
 
+function getSystemTheme(): EditorTheme {
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 export const EditorThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = useState<EditorTheme>('light');
+
+  // Respect system preference on mount
+  useEffect(() => {
+    setTheme(getSystemTheme());
+  }, []);
 
   const toggle = useCallback(() => setTheme((t) => (t === 'light' ? 'dark' : 'light')), []);
 

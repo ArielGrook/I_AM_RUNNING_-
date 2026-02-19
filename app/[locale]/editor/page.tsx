@@ -61,6 +61,8 @@ export default function EditorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHTML, setPreviewHTML] = useState('');
+  const [outlines, setOutlines] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
 
   const activePage = pages.find((p) => p.id === activePageId);
 
@@ -230,34 +232,40 @@ export default function EditorPage() {
           locale={locale}
           router={router}
           isSaving={isSaving}
+          outlines={outlines}
+          onToggleOutlines={() => setOutlines((o) => !o)}
+          previewMode={previewMode}
+          onTogglePreview={() => setPreviewMode((p) => !p)}
         />
-        <div className="flex-1 flex min-h-0">
-          <Toolbox />
-          <LayersPanel />
+        <div className={`flex-1 flex min-h-0 ${outlines ? 'craft-outlines-mode' : ''} ${previewMode ? 'craft-preview-mode' : ''}`}>
+          {!previewMode && <Toolbox />}
+          {!previewMode && <LayersPanel />}
           <Viewport>
             <Frame key={activePageId} data={initialData}>
               {!initialData && (
                 <Element
                   is={Container}
                   canvas
-                  background="#f5f5f5"
+                  background="#ffffff"
                   padding={40}
                 >
                   <Element
                     is={Text}
                     text="Добро пожаловать в редактор!"
                     fontSize={32}
+                    fontWeight="700"
                   />
                   <Element
                     is={Text}
                     text="Перетащите компоненты слева или редактируйте этот текст"
                     fontSize={16}
+                    color="#6b7280"
                   />
                 </Element>
               )}
             </Frame>
           </Viewport>
-          <SettingsPanel />
+          {!previewMode && <SettingsPanel />}
         </div>
         <KeyboardShortcuts onSave={() => {
           try {

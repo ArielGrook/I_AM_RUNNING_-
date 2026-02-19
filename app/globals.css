@@ -426,13 +426,72 @@ html::-webkit-scrollbar {
    ═══════════════════════════════════════════════════════ */
 
 .craft-node-hovered {
-  outline: 1px dashed rgba(255, 107, 53, 0.6) !important;
-  outline-offset: 1px;
+  outline: 1px dashed rgba(255, 107, 53, 0.5) !important;
+  outline-offset: 0px;
 }
 
 .craft-node-selected {
   outline: 2px solid #FF6B35 !important;
-  outline-offset: 1px;
+  outline-offset: 0px;
+}
+
+/* ── Drop indicator line ── */
+.craft-drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #FF6B35;
+  border-radius: 2px;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(255, 107, 53, 0.6);
+  animation: craft-drop-pulse 1s ease-in-out infinite;
+}
+
+@keyframes craft-drop-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Outlines mode — show all element borders ── */
+.craft-outlines-mode [class*="craft-"] > *,
+.craft-outlines-mode .craftjs-renderer > * {
+  outline: 1px dashed rgba(148, 163, 184, 0.4) !important;
+  outline-offset: -1px;
+}
+
+.craft-outlines-mode div[draggable] {
+  outline: 1px dashed rgba(148, 163, 184, 0.35) !important;
+}
+
+/* ── Preview mode — hide all editor chrome ── */
+.craft-preview-mode .craft-node-hovered,
+.craft-preview-mode .craft-node-selected {
+  outline: none !important;
+}
+
+/* ── Drag ghost ── */
+.craft-drag-ghost {
+  background: rgba(255, 107, 53, 0.12);
+  border: 2px dashed #FF6B35;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #FF6B35;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── Inline editing cursor ── */
+.craft-inline-editing {
+  cursor: text !important;
+  outline: 2px solid #FF6B35 !important;
+  outline-offset: 2px;
+  background: rgba(255, 107, 53, 0.03);
+  border-radius: 2px;
+  min-height: 1em;
 }
 
 /* Glassmorphism card helper */

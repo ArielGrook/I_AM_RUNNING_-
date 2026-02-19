@@ -1,21 +1,20 @@
 'use client';
 
 import { useEditor } from '@craftjs/core';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useEditorTheme } from './EditorThemeContext';
 
 const ROOT_NODE = 'ROOT';
 
 const ICONS: Record<string, string> = {
-  Container: '▦',
-  Text: 'T',
-  Button: '▣',
-  Image: '🖼',
-  Hero: '◉',
-  CTA: '▶',
-  Features: '✦',
-  Header: '☰',
-  Footer: '▬',
+  Container: '▦', Text: 'T', Button: '▣', Image: '🖼',
+  Hero: '◉', CTA: '▶', Features: '✦', Header: '☰', Footer: '▬',
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  Container: '#6366f1', Text: '#8b5cf6', Button: '#f59e0b',
+  Image: '#10b981', Hero: '#ef4444', CTA: '#ec4899',
+  Features: '#14b8a6', Header: '#3b82f6', Footer: '#64748b',
 };
 
 export const LayersPanel = () => {
@@ -48,6 +47,22 @@ export const LayersPanel = () => {
   const toggleCollapse = (id: string) =>
     setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
 
+  // Move node up/down within its parent
+  const moveNode = useCallback((nodeId: string, direction: 'up' | 'down') => {
+    try {
+      const node = query.node(nodeId).get();
+      const parentId = node.data.parent;
+      if (!parentId) return;
+      const parent = query.node(parentId).get();
+      const siblings = [...(parent.data.nodes ?? [])];
+      const idx = siblings.indexOf(nodeId);
+      if (idx < 0) return;
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= siblings.length) return;
+      actions.move(nodeId, parentId, targetIdx);
+    } catch { /* noop */ }
+  }, [query, actions]);
+
   const renderNode = (id: string, depth: number): React.ReactNode => {
     try {
       const node = query.node(id).get();
@@ -60,38 +75,78 @@ export const LayersPanel = () => {
       const isSelected = currentSelectedId === id;
       const isRoot = node.data.parent === null;
       const icon = ICONS[displayName] ?? '•';
+      const typeColor = TYPE_COLORS[displayName] ?? '#6b7280';
 
       return (
         <div key={id}>
           <div
-            className={`group flex items-center gap-1 rounded-md transition-colors cursor-pointer ${
+            className={`group flex items-center gap-1 rounded-md transition-all cursor-pointer ${
               isSelected
-                ? 'bg-[#FF6B35]/15 text-[#FF6B35]'
-                : t('text-gray-500 hover:bg-gray-100 hover:text-gray-800', 'text-gray-400 hover:bg-gray-700/50 hover:text-gray-200')
+                ? 'bg-[#FF6B35]/12 text-[#FF6B35]'
+                : t('text-gray-600 hover:bg-gray-100 hover:text-gray-900', 'text-gray-400 hover:bg-gray-700/50 hover:text-gray-200')
             }`}
-            style={{ paddingLeft: `${8 + depth * 14}px`, height: 30 }}
+            style={{ paddingLeft: `${6 + depth * 16}px`, height: 28 }}
             onClick={() => actions.selectNode(id)}
           >
+            {/* Depth line */}
+            {depth > 0 && (
+              <span
+                className="absolute shrink-0"
+                style={{
+                  left: `${depth * 16 - 4}px`,
+                  width: 1,
+                  height: 28,
+                  background: t('rgba(0,0,0,0.06)', 'rgba(255,255,255,0.06)'),
+                }}
+              />
+            )}
+
+            {/* Expand/collapse */}
             {hasChildren ? (
               <button
                 onClick={(e) => { e.stopPropagation(); toggleCollapse(id); }}
-                className={`w-4 h-4 flex items-center justify-center text-[9px] shrink-0 ${t('text-gray-400 hover:text-gray-700', 'text-gray-500 hover:text-gray-300')}`}
+                className={`w-4 h-4 flex items-center justify-center text-[8px] shrink-0 rounded transition-colors ${t('text-gray-400 hover:text-gray-700 hover:bg-gray-200', 'text-gray-500 hover:text-gray-300 hover:bg-gray-600')}`}
               >
                 {isCollapsed ? '▸' : '▾'}
               </button>
             ) : (
               <span className="w-4 shrink-0" />
             )}
-            <span className="text-[11px] w-4 text-center shrink-0 opacity-60">{icon}</span>
-            <span className={`text-[11px] font-medium truncate flex-1 ${isRoot ? t('text-gray-400', 'text-gray-500') : ''}`}>
+
+            {/* Type dot + icon */}
+            <span
+              className="w-4 h-4 flex items-center justify-center rounded text-[9px] shrink-0"
+              style={{ color: typeColor, opacity: 0.8 }}
+            >
+              {icon}
+            </span>
+
+            {/* Name */}
+            <span className={`text-[11px] font-medium truncate flex-1 ${isRoot ? t('text-gray-400 italic', 'text-gray-500 italic') : ''}`}>
               {isRoot ? 'Root' : displayName}
             </span>
-            {!isRoot && isSelected && (
-              <button
-                onClick={(e) => { e.stopPropagation(); actions.delete(id); }}
-                className="w-5 h-5 flex items-center justify-center rounded text-[10px] text-gray-500 hover:text-red-500 hover:bg-red-100/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mr-1"
-                title="Delete"
-              >✕</button>
+
+            {/* Action buttons on hover */}
+            {!isRoot && (
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mr-0.5">
+                <button
+                  onClick={(e) => { e.stopPropagation(); moveNode(id, 'up'); }}
+                  className={`w-4 h-4 flex items-center justify-center rounded text-[8px] ${t('text-gray-400 hover:text-gray-700 hover:bg-gray-200', 'text-gray-500 hover:text-gray-300 hover:bg-gray-600')}`}
+                  title="Move up"
+                >▲</button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); moveNode(id, 'down'); }}
+                  className={`w-4 h-4 flex items-center justify-center rounded text-[8px] ${t('text-gray-400 hover:text-gray-700 hover:bg-gray-200', 'text-gray-500 hover:text-gray-300 hover:bg-gray-600')}`}
+                  title="Move down"
+                >▼</button>
+                {isSelected && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); actions.delete(id); }}
+                    className="w-4 h-4 flex items-center justify-center rounded text-[8px] text-gray-500 hover:text-red-500 hover:bg-red-100/60"
+                    title="Delete"
+                  >✕</button>
+                )}
+              </div>
             )}
           </div>
           {hasChildren && !isCollapsed && (
@@ -112,10 +167,13 @@ export const LayersPanel = () => {
       'bg-white border-gray-200',
       'bg-[#1e1e1e] border-gray-700/60'
     )}`}>
-      <div className={`px-4 py-3 border-b shrink-0 ${t('border-gray-200', 'border-gray-700/60')}`}>
-        <span className={`text-sm font-semibold tracking-wide ${t('text-gray-900', 'text-white')}`}>Layers</span>
+      <div className={`px-3 py-2.5 border-b shrink-0 flex items-center gap-2 ${t('border-gray-200', 'border-gray-700/60')}`}>
+        <span className={`text-xs font-semibold tracking-wide ${t('text-gray-900', 'text-white')}`}>Layers</span>
+        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${t('bg-gray-100 text-gray-500', 'bg-gray-700 text-gray-400')}`}>
+          {(() => { try { const s = query.getState(); return Object.keys(s.nodes ?? {}).length; } catch { return 0; } })()}
+        </span>
       </div>
-      <div className="flex-1 overflow-y-auto py-2 px-1">
+      <div className="flex-1 overflow-y-auto custom-scrollbar py-1 px-1 relative">
         {renderNode(rootId, 0)}
       </div>
     </div>

@@ -52,6 +52,9 @@ export const Container = ({
   borderWidth = 0,
   borderColor = '#e5e7eb',
   shadow = 'none',
+  dataAnimate = '',
+  dataAnimateType = '',
+  dataAnimateDelay = '',
 }: {
   children?: React.ReactNode;
   background?: string;
@@ -66,6 +69,9 @@ export const Container = ({
   borderWidth?: number;
   borderColor?: string;
   shadow?: string;
+  dataAnimate?: string;
+  dataAnimateType?: string;
+  dataAnimateDelay?: string;
 }) => {
   const {
     connectors: { connect, drag },
@@ -79,9 +85,16 @@ export const Container = ({
     xl: '0 20px 50px rgba(0,0,0,0.2)',
   };
 
+  // Build GSAP data attributes (preserved for future animations)
+  const dataAttrs: Record<string, string> = {};
+  if (dataAnimate) dataAttrs['data-animate'] = dataAnimate;
+  if (dataAnimateType) dataAttrs['data-animate-type'] = dataAnimateType;
+  if (dataAnimateDelay) dataAttrs['data-animate-delay'] = dataAnimateDelay;
+
   return (
     <div
       ref={(ref) => { if (ref) connect(drag(ref)); }}
+      {...dataAttrs}
       style={{
         background,
         padding: `${padding}px`,
@@ -354,6 +367,9 @@ Container.craft = {
     borderWidth: 0,
     borderColor: '#e5e7eb',
     shadow: 'none',
+    dataAnimate: '',
+    dataAnimateType: '',
+    dataAnimateDelay: '',
   },
   rules: {
     canDrop: () => true,

@@ -3,22 +3,29 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 
-const BADGE_H = 24;
+const BADGE_H = 22;
+
+const ICONS: Record<string, string> = {
+  Container: '▦', Text: 'T', Button: '▣', Image: '🖼',
+  Hero: '◉', CTA: '▶', Features: '✦', Header: '☰', Footer: '▬',
+};
 
 export const RenderNode = ({ render }: { render: React.ReactElement }) => {
   const { id } = useNode();
   const { actions, query } = useEditor();
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
-  const { isActive, isHover, dom, name, parent } = useNode((node) => ({
+  const { isActive, isHover, isDragged, dom, name, parent, isCanvas } = useNode((node) => ({
     isActive: node.events.selected,
     isHover: node.events.hovered,
+    isDragged: node.events.dragged,
     dom: node.dom,
     name:
       (node.data.custom as { displayName?: string } | undefined)?.displayName ||
       node.data.displayName ||
       node.data.name,
     parent: node.data.parent,
+    isCanvas: node.data.isCanvas,
   }));
 
   const deletable = query.node(id).isDeletable();
@@ -41,6 +48,15 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
     };
   }, [dom, isActive, isHover]);
 
+  // Canvas drop zone indicator — highlight canvas containers during drag
+  useEffect(() => {
+    if (!dom || !isCanvas) return;
+    const editor = query.getState();
+    const dragging = editor.events.dragged.size > 0;
+    dom.classList.toggle('craft-canvas-drop-zone', dragging);
+    return () => { dom.classList.remove('craft-canvas-drop-zone'); };
+  }, [dom, isCanvas, query]);
+
   // Track position
   useEffect(() => {
     if (!dom || (!isActive && !isHover)) { setPos(null); return; }
@@ -57,7 +73,8 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
 
   if (!enabled) return <>{render}</>;
 
-  const showBadge = (isActive || isHover) && pos;
+  const showBadge = (isActive || isHover) && pos && !isDragged;
+  const icon = ICONS[name ?? ''] ?? '•';
 
   return (
     <>
@@ -71,24 +88,23 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
             zIndex: 99999,
             display: 'flex',
             alignItems: 'center',
-            gap: 4,
+            gap: 3,
             height: BADGE_H,
-            padding: '0 8px',
-            background: isActive ? '#FF6B35' : 'rgba(255,107,53,0.8)',
+            padding: '0 7px',
+            background: isActive ? '#FF6B35' : 'rgba(255,107,53,0.85)',
             borderRadius: pos.top > BADGE_H ? '4px 4px 0 0' : '0 0 4px 4px',
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: 600,
             color: '#fff',
             pointerEvents: 'all',
             userSelect: 'none',
             whiteSpace: 'nowrap',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+            boxShadow: '0 1px 6px rgba(0,0,0,0.3)',
             fontFamily: 'system-ui, -apple-system, sans-serif',
+            letterSpacing: '0.02em',
           }}
         >
-          <span style={{ opacity: 0.7, fontSize: 10 }}>
-            {isActive ? '◆' : '◇'}
-          </span>
+          <span style={{ opacity: 0.65, fontSize: 9 }}>{icon}</span>
           <span>{name}</span>
           {isActive && parent && (
             <button
@@ -116,12 +132,12 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
 };
 
 const btnStyle: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.15)',
+  background: 'rgba(255,255,255,0.18)',
   border: 'none',
   color: '#fff',
   cursor: 'pointer',
-  padding: '2px 4px',
-  fontSize: 12,
+  padding: '1px 4px',
+  fontSize: 11,
   lineHeight: 1,
   borderRadius: 3,
   display: 'flex',

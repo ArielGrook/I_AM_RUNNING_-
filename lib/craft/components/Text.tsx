@@ -49,7 +49,13 @@ export const Text = ({
   return (
     <div
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      onClick={() => selected && setEditable(true)}
+      onDoubleClick={(e) => {
+        if (selected) {
+          e.stopPropagation();
+          setEditable(true);
+        }
+      }}
+      className={editable ? 'craft-inline-editing' : ''}
     >
       <ContentEditable
         disabled={!editable}
@@ -72,11 +78,27 @@ export const Text = ({
           textAlign: (textAlign as React.CSSProperties['textAlign']) ?? 'left',
           color: color ?? '#000000',
           outline: 'none',
-          cursor: editable ? 'text' : 'move',
+          cursor: editable ? 'text' : 'default',
           userSelect: editable ? 'text' : 'none',
           margin: 0,
         }}
       />
+      {selected && !editable && (
+        <div style={{
+          position: 'absolute',
+          bottom: -18,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontSize: 9,
+          color: '#FF6B35',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          opacity: 0.7,
+          fontFamily: 'system-ui',
+        }}>
+          Double-click to edit
+        </div>
+      )}
     </div>
   );
 };
