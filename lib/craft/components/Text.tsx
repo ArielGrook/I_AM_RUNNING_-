@@ -66,7 +66,7 @@ export const Text = ({
               /<\/?[^>]+(>|$)/g,
               ''
             );
-          }, 500)
+          }, 1000)
         }
         tagName="p"
         style={{

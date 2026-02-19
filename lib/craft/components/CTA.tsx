@@ -47,7 +47,7 @@ const CTASettings = () => {
           <input
             type="text"
             value={bgColor ?? ''}
-            onChange={(e) => setProp((p: Record<string, unknown>) => { p.bgColor = e.target.value; })}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.bgColor = e.target.value; }, 500)}
             className="w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white font-mono"
             placeholder="CSS gradient or color"
           />

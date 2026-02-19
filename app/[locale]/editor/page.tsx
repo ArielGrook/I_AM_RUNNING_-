@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Editor, Frame, Element } from '@craftjs/core';
+import { Editor, Frame, Element, useEditor } from '@craftjs/core';
 import lz from 'lzutf8';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
@@ -52,6 +52,15 @@ const defaultPage: PageState = {
   name: 'Page 1',
   data: null,
 };
+
+/** Syncs preview mode with Craft.js: when previewMode is true, editing is disabled. */
+function PreviewController({ previewMode }: { previewMode: boolean }) {
+  const { actions } = useEditor();
+  useEffect(() => {
+    actions.setOptions({ enabled: !previewMode });
+  }, [previewMode, actions]);
+  return null;
+}
 
 export default function EditorPage() {
   const router = useRouter();
@@ -238,6 +247,7 @@ export default function EditorPage() {
           transition: 'none',
         }}
       >
+        <PreviewController previewMode={previewMode} />
         <Toolbar
           onSave={handleSaveFromEditor}
           onPreview={handlePreview}

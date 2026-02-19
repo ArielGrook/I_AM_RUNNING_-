@@ -140,7 +140,7 @@ const ButtonSettings = () => {
             <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Label</label>
             <input
               type="text" value={text ?? 'Click me'}
-              onChange={(e) => set('text')(e.target.value)}
+              onChange={(e) => setT('text', 500)(e.target.value)}
               className="w-full px-2 py-1.5 text-sm rounded bg-gray-700 border border-gray-600 text-white"
             />
           </div>

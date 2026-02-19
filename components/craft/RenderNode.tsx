@@ -1,7 +1,8 @@
 'use client';
 
-import { useNode, useEditor } from '@craftjs/core';
+import { useNode, useEditor, Element } from '@craftjs/core';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Copy } from 'lucide-react';
 
 const BADGE_H = 22;
 
@@ -35,6 +36,29 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
   const deletable = query.node(id).isDeletable();
   const badgeRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  const duplicateNode = useCallback(() => {
+    try {
+      const node = query.node(id).get();
+      const type = node.data.type as React.ComponentType<Record<string, unknown>>;
+      const props = (node.data.props ?? {}) as Record<string, unknown>;
+      const isCanvas = !!node.data.isCanvas;
+      const freshNode = query
+        .parseReactElement(
+          React.createElement(Element, { is: type, canvas: isCanvas, ...props })
+        )
+        .toNodeTree();
+      const parentId = node.data.parent as string | null;
+      if (parentId == null) return;
+      const parentNode = query.node(parentId).get();
+      const siblings = (parentNode.data.nodes ?? []) as string[];
+      const idx = siblings.indexOf(id);
+      const insertIndex = idx < 0 ? undefined : idx + 1;
+      actions.addNodeTree(freshNode, parentId, insertIndex);
+    } catch {
+      // noop
+    }
+  }, [id, query, actions]);
 
   const updatePos = useCallback(() => {
     if (!dom) return;
@@ -115,6 +139,15 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
               onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); actions.selectNode(parent); }}
             >
               ↑
+            </button>
+          )}
+          {isActive && parent != null && (
+            <button
+              style={btnStyle}
+              title="Duplicate"
+              onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); duplicateNode(); }}
+            >
+              <Copy size={12} />
             </button>
           )}
           {isActive && deletable && (

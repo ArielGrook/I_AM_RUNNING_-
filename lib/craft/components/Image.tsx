@@ -130,7 +130,7 @@ const ImageSettings = () => {
             <input
               type="text"
               value={src ?? ''}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.src = e.target.value; })}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.src = e.target.value; }, 500)}
               className="w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white font-mono"
               placeholder="https://..."
             />
@@ -141,7 +141,7 @@ const ImageSettings = () => {
             <input
               type="text"
               value={alt ?? ''}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.alt = e.target.value; })}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.alt = e.target.value; }, 500)}
               className="w-full px-2 py-1.5 text-sm rounded bg-gray-700 border border-gray-600 text-white"
             />
           </div>
