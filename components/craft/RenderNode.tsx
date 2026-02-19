@@ -14,7 +14,10 @@ const ICONS: Record<string, string> = {
 export const RenderNode = ({ render }: { render: React.ReactElement }) => {
   const { id } = useNode();
   const { actions, query } = useEditor();
-  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
+  const { enabled, editorDragging } = useEditor((state) => ({
+    enabled: state.options.enabled,
+    editorDragging: state.events.dragged.size > 0,
+  }));
 
   const { isActive, isHover, isDragged, dom, name, parent, isCanvas } = useNode((node) => ({
     isActive: node.events.selected,
@@ -49,14 +52,12 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
     };
   }, [dom, isActive, isHover]);
 
-  // Canvas drop zone indicator — highlight canvas containers during drag
+  // Canvas drop zone indicator — highlight canvas containers during drag (reactive)
   useEffect(() => {
     if (!dom || !isCanvas) return;
-    const editor = query.getState();
-    const dragging = editor.events.dragged.size > 0;
-    dom.classList.toggle('craft-canvas-drop-zone', dragging);
+    dom.classList.toggle('craft-canvas-drop-zone', editorDragging);
     return () => { dom.classList.remove('craft-canvas-drop-zone'); };
-  }, [dom, isCanvas, query]);
+  }, [dom, isCanvas, editorDragging]);
 
   // Track position
   useEffect(() => {

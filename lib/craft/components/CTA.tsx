@@ -21,11 +21,12 @@ export const CTA = ({
         background: bgColor,
         padding: '80px 40px',
         textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
       }}
     >
-      <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        {children}
-      </div>
+      {children}
     </section>
   );
 };

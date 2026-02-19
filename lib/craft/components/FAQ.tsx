@@ -19,19 +19,18 @@ export const FAQ = ({
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      style={{ padding: '80px 40px', background: bgColor }}
+      style={{
+        padding: '80px 40px',
+        background: bgColor,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        maxWidth: `${maxWidth}px`,
+        margin: '0 auto',
+        width: '100%',
+      }}
     >
-      <div
-        style={{
-          maxWidth: `${maxWidth}px`,
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-        }}
-      >
-        {children}
-      </div>
+      {children}
     </section>
   );
 };

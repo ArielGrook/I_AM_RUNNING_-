@@ -20,6 +20,7 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
   }));
   const [device, setDevice] = useState<DeviceMode>('desktop');
   const [zoom, setZoom] = useState(100);
+  const [showGrid, setShowGrid] = useState(false);
   const { t } = useEditorTheme();
 
   const activeDevice = DEVICES.find((d) => d.key === device)!;
@@ -48,6 +49,20 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
             </button>
           ))}
           <span className={`ml-2 text-[10px] font-mono ${t('text-gray-400', 'text-gray-600')}`}>{activeDevice.label}</span>
+
+          {/* Grid toggle */}
+          <div className={`w-px h-4 mx-1.5 ${t('bg-gray-200', 'bg-gray-700')}`} />
+          <button
+            onClick={() => setShowGrid((g) => !g)}
+            title="Toggle alignment grid"
+            className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+              showGrid
+                ? 'bg-[#FF6B35] text-white shadow-sm shadow-[#FF6B35]/30'
+                : t('text-gray-500 hover:text-gray-700 hover:bg-gray-200/60', 'text-gray-500 hover:text-gray-300 hover:bg-gray-700/60')
+            }`}
+          >
+            ⊞
+          </button>
         </div>
 
         {/* Zoom */}
@@ -101,13 +116,50 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
           >
             <div
               ref={(ref) => { if (ref) connectors.select(ref, ''); }}
-              className={`min-h-screen bg-white transition-all duration-200 ${
+              className={`min-h-screen bg-white transition-all duration-200 relative ${
                 isDragging
                   ? 'ring-2 ring-[#FF6B35]/60 ring-offset-2 ring-offset-transparent shadow-[0_0_50px_rgba(255,107,53,0.2)]'
                   : t('shadow-[0_0_40px_rgba(0,0,0,0.1)]', 'shadow-[0_0_60px_rgba(0,0,0,0.4)]')
               }`}
               style={{ borderRadius: device !== 'desktop' ? 12 : 0 }}
             >
+              {/* Alignment grid overlay */}
+              {showGrid && (
+                <div
+                  className="craft-grid-overlay"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    pointerEvents: 'none',
+                    zIndex: 9998,
+                    backgroundImage:
+                      'linear-gradient(to right, rgba(255,107,53,0.07) 1px, transparent 1px),' +
+                      'linear-gradient(to bottom, rgba(255,107,53,0.07) 1px, transparent 1px)',
+                    backgroundSize: '40px 40px',
+                  }}
+                >
+                  {/* Center line vertical */}
+                  <div style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: 0,
+                    bottom: 0,
+                    width: 1,
+                    background: 'rgba(255,107,53,0.2)',
+                  }} />
+                  {/* 12-column guides */}
+                  {[...Array(11)].map((_, i) => (
+                    <div key={i} style={{
+                      position: 'absolute',
+                      left: `${((i + 1) / 12) * 100}%`,
+                      top: 0,
+                      bottom: 0,
+                      width: 1,
+                      background: 'rgba(99,102,241,0.08)',
+                    }} />
+                  ))}
+                </div>
+              )}
               {children}
             </div>
           </div>

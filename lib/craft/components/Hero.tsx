@@ -25,15 +25,15 @@ export const Hero = ({
         background,
         minHeight: `${minHeight}px`,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '60px 40px',
         textAlign,
+        maxWidth: '100%',
       }}
     >
-      <div style={{ maxWidth: 720, width: '100%' }}>
-        {children}
-      </div>
+      {children}
     </div>
   );
 };

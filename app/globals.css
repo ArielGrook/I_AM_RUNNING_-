@@ -435,23 +435,50 @@ html::-webkit-scrollbar {
   outline-offset: 0px;
 }
 
-/* ── Drop indicator line ── */
-.craft-drop-indicator {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: #FF6B35;
-  border-radius: 2px;
-  z-index: 9999;
-  pointer-events: none;
-  box-shadow: 0 0 8px rgba(255, 107, 53, 0.6);
-  animation: craft-drop-pulse 1s ease-in-out infinite;
+/* ── Craft.js native drop indicator — make it very visible ── */
+.craftjs-renderer > div[style*="position: fixed"] {
+  z-index: 99999 !important;
+  box-shadow: 0 0 12px rgba(255, 107, 53, 0.6) !important;
 }
 
-@keyframes craft-drop-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+/* ── Empty canvas containers — show drop placeholder ── */
+div[data-cy="craft-canvas"]:empty,
+section[data-cy="craft-canvas"]:empty,
+header[data-cy="craft-canvas"]:empty,
+footer[data-cy="craft-canvas"]:empty {
+  min-height: 80px !important;
+}
+
+div[data-cy="craft-canvas"]:empty::after,
+section[data-cy="craft-canvas"]:empty::after,
+header[data-cy="craft-canvas"]:empty::after,
+footer[data-cy="craft-canvas"]:empty::after {
+  content: 'Drop components here';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 80px;
+  color: rgba(148, 163, 184, 0.6);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, sans-serif;
+  border: 2px dashed rgba(148, 163, 184, 0.25);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+/* ── Canvas drop zone highlight during drag ── */
+.craft-canvas-drop-zone {
+  outline: 2px dashed rgba(255, 107, 53, 0.3) !important;
+  outline-offset: -2px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 8px,
+    rgba(255, 107, 53, 0.02) 8px,
+    rgba(255, 107, 53, 0.02) 16px
+  ) !important;
 }
 
 /* ── Outlines mode — show all element borders ── */
@@ -469,6 +496,11 @@ html::-webkit-scrollbar {
 .craft-preview-mode .craft-node-hovered,
 .craft-preview-mode .craft-node-selected {
   outline: none !important;
+}
+
+.craft-preview-mode .craft-canvas-drop-zone {
+  outline: none !important;
+  background-image: none !important;
 }
 
 /* ── Drag ghost ── */

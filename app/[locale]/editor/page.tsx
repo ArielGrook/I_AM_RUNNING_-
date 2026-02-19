@@ -231,6 +231,12 @@ export default function EditorPage() {
           Video,
         }}
         onRender={RenderNode}
+        indicator={{
+          success: '#FF6B35',
+          error: '#ef4444',
+          thickness: 3,
+          transition: 'none',
+        }}
       >
         <Toolbar
           onSave={handleSaveFromEditor}

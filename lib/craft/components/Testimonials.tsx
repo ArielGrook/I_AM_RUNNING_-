@@ -21,19 +21,15 @@ export const Testimonials = ({
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      style={{ padding: '80px 40px', background: bgColor }}
+      style={{
+        padding: '80px 40px',
+        background: bgColor,
+        display: 'grid',
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gap: `${gap}px`,
+      }}
     >
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: `${gap}px`,
-          maxWidth: 1000,
-          margin: '0 auto',
-        }}
-      >
-        {children}
-      </div>
+      {children}
     </section>
   );
 };
