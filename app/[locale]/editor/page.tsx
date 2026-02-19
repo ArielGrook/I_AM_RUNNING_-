@@ -82,6 +82,8 @@ export default function EditorPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [frameData, setFrameData] = useState<string | null>(null);
+  const [frameReady, setFrameReady] = useState(false);
 
   const activePage = pages.find((p) => p.id === activePageId);
 
@@ -108,7 +110,7 @@ export default function EditorPage() {
     }
   }, [authLoading, isAuthenticated, projectId, locale, router]);
 
-  // Load project
+  // Load project — set pages, activePageId, then frameData so Frame mounts with correct data
   useEffect(() => {
     if (!projectId || !isAuthenticated) return;
 
@@ -125,15 +127,30 @@ export default function EditorPage() {
       };
       const craftPages = pd?.craft?.pages;
       if (craftPages && Array.isArray(craftPages) && craftPages.length > 0) {
-        setPages(
-          craftPages.map((p) => ({
-            id: p.id || String(Math.random()),
-            name: p.name || 'Page',
-            data: p.data ?? null,
-          }))
-        );
-        setActivePageId(pd?.craft?.activePageId || craftPages[0].id || '1');
+        const mappedPages = craftPages.map((p) => ({
+          id: p.id || String(Math.random()),
+          name: p.name || 'Page',
+          data: p.data ?? null,
+        }));
+        setPages(mappedPages);
+        const activeId = pd?.craft?.activePageId || craftPages[0].id || '1';
+        setActivePageId(activeId);
+
+        const activePage = mappedPages.find((p) => p.id === activeId);
+        if (activePage?.data) {
+          try {
+            const json = lz.decompress(activePage.data, { inputEncoding: 'Base64' }) as string;
+            setFrameData(json);
+          } catch {
+            setFrameData(null);
+          }
+        } else {
+          setFrameData(null);
+        }
+      } else {
+        setFrameData(null);
       }
+      setFrameReady(true);
     };
 
     load();
@@ -246,6 +263,17 @@ export default function EditorPage() {
       const compressed =
         currentPageJson &&
         lz.compress(currentPageJson, { outputEncoding: 'Base64' });
+      const targetPage = pages.find((p) => p.id === targetId);
+      if (targetPage?.data) {
+        try {
+          const json = lz.decompress(targetPage.data, { inputEncoding: 'Base64' }) as string;
+          setFrameData(json);
+        } catch {
+          setFrameData(null);
+        }
+      } else {
+        setFrameData(null);
+      }
       setPages((prev) =>
         prev.map((p) =>
           p.id === activePageId ? { ...p, data: compressed } : p
@@ -253,7 +281,7 @@ export default function EditorPage() {
       );
       setActivePageId(targetId);
     },
-    [activePageId]
+    [activePageId, pages]
   );
 
   const handleAddPage = () => {
@@ -263,17 +291,10 @@ export default function EditorPage() {
       { id: newId, name: `Page ${prev.length + 1}`, data: null },
     ]);
     setActivePageId(newId);
+    setFrameData(null); // new page is empty
   };
 
-  const getInitialData = useCallback((): string | undefined => {
-    if (!activePage?.data) return undefined;
-    try {
-      return lz.decompress(activePage.data, { inputEncoding: 'Base64' }) as string;
-    } catch {
-      return undefined;
-    }
-  }, [activePage?.data]);
-
+  // Wait for project load before mounting Editor so Frame gets correct data on first paint
   if (authLoading || !isAuthenticated || !projectId) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-900 text-gray-400">
@@ -281,8 +302,13 @@ export default function EditorPage() {
       </div>
     );
   }
-
-  const initialData = getInitialData();
+  if (loadedProject === null) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-900 text-gray-400">
+        Loading project...
+      </div>
+    );
+  }
 
   return (
     <EditorThemeProvider>
@@ -365,20 +391,23 @@ export default function EditorPage() {
             </button>
           )}
           <Viewport>
-            <Frame key={activePageId} data={initialData}>
-              {!initialData && (
-                <Element
-                  is={Container}
-                  canvas
-                  background="#ffffff"
-                  padding={0}
-                  gap={0}
-                  flexDirection="column"
-                  alignItems="stretch"
-                >
-                </Element>
-              )}
-            </Frame>
+            {frameReady && (
+              <Frame key={activePageId} data={frameData ?? undefined}>
+                {!frameData && (
+                  <Element
+                    is={Container}
+                    canvas
+                    background="#ffffff"
+                    padding={0}
+                    gap={0}
+                    flexDirection="column"
+                    alignItems="stretch"
+                    style={{ minHeight: '100vh' }}
+                  >
+                  </Element>
+                )}
+              </Frame>
+            )}
           </Viewport>
           {/* Right panel (Settings) with toggle */}
           {!previewMode && (
