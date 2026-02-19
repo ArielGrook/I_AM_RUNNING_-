@@ -4,14 +4,31 @@ import { useNode } from '@craftjs/core';
 import ContentEditable from 'react-contenteditable';
 import React, { useState, useEffect } from 'react';
 
+const FONT_FAMILIES = [
+  { value: 'inherit', label: 'Default' },
+  { value: "'Inter', system-ui, sans-serif", label: 'Inter' },
+  { value: "'Space Grotesk', monospace", label: 'Space Grotesk' },
+  { value: "'Georgia', serif", label: 'Georgia' },
+  { value: "'Courier New', monospace", label: 'Courier' },
+  { value: "system-ui, sans-serif", label: 'System' },
+];
+
 export const Text = ({
   text = 'Click to edit',
   fontSize = 16,
+  fontWeight = '400',
+  fontFamily = 'inherit',
+  lineHeight = 1.5,
+  letterSpacing = 0,
   textAlign = 'left',
   color = 'var(--palette-text, #000000)',
 }: {
   text?: string;
   fontSize?: number;
+  fontWeight?: string;
+  fontFamily?: string;
+  lineHeight?: number;
+  letterSpacing?: number;
   textAlign?: string;
   color?: string;
 }) => {
@@ -48,11 +65,16 @@ export const Text = ({
         tagName="p"
         style={{
           fontSize: `${fontSize ?? 16}px`,
+          fontWeight: fontWeight ?? '400',
+          fontFamily: fontFamily ?? 'inherit',
+          lineHeight: lineHeight ?? 1.5,
+          letterSpacing: `${letterSpacing ?? 0}px`,
           textAlign: (textAlign as React.CSSProperties['textAlign']) ?? 'left',
           color: color ?? '#000000',
           outline: 'none',
           cursor: editable ? 'text' : 'move',
           userSelect: editable ? 'text' : 'none',
+          margin: 0,
         }}
       />
     </div>
@@ -62,61 +84,112 @@ export const Text = ({
 const TextSettings = () => {
   const {
     actions: { setProp },
-    fontSize,
-    textAlign,
-    color,
+    fontSize, fontWeight, fontFamily, lineHeight, letterSpacing, textAlign, color,
   } = useNode((node) => ({
-    fontSize: node.data.props.fontSize as number,
-    textAlign: node.data.props.textAlign as string,
-    color: node.data.props.color as string,
+    fontSize:      node.data.props.fontSize as number,
+    fontWeight:    node.data.props.fontWeight as string,
+    fontFamily:    node.data.props.fontFamily as string,
+    lineHeight:    node.data.props.lineHeight as number,
+    letterSpacing: node.data.props.letterSpacing as number,
+    textAlign:     node.data.props.textAlign as string,
+    color:         node.data.props.color as string,
   }));
 
+  const set = (key: string) => (val: string | number) =>
+    setProp((p: Record<string, unknown>) => { p[key] = val; });
+  const setT = (key: string, ms: number) => (val: string | number) =>
+    setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
+
   return (
-    <div className="p-4 space-y-4">
-      <div>
-        <label className="block text-sm mb-2 text-gray-300">Font Size: {fontSize ?? 16}px</label>
-        <input
-          type="range"
-          min="12"
-          max="72"
-          value={fontSize ?? 16}
-          onChange={(e) =>
-            setProp((props: Record<string, unknown>) => {
-              props.fontSize = Number(e.target.value);
-            }, 500)
-          }
-          className="w-full"
-        />
-      </div>
-      <div>
-        <label className="block text-sm mb-2 text-gray-300">Text Align</label>
-        <select
-          value={textAlign ?? 'left'}
-          onChange={(e) =>
-            setProp((props: Record<string, unknown>) => {
-              props.textAlign = e.target.value;
-            })
-          }
-          className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
-        >
-          <option value="left">Left</option>
-          <option value="center">Center</option>
-          <option value="right">Right</option>
-        </select>
-      </div>
-      <div>
-        <label className="block text-sm mb-2 text-gray-300">Color</label>
-        <input
-          type="color"
-          value={color ?? '#000000'}
-          onChange={(e) =>
-            setProp((props: Record<string, unknown>) => {
-              props.color = e.target.value;
-            }, 300)
-          }
-          className="w-full h-10 rounded bg-gray-700 border border-gray-600"
-        />
-      </div>
+    <div className="p-3 space-y-5 text-white">
+      {/* Typography */}
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Typography</h3>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Font Family</label>
+            <select value={fontFamily ?? 'inherit'} onChange={(e) => set('fontFamily')(e.target.value)}
+              className="w-full px-2 py-1.5 text-sm rounded bg-gray-700 border border-gray-600 text-white">
+              {FONT_FAMILIES.map((f) => (
+                <option key={f.value} value={f.value}>{f.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">
+              Font Size — {fontSize ?? 16}px
+            </label>
+            <input type="range" min="10" max="96" value={fontSize ?? 16}
+              onChange={(e) => setT('fontSize', 500)(Number(e.target.value))}
+              className="w-full accent-[#FF6B35]" />
+          </div>
+          <div>
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Weight</label>
+            <div className="flex gap-1">
+              {['300', '400', '500', '600', '700', '800'].map((w) => (
+                <button key={w} onClick={() => set('fontWeight')(w)}
+                  className={`flex-1 py-1 text-[10px] rounded border transition-colors ${
+                    fontWeight === w ? 'border-[#FF6B35] text-[#FF6B35] bg-[#FF6B35]/10' : 'border-gray-600 text-gray-400 hover:border-gray-400'
+                  }`}>{w}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Align</label>
+            <div className="flex gap-1">
+              {['left', 'center', 'right'].map((a) => (
+                <button key={a} onClick={() => set('textAlign')(a)}
+                  className={`flex-1 py-1 text-xs rounded border capitalize transition-colors ${
+                    textAlign === a ? 'border-[#FF6B35] text-[#FF6B35] bg-[#FF6B35]/10' : 'border-gray-600 text-gray-400 hover:border-gray-400'
+                  }`}>{a}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Spacing */}
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Spacing</h3>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">
+              Line Height — {(lineHeight ?? 1.5).toFixed(1)}
+            </label>
+            <input type="range" min="0.8" max="3" step="0.1" value={lineHeight ?? 1.5}
+              onChange={(e) => setT('lineHeight', 500)(Number(e.target.value))}
+              className="w-full accent-[#FF6B35]" />
+          </div>
+          <div>
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">
+              Letter Spacing — {letterSpacing ?? 0}px
+            </label>
+            <input type="range" min="-2" max="10" step="0.5" value={letterSpacing ?? 0}
+              onChange={(e) => setT('letterSpacing', 500)(Number(e.target.value))}
+              className="w-full accent-[#FF6B35]" />
+          </div>
+        </div>
+      </section>
+
+      {/* Color */}
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Color</h3>
+        <div className="flex gap-2 items-center">
+          <input type="color"
+            value={color?.startsWith('var') ? '#000000' : (color ?? '#000000')}
+            onChange={(e) => setT('color', 300)(e.target.value)}
+            className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent p-0" />
+          <span className="text-xs text-gray-400 font-mono truncate">{color}</span>
+        </div>
+        <div className="flex gap-1 mt-2">
+          {['var(--palette-text)', 'var(--palette-primary)', '#ffffff', '#000000'].map((c) => (
+            <button key={c} onClick={() => set('color')(c)}
+              className={`px-2 py-0.5 text-[10px] rounded border transition-colors ${
+                color === c ? 'border-[#FF6B35] text-[#FF6B35]' : 'border-gray-600 text-gray-400 hover:border-gray-400'
+              }`}>{c.replace('var(--palette-', '').replace(')', '')}</button>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };
@@ -126,6 +199,10 @@ Text.craft = {
   props: {
     text: 'Click to edit',
     fontSize: 16,
+    fontWeight: '400',
+    fontFamily: 'inherit',
+    lineHeight: 1.5,
+    letterSpacing: 0,
     textAlign: 'left',
     color: 'var(--palette-text, #000000)',
   },

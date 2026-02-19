@@ -48,6 +48,10 @@ export const Container = ({
   alignItems = 'stretch',
   gap = 0,
   flexWrap = 'nowrap',
+  borderRadius = 0,
+  borderWidth = 0,
+  borderColor = '#e5e7eb',
+  shadow = 'none',
 }: {
   children?: React.ReactNode;
   background?: string;
@@ -58,10 +62,22 @@ export const Container = ({
   alignItems?: React.CSSProperties['alignItems'];
   gap?: number;
   flexWrap?: React.CSSProperties['flexWrap'];
+  borderRadius?: number;
+  borderWidth?: number;
+  borderColor?: string;
+  shadow?: string;
 }) => {
   const {
     connectors: { connect, drag },
   } = useNode();
+
+  const SHADOWS: Record<string, string> = {
+    none: 'none',
+    sm: '0 1px 3px rgba(0,0,0,0.1)',
+    md: '0 4px 12px rgba(0,0,0,0.1)',
+    lg: '0 10px 30px rgba(0,0,0,0.15)',
+    xl: '0 20px 50px rgba(0,0,0,0.2)',
+  };
 
   return (
     <div
@@ -77,6 +93,9 @@ export const Container = ({
         alignItems,
         gap: `${gap}px`,
         flexWrap,
+        borderRadius: `${borderRadius}px`,
+        border: borderWidth > 0 ? `${borderWidth}px solid ${borderColor}` : 'none',
+        boxShadow: SHADOWS[shadow] ?? 'none',
       }}
     >
       {children}
@@ -125,6 +144,10 @@ const ContainerSettings = () => {
     alignItems,
     gap,
     flexWrap,
+    borderRadius,
+    borderWidth,
+    borderColor,
+    shadow,
   } = useNode((node) => ({
     background:     node.data.props.background as string,
     padding:        node.data.props.padding as number,
@@ -134,6 +157,10 @@ const ContainerSettings = () => {
     alignItems:     node.data.props.alignItems as string,
     gap:            node.data.props.gap as number,
     flexWrap:       node.data.props.flexWrap as string,
+    borderRadius:   node.data.props.borderRadius as number,
+    borderWidth:    node.data.props.borderWidth as number,
+    borderColor:    node.data.props.borderColor as string,
+    shadow:         node.data.props.shadow as string,
   }));
 
   const set = <K extends string>(key: K) =>
@@ -219,6 +246,48 @@ const ContainerSettings = () => {
         </div>
       </section>
 
+      {/* ── Border & Shadow ── */}
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Border & Shadow</h3>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">
+              Border Radius — {borderRadius ?? 0}px
+            </label>
+            <input type="range" min="0" max="50" value={borderRadius ?? 0}
+              onChange={(e) => setThrottled('borderRadius', 500)(Number(e.target.value))}
+              className="w-full accent-[#FF6B35]" />
+          </div>
+          <div>
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">
+              Border Width — {borderWidth ?? 0}px
+            </label>
+            <input type="range" min="0" max="8" value={borderWidth ?? 0}
+              onChange={(e) => setThrottled('borderWidth', 500)(Number(e.target.value))}
+              className="w-full accent-[#FF6B35]" />
+          </div>
+          {(borderWidth ?? 0) > 0 && (
+            <div>
+              <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Border Color</label>
+              <input type="color" value={borderColor ?? '#e5e7eb'}
+                onChange={(e) => setThrottled('borderColor', 300)(e.target.value)}
+                className="w-full h-8 rounded cursor-pointer border-0 bg-transparent p-0" />
+            </div>
+          )}
+          <div>
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Shadow</label>
+            <div className="flex gap-1">
+              {['none', 'sm', 'md', 'lg', 'xl'].map((s) => (
+                <button key={s} onClick={() => set('shadow')(s)}
+                  className={`flex-1 py-1 text-[10px] rounded border uppercase transition-colors ${
+                    shadow === s ? 'border-[#FF6B35] text-[#FF6B35] bg-[#FF6B35]/10' : 'border-gray-600 text-gray-400 hover:border-gray-400'
+                  }`}>{s}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Colors ── */}
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">
@@ -281,6 +350,10 @@ Container.craft = {
     alignItems: 'stretch',
     gap: 0,
     flexWrap: 'nowrap',
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: '#e5e7eb',
+    shadow: 'none',
   },
   rules: {
     canDrop: () => true,

@@ -39,6 +39,21 @@ export const Toolbar = ({
     }
   };
 
+  const handleExportJSON = () => {
+    try {
+      const json = query.serialize();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `page-${activePageId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Export failed:', e);
+    }
+  };
+
   const handlePageClick = (targetId: string) => {
     if (targetId === activePageId) return;
     try {
@@ -51,62 +66,90 @@ export const Toolbar = ({
   };
 
   return (
-    <div className="h-14 bg-gray-800 border-b border-gray-700 flex items-center px-4 gap-4 shrink-0">
+    <div className="h-12 bg-[#1a1a1a] border-b border-gray-700/60 flex items-center px-3 gap-1 shrink-0">
+      {/* Back */}
       <button
         onClick={() => router.push(`/${locale}/dashboard`)}
-        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white"
+        className="px-3 py-1.5 rounded text-xs text-gray-400 hover:text-white hover:bg-gray-700/60 transition-colors"
+        title="Back to Dashboard"
       >
-        ← Кабинет
+        ← Back
       </button>
+
+      <div className="w-px h-6 bg-gray-700/60 mx-1" />
+
+      {/* Save */}
       <button
+        data-save-btn
         onClick={handleSave}
         disabled={isSaving}
-        className="px-4 py-2 bg-[#FF6B35] hover:bg-[#ff8555] rounded text-white disabled:opacity-50"
+        className="px-3 py-1.5 rounded text-xs font-semibold transition-all
+          bg-[#FF6B35] text-white hover:bg-[#ff8555] disabled:opacity-50 shadow-sm shadow-[#FF6B35]/20"
       >
-        {isSaving ? '…' : '💾 Сохранить'}
+        {isSaving ? '...' : 'Save'}
       </button>
+
+      {/* Undo / Redo */}
       <button
         onClick={() => actions.history.undo()}
         disabled={!canUndo}
-        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white disabled:opacity-50 disabled:cursor-not-allowed"
-        title="Undo"
-      >
-        ↩ Undo
-      </button>
+        className="w-8 h-8 flex items-center justify-center rounded text-sm
+          text-gray-400 hover:text-white hover:bg-gray-700/60 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        title="Undo (Ctrl+Z)"
+      >↩</button>
       <button
         onClick={() => actions.history.redo()}
         disabled={!canRedo}
-        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white disabled:opacity-50 disabled:cursor-not-allowed"
-        title="Redo"
-      >
-        ↪ Redo
-      </button>
+        className="w-8 h-8 flex items-center justify-center rounded text-sm
+          text-gray-400 hover:text-white hover:bg-gray-700/60 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        title="Redo (Ctrl+Shift+Z)"
+      >↪</button>
+
+      <div className="w-px h-6 bg-gray-700/60 mx-1" />
+
+      {/* Preview */}
       <button
         onClick={onPreview}
-        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white"
+        className="px-3 py-1.5 rounded text-xs text-gray-400 hover:text-white hover:bg-gray-700/60 transition-colors"
+        title="Preview"
       >
-        👁 Превью
+        Preview
       </button>
+
+      {/* Export */}
       <button
-        onClick={onAddPage}
-        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white"
+        onClick={handleExportJSON}
+        className="px-3 py-1.5 rounded text-xs text-gray-400 hover:text-white hover:bg-gray-700/60 transition-colors"
+        title="Export JSON"
       >
-        + Страница
+        Export
       </button>
-      <div className="flex gap-2 ml-auto">
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Pages */}
+      <div className="flex items-center gap-1">
         {pages.map((page) => (
           <button
             key={page.id}
             onClick={() => handlePageClick(page.id)}
-            className={`px-3 py-1 rounded ${
+            className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all ${
               page.id === activePageId
-                ? 'bg-[#FF6B35] text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ? 'bg-[#FF6B35]/20 text-[#FF6B35] border border-[#FF6B35]/40'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700/40 border border-transparent'
             }`}
           >
             {page.name}
           </button>
         ))}
+        <button
+          onClick={onAddPage}
+          className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:text-[#FF6B35] hover:bg-[#FF6B35]/10 transition-colors text-sm"
+          title="Add page"
+        >
+          +
+        </button>
       </div>
     </div>
   );

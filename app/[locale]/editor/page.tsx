@@ -33,6 +33,7 @@ import { Viewport } from '@/components/craft/Viewport';
 import { Toolbar } from '@/components/craft/Toolbar';
 import { PreviewModal } from '@/components/craft/PreviewModal';
 import { RenderNode } from '@/components/craft/RenderNode';
+import { KeyboardShortcuts } from '@/components/craft/KeyboardShortcuts';
 
 type PageState = {
   id: string;
@@ -256,6 +257,14 @@ export default function EditorPage() {
           </Viewport>
           <SettingsPanel />
         </div>
+        <KeyboardShortcuts onSave={() => {
+          try {
+            // Toolbar handles serialize internally, but shortcut needs a ref-free approach
+            // The Toolbar's handleSave is not accessible here, so we trigger save via DOM
+            const saveBtn = document.querySelector('[data-save-btn]') as HTMLButtonElement;
+            if (saveBtn) saveBtn.click();
+          } catch { /* noop */ }
+        }} />
         <PreviewModal
           isOpen={previewOpen}
           onClose={() => setPreviewOpen(false)}
