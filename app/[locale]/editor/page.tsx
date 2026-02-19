@@ -41,6 +41,8 @@ import { PreviewModal } from '@/components/craft/PreviewModal';
 import { RenderNode } from '@/components/craft/RenderNode';
 import { KeyboardShortcuts } from '@/components/craft/KeyboardShortcuts';
 import { EditorThemeProvider } from '@/components/craft/EditorThemeContext';
+import { getSupabaseClient } from '@/lib/supabase/client';
+import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 type PageState = {
   id: string;
@@ -78,8 +80,20 @@ export default function EditorPage() {
   const [previewHTML, setPreviewHTML] = useState('');
   const [outlines, setOutlines] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
   const activePage = pages.find((p) => p.id === activePageId);
+
+  const handleRenameProject = useCallback(
+    async (newName: string) => {
+      if (!projectId) return;
+      const supabase = getSupabaseClient();
+      await supabase.from('projects').update({ name: newName }).eq('id', projectId);
+      setLoadedProject((prev) => (prev ? { ...prev, name: newName } : null));
+    },
+    [projectId]
+  );
 
   // Auth guard
   useEffect(() => {
@@ -125,29 +139,54 @@ export default function EditorPage() {
     load();
   }, [projectId, isAuthenticated, locale, router]);
 
-  // GSAP animations in preview mode (data-animate elements)
+  // GSAP animations in preview mode (data-animate + ScrollTrigger)
   useEffect(() => {
     if (!previewMode) return;
     const timer = setTimeout(async () => {
-      const elements = document.querySelectorAll('[data-animate]');
-      const { gsap } = await import('gsap');
-      elements.forEach((el) => {
-        const type = el.getAttribute('data-animate');
-        const delay = parseFloat(el.getAttribute('data-animate-delay') || '0');
-        if (!type || type === 'none') return;
-        const fromVars: Record<string, Record<string, unknown>> = {
-          'fade-in': { opacity: 0 },
-          'slide-up': { opacity: 0, y: 40 },
-          'slide-left': { opacity: 0, x: -40 },
-          'scale-in': { opacity: 0, scale: 0.85 },
-          'blur-in': { opacity: 0, filter: 'blur(12px)' },
-        };
-        const vars = fromVars[type];
-        if (!vars) return;
-        gsap.from(el, { ...vars, duration: 0.7, delay, ease: 'power2.out', clearProps: 'all' });
+      try {
+        const { gsap } = await import('gsap');
+        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        gsap.registerPlugin(ScrollTrigger);
+
+        const elements = document.querySelectorAll('[data-animate]');
+        elements.forEach((el) => {
+          const type = el.getAttribute('data-animate');
+          const delay = parseFloat(el.getAttribute('data-animate-delay') || '0');
+          if (!type || type === 'none') return;
+
+          const fromMap: Record<string, object> = {
+            'fade-in': { opacity: 0 },
+            'slide-up': { opacity: 0, y: 50 },
+            'slide-left': { opacity: 0, x: -50 },
+            'scale-in': { opacity: 0, scale: 0.9 },
+            'blur-in': { opacity: 0, filter: 'blur(16px)' },
+          };
+          const vars = fromMap[type];
+          if (!vars) return;
+
+          gsap.from(el, {
+            ...vars,
+            duration: 0.8,
+            delay,
+            ease: 'power3.out',
+            clearProps: 'all',
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 85%',
+            },
+          });
+        });
+      } catch (e) {
+        console.warn('GSAP animation error:', e);
+      }
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      import('gsap/ScrollTrigger').then(({ ScrollTrigger }) => {
+        ScrollTrigger.getAll().forEach((t) => t.kill());
       });
-    }, 150);
-    return () => clearTimeout(timer);
+    };
   }, [previewMode]);
 
   const handleSaveFromEditor = useCallback(
@@ -280,6 +319,7 @@ export default function EditorPage() {
           onPreview={handlePreview}
           onAddPage={handleAddPage}
           pages={pages}
+          setPages={setPages}
           activePageId={activePageId}
           onPageChange={handlePageChange}
           locale={locale}
@@ -289,10 +329,41 @@ export default function EditorPage() {
           onToggleOutlines={() => setOutlines((o) => !o)}
           previewMode={previewMode}
           onTogglePreview={() => setPreviewMode((p) => !p)}
+          projectId={projectId}
+          projectName={loadedProject?.name}
+          onRenameProject={handleRenameProject}
         />
         <div className={`flex-1 flex min-h-0 ${outlines ? 'craft-outlines-mode' : ''} ${previewMode ? 'craft-preview-mode' : ''}`}>
-          {!previewMode && <Toolbox />}
-          {!previewMode && <LayersPanel />}
+          {/* Left panel (Toolbox + Layers) with toggle */}
+          {!previewMode && (
+            <div
+              className="flex transition-all duration-200 shrink-0 border-r border-gray-700/60 overflow-hidden"
+              style={{ width: leftPanelOpen ? '30rem' : 0, minWidth: leftPanelOpen ? undefined : 0 }}
+            >
+              <div className="flex min-w-0 flex-1">
+                <Toolbox />
+                <LayersPanel />
+              </div>
+              <button
+                type="button"
+                onClick={() => setLeftPanelOpen(!leftPanelOpen)}
+                className="flex items-center justify-center w-7 h-12 shrink-0 bg-[#1a1a1a] border-l border-gray-700/60 text-gray-400 hover:text-[#FF6B35] hover:bg-gray-800/80 transition-colors"
+                title={leftPanelOpen ? 'Close left panel' : 'Open left panel'}
+              >
+                {leftPanelOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+              </button>
+            </div>
+          )}
+          {!previewMode && !leftPanelOpen && (
+            <button
+              type="button"
+              onClick={() => setLeftPanelOpen(true)}
+              className="fixed left-0 top-1/2 -translate-y-1/2 z-50 w-8 h-12 flex items-center justify-center bg-[#1a1a1a] border border-r-0 border-gray-700/60 rounded-r text-gray-400 hover:text-[#FF6B35] shadow-lg transition-colors"
+              title="Open left panel"
+            >
+              <PanelLeftOpen size={16} />
+            </button>
+          )}
           <Viewport>
             <Frame key={activePageId} data={initialData}>
               {!initialData && (
@@ -309,7 +380,35 @@ export default function EditorPage() {
               )}
             </Frame>
           </Viewport>
-          {!previewMode && <SettingsPanel />}
+          {/* Right panel (Settings) with toggle */}
+          {!previewMode && (
+            <div
+              className="flex transition-all duration-200 shrink-0 border-l border-gray-700/60 overflow-hidden"
+              style={{ width: rightPanelOpen ? '19rem' : 0, minWidth: rightPanelOpen ? undefined : 0 }}
+            >
+              <button
+                type="button"
+                onClick={() => setRightPanelOpen(!rightPanelOpen)}
+                className="flex items-center justify-center w-7 h-12 shrink-0 bg-[#1a1a1a] border-r border-gray-700/60 text-gray-400 hover:text-[#FF6B35] hover:bg-gray-800/80 transition-colors"
+                title={rightPanelOpen ? 'Close right panel' : 'Open right panel'}
+              >
+                {rightPanelOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+              </button>
+              <div className="min-w-0 flex-1">
+                <SettingsPanel />
+              </div>
+            </div>
+          )}
+          {!previewMode && !rightPanelOpen && (
+            <button
+              type="button"
+              onClick={() => setRightPanelOpen(true)}
+              className="fixed right-0 top-1/2 -translate-y-1/2 z-50 w-8 h-12 flex items-center justify-center bg-[#1a1a1a] border border-l-0 border-gray-700/60 rounded-l text-gray-400 hover:text-[#FF6B35] shadow-lg transition-colors"
+              title="Open right panel"
+            >
+              <PanelRightOpen size={16} />
+            </button>
+          )}
         </div>
         <KeyboardShortcuts onSave={() => {
           try {

@@ -35,30 +35,30 @@ const categories = [
   {
     title: 'Basic',
     items: [
-      { name: 'Container', icon: '▦', component: Container, canvas: true },
-      { name: 'Text',      icon: 'T',  component: Text,      canvas: false },
-      { name: 'Button',    icon: '▣', component: Button,    canvas: false },
-      { name: 'Image',     icon: '🖼', component: Image,     canvas: false },
-      { name: 'Divider',   icon: '—',  component: Divider,   canvas: false },
-      { name: 'Video',     icon: '▶️', component: Video,     canvas: false },
+      { name: 'Container', label: 'Container', icon: '▦', component: Container, canvas: true, previewBg: '#1e293b' },
+      { name: 'Text',      label: 'Text',      icon: 'T',  component: Text,      canvas: false, previewBg: '#ffffff' },
+      { name: 'Button',    label: 'Button',   icon: '▣', component: Button,    canvas: false, previewBg: '#FF6B35' },
+      { name: 'Image',     label: 'Image',    icon: '🖼', component: Image,     canvas: false, previewBg: '#374151' },
+      { name: 'Divider',   label: 'Divider',  icon: '—',  component: Divider,   canvas: false, previewBg: '#1e293b' },
+      { name: 'Video',     label: 'Video',    icon: '▶️', component: Video,     canvas: false, previewBg: '#374151' },
     ],
   },
   {
     title: 'Sections',
     items: [
-      { name: 'Hero',         icon: '◉', component: Hero,         canvas: true },
-      { name: 'CTA',          icon: '▶', component: CTA,          canvas: true },
-      { name: 'Features',     icon: '✦', component: Features,     canvas: true },
-      { name: 'Testimonials', icon: '💬', component: Testimonials, canvas: true },
-      { name: 'Pricing',      icon: '💰', component: Pricing,      canvas: true },
-      { name: 'FAQ',          icon: '❓', component: FAQ,          canvas: true },
+      { name: 'Hero',         label: 'Hero',         icon: '◉', component: Hero,         canvas: true, previewBg: '#0f172a' },
+      { name: 'CTA',          label: 'CTA',          icon: '▶', component: CTA,          canvas: true, previewBg: '#FF6B35' },
+      { name: 'Features',     label: 'Features',     icon: '✦', component: Features,     canvas: true, previewBg: '#0f172a' },
+      { name: 'Testimonials', label: 'Testimonials', icon: '💬', component: Testimonials, canvas: true, previewBg: '#0a0f1e' },
+      { name: 'Pricing',      label: 'Pricing',      icon: '💰', component: Pricing,      canvas: true, previewBg: '#0f172a' },
+      { name: 'FAQ',          label: 'FAQ',          icon: '❓', component: FAQ,          canvas: true, previewBg: '#0a0f1e' },
     ],
   },
   {
     title: 'Navigation',
     items: [
-      { name: 'Header', icon: '☰', component: Header, canvas: true },
-      { name: 'Footer', icon: '▬', component: Footer, canvas: true },
+      { name: 'Header', label: 'Header', icon: '☰', component: Header, canvas: true, previewBg: '#0a0f1e' },
+      { name: 'Footer', label: 'Footer', icon: '▬', component: Footer, canvas: true, previewBg: '#020617' },
     ],
   },
 ];
@@ -182,15 +182,24 @@ export const Toolbox = () => {
                           );
                         }
                       }}
-                      className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg cursor-grab
-                        border hover:bg-[#FF6B35]/10 hover:border-[#FF6B35]/40 hover:text-[#FF6B35]
-                        active:scale-95 transition-all duration-150 select-none ${t(
-                          'bg-gray-50 border-gray-200 text-gray-600',
-                          'bg-gray-800/60 border-gray-700/40 text-gray-300'
+                      className={`group relative cursor-grab active:cursor-grabbing rounded-lg border border-gray-700
+                        hover:border-orange-500 overflow-hidden transition-all select-none ${t(
+                          'bg-gray-50 border-gray-200',
+                          'bg-gray-800/60 border-gray-700/40'
                         )}`}
                     >
-                      <span className="text-lg leading-none">{item.icon}</span>
-                      <span className="text-[10px] font-medium">{item.name}</span>
+                      <div
+                        style={{ background: item.previewBg ?? '#1e293b', height: 48 }}
+                        className="w-full flex items-center justify-center"
+                      >
+                        <span style={{ fontSize: 20 }}>{item.icon}</span>
+                      </div>
+                      <div className={`px-2 py-1.5 text-xs font-medium transition-colors ${t(
+                        'text-gray-600 group-hover:text-gray-900',
+                        'text-gray-300 group-hover:text-white'
+                      )}`}>
+                        {item.label}
+                      </div>
                     </div>
                   ))}
                 </div>
