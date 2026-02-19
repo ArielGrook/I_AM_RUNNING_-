@@ -98,6 +98,11 @@ CTA.craft = {
     subheadline: 'Join thousands of users building amazing websites',
     ctaText: 'Start Free Trial',
   },
+  rules: {
+    canDrag: () => true,
+    canMoveIn: () => false,
+    canMoveOut: () => true,
+  },
   related: {
     settings: CTASettings,
   },

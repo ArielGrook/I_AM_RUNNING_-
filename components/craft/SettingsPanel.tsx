@@ -2,6 +2,7 @@
 
 import { useEditor, useNode, NodeProvider } from '@craftjs/core';
 import React, { useState } from 'react';
+import { useEditorTheme } from './EditorThemeContext';
 
 // ── Accordion section ──────────────────────────────────
 export function SettingsSection({
@@ -13,17 +14,21 @@ export function SettingsSection({
   defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
+  const { t } = useEditorTheme();
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-gray-700/60 last:border-0">
+    <div className={`border-b last:border-0 ${t('border-gray-200', 'border-gray-700/60')}`}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-gray-700/40 transition-colors"
+        className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${t(
+          'hover:bg-gray-100',
+          'hover:bg-gray-700/40'
+        )}`}
       >
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+        <span className={`text-[11px] font-semibold uppercase tracking-widest ${t('text-gray-500', 'text-gray-400')}`}>
           {title}
         </span>
-        <span className={`text-gray-500 text-xs transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+        <span className={`text-xs transition-transform duration-200 ${open ? 'rotate-180' : ''} ${t('text-gray-400', 'text-gray-500')}`}>
           ▾
         </span>
       </button>
@@ -40,7 +45,7 @@ function DeleteNodeButton() {
     <button
       onClick={() => actions.delete(id)}
       title="Delete component"
-      className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:bg-red-900/40 hover:text-red-400 transition-colors text-sm"
+      className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:bg-red-100 hover:text-red-500 transition-colors text-sm"
     >
       ✕
     </button>
@@ -56,6 +61,7 @@ type SelectedInfo = {
 
 // ── Main panel ─────────────────────────────────────────
 export const SettingsPanel = () => {
+  const { t } = useEditorTheme();
   const { selected } = useEditor((state): { selected: SelectedInfo } => {
     const currentNodeId = state.events.selected.values().next().value as string | undefined;
     if (!currentNodeId) return { selected: null };
@@ -73,12 +79,15 @@ export const SettingsPanel = () => {
   });
 
   return (
-    <div className="w-72 bg-[#1e1e1e] border-l border-gray-700/60 flex flex-col shrink-0 overflow-hidden">
+    <div className={`w-72 border-l flex flex-col shrink-0 overflow-hidden ${t(
+      'bg-white border-gray-200',
+      'bg-[#1e1e1e] border-gray-700/60'
+    )}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-700/60 shrink-0">
+      <div className={`flex items-center justify-between px-3 py-2.5 border-b shrink-0 ${t('border-gray-200', 'border-gray-700/60')}`}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-2 h-2 rounded-full bg-[#FF6B35] shrink-0" />
-          <span className="text-sm font-semibold text-white truncate">
+          <span className={`text-sm font-semibold truncate ${t('text-gray-900', 'text-white')}`}>
             {selected?.name ?? 'Settings'}
           </span>
         </div>
@@ -90,7 +99,7 @@ export const SettingsPanel = () => {
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto text-white custom-scrollbar">
+      <div className={`flex-1 overflow-y-auto custom-scrollbar ${t('text-gray-900', 'text-white')}`}>
         {selected?.settings ? (
           <NodeProvider id={selected.id} related>
             {React.createElement(selected.settings)}
@@ -98,7 +107,7 @@ export const SettingsPanel = () => {
         ) : (
           <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
             <span className="text-3xl opacity-30">⚙️</span>
-            <p className="text-gray-500 text-sm">
+            <p className={`text-sm ${t('text-gray-400', 'text-gray-500')}`}>
               Select a component on the canvas to edit its properties
             </p>
           </div>

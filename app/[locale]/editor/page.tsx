@@ -34,6 +34,7 @@ import { Toolbar } from '@/components/craft/Toolbar';
 import { PreviewModal } from '@/components/craft/PreviewModal';
 import { RenderNode } from '@/components/craft/RenderNode';
 import { KeyboardShortcuts } from '@/components/craft/KeyboardShortcuts';
+import { EditorThemeProvider } from '@/components/craft/EditorThemeContext';
 
 type PageState = {
   id: string;
@@ -203,7 +204,8 @@ export default function EditorPage() {
   const initialData = getInitialData();
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900">
+    <EditorThemeProvider>
+    <div className="h-screen flex flex-col">
       <Editor
         resolver={{
           Container,
@@ -272,5 +274,6 @@ export default function EditorPage() {
         />
       </Editor>
     </div>
+    </EditorThemeProvider>
   );
 }

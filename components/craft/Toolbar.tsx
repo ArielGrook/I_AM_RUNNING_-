@@ -2,6 +2,7 @@
 
 import { useEditor } from '@craftjs/core';
 import React from 'react';
+import { useEditorTheme } from './EditorThemeContext';
 
 type PageItem = { id: string; name: string };
 
@@ -29,6 +30,7 @@ export const Toolbar = ({
   const { query, actions } = useEditor();
   const canUndo = query.history.canUndo();
   const canRedo = query.history.canRedo();
+  const { theme, toggle, t } = useEditorTheme();
 
   const handleSave = () => {
     try {
@@ -65,18 +67,27 @@ export const Toolbar = ({
     }
   };
 
+  const btnCls = `px-3 py-1.5 rounded text-xs transition-colors ${t(
+    'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60',
+    'text-gray-400 hover:text-white hover:bg-gray-700/60'
+  )}`;
+  const iconBtnCls = `w-8 h-8 flex items-center justify-center rounded text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${t(
+    'text-gray-500 hover:text-gray-900 hover:bg-gray-200/60',
+    'text-gray-400 hover:text-white hover:bg-gray-700/60'
+  )}`;
+  const dividerCls = `w-px h-6 mx-1 ${t('bg-gray-300', 'bg-gray-700/60')}`;
+
   return (
-    <div className="h-12 bg-[#1a1a1a] border-b border-gray-700/60 flex items-center px-3 gap-1 shrink-0">
+    <div className={`h-12 border-b flex items-center px-3 gap-1 shrink-0 ${t(
+      'bg-white border-gray-200',
+      'bg-[#1a1a1a] border-gray-700/60'
+    )}`}>
       {/* Back */}
-      <button
-        onClick={() => router.push(`/${locale}/dashboard`)}
-        className="px-3 py-1.5 rounded text-xs text-gray-400 hover:text-white hover:bg-gray-700/60 transition-colors"
-        title="Back to Dashboard"
-      >
+      <button onClick={() => router.push(`/${locale}/dashboard`)} className={btnCls} title="Back to Dashboard">
         ← Back
       </button>
 
-      <div className="w-px h-6 bg-gray-700/60 mx-1" />
+      <div className={dividerCls} />
 
       {/* Save */}
       <button
@@ -90,39 +101,20 @@ export const Toolbar = ({
       </button>
 
       {/* Undo / Redo */}
-      <button
-        onClick={() => actions.history.undo()}
-        disabled={!canUndo}
-        className="w-8 h-8 flex items-center justify-center rounded text-sm
-          text-gray-400 hover:text-white hover:bg-gray-700/60 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        title="Undo (Ctrl+Z)"
-      >↩</button>
-      <button
-        onClick={() => actions.history.redo()}
-        disabled={!canRedo}
-        className="w-8 h-8 flex items-center justify-center rounded text-sm
-          text-gray-400 hover:text-white hover:bg-gray-700/60 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        title="Redo (Ctrl+Shift+Z)"
-      >↪</button>
+      <button onClick={() => actions.history.undo()} disabled={!canUndo} className={iconBtnCls} title="Undo (Ctrl+Z)">↩</button>
+      <button onClick={() => actions.history.redo()} disabled={!canRedo} className={iconBtnCls} title="Redo (Ctrl+Shift+Z)">↪</button>
 
-      <div className="w-px h-6 bg-gray-700/60 mx-1" />
+      <div className={dividerCls} />
 
       {/* Preview */}
-      <button
-        onClick={onPreview}
-        className="px-3 py-1.5 rounded text-xs text-gray-400 hover:text-white hover:bg-gray-700/60 transition-colors"
-        title="Preview"
-      >
-        Preview
-      </button>
+      <button onClick={onPreview} className={btnCls} title="Preview">Preview</button>
 
       {/* Export */}
-      <button
-        onClick={handleExportJSON}
-        className="px-3 py-1.5 rounded text-xs text-gray-400 hover:text-white hover:bg-gray-700/60 transition-colors"
-        title="Export JSON"
-      >
-        Export
+      <button onClick={handleExportJSON} className={btnCls} title="Export JSON">Export</button>
+
+      {/* Theme toggle */}
+      <button onClick={toggle} className={btnCls} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+        {theme === 'light' ? '🌙' : '☀️'}
       </button>
 
       {/* Spacer */}
@@ -137,7 +129,10 @@ export const Toolbar = ({
             className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all ${
               page.id === activePageId
                 ? 'bg-[#FF6B35]/20 text-[#FF6B35] border border-[#FF6B35]/40'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700/40 border border-transparent'
+                : t(
+                    'text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-transparent',
+                    'text-gray-500 hover:text-gray-300 hover:bg-gray-700/40 border border-transparent'
+                  )
             }`}
           >
             {page.name}

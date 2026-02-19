@@ -74,6 +74,11 @@ Footer.craft = {
     bgColor:       'var(--palette-secondary, #1a1a1a)',
     copyrightText: '© 2026 Your Brand. All rights reserved.',
   },
+  rules: {
+    canDrag: () => true,
+    canMoveIn: () => false,
+    canMoveOut: () => true,
+  },
   related: {
     settings: FooterSettings,
   },

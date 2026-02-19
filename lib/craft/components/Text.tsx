@@ -206,6 +206,10 @@ Text.craft = {
     textAlign: 'left',
     color: 'var(--palette-text, #000000)',
   },
+  rules: {
+    canDrag: () => true,
+    canMoveOut: () => true,
+  },
   related: {
     settings: TextSettings,
   },

@@ -279,6 +279,10 @@ Button.craft = {
     href:         '',
     size:         'md',
   },
+  rules: {
+    canDrag: () => true,
+    canMoveOut: () => true,
+  },
   related: {
     settings: ButtonSettings,
   },

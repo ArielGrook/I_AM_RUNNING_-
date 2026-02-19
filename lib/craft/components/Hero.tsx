@@ -148,6 +148,11 @@ Hero.craft = {
     ctaShow: true,
     textAlign: 'center',
   },
+  rules: {
+    canDrag: () => true,
+    canMoveIn: () => false,
+    canMoveOut: () => true,
+  },
   related: {
     settings: HeroSettings,
   },

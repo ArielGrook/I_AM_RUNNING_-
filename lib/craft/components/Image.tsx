@@ -192,6 +192,10 @@ Image.craft = {
     width: '100%',
     borderRadius: 0,
   },
+  rules: {
+    canDrag: () => true,
+    canMoveOut: () => true,
+  },
   related: {
     settings: ImageSettings,
   },

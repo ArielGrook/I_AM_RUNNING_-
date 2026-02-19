@@ -111,6 +111,10 @@ Features.craft = {
     sectionTitle: 'Features',
     bgColor: 'var(--palette-bg, #f9fafb)',
   },
+  rules: {
+    canDrag: () => true,
+    canMoveOut: () => true,
+  },
   related: {
     settings: FeaturesSettings,
   },

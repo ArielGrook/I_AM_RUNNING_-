@@ -126,6 +126,11 @@ Header.craft = {
     ctaText:  'Get Started',
     sticky:   true,
   },
+  rules: {
+    canDrag: () => true,
+    canMoveIn: () => false,
+    canMoveOut: () => true,
+  },
   related: {
     settings: HeaderSettings,
   },

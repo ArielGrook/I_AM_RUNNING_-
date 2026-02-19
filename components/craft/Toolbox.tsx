@@ -13,6 +13,7 @@ import {
   Features,
   Footer,
 } from '@/lib/craft/components';
+import { useEditorTheme } from './EditorThemeContext';
 
 const categories = [
   {
@@ -43,16 +44,20 @@ const categories = [
 
 export const Toolbox = () => {
   const { connectors } = useEditor();
+  const { t } = useEditorTheme();
 
   return (
-    <div className="w-60 bg-[#1e1e1e] border-r border-gray-700/60 overflow-y-auto shrink-0 flex flex-col">
-      <div className="px-4 py-3 border-b border-gray-700/60 shrink-0">
-        <span className="text-sm font-semibold text-white tracking-wide">Components</span>
+    <div className={`w-60 border-r overflow-y-auto shrink-0 flex flex-col ${t(
+      'bg-white border-gray-200',
+      'bg-[#1e1e1e] border-gray-700/60'
+    )}`}>
+      <div className={`px-4 py-3 border-b shrink-0 ${t('border-gray-200', 'border-gray-700/60')}`}>
+        <span className={`text-sm font-semibold tracking-wide ${t('text-gray-900', 'text-white')}`}>Components</span>
       </div>
       <div className="p-3 space-y-5 flex-1">
         {categories.map((cat) => (
           <div key={cat.title}>
-            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2 px-1">
+            <div className={`text-[10px] font-semibold uppercase tracking-widest mb-2 px-1 ${t('text-gray-400', 'text-gray-500')}`}>
               {cat.title}
             </div>
             <div className="grid grid-cols-2 gap-1.5">
@@ -70,10 +75,12 @@ export const Toolbox = () => {
                       );
                     }
                   }}
-                  className="flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg cursor-grab
-                    bg-gray-800/60 border border-gray-700/40
-                    hover:bg-[#FF6B35]/10 hover:border-[#FF6B35]/40 hover:text-[#FF6B35]
-                    active:scale-95 transition-all duration-150 text-gray-300 select-none"
+                  className={`flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg cursor-grab
+                    border hover:bg-[#FF6B35]/10 hover:border-[#FF6B35]/40 hover:text-[#FF6B35]
+                    active:scale-95 transition-all duration-150 select-none ${t(
+                      'bg-gray-50 border-gray-200 text-gray-600',
+                      'bg-gray-800/60 border-gray-700/40 text-gray-300'
+                    )}`}
                 >
                   <span className="text-lg leading-none">{item.icon}</span>
                   <span className="text-[10px] font-medium">{item.name}</span>
