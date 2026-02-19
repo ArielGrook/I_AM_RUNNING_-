@@ -25,6 +25,11 @@ import {
   CTA,
   Features,
   Footer,
+  Testimonials,
+  Pricing,
+  FAQ,
+  Divider,
+  Video,
 } from '@/lib/craft/components';
 import { Toolbox } from '@/components/craft/Toolbox';
 import { LayersPanel } from '@/components/craft/LayersPanel';
@@ -219,6 +224,11 @@ export default function EditorPage() {
           CTA,
           Features,
           Footer,
+          Testimonials,
+          Pricing,
+          FAQ,
+          Divider,
+          Video,
         }}
         onRender={RenderNode}
       >

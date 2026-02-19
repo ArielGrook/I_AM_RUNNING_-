@@ -12,6 +12,11 @@ import {
   CTA,
   Features,
   Footer,
+  Testimonials,
+  Pricing,
+  FAQ,
+  Divider,
+  Video,
 } from '@/lib/craft/components';
 import { useEditorTheme } from './EditorThemeContext';
 
@@ -23,21 +28,26 @@ const categories = [
       { name: 'Text',      icon: 'T',  component: Text,      canvas: false },
       { name: 'Button',    icon: '▣', component: Button,    canvas: false },
       { name: 'Image',     icon: '🖼', component: Image,     canvas: false },
+      { name: 'Divider',   icon: '—',  component: Divider,   canvas: false },
+      { name: 'Video',     icon: '▶️', component: Video,     canvas: false },
     ],
   },
   {
     title: 'Sections',
     items: [
-      { name: 'Hero',     icon: '◉', component: Hero,     canvas: false },
-      { name: 'CTA',      icon: '▶', component: CTA,      canvas: false },
-      { name: 'Features', icon: '✦', component: Features, canvas: false },
+      { name: 'Hero',         icon: '◉', component: Hero,         canvas: true },
+      { name: 'CTA',          icon: '▶', component: CTA,          canvas: true },
+      { name: 'Features',     icon: '✦', component: Features,     canvas: true },
+      { name: 'Testimonials', icon: '💬', component: Testimonials, canvas: true },
+      { name: 'Pricing',      icon: '💰', component: Pricing,      canvas: true },
+      { name: 'FAQ',          icon: '❓', component: FAQ,          canvas: true },
     ],
   },
   {
     title: 'Navigation',
     items: [
-      { name: 'Header', icon: '☰', component: Header, canvas: false },
-      { name: 'Footer', icon: '▬', component: Footer, canvas: false },
+      { name: 'Header', icon: '☰', component: Header, canvas: true },
+      { name: 'Footer', icon: '▬', component: Footer, canvas: true },
     ],
   },
 ];

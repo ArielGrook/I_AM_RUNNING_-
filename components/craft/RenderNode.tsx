@@ -8,6 +8,7 @@ const BADGE_H = 22;
 const ICONS: Record<string, string> = {
   Container: '▦', Text: 'T', Button: '▣', Image: '🖼',
   Hero: '◉', CTA: '▶', Features: '✦', Header: '☰', Footer: '▬',
+  Testimonials: '💬', Pricing: '💰', FAQ: '❓', Divider: '—', Video: '▶️',
 };
 
 export const RenderNode = ({ render }: { render: React.ReactElement }) => {

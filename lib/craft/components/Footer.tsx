@@ -4,11 +4,11 @@ import { useNode } from '@craftjs/core';
 import React from 'react';
 
 export const Footer = ({
+  children,
   bgColor = 'var(--palette-secondary, #1a1a1a)',
-  copyrightText = '© 2026 Your Brand. All rights reserved.',
 }: {
+  children?: React.ReactNode;
   bgColor?: string;
-  copyrightText?: string;
 }) => {
   const {
     connectors: { connect, drag },
@@ -23,7 +23,7 @@ export const Footer = ({
         textAlign: 'center',
       }}
     >
-      <p style={{ color: '#999999', fontSize: 14, margin: 0 }}>{copyrightText}</p>
+      {children}
     </footer>
   );
 };
@@ -32,26 +32,12 @@ const FooterSettings = () => {
   const {
     actions: { setProp },
     bgColor,
-    copyrightText,
   } = useNode((node) => ({
-    bgColor:       node.data.props.bgColor as string,
-    copyrightText: node.data.props.copyrightText as string,
+    bgColor: node.data.props.bgColor as string,
   }));
 
   return (
     <div className="p-3 space-y-5 text-white">
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
-        <div>
-          <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Copyright Text</label>
-          <input
-            type="text"
-            value={copyrightText ?? '© 2026 Your Brand. All rights reserved.'}
-            onChange={(e) => setProp((p: Record<string, unknown>) => { p.copyrightText = e.target.value; })}
-            className="w-full px-2 py-1.5 text-sm rounded bg-gray-700 border border-gray-600 text-white"
-          />
-        </div>
-      </section>
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
         <div>
@@ -71,12 +57,12 @@ const FooterSettings = () => {
 Footer.craft = {
   displayName: 'Footer',
   props: {
-    bgColor:       'var(--palette-secondary, #1a1a1a)',
-    copyrightText: '© 2026 Your Brand. All rights reserved.',
+    bgColor: 'var(--palette-secondary, #1a1a1a)',
   },
   rules: {
     canDrag: () => true,
-    canMoveIn: () => false,
+    canDrop: () => true,
+    canMoveIn: () => true,
     canMoveOut: () => true,
   },
   related: {

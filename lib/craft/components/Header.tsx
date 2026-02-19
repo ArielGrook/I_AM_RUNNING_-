@@ -4,14 +4,12 @@ import { useNode } from '@craftjs/core';
 import React from 'react';
 
 export const Header = ({
+  children,
   bgColor = 'var(--palette-secondary, #1a1a1a)',
-  logoText = 'Brand',
-  ctaText = 'Get Started',
   sticky = true,
 }: {
+  children?: React.ReactNode;
   bgColor?: string;
-  logoText?: string;
-  ctaText?: string;
   sticky?: boolean;
 }) => {
   const {
@@ -23,30 +21,17 @@ export const Header = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       style={{
         background: bgColor,
-        padding: '20px 40px',
+        padding: '16px 40px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: 16,
         position: sticky ? 'sticky' : 'relative',
         top: 0,
         zIndex: 100,
       }}
     >
-      <span style={{ color: '#FF6B35', fontSize: 24, fontWeight: 700 }}>{logoText}</span>
-      <button
-        style={{
-          background: 'var(--palette-primary, #FF6B35)',
-          color: '#fff',
-          border: 'none',
-          padding: '10px 24px',
-          borderRadius: 8,
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: 'pointer',
-        }}
-      >
-        {ctaText}
-      </button>
+      {children}
     </header>
   );
 };
@@ -54,42 +39,14 @@ export const Header = ({
 const HeaderSettings = () => {
   const {
     actions: { setProp },
-    bgColor,
-    logoText,
-    ctaText,
-    sticky,
+    bgColor, sticky,
   } = useNode((node) => ({
-    bgColor:   node.data.props.bgColor as string,
-    logoText:  node.data.props.logoText as string,
-    ctaText:   node.data.props.ctaText as string,
-    sticky:    node.data.props.sticky as boolean,
+    bgColor: node.data.props.bgColor as string,
+    sticky:  node.data.props.sticky as boolean,
   }));
 
   return (
     <div className="p-3 space-y-5 text-white">
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Logo Text</label>
-            <input
-              type="text"
-              value={logoText ?? 'Brand'}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.logoText = e.target.value; })}
-              className="w-full px-2 py-1.5 text-sm rounded bg-gray-700 border border-gray-600 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">CTA Button Text</label>
-            <input
-              type="text"
-              value={ctaText ?? 'Get Started'}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.ctaText = e.target.value; })}
-              className="w-full px-2 py-1.5 text-sm rounded bg-gray-700 border border-gray-600 text-white"
-            />
-          </div>
-        </div>
-      </section>
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
         <div className="space-y-3">
@@ -121,14 +78,13 @@ const HeaderSettings = () => {
 Header.craft = {
   displayName: 'Header',
   props: {
-    bgColor:  'var(--palette-secondary, #1a1a1a)',
-    logoText: 'Brand',
-    ctaText:  'Get Started',
-    sticky:   true,
+    bgColor: 'var(--palette-secondary, #1a1a1a)',
+    sticky: true,
   },
   rules: {
     canDrag: () => true,
-    canMoveIn: () => false,
+    canDrop: () => true,
+    canMoveIn: () => true,
     canMoveOut: () => true,
   },
   related: {

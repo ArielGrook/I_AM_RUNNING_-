@@ -9,12 +9,15 @@ const ROOT_NODE = 'ROOT';
 const ICONS: Record<string, string> = {
   Container: '▦', Text: 'T', Button: '▣', Image: '🖼',
   Hero: '◉', CTA: '▶', Features: '✦', Header: '☰', Footer: '▬',
+  Testimonials: '💬', Pricing: '💰', FAQ: '❓', Divider: '—', Video: '▶️',
 };
 
 const TYPE_COLORS: Record<string, string> = {
   Container: '#6366f1', Text: '#8b5cf6', Button: '#f59e0b',
   Image: '#10b981', Hero: '#ef4444', CTA: '#ec4899',
   Features: '#14b8a6', Header: '#3b82f6', Footer: '#64748b',
+  Testimonials: '#a855f7', Pricing: '#22c55e', FAQ: '#f97316',
+  Divider: '#94a3b8', Video: '#e11d48',
 };
 
 export const LayersPanel = () => {

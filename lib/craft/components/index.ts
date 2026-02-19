@@ -7,3 +7,8 @@ export { Header } from './Header';
 export { CTA } from './CTA';
 export { Features } from './Features';
 export { Footer } from './Footer';
+export { Testimonials } from './Testimonials';
+export { Pricing } from './Pricing';
+export { FAQ } from './FAQ';
+export { Divider } from './Divider';
+export { Video } from './Video';

@@ -3,11 +3,11 @@
 import { useNode } from '@craftjs/core';
 import React from 'react';
 
-export const Features = ({
+export const Testimonials = ({
   children,
-  bgColor = 'var(--palette-bg, #f9fafb)',
-  columns = 3,
-  gap = 32,
+  bgColor = '#ffffff',
+  columns = 2,
+  gap = 24,
 }: {
   children?: React.ReactNode;
   bgColor?: string;
@@ -28,7 +28,7 @@ export const Features = ({
           display: 'grid',
           gridTemplateColumns: `repeat(${columns}, 1fr)`,
           gap: `${gap}px`,
-          maxWidth: 1200,
+          maxWidth: 1000,
           margin: '0 auto',
         }}
       >
@@ -38,7 +38,7 @@ export const Features = ({
   );
 };
 
-const FeaturesSettings = () => {
+const TestimonialsSettings = () => {
   const {
     actions: { setProp },
     bgColor, columns, gap,
@@ -56,7 +56,7 @@ const FeaturesSettings = () => {
           <div>
             <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Columns</label>
             <div className="flex gap-1">
-              {[1, 2, 3, 4].map((c) => (
+              {[1, 2, 3].map((c) => (
                 <button key={c} onClick={() => setProp((p: Record<string, unknown>) => { p.columns = c; })}
                   className={`flex-1 py-1 text-xs rounded border transition-colors ${
                     columns === c ? 'border-[#FF6B35] text-[#FF6B35] bg-[#FF6B35]/10' : 'border-gray-600 text-gray-400 hover:border-gray-400'
@@ -65,8 +65,8 @@ const FeaturesSettings = () => {
             </div>
           </div>
           <div>
-            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Gap — {gap ?? 32}px</label>
-            <input type="range" min="0" max="80" value={gap ?? 32}
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Gap — {gap ?? 24}px</label>
+            <input type="range" min="0" max="60" value={gap ?? 24}
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.gap = Number(e.target.value); }, 500)}
               className="w-full accent-[#FF6B35]" />
           </div>
@@ -74,25 +74,23 @@ const FeaturesSettings = () => {
       </section>
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Background</h3>
-        <div>
-          <input
-            type="color"
-            value={bgColor?.startsWith('var') ? '#f9fafb' : (bgColor ?? '#f9fafb')}
-            onChange={(e) => setProp((p: Record<string, unknown>) => { p.bgColor = e.target.value; }, 300)}
-            className="w-full h-10 rounded cursor-pointer border-0 bg-transparent p-0"
-          />
-        </div>
+        <input
+          type="color"
+          value={bgColor?.startsWith('var') ? '#ffffff' : (bgColor ?? '#ffffff')}
+          onChange={(e) => setProp((p: Record<string, unknown>) => { p.bgColor = e.target.value; }, 300)}
+          className="w-full h-10 rounded cursor-pointer border-0 bg-transparent p-0"
+        />
       </section>
     </div>
   );
 };
 
-Features.craft = {
-  displayName: 'Features',
+Testimonials.craft = {
+  displayName: 'Testimonials',
   props: {
-    bgColor: 'var(--palette-bg, #f9fafb)',
-    columns: 3,
-    gap: 32,
+    bgColor: '#ffffff',
+    columns: 2,
+    gap: 24,
   },
   rules: {
     canDrag: () => true,
@@ -101,6 +99,6 @@ Features.craft = {
     canMoveOut: () => true,
   },
   related: {
-    settings: FeaturesSettings,
+    settings: TestimonialsSettings,
   },
 };

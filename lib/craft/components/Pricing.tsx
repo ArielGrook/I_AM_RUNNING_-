@@ -3,11 +3,11 @@
 import { useNode } from '@craftjs/core';
 import React from 'react';
 
-export const Features = ({
+export const Pricing = ({
   children,
-  bgColor = 'var(--palette-bg, #f9fafb)',
+  bgColor = '#f9fafb',
   columns = 3,
-  gap = 32,
+  gap = 24,
 }: {
   children?: React.ReactNode;
   bgColor?: string;
@@ -28,8 +28,9 @@ export const Features = ({
           display: 'grid',
           gridTemplateColumns: `repeat(${columns}, 1fr)`,
           gap: `${gap}px`,
-          maxWidth: 1200,
+          maxWidth: 1100,
           margin: '0 auto',
+          alignItems: 'start',
         }}
       >
         {children}
@@ -38,7 +39,7 @@ export const Features = ({
   );
 };
 
-const FeaturesSettings = () => {
+const PricingSettings = () => {
   const {
     actions: { setProp },
     bgColor, columns, gap,
@@ -65,8 +66,8 @@ const FeaturesSettings = () => {
             </div>
           </div>
           <div>
-            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Gap — {gap ?? 32}px</label>
-            <input type="range" min="0" max="80" value={gap ?? 32}
+            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Gap — {gap ?? 24}px</label>
+            <input type="range" min="0" max="60" value={gap ?? 24}
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.gap = Number(e.target.value); }, 500)}
               className="w-full accent-[#FF6B35]" />
           </div>
@@ -74,25 +75,23 @@ const FeaturesSettings = () => {
       </section>
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Background</h3>
-        <div>
-          <input
-            type="color"
-            value={bgColor?.startsWith('var') ? '#f9fafb' : (bgColor ?? '#f9fafb')}
-            onChange={(e) => setProp((p: Record<string, unknown>) => { p.bgColor = e.target.value; }, 300)}
-            className="w-full h-10 rounded cursor-pointer border-0 bg-transparent p-0"
-          />
-        </div>
+        <input
+          type="color"
+          value={bgColor?.startsWith('var') ? '#f9fafb' : (bgColor ?? '#f9fafb')}
+          onChange={(e) => setProp((p: Record<string, unknown>) => { p.bgColor = e.target.value; }, 300)}
+          className="w-full h-10 rounded cursor-pointer border-0 bg-transparent p-0"
+        />
       </section>
     </div>
   );
 };
 
-Features.craft = {
-  displayName: 'Features',
+Pricing.craft = {
+  displayName: 'Pricing',
   props: {
-    bgColor: 'var(--palette-bg, #f9fafb)',
+    bgColor: '#f9fafb',
     columns: 3,
-    gap: 32,
+    gap: 24,
   },
   rules: {
     canDrag: () => true,
@@ -101,6 +100,6 @@ Features.craft = {
     canMoveOut: () => true,
   },
   related: {
-    settings: FeaturesSettings,
+    settings: PricingSettings,
   },
 };
