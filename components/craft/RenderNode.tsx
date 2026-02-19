@@ -6,9 +6,8 @@ import React, { useEffect } from 'react';
 export const RenderNode = ({ render }: { render: React.ReactElement }) => {
   const { id } = useNode();
 
-  const { actions, query, enabled } = useEditor((state) => ({
-    enabled: state.options.enabled,
-  }));
+  const { actions, query } = useEditor();
+  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
   const { isActive, isHover, dom, name, parent } = useNode((node) => ({
     isActive: node.events.selected,
@@ -66,7 +65,7 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
             <button
               style={btnStyle}
               title="Select parent"
-              onClick={() => actions.selectNode(parent)}
+              onClick={(e) => { e.stopPropagation(); actions.selectNode(parent); }}
             >
               ↑
             </button>
@@ -75,7 +74,7 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
             <button
               style={{ ...btnStyle, color: '#ffcccc' }}
               title="Delete"
-              onClick={() => actions.delete(id)}
+              onClick={(e) => { e.stopPropagation(); actions.delete(id); }}
             >
               ✕
             </button>
