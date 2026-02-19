@@ -57,7 +57,7 @@ const defaultPage: PageState = {
 function PreviewController({ previewMode }: { previewMode: boolean }) {
   const { actions } = useEditor();
   useEffect(() => {
-    actions.setOptions({ enabled: !previewMode });
+    actions.setOptions((opts) => { opts.enabled = !previewMode; });
   }, [previewMode, actions]);
   return null;
 }
