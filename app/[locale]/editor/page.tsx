@@ -30,6 +30,7 @@ import {
   FAQ,
   Divider,
   Video,
+  HtmlBlock,
 } from '@/lib/craft/components';
 import { Toolbox } from '@/components/craft/Toolbox';
 import { LayersPanel } from '@/components/craft/LayersPanel';
@@ -263,6 +264,7 @@ export default function EditorPage() {
           FAQ,
           Divider,
           Video,
+          HtmlBlock,
         }}
         onRender={RenderNode}
         indicator={{

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseZip, ZipParseError } from '@/lib/parser';
+import { parseZipToCraftBlocks } from '@/lib/parser/zip-to-craft-blocks';
 
 export async function POST(request: NextRequest) {
   console.log('[API Parser] 🚀 POST /api/parser called');
@@ -50,10 +51,32 @@ export async function POST(request: NextRequest) {
       // Convert file to buffer
       const buffer = await file.arrayBuffer();
 
-      // Parse options
+      // Craft.js editor: return blocks for HtmlBlock nodes
+      const url = new URL(request.url);
+      const formatCraft = url.searchParams.get('format') === 'craft';
+
+      if (formatCraft) {
+        try {
+          const { blocks } = await parseZipToCraftBlocks(buffer);
+          console.log('[API Parser] ✅ Craft blocks parsed:', blocks.length);
+          return NextResponse.json({ blocks });
+        } catch (err) {
+          console.error('[API Parser] ❌ parseZipToCraftBlocks error:', err);
+          return NextResponse.json(
+            {
+              success: false,
+              error: err instanceof Error ? err.message : 'Failed to parse ZIP for Craft',
+              blocks: [],
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Legacy: full project parse
       const options = {
         maxSize: 50 * 1024 * 1024, // 50MB
-        onProgress: (progress: any) => {
+        onProgress: (progress: { percentage?: number }) => {
           console.log(`[API Parser] Progress: ${progress.percentage}%`);
         }
       };

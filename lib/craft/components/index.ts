@@ -12,3 +12,4 @@ export { Pricing } from './Pricing';
 export { FAQ } from './FAQ';
 export { Divider } from './Divider';
 export { Video } from './Video';
+export { HtmlBlock } from './HtmlBlock';

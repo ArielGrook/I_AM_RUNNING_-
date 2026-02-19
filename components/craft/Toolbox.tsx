@@ -2,6 +2,7 @@
 
 import { Element, useEditor } from '@craftjs/core';
 import React, { useState, useCallback } from 'react';
+import { Upload } from 'lucide-react';
 import {
   Container,
   Text,
@@ -17,6 +18,7 @@ import {
   FAQ,
   Divider,
   Video,
+  HtmlBlock,
 } from '@/lib/craft/components';
 import { PRESETS } from '@/lib/craft/presets';
 import { useEditorTheme } from './EditorThemeContext';
@@ -65,6 +67,48 @@ export const Toolbox = () => {
   const { connectors, actions, query } = useEditor();
   const { t } = useEditorTheme();
   const [activeTab, setActiveTab] = useState<TabId>('components');
+  const [importing, setImporting] = useState(false);
+
+  const handleZipImport = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setImporting(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/parser?format=craft', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        const blocks = data.blocks as Array<{ blockType: string; label: string; rawHtml: string; rawCss: string }> | undefined;
+        if (!res.ok || !Array.isArray(blocks)) {
+          throw new Error(data.error || 'Invalid response');
+        }
+        blocks.forEach((block, index) => {
+          const tree = query
+            .parseReactElement(
+              React.createElement(HtmlBlock, {
+                rawHtml: block.rawHtml,
+                rawCss: block.rawCss,
+                blockType: block.blockType,
+                label: block.label,
+              })
+            )
+            .toNodeTree();
+          actions.addNodeTree(tree, ROOT_ID, index);
+        });
+      } catch (err) {
+        console.error('ZIP import failed:', err);
+        alert('Failed to parse ZIP. Check console.');
+      } finally {
+        setImporting(false);
+        e.target.value = '';
+      }
+    },
+    [query, actions]
+  );
 
   const loadPreset = useCallback(
     (preset: (typeof PRESETS)[number]) => {
@@ -156,6 +200,27 @@ export const Toolbox = () => {
         )}
         {activeTab === 'presets' && (
           <div className="space-y-3">
+            <label
+              className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-dashed transition-colors text-sm cursor-pointer ${t(
+                'border-gray-600 hover:border-orange-500 text-gray-400 hover:text-orange-400',
+                'border-gray-600 hover:border-orange-500 text-gray-400 hover:text-orange-400'
+              )}`}
+            >
+              <Upload size={14} />
+              Import ZIP
+              <input
+                type="file"
+                accept=".zip"
+                className="hidden"
+                onChange={handleZipImport}
+                disabled={importing}
+              />
+            </label>
+            {importing && (
+              <div className="text-xs text-gray-500 text-center py-2">
+                Parsing ZIP...
+              </div>
+            )}
             {PRESETS.map((preset) => (
               <div
                 key={preset.id}
