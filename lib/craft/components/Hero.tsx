@@ -1,109 +1,333 @@
 'use client';
 
-import { useNode } from '@craftjs/core';
+import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 
+const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+
 export const Hero = ({
-  children,
-  background = 'linear-gradient(135deg, var(--palette-primary, #FF6B35) 0%, var(--palette-accent, #ff8555) 100%)',
-  minHeight = 500,
-  textAlign = 'center',
+  title = 'Build something',
+  titleAccent = 'people love',
+  subtitle = 'Create modern landing pages and websites in minutes. No code required.',
+  primaryBtnText = 'Get started',
+  secondaryBtnText = 'Learn more',
+  minHeight = 600,
+  badgeText = '✦ New Platform Launch',
+  socialProofText = '2,000+ businesses already running',
+  gradientFrom = '#0f172a',
+  gradientTo = '#1e1b4b',
+  animationType = 'none',
 }: {
-  children?: React.ReactNode;
-  background?: string;
+  title?: string;
+  titleAccent?: string;
+  subtitle?: string;
+  primaryBtnText?: string;
+  secondaryBtnText?: string;
   minHeight?: number;
-  textAlign?: 'left' | 'center' | 'right';
+  badgeText?: string;
+  socialProofText?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
+  animationType?: string;
 }) => {
   const {
     connectors: { connect, drag },
   } = useNode();
+  const isSelected = useNode((node) => node.events.selected);
+  const enabled = useEditor((state) => state.options.enabled);
+
+  const baseGradient = `linear-gradient(135deg, ${gradientFrom} 0%, ${gradientTo} 50%, ${gradientFrom} 100%)`;
+  const gridLines = 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)';
+  const radialGlow = 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(99,102,241,0.15) 0%, transparent 70%)';
+
+  const dataAttrs: Record<string, string> = {};
+  if (!enabled && animationType && animationType !== 'none') {
+    dataAttrs['data-animate'] = animationType;
+  }
 
   return (
-    <div
+    <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
+      {...dataAttrs}
       style={{
-        background,
         minHeight: `${minHeight}px`,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '60px 40px',
-        textAlign,
+        textAlign: 'center',
+        padding: '80px 24px',
         maxWidth: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+        backgroundImage: `${radialGlow}, ${gridLines}, ${baseGradient}`,
+        backgroundSize: '100% 100%, 60px 60px, 60px 60px, 100% 100%',
+        backgroundPosition: '0 0, 0 0, 0 0, 0 0',
+        backgroundRepeat: 'no-repeat, repeat, repeat, no-repeat' as const,
+        outline: isSelected ? '2px solid #f97316' : undefined,
+        outlineOffset: '2px',
       }}
     >
-      {children}
-    </div>
+      {badgeText && (
+        <div
+          style={{
+            display: 'inline-flex',
+            padding: '4px 12px',
+            marginBottom: '24px',
+            border: '1px solid rgba(99,102,241,0.4)',
+            background: 'rgba(99,102,241,0.1)',
+            borderRadius: 9999,
+            fontSize: 13,
+            color: '#a5b4fc',
+          }}
+        >
+          {badgeText}
+        </div>
+      )}
+
+      <h1
+        style={{
+          fontSize: 'clamp(40px, 6vw, 72px)',
+          fontWeight: 800,
+          lineHeight: 1.05,
+          letterSpacing: '-0.03em',
+          maxWidth: 800,
+          margin: '0 auto',
+          padding: 0,
+        }}
+      >
+        <span style={{ color: '#fff' }}>{title}</span>
+        <br />
+        <span
+          style={{
+            background: 'linear-gradient(135deg, #FF6B35, #f59e0b)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
+          {titleAccent}
+        </span>
+      </h1>
+
+      {subtitle && (
+        <p
+          style={{
+            fontSize: 18,
+            color: '#94a3b8',
+            lineHeight: 1.7,
+            maxWidth: 560,
+            margin: '20px auto 0',
+            padding: 0,
+          }}
+        >
+          {subtitle}
+        </p>
+      )}
+
+      <div
+        style={{
+          display: 'flex',
+          gap: 12,
+          marginTop: 40,
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+        }}
+      >
+        <button
+          type="button"
+          style={{
+            background: '#FF6B35',
+            color: '#fff',
+            padding: '14px 32px',
+            borderRadius: 8,
+            boxShadow: '0 0 20px rgba(255,107,53,0.4)',
+            fontWeight: 600,
+            fontSize: 15,
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          {primaryBtnText}
+        </button>
+        <button
+          type="button"
+          style={{
+            background: 'transparent',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.2)',
+            padding: '14px 32px',
+            borderRadius: 8,
+            backdropFilter: 'blur(10px)',
+            fontWeight: 600,
+            fontSize: 15,
+            cursor: 'pointer',
+          }}
+        >
+          {secondaryBtnText}
+        </button>
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginTop: 48,
+        }}
+      >
+        <div style={{ display: 'flex' }}>
+          {AVATAR_COLORS.map((color, i) => (
+            <div
+              key={color}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: color,
+                marginLeft: i === 0 ? 0 : -8,
+                border: '2px solid #0f172a',
+                boxSizing: 'border-box',
+              }}
+            />
+          ))}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+          <span style={{ fontSize: 14, color: '#f59e0b' }}>★★★★★</span>
+          <span style={{ fontSize: 14, color: '#64748b' }}>{socialProofText}</span>
+        </div>
+      </div>
+    </section>
   );
 };
 
 const HeroSettings = () => {
   const {
     actions: { setProp },
-    background, minHeight, textAlign,
+    title,
+    titleAccent,
+    subtitle,
+    primaryBtnText,
+    secondaryBtnText,
+    minHeight,
+    badgeText,
+    socialProofText,
+    gradientFrom,
+    gradientTo,
+    animationType,
   } = useNode((node) => ({
-    background:  node.data.props.background as string,
-    minHeight:   node.data.props.minHeight as number,
-    textAlign:   node.data.props.textAlign as string,
+    title: node.data.props.title as string,
+    titleAccent: node.data.props.titleAccent as string,
+    subtitle: node.data.props.subtitle as string,
+    primaryBtnText: node.data.props.primaryBtnText as string,
+    secondaryBtnText: node.data.props.secondaryBtnText as string,
+    minHeight: node.data.props.minHeight as number,
+    badgeText: node.data.props.badgeText as string,
+    socialProofText: node.data.props.socialProofText as string,
+    gradientFrom: node.data.props.gradientFrom as string,
+    gradientTo: node.data.props.gradientTo as string,
+    animationType: node.data.props.animationType as string,
   }));
 
-  const set = (key: string) => (val: string | number | boolean) =>
+  const set = (key: string) => (val: string | number) =>
     setProp((p: Record<string, unknown>) => { p[key] = val; });
+  const setT = (key: string, ms: number) => (val: string | number) =>
+    setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
+
+  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
+  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
 
   return (
     <div className="p-3 space-y-5 text-white">
       <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Layout</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Text Align</label>
-            <div className="flex gap-1">
-              {(['left', 'center', 'right'] as const).map((a) => (
-                <button key={a} onClick={() => set('textAlign')(a)}
-                  className={`flex-1 py-1 text-xs rounded border capitalize transition-colors ${
-                    textAlign === a ? 'border-[#FF6B35] text-[#FF6B35] bg-[#FF6B35]/10' : 'border-gray-600 text-gray-400 hover:border-gray-400'
-                  }`}>{a}</button>
-              ))}
-            </div>
+            <label className={labelCls}>Title (line 1)</label>
+            <input type="text" value={title ?? ''} onChange={(e) => set('title')(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">
-              Min Height — {minHeight ?? 500}px
-            </label>
-            <input type="range" min="200" max="900" value={minHeight ?? 500}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.minHeight = Number(e.target.value); }, 500)}
-              className="w-full accent-[#FF6B35]" />
+            <label className={labelCls}>Title accent (line 2, gradient)</label>
+            <input type="text" value={titleAccent ?? ''} onChange={(e) => set('titleAccent')(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Subtitle</label>
+            <input type="text" value={subtitle ?? ''} onChange={(e) => set('subtitle')(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Badge text</label>
+            <input type="text" value={badgeText ?? ''} onChange={(e) => set('badgeText')(e.target.value)} className={inputCls} placeholder="✦ New Platform Launch" />
+          </div>
+          <div>
+            <label className={labelCls}>Primary button</label>
+            <input type="text" value={primaryBtnText ?? ''} onChange={(e) => set('primaryBtnText')(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Secondary button</label>
+            <input type="text" value={secondaryBtnText ?? ''} onChange={(e) => set('secondaryBtnText')(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Social proof text</label>
+            <input type="text" value={socialProofText ?? ''} onChange={(e) => set('socialProofText')(e.target.value)} className={inputCls} placeholder="2,000+ businesses already running" />
           </div>
         </div>
       </section>
+
       <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Background</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Layout</h3>
         <div>
+          <label className={labelCls}>Min height — {minHeight ?? 600}px</label>
           <input
-            type="text"
-            value={background ?? ''}
-            onChange={(e) => set('background')(e.target.value)}
-            className="w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white font-mono"
-            placeholder="CSS gradient or color"
+            type="number"
+            min={400}
+            max={1200}
+            value={minHeight ?? 600}
+            onChange={(e) => set('minHeight')(Number(e.target.value))}
+            className={inputCls}
           />
-          <div className="flex gap-1 mt-2 flex-wrap">
-            {[
-              'linear-gradient(135deg, #FF6B35 0%, #ff8555 100%)',
-              'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-              '#1a1a1a',
-              '#ffffff',
-            ].map((v) => (
-              <button key={v} onClick={() => set('background')(v)}
-                className={`w-8 h-8 rounded border-2 transition-all ${
-                  background === v ? 'border-[#FF6B35] scale-110' : 'border-gray-600 hover:border-gray-400'
-                }`}
-                style={{ background: v }}
-                title={v}
-              />
-            ))}
+        </div>
+      </section>
+
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Gradient</h3>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <label className={`${labelCls} shrink-0 w-20`}>From</label>
+            <input
+              type="color"
+              value={gradientFrom ?? '#0f172a'}
+              onChange={(e) => setT('gradientFrom', 300)(e.target.value)}
+              className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
+            />
+            <span className="text-[10px] font-mono text-gray-500 truncate">{gradientFrom}</span>
           </div>
+          <div className="flex items-center gap-2">
+            <label className={`${labelCls} shrink-0 w-20`}>To</label>
+            <input
+              type="color"
+              value={gradientTo ?? '#1e1b4b'}
+              onChange={(e) => setT('gradientTo', 300)(e.target.value)}
+              className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
+            />
+            <span className="text-[10px] font-mono text-gray-500 truncate">{gradientTo}</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
+        <div>
+          <label className={labelCls}>Type (preview only)</label>
+          <select
+            value={animationType ?? 'none'}
+            onChange={(e) => set('animationType')(e.target.value)}
+            className={inputCls}
+          >
+            <option value="none">None</option>
+            <option value="fade-in">Fade in</option>
+            <option value="slide-up">Slide up</option>
+            <option value="scale-in">Scale in</option>
+          </select>
         </div>
       </section>
     </div>
@@ -113,14 +337,22 @@ const HeroSettings = () => {
 Hero.craft = {
   displayName: 'Hero',
   props: {
-    background: 'linear-gradient(135deg, var(--palette-primary, #FF6B35) 0%, var(--palette-accent, #ff8555) 100%)',
-    minHeight: 500,
-    textAlign: 'center',
+    title: 'Build something',
+    titleAccent: 'people love',
+    subtitle: 'Create modern landing pages and websites in minutes. No code required.',
+    primaryBtnText: 'Get started',
+    secondaryBtnText: 'Learn more',
+    minHeight: 600,
+    badgeText: '✦ New Platform Launch',
+    socialProofText: '2,000+ businesses already running',
+    gradientFrom: '#0f172a',
+    gradientTo: '#1e1b4b',
+    animationType: 'none',
   },
   rules: {
     canDrag: () => true,
     canDrop: () => true,
-    canMoveIn: () => true,
+    canMoveIn: () => false,
     canMoveOut: () => true,
   },
   related: {
