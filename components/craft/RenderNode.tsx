@@ -2,7 +2,7 @@
 
 import { useNode, useEditor, Element } from '@craftjs/core';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Copy } from 'lucide-react';
+import { Copy, Trash2 } from 'lucide-react';
 
 const BADGE_H = 22;
 
@@ -154,9 +154,13 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
             <button
               style={{ ...btnStyle, color: '#ffcccc' }}
               title="Delete"
-              onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); actions.delete(id); }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (id !== 'ROOT') actions.delete(id);
+              }}
             >
-              ✕
+              <Trash2 size={12} />
             </button>
           )}
         </div>

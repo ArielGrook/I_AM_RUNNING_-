@@ -124,6 +124,31 @@ export default function EditorPage() {
     load();
   }, [projectId, isAuthenticated, locale, router]);
 
+  // GSAP animations in preview mode (data-animate elements)
+  useEffect(() => {
+    if (!previewMode) return;
+    const timer = setTimeout(async () => {
+      const elements = document.querySelectorAll('[data-animate]');
+      const { gsap } = await import('gsap');
+      elements.forEach((el) => {
+        const type = el.getAttribute('data-animate');
+        const delay = parseFloat(el.getAttribute('data-animate-delay') || '0');
+        if (!type || type === 'none') return;
+        const fromVars: Record<string, Record<string, unknown>> = {
+          'fade-in': { opacity: 0 },
+          'slide-up': { opacity: 0, y: 40 },
+          'slide-left': { opacity: 0, x: -40 },
+          'scale-in': { opacity: 0, scale: 0.85 },
+          'blur-in': { opacity: 0, filter: 'blur(12px)' },
+        };
+        const vars = fromVars[type];
+        if (!vars) return;
+        gsap.from(el, { ...vars, duration: 0.7, delay, ease: 'power2.out', clearProps: 'all' });
+      });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [previewMode]);
+
   const handleSaveFromEditor = useCallback(
     async (serializedJson: string) => {
       if (!projectId || !loadedProject || isSaving) return;

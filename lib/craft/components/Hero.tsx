@@ -192,7 +192,19 @@ export const Hero = ({
             cursor: 'pointer',
           }}
         >
-          {primaryBtnText}
+          <ContentEditable
+            tagName="span"
+            html={primaryBtnText ?? ''}
+            disabled={editingField !== 'primaryBtn' || !enabled}
+            onClick={(e) => { e.stopPropagation(); if (enabled && isSelected) setEditingField('primaryBtn'); }}
+            onBlur={() => setEditingField(null)}
+            onChange={(e) => {
+              actions.setProp((p: Record<string, unknown>) => {
+                p.primaryBtnText = (e.target as { value: string }).value.replace(/<\/?[^>]+(>|$)/g, '');
+              }, 1000);
+            }}
+            style={{ outline: 'none', cursor: enabled ? 'text' : 'pointer', pointerEvents: enabled ? 'auto' : 'none' }}
+          />
         </button>
         <button
           type="button"
@@ -208,7 +220,19 @@ export const Hero = ({
             cursor: 'pointer',
           }}
         >
-          {secondaryBtnText}
+          <ContentEditable
+            tagName="span"
+            html={secondaryBtnText ?? ''}
+            disabled={editingField !== 'secondaryBtn' || !enabled}
+            onClick={(e) => { e.stopPropagation(); if (enabled && isSelected) setEditingField('secondaryBtn'); }}
+            onBlur={() => setEditingField(null)}
+            onChange={(e) => {
+              actions.setProp((p: Record<string, unknown>) => {
+                p.secondaryBtnText = (e.target as { value: string }).value.replace(/<\/?[^>]+(>|$)/g, '');
+              }, 1000);
+            }}
+            style={{ outline: 'none', cursor: enabled ? 'text' : 'pointer', pointerEvents: enabled ? 'auto' : 'none' }}
+          />
         </button>
       </div>
 

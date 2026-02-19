@@ -1,7 +1,8 @@
 'use client';
 
-import { useNode } from '@craftjs/core';
-import React from 'react';
+import { useNode, useEditor } from '@craftjs/core';
+import React, { useState, useEffect } from 'react';
+import ContentEditable from 'react-contenteditable';
 import * as LucideIcons from 'lucide-react';
 
 type ButtonVariant = 'solid' | 'outline' | 'ghost';
@@ -43,7 +44,15 @@ export const Button = ({
 }) => {
   const {
     connectors: { connect, drag },
+    actions,
   } = useNode();
+  const isSelected = useNode((node) => node.events.selected);
+  const enabled = useEditor((state) => state.options.enabled);
+  const [editingField, setEditingField] = useState(false);
+
+  useEffect(() => {
+    if (!isSelected) setEditingField(false);
+  }, [isSelected]);
 
   const paddingMap = { sm: '8px 20px', md: '12px 32px', lg: '16px 48px' };
   const fontSizeMap = { sm: '14px', md: '16px', lg: '18px' };
@@ -79,14 +88,32 @@ export const Button = ({
   const inner = (
     <>
       <DynamicIcon name={iconName} size={parseInt(fontSizeMap[size])} />
-      {text}
+      <ContentEditable
+        tagName="span"
+        html={text ?? ''}
+        disabled={!editingField || !enabled}
+        onClick={(e) => { e.stopPropagation(); if (enabled && isSelected) setEditingField(true); }}
+        onBlur={() => setEditingField(false)}
+        onChange={(e) => {
+          actions.setProp((p: Record<string, unknown>) => {
+            p.text = (e.target as { value: string }).value.replace(/<\/?[^>]+(>|$)/g, '');
+          }, 1000);
+        }}
+        style={{ outline: 'none', cursor: enabled ? 'text' : 'pointer', pointerEvents: 'auto' }}
+      />
     </>
   );
+
+  const refFn = (ref: HTMLElement | null) => {
+    if (!ref) return;
+    if (editingField) connect(ref as unknown as HTMLElement);
+    else connect(drag(ref as unknown as HTMLElement));
+  };
 
   if (linkType === 'external' && href) {
     return (
       <a
-        ref={(ref) => { if (ref) connect(drag(ref as unknown as HTMLElement)); }}
+        ref={refFn as (ref: HTMLAnchorElement | null) => void}
         href={href}
         target="_blank"
         rel="noopener noreferrer"
@@ -99,7 +126,7 @@ export const Button = ({
 
   return (
     <button
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      ref={refFn as (ref: HTMLButtonElement | null) => void}
       type="button"
       style={baseStyle}
     >

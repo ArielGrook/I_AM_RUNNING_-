@@ -10,7 +10,7 @@ import { useEffect, useCallback } from 'react';
  * Ctrl+Z  → Undo
  * Ctrl+Shift+Z / Ctrl+Y → Redo
  * Ctrl+S  → Save (calls onSave callback)
- * Delete / Backspace → Delete selected node
+ * Delete via badge trash button only (no keyboard shortcut)
  */
 export const KeyboardShortcuts = ({
   onSave,
@@ -48,15 +48,6 @@ export const KeyboardShortcuts = ({
         e.preventDefault();
         onSave();
         return;
-      }
-
-      // Delete / Backspace → Delete selected node
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        const selectedId = query.getEvent('selected').first();
-        if (selectedId && query.node(selectedId).isDeletable()) {
-          actions.delete(selectedId);
-        }
       }
     },
     [actions, query, onSave]
