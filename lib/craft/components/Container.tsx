@@ -75,7 +75,10 @@ export const Container = ({
 }) => {
   const {
     connectors: { connect, drag },
-  } = useNode();
+    isRoot,
+  } = useNode((node) => ({
+    isRoot: node.id === 'ROOT',
+  }));
 
   const SHADOWS: Record<string, string> = {
     none: 'none',
@@ -99,7 +102,7 @@ export const Container = ({
         background,
         padding: `${padding}px`,
         margin: `${margin}px`,
-        minHeight: '100px',
+        minHeight: isRoot ? '100vh' : '40px',
         display: 'flex',
         flexDirection,
         justifyContent,
@@ -373,7 +376,7 @@ Container.craft = {
   },
   rules: {
     canDrop: () => true,
-    canDrag: () => true,
+    canDrag: (node: { id: string }) => node.id !== 'ROOT',
     canMoveIn: () => true,
     canMoveOut: () => true,
   },

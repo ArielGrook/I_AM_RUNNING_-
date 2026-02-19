@@ -263,20 +263,11 @@ export default function EditorPage() {
                   is={Container}
                   canvas
                   background="#ffffff"
-                  padding={40}
+                  padding={0}
+                  gap={0}
+                  flexDirection="column"
+                  alignItems="stretch"
                 >
-                  <Element
-                    is={Text}
-                    text="Добро пожаловать в редактор!"
-                    fontSize={32}
-                    fontWeight="700"
-                  />
-                  <Element
-                    is={Text}
-                    text="Перетащите компоненты слева или редактируйте этот текст"
-                    fontSize={16}
-                    color="#6b7280"
-                  />
                 </Element>
               )}
             </Frame>
