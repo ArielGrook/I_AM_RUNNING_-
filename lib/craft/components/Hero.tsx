@@ -1,7 +1,8 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import ContentEditable from 'react-contenteditable';
 
 const AVATAR_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
 
@@ -32,9 +33,15 @@ export const Hero = ({
 }) => {
   const {
     connectors: { connect, drag },
+    actions,
   } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const enabled = useEditor((state) => state.options.enabled);
+  const [editingField, setEditingField] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isSelected) setEditingField(null);
+  }, [isSelected]);
 
   const baseGradient = `linear-gradient(135deg, ${gradientFrom} 0%, ${gradientTo} 50%, ${gradientFrom} 100%)`;
   const gridLines = 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)';
@@ -47,7 +54,12 @@ export const Hero = ({
 
   return (
     <section
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      ref={(ref) => {
+        if (ref) {
+          if (!editingField) connect(drag(ref));
+          else connect(ref);
+        }
+      }}
       {...dataAttrs}
       style={{
         minHeight: `${minHeight}px`,
@@ -66,6 +78,7 @@ export const Hero = ({
         backgroundRepeat: 'no-repeat, repeat, repeat, no-repeat' as const,
         outline: isSelected ? '2px solid #f97316' : undefined,
         outlineOffset: '2px',
+        cursor: editingField ? 'text' : undefined,
       }}
     >
       {badgeText && (
@@ -96,34 +109,65 @@ export const Hero = ({
           padding: 0,
         }}
       >
-        <span style={{ color: '#fff' }}>{title}</span>
+        <ContentEditable
+          tagName="span"
+          html={title ?? ''}
+          disabled={editingField !== 'title' || !enabled}
+          onClick={(e) => { e.stopPropagation(); if (enabled && isSelected) setEditingField('title'); }}
+          onBlur={() => setEditingField(null)}
+          onChange={(e) => {
+            actions.setProp((p: Record<string, unknown>) => {
+              p.title = (e.target as { value: string }).value.replace(/<\/?[^>]+(>|$)/g, '');
+            }, 1000);
+          }}
+          style={{ display: 'block', outline: 'none', cursor: enabled ? 'text' : 'default', color: '#fff' }}
+        />
         <br />
-        <span
+        <ContentEditable
+          tagName="span"
+          html={titleAccent ?? ''}
+          disabled={editingField !== 'titleAccent' || !enabled}
+          onClick={(e) => { e.stopPropagation(); if (enabled && isSelected) setEditingField('titleAccent'); }}
+          onBlur={() => setEditingField(null)}
+          onChange={(e) => {
+            actions.setProp((p: Record<string, unknown>) => {
+              p.titleAccent = (e.target as { value: string }).value.replace(/<\/?[^>]+(>|$)/g, '');
+            }, 1000);
+          }}
           style={{
+            display: 'block',
+            outline: 'none',
+            cursor: enabled ? 'text' : 'default',
             background: 'linear-gradient(135deg, #FF6B35, #f59e0b)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
           }}
-        >
-          {titleAccent}
-        </span>
+        />
       </h1>
 
-      {subtitle && (
-        <p
-          style={{
-            fontSize: 18,
-            color: '#94a3b8',
-            lineHeight: 1.7,
-            maxWidth: 560,
-            margin: '20px auto 0',
-            padding: 0,
-          }}
-        >
-          {subtitle}
-        </p>
-      )}
+      <ContentEditable
+        tagName="p"
+        html={subtitle ?? ''}
+        disabled={editingField !== 'subtitle' || !enabled}
+        onClick={(e) => { e.stopPropagation(); if (enabled && isSelected) setEditingField('subtitle'); }}
+        onBlur={() => setEditingField(null)}
+        onChange={(e) => {
+          actions.setProp((p: Record<string, unknown>) => {
+            p.subtitle = (e.target as { value: string }).value.replace(/<\/?[^>]+(>|$)/g, '');
+          }, 1000);
+        }}
+        style={{
+          fontSize: 18,
+          color: '#94a3b8',
+          lineHeight: 1.7,
+          maxWidth: 560,
+          margin: '20px auto 0',
+          padding: 0,
+          outline: 'none',
+          cursor: enabled ? 'text' : 'default',
+        }}
+      />
 
       <div
         style={{
