@@ -349,49 +349,65 @@ export default function EditorPage() {
   // GSAP animations in preview mode (data-animate + ScrollTrigger)
   useEffect(() => {
     if (!previewMode) return;
-    const timer = setTimeout(async () => {
+
+    let ctx: { revert?: () => void } | null = null;
+
+    const run = async () => {
       try {
-        const { gsap } = await import('gsap');
+        const gsapModule = await import('gsap');
         const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        const gsap = (gsapModule as { gsap?: typeof import('gsap').gsap; default?: typeof import('gsap').gsap }).gsap || (gsapModule as { default: typeof import('gsap').gsap }).default;
         gsap.registerPlugin(ScrollTrigger);
 
-        const elements = document.querySelectorAll('[data-animate]');
-        elements.forEach((el) => {
-          const type = el.getAttribute('data-animate');
-          const delay = parseFloat(el.getAttribute('data-animate-delay') || '0');
-          if (!type || type === 'none') return;
+        // Небольшой delay — дать DOM обновиться
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
-          const fromMap: Record<string, object> = {
-            'fade-in': { opacity: 0 },
-            'slide-up': { opacity: 0, y: 50 },
-            'slide-left': { opacity: 0, x: -50 },
-            'scale-in': { opacity: 0, scale: 0.9 },
-            'blur-in': { opacity: 0, filter: 'blur(16px)' },
-          };
-          const vars = fromMap[type];
-          if (!vars) return;
+        ctx = gsap.context(() => {
+          const elements = document.querySelectorAll('[data-animate]');
+          console.log('Animating elements:', elements.length);
 
-          gsap.from(el, {
-            ...vars,
-            duration: 0.8,
-            delay,
-            ease: 'power3.out',
-            clearProps: 'all',
-            scrollTrigger: {
-              trigger: el,
-              start: 'top 85%',
-            },
+          elements.forEach((el) => {
+            const type = el.getAttribute('data-animate');
+            const delay = parseFloat(el.getAttribute('data-animate-delay') || '0');
+            if (!type || type === 'none') return;
+
+            const fromMap: Record<string, object> = {
+              'fade-in': { opacity: 0, duration: 0.8 },
+              'slide-up': { opacity: 0, y: 60, duration: 0.8 },
+              'slide-left': { opacity: 0, x: -60, duration: 0.8 },
+              'scale-in': { opacity: 0, scale: 0.85, duration: 0.8 },
+              'blur-in': { opacity: 0, filter: 'blur(20px)', duration: 0.9 },
+            };
+
+            const vars = fromMap[type];
+            if (!vars) return;
+
+            gsap.from(el, {
+              ...vars,
+              delay,
+              ease: 'power3.out',
+              clearProps: 'all',
+              scrollTrigger: {
+                trigger: el,
+                start: 'top 88%',
+                once: true,
+              },
+            });
           });
+
+          ScrollTrigger.refresh();
         });
       } catch (e) {
-        console.warn('GSAP animation error:', e);
+        console.error('GSAP error:', e);
       }
-    }, 200);
+    };
+
+    run();
 
     return () => {
-      clearTimeout(timer);
-      import('gsap/ScrollTrigger').then(({ ScrollTrigger }) => {
-        ScrollTrigger.getAll().forEach((t) => t.kill());
+      ctx?.revert?.();
+      import('gsap/ScrollTrigger').then((m: { ScrollTrigger?: { getAll: () => { kill: () => void }[] } }) => {
+        m.ScrollTrigger?.getAll?.().forEach((t) => t.kill());
       });
     };
   }, [previewMode]);
