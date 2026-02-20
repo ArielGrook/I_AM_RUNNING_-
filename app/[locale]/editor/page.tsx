@@ -33,7 +33,6 @@ import {
   HtmlBlock,
 } from '@/lib/craft/components';
 import { Toolbox } from '@/components/craft/Toolbox';
-import { LayersPanel } from '@/components/craft/LayersPanel';
 import { SettingsPanel } from '@/components/craft/SettingsPanel';
 import { Viewport } from '@/components/craft/Viewport';
 import { Toolbar } from '@/components/craft/Toolbar';
@@ -84,7 +83,6 @@ function EditorLayout({
         >
           <div className="flex min-w-0 flex-1 overflow-hidden">
             <Toolbox />
-            <LayersPanel />
           </div>
           {leftPanelOpen && (
             <button

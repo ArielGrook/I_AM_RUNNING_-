@@ -145,7 +145,7 @@ export const Toolbox = () => {
   );
 
   return (
-    <div className={`w-60 overflow-y-auto shrink-0 flex flex-col craft-editor-left ${t(
+    <div className={`flex-1 min-w-0 overflow-y-auto flex flex-col craft-editor-left ${t(
       'bg-white',
       'bg-[#1a1a1a]'
     )}`}>
