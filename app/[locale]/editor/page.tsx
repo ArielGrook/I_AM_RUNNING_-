@@ -77,7 +77,7 @@ function EditorLayout({
         <div
           className="flex transition-all duration-200 shrink-0 overflow-visible relative"
           style={{
-            width: leftPanelOpen ? '30rem' : 0,
+            width: leftPanelOpen ? '15rem' : 0,
             minWidth: leftPanelOpen ? undefined : 0,
           }}
         >
@@ -346,71 +346,73 @@ export default function EditorPage() {
     load();
   }, [projectId, isAuthenticated, locale, router]);
 
-  // GSAP animations in preview mode (data-animate + ScrollTrigger)
-  useEffect(() => {
-    if (!previewMode) return;
+  // GSAP animations in preview mode (data-animate + ScrollTrigger); reusable for Replay
+  const runAnimations = useCallback(async () => {
+    try {
+      const gsapModule = await import('gsap');
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+      const gsap = (gsapModule as { gsap?: unknown; default?: unknown }).gsap || (gsapModule as { default: unknown }).default;
+      (gsap as { registerPlugin: (p: unknown) => void }).registerPlugin(ScrollTrigger);
 
-    let ctx: { revert?: () => void } | null = null;
+      // Убиваем старые анимации
+      (ScrollTrigger as { getAll: () => { kill: () => void }[] }).getAll().forEach((t) => t.kill());
+      const gt = (gsap as { globalTimeline?: { clear: () => void } }).globalTimeline;
+      if (gt) gt.clear();
 
-    const run = async () => {
-      try {
-        const gsapModule = await import('gsap');
-        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-        const gsap = (gsapModule as { gsap?: typeof import('gsap').gsap; default?: typeof import('gsap').gsap }).gsap || (gsapModule as { default: typeof import('gsap').gsap }).default;
-        gsap.registerPlugin(ScrollTrigger);
+      const elements = document.querySelectorAll('[data-animate]');
+      console.log('[GSAP] Found elements:', elements.length);
 
-        // Небольшой delay — дать DOM обновиться
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        ctx = gsap.context(() => {
-          const elements = document.querySelectorAll('[data-animate]');
-          console.log('Animating elements:', elements.length);
-
-          elements.forEach((el) => {
-            const type = el.getAttribute('data-animate');
-            const delay = parseFloat(el.getAttribute('data-animate-delay') || '0');
-            if (!type || type === 'none') return;
-
-            const fromMap: Record<string, object> = {
-              'fade-in': { opacity: 0, duration: 0.8 },
-              'slide-up': { opacity: 0, y: 60, duration: 0.8 },
-              'slide-left': { opacity: 0, x: -60, duration: 0.8 },
-              'scale-in': { opacity: 0, scale: 0.85, duration: 0.8 },
-              'blur-in': { opacity: 0, filter: 'blur(20px)', duration: 0.9 },
-            };
-
-            const vars = fromMap[type];
-            if (!vars) return;
-
-            gsap.from(el, {
-              ...vars,
-              delay,
-              ease: 'power3.out',
-              clearProps: 'all',
-              scrollTrigger: {
-                trigger: el,
-                start: 'top 88%',
-                once: true,
-              },
-            });
-          });
-
-          ScrollTrigger.refresh();
-        });
-      } catch (e) {
-        console.error('GSAP error:', e);
+      if (elements.length === 0) {
+        console.warn('[GSAP] No [data-animate] elements found. Check if components render data-animate when enabled=false');
+        return;
       }
-    };
 
-    run();
+      elements.forEach((el) => {
+        const type = el.getAttribute('data-animate');
+        const delay = parseFloat(el.getAttribute('data-animate-delay') || '0');
+        if (!type || type === 'none') return;
 
-    return () => {
-      ctx?.revert?.();
+        const fromMap: Record<string, object> = {
+          'fade-in': { opacity: 0, duration: 0.8 },
+          'slide-up': { opacity: 0, y: 60, duration: 0.8 },
+          'slide-left': { opacity: 0, x: -60, duration: 0.8 },
+          'scale-in': { opacity: 0, scale: 0.85, duration: 0.8 },
+          'blur-in': { opacity: 0, filter: 'blur(20px)', duration: 0.9 },
+        };
+
+        const vars = fromMap[type];
+        if (!vars) return;
+
+        (gsap as { set: (target: Element, vars: object) => void }).set(el, { clearProps: 'all' });
+
+        (gsap as { from: (target: Element, vars: object) => void }).from(el, {
+          ...vars,
+          delay,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top 88%',
+            once: false,
+          },
+        });
+      });
+
+      (ScrollTrigger as { refresh: () => void }).refresh();
+    } catch (e) {
+      console.error('[GSAP] Error:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!previewMode) {
       import('gsap/ScrollTrigger').then((m: { ScrollTrigger?: { getAll: () => { kill: () => void }[] } }) => {
         m.ScrollTrigger?.getAll?.().forEach((t) => t.kill());
       });
-    };
-  }, [previewMode]);
+      return;
+    }
+    const timer = setTimeout(runAnimations, 500);
+    return () => clearTimeout(timer);
+  }, [previewMode, runAnimations]);
 
   const handleSaveFromEditor = useCallback(
     async (serializedJson: string) => {
@@ -561,6 +563,7 @@ export default function EditorPage() {
           onToggleOutlines={() => setOutlines((o) => !o)}
           previewMode={previewMode}
           onTogglePreview={() => setPreviewMode((p) => !p)}
+          onReplayAnimations={runAnimations}
           projectId={projectId}
           projectName={loadedProject?.name}
           onRenameProject={handleRenameProject}

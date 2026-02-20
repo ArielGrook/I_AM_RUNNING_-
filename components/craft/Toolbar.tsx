@@ -24,6 +24,7 @@ export const Toolbar = ({
   onToggleOutlines,
   previewMode,
   onTogglePreview,
+  onReplayAnimations,
   projectId,
   projectName,
   onRenameProject,
@@ -42,6 +43,7 @@ export const Toolbar = ({
   onToggleOutlines: () => void;
   previewMode: boolean;
   onTogglePreview: () => void;
+  onReplayAnimations?: () => void | Promise<void>;
   projectId?: string | null;
   projectName?: string;
   onRenameProject?: (newName: string) => Promise<void>;
@@ -124,6 +126,15 @@ export const Toolbar = ({
         'bg-[#1a1a1a] border-gray-700/60'
       )}`}>
         <span className={`text-xs font-medium ${t('text-gray-500', 'text-gray-400')}`}>Preview Mode</span>
+        {onReplayAnimations && (
+          <button
+            type="button"
+            onClick={() => onReplayAnimations()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 rounded-lg text-sm font-medium transition-all"
+          >
+            ▶ Replay
+          </button>
+        )}
         <button onClick={onTogglePreview} className="px-3 py-1.5 rounded-md text-xs font-semibold bg-[#FF6B35] text-white hover:bg-[#ff8555] transition-all">
           Exit Preview
         </button>
