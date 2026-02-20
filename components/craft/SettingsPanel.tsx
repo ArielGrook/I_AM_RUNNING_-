@@ -82,11 +82,7 @@ export const SettingsPanel = () => {
 
   return (
     <div
-      className={`craft-settings-panel w-72 border-l flex flex-col shrink-0 ${t(
-        'bg-white border-gray-200',
-        'bg-[#1a1a1a] border-[#2a2a2a]'
-      )}`}
-      style={{ height: '100%' }}
+      className="craft-settings-panel w-[320px] h-full overflow-y-auto flex flex-col shrink-0 bg-[#1a1a1a] border-l border-[#2a2a2a]"
     >
       {/* Header */}
       <div className={`flex items-center justify-between px-3 py-2 border-b shrink-0 ${t('border-gray-200', 'border-[#2a2a2a]')}`}>

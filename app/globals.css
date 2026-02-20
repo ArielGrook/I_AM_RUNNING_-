@@ -1364,7 +1364,7 @@ footer[data-cy="craft-canvas"]:empty::after {
 .craft-settings-panel textarea,
 .craft-settings-panel select {
   background-color: #2a2a2a !important;
-  color: #ffffff !important;
+  color: #e5e5e5 !important;
   border: 1px solid #3a3a3a !important;
   border-radius: 6px !important;
   padding: 6px 10px !important;
@@ -1385,7 +1385,7 @@ footer[data-cy="craft-canvas"]:empty::after {
 
 .craft-settings-panel select option {
   background-color: #1a1a1a !important;
-  color: #ffffff !important;
+  color: #e5e5e5 !important;
 }
 
 .craft-settings-panel input::placeholder,
@@ -1400,5 +1400,12 @@ footer[data-cy="craft-canvas"]:empty::after {
   font-weight: 500 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
+}
+
+/* ─── Mini toolbar above canvas: dark inputs ─── */
+.craft-canvas-toolbar input:not([type="color"]) {
+  background-color: #2a2a2a !important;
+  color: #e5e5e5 !important;
+  border: 1px solid #3a3a3a !important;
 }
 
