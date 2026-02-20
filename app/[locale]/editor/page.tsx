@@ -239,12 +239,16 @@ type PageState = {
   id: string;
   name: string;
   data: string | null;
+  desktopData?: string | null;
+  mobileData?: string | null;
 };
 
 const defaultPage: PageState = {
   id: '1',
   name: 'Page 1',
   data: null,
+  desktopData: null,
+  mobileData: null,
 };
 
 /** Syncs preview mode with Craft.js: when previewMode is true, editing is disabled. */
@@ -275,6 +279,9 @@ export default function EditorPage() {
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [frameData, setFrameData] = useState<string | null>(null);
   const [frameReady, setFrameReady] = useState(false);
+  const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [desktopData, setDesktopData] = useState<string | null>(null);
+  const [mobileData, setMobileData] = useState<string | null>(null);
 
   const activePage = pages.find((p) => p.id === activePageId);
 
@@ -318,19 +325,22 @@ export default function EditorPage() {
       };
       const craftPages = pd?.craft?.pages;
       if (craftPages && Array.isArray(craftPages) && craftPages.length > 0) {
-        const mappedPages = craftPages.map((p) => ({
+        const mappedPages = craftPages.map((p: { id?: string; name?: string; data?: string | null; desktopData?: string | null; mobileData?: string | null }) => ({
           id: p.id || String(Math.random()),
           name: p.name || 'Page',
           data: p.data ?? null,
+          desktopData: p.desktopData ?? p.data ?? null,
+          mobileData: p.mobileData ?? null,
         }));
         setPages(mappedPages);
         const activeId = pd?.craft?.activePageId || craftPages[0].id || '1';
         setActivePageId(activeId);
 
         const activePage = mappedPages.find((p) => p.id === activeId);
-        if (activePage?.data) {
+        const dataToLoad = activePage?.desktopData ?? activePage?.data ?? null;
+        if (dataToLoad) {
           try {
-            const json = lz.decompress(activePage.data, { inputEncoding: 'Base64' }) as string;
+            const json = lz.decompress(dataToLoad, { inputEncoding: 'Base64' }) as string;
             setFrameData(json);
           } catch {
             setFrameData(null);
@@ -338,6 +348,9 @@ export default function EditorPage() {
         } else {
           setFrameData(null);
         }
+        setDesktopData(activePage?.desktopData ?? activePage?.data ?? null);
+        setMobileData(activePage?.mobileData ?? null);
+        setViewport('desktop');
       } else {
         setFrameData(null);
       }
@@ -534,8 +547,12 @@ export default function EditorPage() {
       setIsSaving(true);
       try {
         const compressed = lz.compress(serializedJson, { outputEncoding: 'Base64' });
+        const latestDesktop = viewport === 'desktop' ? compressed : (desktopData || compressed);
+        const latestMobile = viewport !== 'desktop' ? compressed : (mobileData || compressed);
         const updatedPages = pages.map((p) =>
-          p.id === activePageId ? { ...p, data: compressed } : p
+          p.id === activePageId
+            ? { ...p, data: latestDesktop, desktopData: latestDesktop, mobileData: latestMobile }
+            : p
         );
 
         const project = {
@@ -553,7 +570,7 @@ export default function EditorPage() {
         const { error } = await saveProjectToSupabase(
           project,
           null,
-          { craft: { pages: updatedPages, activePageId } },
+          { craft: { schemaVersion: 2, pages: updatedPages, activePageId } },
           null,
           loadedProject.version
         );
@@ -564,12 +581,14 @@ export default function EditorPage() {
           return;
         }
         setPages(updatedPages);
+        setDesktopData(latestDesktop);
+        setMobileData(latestMobile);
         alert('Saved!');
       } finally {
         setIsSaving(false);
       }
     },
-    [projectId, loadedProject, pages, activePageId, isSaving]
+    [projectId, loadedProject, pages, activePageId, isSaving, viewport, desktopData, mobileData]
   );
 
   const handlePreview = () => {
@@ -582,12 +601,21 @@ export default function EditorPage() {
   const handlePageChange = useCallback(
     (targetId: string, currentPageJson: string) => {
       const compressed =
-        currentPageJson &&
-        lz.compress(currentPageJson, { outputEncoding: 'Base64' });
+        currentPageJson && lz.compress(currentPageJson, { outputEncoding: 'Base64' });
+      const latestDesktop = viewport === 'desktop' ? compressed : (desktopData || compressed);
+      const latestMobile = viewport !== 'desktop' ? compressed : (mobileData || compressed);
+      setPages((prev) =>
+        prev.map((p) =>
+          p.id === activePageId
+            ? { ...p, data: latestDesktop, desktopData: latestDesktop, mobileData: latestMobile }
+            : p
+        )
+      );
       const targetPage = pages.find((p) => p.id === targetId);
-      if (targetPage?.data) {
+      const dataToLoad = targetPage?.desktopData ?? targetPage?.data ?? null;
+      if (dataToLoad) {
         try {
-          const json = lz.decompress(targetPage.data, { inputEncoding: 'Base64' }) as string;
+          const json = lz.decompress(dataToLoad, { inputEncoding: 'Base64' }) as string;
           setFrameData(json);
         } catch {
           setFrameData(null);
@@ -595,24 +623,24 @@ export default function EditorPage() {
       } else {
         setFrameData(null);
       }
-      setPages((prev) =>
-        prev.map((p) =>
-          p.id === activePageId ? { ...p, data: compressed } : p
-        )
-      );
+      setDesktopData(targetPage?.desktopData ?? targetPage?.data ?? null);
+      setMobileData(targetPage?.mobileData ?? null);
+      setViewport('desktop');
       setActivePageId(targetId);
     },
-    [activePageId, pages]
+    [activePageId, pages, viewport, desktopData, mobileData]
   );
 
   const handleAddPage = () => {
     const newId = String(Date.now());
     setPages((prev) => [
       ...prev,
-      { id: newId, name: `Page ${prev.length + 1}`, data: null },
+      { id: newId, name: `Page ${prev.length + 1}`, data: null, desktopData: null, mobileData: null },
     ]);
     setActivePageId(newId);
-    setFrameData(null); // new page is empty
+    setFrameData(null);
+    setDesktopData(null);
+    setMobileData(null);
   };
 
   // Wait for project load before mounting Editor so Frame gets correct data on first paint
@@ -690,7 +718,14 @@ export default function EditorPage() {
           previewMode={previewMode}
           outlines={outlines}
         >
-          <Viewport>
+          <Viewport
+            viewport={viewport}
+            setViewport={setViewport}
+            desktopData={desktopData}
+            setDesktopData={setDesktopData}
+            mobileData={mobileData}
+            setMobileData={setMobileData}
+          >
             {frameReady && (
               <Frame key={activePageId} data={frameData ?? undefined}>
                 {!frameData && (

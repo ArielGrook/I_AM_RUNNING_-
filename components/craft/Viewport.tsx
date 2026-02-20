@@ -2,6 +2,7 @@
 
 import { useEditor } from '@craftjs/core';
 import React, { useState, useCallback } from 'react';
+import lz from 'lzutf8';
 import { useEditorTheme } from './EditorThemeContext';
 import { COLOR_PRESETS } from '@/lib/craft/presets/colors';
 
@@ -13,17 +14,64 @@ const DEVICES: { key: DeviceMode; label: string; width: string }[] = [
   { key: 'mobile', label: '375', width: '375px' },
 ];
 
-export const Viewport = ({ children }: { children: React.ReactNode }) => {
+type ViewportProps = {
+  children: React.ReactNode;
+  viewport: DeviceMode;
+  setViewport: (v: DeviceMode) => void;
+  desktopData: string | null;
+  setDesktopData: (v: string | null) => void;
+  mobileData: string | null;
+  setMobileData: (v: string | null) => void;
+};
+
+export const Viewport = ({
+  children,
+  viewport,
+  setViewport,
+  desktopData,
+  setDesktopData,
+  mobileData,
+  setMobileData,
+}: ViewportProps) => {
   const { connectors, isDragging, actions, query } = useEditor((state) => ({
     isDragging: state.events.dragged.size > 0,
   }));
-  const [device, setDevice] = useState<DeviceMode>('desktop');
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const { t } = useEditorTheme();
 
-  const activeDevice = DEVICES.find((d) => d.key === device)!;
+  const switchViewport = useCallback(
+    (newViewport: DeviceMode) => {
+      if (newViewport === viewport) return;
+      const currentSerialized = query.serialize();
+      const currentCompressed = lz.compress(currentSerialized, { outputEncoding: 'Base64' });
+      if (viewport === 'desktop') {
+        setDesktopData(currentCompressed);
+      } else {
+        setMobileData(currentCompressed);
+      }
+      if (newViewport === 'desktop') {
+        if (desktopData) {
+          const json = lz.decompress(desktopData, { inputEncoding: 'Base64' }) as string;
+          actions.deserialize(json);
+        }
+      } else {
+        if (mobileData) {
+          const json = lz.decompress(mobileData, { inputEncoding: 'Base64' }) as string;
+          actions.deserialize(json);
+        } else if (desktopData) {
+          const json = lz.decompress(desktopData, { inputEncoding: 'Base64' }) as string;
+          actions.deserialize(json);
+          setMobileData(desktopData);
+        }
+      }
+      setViewport(newViewport);
+    },
+    [viewport, desktopData, mobileData, query, actions, setViewport, setDesktopData, setMobileData]
+  );
+
+  const activeDevice = DEVICES.find((d) => d.key === viewport)!;
 
   const applyColorPreset = useCallback(
     (preset: { id: string; label: string; bg: string }) => {
@@ -61,11 +109,11 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
         >
           <button
             type="button"
-            onClick={() => setDevice('desktop')}
+            onClick={() => switchViewport('desktop')}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-150"
             style={{
-              background: device === 'desktop' ? '#2a2a2a' : 'transparent',
-              color: device === 'desktop' ? '#ffffff' : '#71717a',
+              background: viewport === 'desktop' ? '#2a2a2a' : 'transparent',
+              color: viewport === 'desktop' ? '#ffffff' : '#71717a',
               border: 'none',
               cursor: 'pointer',
             }}
@@ -79,11 +127,11 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
           <div style={{ width: 1, height: 20, background: '#2a2a2a' }} />
           <button
             type="button"
-            onClick={() => setDevice('tablet')}
+            onClick={() => switchViewport('tablet')}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-150"
             style={{
-              background: device === 'tablet' ? '#2a2a2a' : 'transparent',
-              color: device === 'tablet' ? '#ffffff' : '#71717a',
+              background: viewport === 'tablet' ? '#2a2a2a' : 'transparent',
+              color: viewport === 'tablet' ? '#ffffff' : '#71717a',
               border: 'none',
               cursor: 'pointer',
             }}
@@ -97,11 +145,11 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
           <div style={{ width: 1, height: 20, background: '#2a2a2a' }} />
           <button
             type="button"
-            onClick={() => setDevice('mobile')}
+            onClick={() => switchViewport('mobile')}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-150"
             style={{
-              background: device === 'mobile' ? '#2a2a2a' : 'transparent',
-              color: device === 'mobile' ? '#ffffff' : '#71717a',
+              background: viewport === 'mobile' ? '#2a2a2a' : 'transparent',
+              color: viewport === 'mobile' ? '#ffffff' : '#71717a',
               border: 'none',
               cursor: 'pointer',
             }}
@@ -180,7 +228,7 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
         <div className="p-6 min-h-full flex justify-center">
           <div
             className="transition-all duration-300"
-            data-viewport={device}
+            data-viewport={viewport}
             style={{
               width: activeDevice.width,
               maxWidth: '100%',
@@ -195,7 +243,7 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
                   ? 'ring-2 ring-[#FF6B35]/60 ring-offset-2 ring-offset-transparent shadow-[0_0_50px_rgba(255,107,53,0.2)]'
                   : t('shadow-[0_0_40px_rgba(0,0,0,0.1)]', 'shadow-[0_0_60px_rgba(0,0,0,0.4)]')
               }`}
-              style={{ borderRadius: device !== 'desktop' ? 12 : 0 }}
+              style={{ borderRadius: viewport !== 'desktop' ? 12 : 0 }}
             >
               {/* Alignment grid overlay */}
               {showGrid && (
