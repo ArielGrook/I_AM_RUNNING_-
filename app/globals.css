@@ -1289,6 +1289,17 @@ footer[data-cy="craft-canvas"]:empty::after {
   outline-offset: 2px;
 }
 
+/* Craft.js canvas viewport simulation */
+[data-viewport="mobile"] .md\:flex    { display: none !important; }
+[data-viewport="mobile"] .md\:hidden  { display: flex !important; }
+[data-viewport="mobile"] .sm\:flex    { display: none !important; }
+[data-viewport="mobile"] .sm\:hidden  { display: flex !important; }
+[data-viewport="mobile"] .lg\:flex    { display: none !important; }
+[data-viewport="mobile"] .lg\:hidden  { display: flex !important; }
+[data-viewport="mobile"] .md\:grid-cols-2 { grid-template-columns: repeat(1, 1fr) !important; }
+[data-viewport="mobile"] .md\:grid-cols-3 { grid-template-columns: repeat(1, 1fr) !important; }
+[data-viewport="mobile"] .lg\:grid-cols-3 { grid-template-columns: repeat(1, 1fr) !important; }
+[data-viewport="mobile"] .sm\:grid-cols-2 { grid-template-columns: repeat(1, 1fr) !important; }
 
 
 

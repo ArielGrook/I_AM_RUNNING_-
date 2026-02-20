@@ -108,6 +108,7 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
         <div className="p-6 min-h-full flex justify-center">
           <div
             className="transition-all duration-300"
+            data-viewport={device}
             style={{
               width: activeDevice.width,
               maxWidth: '100%',

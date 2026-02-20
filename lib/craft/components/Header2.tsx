@@ -253,14 +253,6 @@ const Header2Settings = () => {
   const setT = (key: string, ms: number) => (val: unknown) =>
     setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
 
-  const setLinkLabel = (index: number, value: string) => {
-    setProp((p: Record<string, unknown>) => {
-      const arr = [...(p.navLinks as NavLinkItem[])];
-      if (arr[index]) arr[index] = { ...arr[index], label: value };
-      p.navLinks = arr;
-    }, 500);
-  };
-
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
 
@@ -331,19 +323,67 @@ const Header2Settings = () => {
       </section>
 
       <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Nav Links (labels)</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Nav Links</h3>
         <div className="space-y-2">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i}>
-              <label className={labelCls}>Link {i + 1} label</label>
+          {links.map((link, i) => (
+            <div key={i} className="flex gap-2 items-center mb-2">
               <input
-                type="text"
-                value={links[i]?.label ?? ''}
-                onChange={(e) => setLinkLabel(i, e.target.value)}
-                className={inputCls}
+                value={link.label}
+                placeholder="Label"
+                className="flex-1 bg-[#2a2a2a] border border-[#3a3a3a] rounded px-2 py-1.5 text-sm text-white"
+                onChange={(e) =>
+                  setProp(
+                    (p: Record<string, unknown>) => {
+                      const arr = [...(p.navLinks as NavLinkItem[])];
+                      if (arr[i]) arr[i] = { ...arr[i], label: e.target.value };
+                      p.navLinks = arr;
+                    },
+                    500
+                  )
+                }
               />
+              <input
+                value={link.href}
+                placeholder="#section"
+                className="flex-1 bg-[#2a2a2a] border border-[#3a3a3a] rounded px-2 py-1.5 text-sm text-white"
+                onChange={(e) =>
+                  setProp(
+                    (p: Record<string, unknown>) => {
+                      const arr = [...(p.navLinks as NavLinkItem[])];
+                      if (arr[i]) arr[i] = { ...arr[i], href: e.target.value };
+                      p.navLinks = arr;
+                    },
+                    500
+                  )
+                }
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setProp((p: Record<string, unknown>) => {
+                    p.navLinks = (p.navLinks as NavLinkItem[]).filter((_, idx) => idx !== i);
+                  })
+                }
+                className="text-red-400 hover:text-red-300 text-lg leading-none px-1"
+                title="Remove link"
+              >
+                ×
+              </button>
             </div>
           ))}
+          {links.length < 6 && (
+            <button
+              type="button"
+              onClick={() =>
+                setProp((p: Record<string, unknown>) => {
+                  p.navLinks = [...(p.navLinks as NavLinkItem[]), { label: 'New Link', href: '#' }];
+                })
+              }
+              className="w-full border border-dashed border-[#3a3a3a] rounded py-2 text-sm text-gray-500 hover:text-gray-300 hover:border-gray-500 transition-colors mt-1"
+            >
+              + Add Link
+            </button>
+          )}
         </div>
       </section>
 
