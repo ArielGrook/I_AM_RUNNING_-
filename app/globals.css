@@ -446,14 +446,24 @@ html::-webkit-scrollbar {
    CRAFT.JS EDITOR — Hover & Select Indicators
    ═══════════════════════════════════════════════════════ */
 
-.craft-node-hovered {
-  outline: 1px dashed rgba(255, 107, 53, 0.5) !important;
-  outline-offset: 0px;
+/* Remove Craft.js default dashed outlines (no dashed on load/viewport switch/text edit) */
+[data-id] {
+  outline: none !important;
+}
+.craftjs-renderer > * {
+  border: none !important;
+  outline: none !important;
 }
 
+/* Selection: solid orange only (keep intentional) */
 .craft-node-selected {
   outline: 2px solid #FF6B35 !important;
   outline-offset: 0px;
+}
+
+/* Hover: no dashed (was causing dotted lines on canvas) */
+.craft-node-hovered {
+  outline: none !important;
 }
 
 /* ── Craft.js native drop indicator — make it very visible ── */
@@ -484,12 +494,12 @@ footer[data-cy="craft-canvas"]:empty::after {
   font-size: 13px;
   font-weight: 500;
   font-family: system-ui, -apple-system, sans-serif;
-  border: 2px dashed rgba(148, 163, 184, 0.25);
+  border: 2px solid transparent;
   border-radius: 8px;
   pointer-events: none;
 }
 
-/* ── Canvas drop zone highlight during drag ── */
+/* ── Canvas drop zone highlight during drag (keep when dragging) ── */
 .craft-canvas-drop-zone {
   outline: 2px dashed rgba(255, 107, 53, 0.3) !important;
   outline-offset: -2px;
@@ -502,15 +512,20 @@ footer[data-cy="craft-canvas"]:empty::after {
   ) !important;
 }
 
-/* ── Outlines mode — show all element borders ── */
+/* Hide dashed drop indicator when not actively dragging */
+.craft-drop-indicator:not(.is-active) {
+  display: none !important;
+}
+
+/* ── Outlines mode (toggle) — subtle borders, no dashed on canvas by default ── */
 .craft-outlines-mode [class*="craft-"] > *,
 .craft-outlines-mode .craftjs-renderer > * {
-  outline: 1px dashed rgba(148, 163, 184, 0.4) !important;
+  outline: 1px solid rgba(148, 163, 184, 0.25) !important;
   outline-offset: -1px;
 }
 
 .craft-outlines-mode div[draggable] {
-  outline: 1px dashed rgba(148, 163, 184, 0.35) !important;
+  outline: 1px solid rgba(148, 163, 184, 0.2) !important;
 }
 
 /* ── Preview mode — hide all editor chrome ── */
@@ -588,8 +603,7 @@ footer[data-cy="craft-canvas"]:empty::after {
 }
 
 .gjs-hovered {
-  outline: 2px dashed #9ca3af;
-  outline-offset: 2px;
+  outline: none !important;
 }
 
 .gjs-badge {
@@ -1342,7 +1356,49 @@ footer[data-cy="craft-canvas"]:empty::after {
   height: auto;
 }
 
+/* ─── Settings Panel: force dark inputs ─── */
+.craft-settings-panel input[type="text"],
+.craft-settings-panel input[type="number"],
+.craft-settings-panel input[type="url"],
+.craft-settings-panel input:not([type="color"]):not([type="checkbox"]):not([type="range"]),
+.craft-settings-panel textarea,
+.craft-settings-panel select {
+  background-color: #2a2a2a !important;
+  color: #ffffff !important;
+  border: 1px solid #3a3a3a !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
 
+.craft-settings-panel input:focus,
+.craft-settings-panel textarea:focus,
+.craft-settings-panel select:focus {
+  border-color: #FF6B35 !important;
+  box-shadow: 0 0 0 2px rgba(255,107,53,0.15) !important;
+}
 
+.craft-settings-panel select option {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+}
 
+.craft-settings-panel input::placeholder,
+.craft-settings-panel textarea::placeholder {
+  color: #52525b !important;
+}
+
+/* Лейблы в Settings */
+.craft-settings-panel label {
+  color: #a1a1aa !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
 

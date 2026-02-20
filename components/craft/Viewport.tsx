@@ -93,14 +93,9 @@ export const Viewport = ({
 
   return (
     <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${t('bg-[#e2e8f0]', 'bg-[#1f1f1f]')}`}>
-      {/* Secondary toolbar — viewport, accent presets, zoom */}
+      {/* Secondary toolbar — viewport, accent presets, zoom (editor always dark) */}
       <div
-        className="flex items-center justify-between gap-3 shrink-0 px-4"
-        style={{
-          height: 44,
-          background: '#1a1a1a',
-          borderBottom: '1px solid #2a2a2a',
-        }}
+        className="flex items-center justify-between gap-3 shrink-0 px-4 h-11 bg-[#1a1a1a] border-b border-[#2a2a2a]"
       >
         {/* Left: viewport switcher pill */}
         <div

@@ -82,7 +82,7 @@ export const SettingsPanel = () => {
 
   return (
     <div
-      className={`w-72 border-l flex flex-col shrink-0 ${t(
+      className={`craft-settings-panel w-72 border-l flex flex-col shrink-0 ${t(
         'bg-white border-gray-200',
         'bg-[#1a1a1a] border-[#2a2a2a]'
       )}`}
