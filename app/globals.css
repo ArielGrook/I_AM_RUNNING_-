@@ -1301,6 +1301,46 @@ footer[data-cy="craft-canvas"]:empty::after {
 [data-viewport="mobile"] .lg\:grid-cols-3 { grid-template-columns: repeat(1, 1fr) !important; }
 [data-viewport="mobile"] .sm\:grid-cols-2 { grid-template-columns: repeat(1, 1fr) !important; }
 
+/* ─── Mobile canvas containment ─── */
+
+/* Запрещаем выход за границы канвы по горизонтали */
+[data-viewport="mobile"] {
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Все абсолютные dropdown внутри mobile канвы
+   ограничены шириной родителя */
+[data-viewport="mobile"] [data-mobile-dropdown] {
+  position: absolute;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+/* Текст не вылезает за края на мобиле */
+[data-viewport="mobile"] h1,
+[data-viewport="mobile"] h2,
+[data-viewport="mobile"] h3,
+[data-viewport="mobile"] p {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Кнопки на мобиле не вылезают */
+[data-viewport="mobile"] button,
+[data-viewport="mobile"] a[role="button"] {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Изображения не вылезают */
+[data-viewport="mobile"] img {
+  max-width: 100%;
+  height: auto;
+}
 
 
 

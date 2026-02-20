@@ -130,7 +130,7 @@ export const Header2 = ({
           <div className="flex items-center gap-3 shrink-0">
             <a
               href={ctaHref}
-              className="hidden md:inline-block"
+              className="hidden md:block"
               style={{
                 background: t.accent,
                 color: '#ffffff',
@@ -180,48 +180,37 @@ export const Header2 = ({
       {/* Mobile dropdown */}
       {mobileMenuOpen && (
         <div
+          data-mobile-dropdown=""
           className="md:hidden absolute top-full left-0 right-0 z-50"
           style={{
             background: t.bg,
             borderBottom: `1px solid ${t.border}`,
-            padding: 16,
+            borderTop: `1px solid ${t.border}`,
           }}
         >
-          {links.map((link, i) => (
-            <a
-              key={i}
-              href={link.href}
-              onClick={() => setMobileMenuOpen(false)}
-              style={{
-                display: 'block',
-                padding: '12px 16px',
-                fontSize: 15,
-                color: t.text,
-                textDecoration: 'none',
-                borderBottom: i < links.length - 1 ? `1px solid ${t.border}` : undefined,
-              }}
-            >
-              {link.label}
-            </a>
-          ))}
-          <a
-            href={ctaHref}
-            onClick={() => setMobileMenuOpen(false)}
-            style={{
-              display: 'block',
-              marginTop: 12,
-              background: t.accent,
-              color: '#ffffff',
-              padding: '12px 16px',
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 600,
-              textAlign: 'center' as const,
-              textDecoration: 'none',
-            }}
-          >
-            {ctaText}
-          </a>
+          <nav className="flex flex-col">
+            {links.map((link, i) => (
+              <a
+                key={i}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-6 py-3 text-sm font-medium transition-colors duration-150"
+                style={{
+                  color: t.text,
+                  textDecoration: 'none',
+                  borderBottom: i < links.length - 1 ? `1px solid ${t.border}` : 'none',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = t.accent;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = t.text;
+                }}
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
         </div>
       )}
     </header>
