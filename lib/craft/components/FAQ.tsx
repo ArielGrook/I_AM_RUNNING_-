@@ -43,45 +43,31 @@ export const FAQ = ({
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
+      className="px-4 md:px-8 py-12 md:py-20 w-full max-w-full"
       style={{
         background: bgColor,
-        padding: '80px 24px',
-        maxWidth: '100%',
         outline: isSelected ? '2px solid #f97316' : undefined,
         outlineOffset: '2px',
       }}
     >
-      <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', maxWidth: 600, margin: '0 auto 48px' }}>
-          <h2 style={{ fontSize: 'clamp(32px,4vw,52px)', fontWeight: 800, letterSpacing: '-0.02em', color: '#fff', margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 18, color: '#94a3b8', lineHeight: 1.7, marginTop: 16, marginBottom: 0 }}>{subtitle}</p>
+      <div className="max-w-2xl mx-auto w-full">
+        <div className="text-center max-w-xl mx-auto mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white m-0">{title}</h2>
+          <p className="text-lg text-slate-400 leading-relaxed mt-4 mb-0">{subtitle}</p>
         </div>
         <div>
           {(items ?? DEFAULT_ITEMS).map((item, i) => (
-            <div key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <div key={i} className="border-b border-white/10">
               <button
                 type="button"
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '20px 0',
-                  width: '100%',
-                  cursor: 'pointer',
-                  fontSize: 16,
-                  fontWeight: 500,
-                  color: '#fff',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                }}
+                className="flex justify-between items-center py-5 w-full cursor-pointer text-sm md:text-base font-medium text-white text-left bg-transparent border-0"
               >
                 {item.question}
                 <span style={{ color: '#FF6B35', fontSize: 20, fontWeight: 300, transition: 'transform 0.2s', transform: openIndex === i ? 'rotate(0deg)' : 'rotate(0deg)' }}>{openIndex === i ? '−' : '+'}</span>
               </button>
               {openIndex === i && (
-                <div style={{ paddingBottom: 20, fontSize: 15, color: '#64748b', lineHeight: 1.7 }}>{item.answer}</div>
+                <div className="pb-5 text-sm md:text-base text-slate-400 leading-relaxed">{item.answer}</div>
               )}
             </div>
           ))}

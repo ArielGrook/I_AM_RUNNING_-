@@ -46,18 +46,17 @@ export const Features = ({
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
+      className="px-4 md:px-8 py-12 md:py-20 w-full max-w-full"
       style={{
         background: bgColor,
-        padding: '80px 24px',
-        maxWidth: '100%',
         outline: isSelected ? '2px solid #f97316' : undefined,
         outlineOffset: '2px',
       }}
     >
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 64 }}>
-          <h2 style={{ fontSize: 'clamp(32px,4vw,52px)', fontWeight: 800, letterSpacing: '-0.02em', color: '#fff', margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 18, color: '#94a3b8', lineHeight: 1.7, marginTop: 16, marginBottom: 0 }}>{subtitle}</p>
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white m-0">{title}</h2>
+          <p className="text-lg text-slate-400 leading-relaxed mt-4 mb-0">{subtitle}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {(items ?? DEFAULT_ITEMS).map((item, i) => (

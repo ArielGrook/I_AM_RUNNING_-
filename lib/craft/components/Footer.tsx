@@ -48,21 +48,19 @@ export const Footer = ({
     <footer
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
+      className="border-t border-white/10 px-4 md:px-8 pt-12 md:pt-16 pb-8 w-full max-w-full"
       style={{
         background: bgColor,
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-        padding: '60px 24px 32px',
-        maxWidth: '100%',
         outline: isSelected ? '2px solid #f97316' : undefined,
         outlineOffset: '2px',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 32, maxWidth: 1200, margin: '0 auto' }}>
+      <div className="flex flex-col md:flex-row justify-between gap-8 max-w-6xl mx-auto">
         <div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{logoDisplay}</div>
-          <p style={{ fontSize: 14, color: '#475569', maxWidth: 240, marginTop: 8, margin: '8px 0 0' }}>{tagline}</p>
+          <div className="text-xl font-extrabold text-white">{logoDisplay}</div>
+          <p className="text-sm text-slate-500 max-w-[240px] mt-2">{tagline}</p>
         </div>
-        <div style={{ display: 'flex', gap: 48 }}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
           {['Product', 'Company', 'Legal'].map((title, colIndex) => (
             <div key={title}>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>{title}</div>
@@ -90,9 +88,9 @@ export const Footer = ({
           ))}
         </div>
       </div>
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 48, maxWidth: 1200, marginLeft: 'auto', marginRight: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 24 }}>
-        <span style={{ fontSize: 14, color: '#475569' }}>{copyrightText}</span>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <div className="border-t border-white/10 mt-12 max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 pt-6">
+        <span className="text-sm text-slate-500">{copyrightText}</span>
+        <div className="flex gap-2">
           {['X', 'GH', 'in'].map((icon, i) => (
             <div
               key={i}

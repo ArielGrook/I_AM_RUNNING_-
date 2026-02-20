@@ -48,35 +48,32 @@ export const Pricing = ({
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
+      className="px-4 md:px-8 py-12 md:py-20 w-full max-w-full"
       style={{
         background: bgColor,
-        padding: '80px 24px',
-        maxWidth: '100%',
         outline: isSelected ? '2px solid #f97316' : undefined,
         outlineOffset: '2px',
       }}
     >
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h2 style={{ fontSize: 'clamp(32px,4vw,52px)', fontWeight: 800, letterSpacing: '-0.02em', color: '#fff', margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 18, color: '#94a3b8', lineHeight: 1.7, marginTop: 16, marginBottom: 0 }}>{subtitle}</p>
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white m-0">{title}</h2>
+          <p className="text-lg text-slate-400 leading-relaxed mt-4 mb-0">{subtitle}</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 24, alignItems: 'stretch' }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           {(plans ?? DEFAULT_PLANS).map((plan, i) => (
             <div
               key={i}
               onMouseEnter={() => setHoveredCard(i)}
               onMouseLeave={() => setHoveredCard(null)}
+              className="relative rounded-2xl p-6 md:p-7"
               style={{
-                position: 'relative',
                 background: plan.highlighted ? 'linear-gradient(135deg, rgba(255,107,53,0.15), rgba(245,158,11,0.1))' : hoveredCard === i ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
                 border: `1px solid ${plan.highlighted ? 'rgba(255,107,53,0.4)' : hoveredCard === i ? 'rgba(255,107,53,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                borderRadius: 16,
-                padding: 28,
               }}
             >
               {plan.highlighted && (
-                <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#FF6B35', color: '#fff', borderRadius: 9999, padding: '4px 16px', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>Most Popular</div>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 md:-translate-y-3 bg-[#FF6B35] text-white rounded-full py-1 px-4 text-xs font-semibold whitespace-nowrap">Most Popular</div>
               )}
               <div style={{ fontSize: 14, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>{plan.name}</div>
               <div style={{ fontSize: 48, fontWeight: 800, color: '#fff', lineHeight: 1 }}>

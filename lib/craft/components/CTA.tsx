@@ -41,24 +41,22 @@ export const CTA = ({
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
+      className="px-4 md:px-8 py-12 md:py-24 text-center w-full max-w-full"
       style={{
         backgroundImage: `${gridLines}, ${gradient}`,
         backgroundSize: '40px 40px, 100% 100%',
         backgroundRepeat: 'repeat, no-repeat',
-        padding: '100px 24px',
-        textAlign: 'center',
-        maxWidth: '100%',
         outline: isSelected ? '2px solid #f97316' : undefined,
         outlineOffset: '2px',
       }}
     >
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <div className="max-w-6xl mx-auto">
         {badgeText && (
-          <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 9999, padding: '4px 16px', fontSize: 13, color: '#fff', marginBottom: 24, display: 'inline-flex' }}>{badgeText}</div>
+          <div className="inline-flex py-1 px-4 rounded-full text-sm text-white bg-white/20 mb-6">{badgeText}</div>
         )}
-        <h2 style={{ fontSize: 'clamp(32px,4vw,52px)', fontWeight: 800, color: '#fff', marginBottom: 16, marginTop: 0 }}>{title}</h2>
-        <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.8)', marginBottom: 40, marginTop: 0 }}>{subtitle}</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <h2 className="text-3xl md:text-5xl font-bold text-white mb-4 mt-0">{title}</h2>
+        <p className="text-lg text-white/80 mb-10 mt-0">{subtitle}</p>
+        <div className="flex flex-col sm:flex-row justify-center gap-3">
           <button type="button" style={{ background: '#fff', color: '#FF6B35', padding: '14px 32px', borderRadius: 8, fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>{primaryBtnText}</button>
           <button type="button" style={{ background: 'transparent', color: '#fff', border: '2px solid rgba(255,255,255,0.4)', padding: '14px 32px', borderRadius: 8, fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>{secondaryBtnText}</button>
         </div>

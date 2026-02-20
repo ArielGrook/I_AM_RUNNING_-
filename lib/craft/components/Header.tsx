@@ -48,45 +48,29 @@ export const Header = ({
     <header
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
-      style={{
-        background: bgColor,
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        backdropFilter: 'blur(20px)',
-        position: sticky ? 'sticky' : 'relative',
-        top: 0,
-        zIndex: 50,
-        padding: '0 24px',
-        height: 64,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        maxWidth: '100%',
-        outline: isSelected ? '2px solid #f97316' : undefined,
-        outlineOffset: '2px',
-      }}
+      className={`flex items-center justify-between px-4 md:px-8 w-full max-w-full border-b border-white/10 backdrop-blur-xl ${sticky ? 'sticky top-0' : 'relative'} z-50 ${isSelected ? 'outline outline-2 outline-[#f97316] outline-offset-2' : ''}`}
+      style={{ background: bgColor, height: 64 }}
     >
-      <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>
+      <div className="text-xl font-extrabold text-white shrink-0">
         {logoDisplay}
       </div>
-      <nav className="hidden md:flex gap-8">
+      <nav className="hidden md:flex items-center gap-8">
         {(links ?? []).map((link, i) => (
           <a
             key={i}
             href={link.href}
             onMouseEnter={() => setHoveredLink(i)}
             onMouseLeave={() => setHoveredLink(null)}
+            className="text-sm font-medium no-underline transition-colors"
             style={{
               color: hoveredLink === i ? '#fff' : '#94a3b8',
-              fontSize: 14,
-              fontWeight: 500,
-              textDecoration: 'none',
             }}
           >
             {link.label}
           </a>
         ))}
       </nav>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="flex items-center gap-3 shrink-0">
         <button
           type="button"
           className="flex md:hidden p-2 text-white"
@@ -96,16 +80,7 @@ export const Header = ({
         </button>
         <button
           type="button"
-          style={{
-            background: '#FF6B35',
-            color: '#fff',
-            padding: '8px 20px',
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            border: 'none',
-            cursor: 'pointer',
-          }}
+          className="bg-[#FF6B35] text-white py-2 px-5 rounded-lg text-sm font-semibold border-0 cursor-pointer"
         >
           Get Started
         </button>

@@ -61,17 +61,9 @@ export const Hero = ({
         }
       }}
       {...dataAttrs}
+      className="flex flex-col items-center justify-center text-center px-4 md:px-8 lg:px-16 py-12 md:py-20 w-full max-w-full relative overflow-hidden"
       style={{
         minHeight: `${minHeight}px`,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: '80px 24px',
-        maxWidth: '100%',
-        position: 'relative',
-        overflow: 'hidden',
         backgroundImage: `${radialGlow}, ${gridLines}, ${baseGradient}`,
         backgroundSize: '100% 100%, 60px 60px, 60px 60px, 100% 100%',
         backgroundPosition: '0 0, 0 0, 0 0, 0 0',
@@ -98,17 +90,7 @@ export const Hero = ({
         </div>
       )}
 
-      <h1
-        style={{
-          fontSize: 'clamp(40px, 6vw, 72px)',
-          fontWeight: 800,
-          lineHeight: 1.05,
-          letterSpacing: '-0.03em',
-          maxWidth: 800,
-          margin: '0 auto',
-          padding: 0,
-        }}
-      >
+      <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight max-w-3xl mx-auto p-0">
         <ContentEditable
           tagName="span"
           html={title ?? ''}
@@ -157,27 +139,13 @@ export const Hero = ({
             p.subtitle = (e.target as { value: string }).value.replace(/<\/?[^>]+(>|$)/g, '');
           }, 1000);
         }}
+        className="text-base md:text-lg text-slate-400 leading-relaxed max-w-xl mx-auto mt-5 py-0 outline-none"
         style={{
-          fontSize: 18,
-          color: '#94a3b8',
-          lineHeight: 1.7,
-          maxWidth: 560,
-          margin: '20px auto 0',
-          padding: 0,
-          outline: 'none',
           cursor: enabled ? 'text' : 'default',
         }}
       />
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          marginTop: 40,
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-        }}
-      >
+      <div className="flex flex-col sm:flex-row gap-3 mt-10 justify-center">
         <button
           type="button"
           style={{
@@ -236,15 +204,8 @@ export const Hero = ({
         </button>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginTop: 48,
-        }}
-      >
-        <div style={{ display: 'flex' }}>
+      <div className="flex flex-col sm:flex-row items-center gap-3 mt-12">
+        <div className="flex">
           {AVATAR_COLORS.map((color, i) => (
             <div
               key={color}
