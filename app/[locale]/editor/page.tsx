@@ -346,55 +346,77 @@ export default function EditorPage() {
     load();
   }, [projectId, isAuthenticated, locale, router]);
 
-  // GSAP animations in preview mode (data-animate + ScrollTrigger); reusable for Replay
+  // GSAP animations in preview mode (Replay button); uses same fromTo + inViewport logic as useEffect
   const runAnimations = useCallback(async () => {
     try {
       const gsapModule = await import('gsap');
       const { ScrollTrigger } = await import('gsap/ScrollTrigger');
       const gsap = (gsapModule as { gsap?: unknown; default?: unknown }).gsap || (gsapModule as { default: unknown }).default;
       (gsap as { registerPlugin: (p: unknown) => void }).registerPlugin(ScrollTrigger);
-
-      // Убиваем старые анимации
       (ScrollTrigger as { getAll: () => { kill: () => void }[] }).getAll().forEach((t) => t.kill());
-      const gt = (gsap as { globalTimeline?: { clear: () => void } }).globalTimeline;
-      if (gt) gt.clear();
 
       const elements = document.querySelectorAll('[data-animate]');
-      console.log('[GSAP] Found elements:', elements.length);
-
-      if (elements.length === 0) {
-        console.warn('[GSAP] No [data-animate] elements found. Check if components render data-animate when enabled=false');
-        return;
-      }
 
       elements.forEach((el) => {
-        const type = el.getAttribute('data-animate');
-        const delay = parseFloat(el.getAttribute('data-animate-delay') || '0');
-        if (!type || type === 'none') return;
+        const htmlEl = el as HTMLElement;
+        const animationType = htmlEl.getAttribute('data-animate') || '';
+        if (!animationType || animationType === 'none') return;
 
-        const fromMap: Record<string, object> = {
-          'fade-in': { opacity: 0, duration: 0.8 },
-          'slide-up': { opacity: 0, y: 60, duration: 0.8 },
-          'slide-left': { opacity: 0, x: -60, duration: 0.8 },
-          'scale-in': { opacity: 0, scale: 0.85, duration: 0.8 },
-          'blur-in': { opacity: 0, filter: 'blur(20px)', duration: 0.9 },
-        };
+        const delay = parseFloat(htmlEl.getAttribute('data-animate-delay') || '0');
+        const fromVars: Record<string, unknown> = { immediateRender: false };
+        const toVars: Record<string, unknown> = { duration: 0.8, delay, ease: 'power2.out' };
 
-        const vars = fromMap[type];
-        if (!vars) return;
+        switch (animationType) {
+          case 'fade-in':
+            fromVars.opacity = 0;
+            toVars.opacity = 1;
+            break;
+          case 'slide-up':
+            fromVars.opacity = 0;
+            fromVars.y = 60;
+            toVars.opacity = 1;
+            toVars.y = 0;
+            break;
+          case 'slide-down':
+            fromVars.opacity = 0;
+            fromVars.y = -60;
+            toVars.opacity = 1;
+            toVars.y = 0;
+            break;
+          case 'slide-left':
+            fromVars.opacity = 0;
+            fromVars.x = -60;
+            toVars.opacity = 1;
+            toVars.x = 0;
+            break;
+          case 'blur-in':
+            fromVars.opacity = 0;
+            fromVars.filter = 'blur(12px)';
+            toVars.opacity = 1;
+            toVars.filter = 'blur(0px)';
+            break;
+          case 'scale-in':
+            fromVars.opacity = 0;
+            fromVars.scale = 0.85;
+            toVars.opacity = 1;
+            toVars.scale = 1;
+            break;
+          default:
+            fromVars.opacity = 0;
+            toVars.opacity = 1;
+        }
 
-        (gsap as { set: (target: Element, vars: object) => void }).set(el, { clearProps: 'all' });
+        const rect = htmlEl.getBoundingClientRect();
+        const inViewport = rect.top < window.innerHeight * 0.95;
 
-        (gsap as { from: (target: Element, vars: object) => void }).from(el, {
-          ...vars,
-          delay,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: el,
-            start: 'top 88%',
-            once: false,
-          },
-        });
+        if (inViewport) {
+          (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, fromVars, toVars);
+        } else {
+          (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, fromVars, {
+            ...toVars,
+            scrollTrigger: { trigger: htmlEl, start: 'top 88%', toggleActions: 'play none none none' },
+          });
+        }
       });
 
       (ScrollTrigger as { refresh: () => void }).refresh();
@@ -411,78 +433,92 @@ export default function EditorPage() {
       return;
     }
 
-    let rafId: number;
     let timerId: ReturnType<typeof setTimeout>;
 
-    rafId = requestAnimationFrame(() => {
-      rafId = requestAnimationFrame(() => {
-        timerId = setTimeout(async () => {
-          try {
-            const gsapModule = await import('gsap');
-            const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-            const gsap = (gsapModule as { gsap?: unknown; default?: unknown }).gsap || (gsapModule as { default: unknown }).default;
-            (gsap as { registerPlugin: (p: unknown) => void }).registerPlugin(ScrollTrigger);
+    const initPreviewAnimations = async () => {
+      const gsapModule = await import('gsap');
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+      const gsap = (gsapModule as { gsap?: unknown; default?: unknown }).gsap || (gsapModule as { default: unknown }).default;
+      (gsap as { registerPlugin: (p: unknown) => void }).registerPlugin(ScrollTrigger);
+      (ScrollTrigger as { getAll: () => { kill: () => void }[] }).getAll().forEach((t) => t.kill());
 
-            (ScrollTrigger as { getAll: () => { kill: () => void }[] }).getAll().forEach((t) => t.kill());
+      const elements = document.querySelectorAll('[data-animate]');
 
-            const elements = document.querySelectorAll('[data-animate]');
-            console.log('[GSAP] data-animate elements found:', elements.length);
+      elements.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        const animationType = htmlEl.getAttribute('data-animate') || '';
+        if (!animationType || animationType === 'none') return;
 
-            elements.forEach((el) => {
-              console.log('[GSAP] element:', el.tagName, 'type:', el.getAttribute('data-animate'));
-            });
+        const delay = parseFloat(htmlEl.getAttribute('data-animate-delay') || '0');
 
-            elements.forEach((el) => {
-              const type = el.getAttribute('data-animate');
-              const delay = parseFloat(el.getAttribute('data-animate-delay') || '0');
-              if (!type || type === 'none') return;
+        const fromVars: Record<string, unknown> = { immediateRender: false };
+        const toVars: Record<string, unknown> = { duration: 0.8, delay, ease: 'power2.out' };
 
-              const fromMap: Record<string, object> = {
-                'fade-in': { opacity: 0, duration: 0.8 },
-                'slide-up': { opacity: 0, y: 60, duration: 0.8 },
-                'slide-left': { opacity: 0, x: -60, duration: 0.8 },
-                'scale-in': { opacity: 0, scale: 0.85, duration: 0.8 },
-                'blur-in': { opacity: 0, filter: 'blur(20px)', duration: 0.9 },
-              };
+        switch (animationType) {
+          case 'fade-in':
+            fromVars.opacity = 0;
+            toVars.opacity = 1;
+            break;
+          case 'slide-up':
+            fromVars.opacity = 0;
+            fromVars.y = 60;
+            toVars.opacity = 1;
+            toVars.y = 0;
+            break;
+          case 'slide-down':
+            fromVars.opacity = 0;
+            fromVars.y = -60;
+            toVars.opacity = 1;
+            toVars.y = 0;
+            break;
+          case 'slide-left':
+            fromVars.opacity = 0;
+            fromVars.x = -60;
+            toVars.opacity = 1;
+            toVars.x = 0;
+            break;
+          case 'blur-in':
+            fromVars.opacity = 0;
+            fromVars.filter = 'blur(12px)';
+            toVars.opacity = 1;
+            toVars.filter = 'blur(0px)';
+            break;
+          case 'scale-in':
+            fromVars.opacity = 0;
+            fromVars.scale = 0.85;
+            toVars.opacity = 1;
+            toVars.scale = 1;
+            break;
+          default:
+            fromVars.opacity = 0;
+            toVars.opacity = 1;
+        }
 
-              const vars = fromMap[type];
-              if (!vars) return;
+        const rect = htmlEl.getBoundingClientRect();
+        const inViewport = rect.top < window.innerHeight * 0.95;
 
-              (gsap as { set: (target: Element, vars: object) => void }).set(el, { clearProps: 'all' });
-              (gsap as { from: (target: Element, vars: object) => void }).from(el, {
-                ...vars,
-                delay,
-                ease: 'power3.out',
-                scrollTrigger: {
-                  trigger: el,
-                  start: 'top 90%',
-                  once: false,
-                },
-              });
-            });
-
-            // Elements already in view: show immediately (fixes invisible sections at load)
-            const winH = typeof window !== 'undefined' ? window.innerHeight : 0;
-            elements.forEach((el) => {
-              const rect = el.getBoundingClientRect();
-              if (rect.top < winH && rect.bottom > 0) {
-                (gsap as { set: (target: Element, vars: object) => void }).set(el, { opacity: 1, y: 0, x: 0, scale: 1, filter: 'none' });
-                (ScrollTrigger as { getAll: () => { trigger?: Element; kill: () => void }[] }).getAll().forEach((st: { trigger?: Element; kill: () => void }) => {
-                  if (st.trigger === el) st.kill();
-                });
-              }
-            });
-
-            (ScrollTrigger as { refresh: () => void }).refresh();
-          } catch (e) {
-            console.error('[GSAP] Error:', e);
-          }
-        }, 100);
+        if (inViewport) {
+          (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, fromVars, toVars);
+        } else {
+          (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, fromVars, {
+            ...toVars,
+            scrollTrigger: {
+              trigger: htmlEl,
+              start: 'top 88%',
+              toggleActions: 'play none none none',
+            },
+          });
+        }
       });
-    });
+
+      (ScrollTrigger as { refresh: () => void }).refresh();
+    };
+
+    timerId = setTimeout(() => {
+      initPreviewAnimations().catch((e) => console.error('[GSAP] Error:', e));
+    }, 100);
 
     return () => {
-      cancelAnimationFrame(rafId);
       clearTimeout(timerId);
       import('gsap/ScrollTrigger').then((m: { ScrollTrigger?: { getAll: () => { kill: () => void }[] } }) => {
         m.ScrollTrigger?.getAll?.().forEach((t) => t.kill());
