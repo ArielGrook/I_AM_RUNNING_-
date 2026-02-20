@@ -1356,16 +1356,23 @@ footer[data-cy="craft-canvas"]:empty::after {
   height: auto;
 }
 
-/* ─── Settings Panel: force dark inputs ─── */
-.craft-settings-panel input[type="text"],
-.craft-settings-panel input[type="number"],
-.craft-settings-panel input[type="url"],
+/* ─── Settings Panel & Mini toolbar: theme-aware (root .dark from editor toggle) ─── */
+
+/* Светлая тема (default) */
+.craft-settings-panel,
+.craft-canvas-toolbar {
+  background: #ffffff !important;
+  color: #0a0a0a !important;
+  border-color: #e5e5e5 !important;
+}
+
 .craft-settings-panel input:not([type="color"]):not([type="checkbox"]):not([type="range"]),
+.craft-settings-panel select,
 .craft-settings-panel textarea,
-.craft-settings-panel select {
-  background-color: #2a2a2a !important;
-  color: #e5e5e5 !important;
-  border: 1px solid #3a3a3a !important;
+.craft-canvas-toolbar input:not([type="color"]) {
+  background: #f4f4f5 !important;
+  color: #0a0a0a !important;
+  border: 1px solid #e5e5e5 !important;
   border-radius: 6px !important;
   padding: 6px 10px !important;
   font-size: 13px !important;
@@ -1376,6 +1383,36 @@ footer[data-cy="craft-canvas"]:empty::after {
   appearance: none !important;
 }
 
+.craft-settings-panel label {
+  color: #71717a !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Тёмная тема */
+.dark .craft-settings-panel,
+.dark .craft-canvas-toolbar {
+  background: #1a1a1a !important;
+  color: #e5e5e5 !important;
+  border-color: #2a2a2a !important;
+}
+
+.dark .craft-settings-panel input:not([type="color"]):not([type="checkbox"]):not([type="range"]),
+.dark .craft-settings-panel select,
+.dark .craft-settings-panel textarea,
+.dark .craft-canvas-toolbar input:not([type="color"]) {
+  background: #2a2a2a !important;
+  color: #e5e5e5 !important;
+  border-color: #3a3a3a !important;
+}
+
+.dark .craft-settings-panel label {
+  color: #a1a1aa !important;
+}
+
+/* Focus & placeholder (both themes) */
 .craft-settings-panel input:focus,
 .craft-settings-panel textarea:focus,
 .craft-settings-panel select:focus {
@@ -1384,6 +1421,11 @@ footer[data-cy="craft-canvas"]:empty::after {
 }
 
 .craft-settings-panel select option {
+  background-color: #ffffff !important;
+  color: #0a0a0a !important;
+}
+
+.dark .craft-settings-panel select option {
   background-color: #1a1a1a !important;
   color: #e5e5e5 !important;
 }
@@ -1391,21 +1433,5 @@ footer[data-cy="craft-canvas"]:empty::after {
 .craft-settings-panel input::placeholder,
 .craft-settings-panel textarea::placeholder {
   color: #52525b !important;
-}
-
-/* Лейблы в Settings */
-.craft-settings-panel label {
-  color: #a1a1aa !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-}
-
-/* ─── Mini toolbar above canvas: dark inputs ─── */
-.craft-canvas-toolbar input:not([type="color"]) {
-  background-color: #2a2a2a !important;
-  color: #e5e5e5 !important;
-  border: 1px solid #3a3a3a !important;
 }
 

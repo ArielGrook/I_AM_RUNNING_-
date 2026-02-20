@@ -44,6 +44,16 @@ import { EditorThemeProvider, useEditorTheme } from '@/components/craft/EditorTh
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+/** Root wrapper: applies .dark class when editor theme is dark (for Settings/mini toolbar CSS). */
+function EditorRoot({ children }: { children: React.ReactNode }) {
+  const { theme } = useEditorTheme();
+  return (
+    <div className={`h-screen flex flex-col ${theme === 'dark' ? 'dark' : ''}`}>
+      {children}
+    </div>
+  );
+}
+
 /** Layout with theme-aware background and sidebar toggles (must be inside EditorThemeProvider). */
 function EditorLayout({
   leftPanelOpen,
@@ -661,7 +671,7 @@ export default function EditorPage() {
 
   return (
     <EditorThemeProvider>
-    <div className="h-screen flex flex-col">
+      <EditorRoot>
       <Editor
         resolver={{
           Container,
@@ -759,7 +769,7 @@ export default function EditorPage() {
           data={previewHTML}
         />
       </Editor>
-    </div>
+      </EditorRoot>
     </EditorThemeProvider>
   );
 }
