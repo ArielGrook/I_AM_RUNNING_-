@@ -26,11 +26,11 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
   const activeDevice = DEVICES.find((d) => d.key === device)!;
 
   return (
-    <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${t('bg-[#e2e8f0]', 'bg-[#0f172a]')}`}>
+    <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${t('bg-[#e2e8f0]', 'bg-[#1f1f1f]')}`}>
       {/* Toolbar strip */}
       <div className={`flex items-center justify-between px-4 py-1.5 border-b shrink-0 ${t(
         'bg-gray-50 border-gray-200',
-        'bg-[#1a1a1a] border-gray-700/60'
+        'bg-[#1a1a1a] border-[#2a2a2a]'
       )}`}>
         {/* Device toggle */}
         <div className="flex items-center gap-1">
@@ -80,7 +80,7 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
             className={`bg-transparent text-[10px] font-mono border-0 outline-none cursor-pointer text-center ${t('text-gray-500', 'text-gray-400')}`}
           >
             {ZOOM_LEVELS.map((z) => (
-              <option key={z} value={z} className={t('bg-white', 'bg-gray-800')}>{z}%</option>
+              <option key={z} value={z} className={t('bg-white', 'bg-[#1a1a1a]')}>{z}%</option>
             ))}
           </select>
           <button
@@ -97,10 +97,10 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
       <div
         className="flex-1 overflow-auto craft-viewport-scroll craft-canvas-wrapper"
         style={{
-          background: t('#e2e8f0', '#0f172a'),
+          background: t('#e2e8f0', '#1f1f1f'),
           backgroundImage: t(
             'radial-gradient(circle, #cbd5e1 1px, transparent 1px)',
-            'radial-gradient(circle, #1e293b 1px, transparent 1px)'
+            'radial-gradient(circle, #2a2a2a 1px, transparent 1px)'
           ),
           backgroundSize: '20px 20px',
         }}
@@ -156,7 +156,7 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
                       top: 0,
                       bottom: 0,
                       width: 1,
-                      background: 'rgba(99,102,241,0.08)',
+                      background: 'rgba(255,255,255,0.06)',
                     }} />
                   ))}
                 </div>

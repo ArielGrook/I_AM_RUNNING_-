@@ -64,9 +64,9 @@ function EditorLayout({
 }) {
   const { theme } = useEditorTheme();
   const isDark = theme === 'dark';
-  const areaBg = isDark ? '#0f172a' : '#e2e8f0';
+  const areaBg = isDark ? '#141414' : '#e2e8f0';
   const btnBase = isDark
-    ? { background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }
+    ? { background: '#2a2a2a', border: '1px solid #383838', color: '#71717a' }
     : { background: 'rgba(248, 250, 252, 0.9)', border: '1px solid rgba(0,0,0,0.1)', color: '#64748b' };
 
   return (
@@ -489,14 +489,14 @@ export default function EditorPage() {
   // Wait for project load before mounting Editor so Frame gets correct data on first paint
   if (authLoading || !isAuthenticated || !projectId) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-900 text-gray-400">
+      <div className="h-screen flex items-center justify-center bg-[#141414] text-gray-400">
         Loading...
       </div>
     );
   }
   if (loadedProject === null) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-900 text-gray-400">
+      <div className="h-screen flex items-center justify-center bg-[#141414] text-gray-400">
         Loading project...
       </div>
     );

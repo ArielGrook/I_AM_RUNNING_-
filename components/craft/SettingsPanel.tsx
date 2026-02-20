@@ -18,7 +18,7 @@ export function SettingsSection({
   const { t } = useEditorTheme();
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className={`border-b last:border-0 ${t('border-gray-200', 'border-gray-700/60')}`}>
+    <div className={`border-b last:border-0 ${t('border-gray-200', 'border-[#2a2a2a]')}`}>
       <button
         onClick={() => setOpen((o) => !o)}
         className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${t(
@@ -84,12 +84,12 @@ export const SettingsPanel = () => {
     <div
       className={`w-72 border-l flex flex-col shrink-0 ${t(
         'bg-white border-gray-200',
-        'bg-[#1e1e1e] border-gray-700/60'
+        'bg-[#1a1a1a] border-[#2a2a2a]'
       )}`}
       style={{ height: '100%' }}
     >
       {/* Header */}
-      <div className={`flex items-center justify-between px-3 py-2 border-b shrink-0 ${t('border-gray-200', 'border-gray-700/60')}`}>
+      <div className={`flex items-center justify-between px-3 py-2 border-b shrink-0 ${t('border-gray-200', 'border-[#2a2a2a]')}`}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-2 h-2 rounded-full bg-[#FF6B35] shrink-0" />
           <span className={`text-sm font-semibold truncate ${t('text-gray-900', 'text-white')}`}>
@@ -122,7 +122,7 @@ export const SettingsPanel = () => {
 
       {/* Delete button — always visible when a non-ROOT node is selected */}
       {selected?.id && selected.id !== 'ROOT' && (
-        <div className="p-4 border-t border-gray-800 mt-auto shrink-0">
+        <div className="p-4 border-t border-[#2a2a2a] mt-auto shrink-0">
           <button
             type="button"
             onClick={() => {

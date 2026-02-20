@@ -147,9 +147,9 @@ export const Toolbox = () => {
   return (
     <div className={`w-60 overflow-y-auto shrink-0 flex flex-col craft-editor-left ${t(
       'bg-white',
-      'bg-[#1e1e1e]'
+      'bg-[#1a1a1a]'
     )}`}>
-      <div className={`flex border-b shrink-0 ${t('border-gray-200', 'border-gray-700/60')}`}>
+      <div className={`flex border-b shrink-0 ${t('border-gray-200', 'border-[#2a2a2a]')}`}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -203,7 +203,7 @@ export const Toolbox = () => {
                         }}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab active:cursor-grabbing transition-colors group select-none ${t(
                           'hover:bg-gray-100',
-                          'hover:bg-gray-800'
+                          'hover:bg-[#1a1a1a]'
                         )}`}
                       >
                         <span className="text-lg w-6 text-center shrink-0">{item.icon}</span>
@@ -250,7 +250,7 @@ export const Toolbox = () => {
                 onKeyDown={(e) => e.key === 'Enter' && loadPreset(preset)}
                 className={`cursor-pointer rounded-xl border transition-all p-4 group ${t(
                   'border-gray-200 hover:border-[#FF6B35] bg-gray-50 hover:bg-gray-100',
-                  'border-gray-700 hover:border-[#FF6B35] bg-gray-800 hover:bg-gray-750'
+                  'border-[#2a2a2a] hover:border-[#FF6B35] bg-[#1a1a1a] hover:bg-[#242424]'
                 )}`}
               >
                 <div className="flex items-center gap-3 mb-2">

@@ -170,14 +170,14 @@ export const LayersPanel = () => {
   return (
     <div className={`w-52 flex flex-col shrink-0 overflow-hidden ${t(
       'bg-white',
-      'bg-[#1e1e1e]'
+      'bg-[#1a1a1a]'
     )}`}>
       <button
         type="button"
         onClick={() => setLayersOpen(!layersOpen)}
         className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider border-t ${t(
           'text-gray-500 hover:text-gray-700 border-gray-200',
-          'text-gray-400 hover:text-white border-gray-800'
+          'text-gray-400 hover:text-white border-[#2a2a2a]'
         )}`}
       >
         <span>Layers</span>
