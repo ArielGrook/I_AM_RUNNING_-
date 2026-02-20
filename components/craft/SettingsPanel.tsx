@@ -104,7 +104,7 @@ export const SettingsPanel = () => {
       </div>
 
       {/* Body — scrollable */}
-      <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar ${t('text-gray-900', 'text-white')}`}>
+      <div className={`flex-1 min-h-0 overflow-y-auto craft-editor-right ${t('text-gray-900', 'text-white')}`}>
         {!selected ? (
           <div className="text-sm text-gray-500 p-4">
             Select a component to edit its properties

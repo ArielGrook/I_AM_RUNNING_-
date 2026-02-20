@@ -26,7 +26,7 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
   const activeDevice = DEVICES.find((d) => d.key === device)!;
 
   return (
-    <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${t('bg-gray-100', 'bg-[#1e293b]')}`}>
+    <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${t('bg-[#e2e8f0]', 'bg-[#0f172a]')}`}>
       {/* Toolbar strip */}
       <div className={`flex items-center justify-between px-4 py-1.5 border-b shrink-0 ${t(
         'bg-gray-50 border-gray-200',
@@ -95,11 +95,12 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
 
       {/* Canvas area */}
       <div
-        className="flex-1 overflow-auto craft-viewport-scroll"
+        className="flex-1 overflow-auto craft-viewport-scroll craft-canvas-wrapper"
         style={{
+          background: t('#e2e8f0', '#0f172a'),
           backgroundImage: t(
-            'radial-gradient(circle, #d4d4d4 1px, transparent 1px)',
-            'radial-gradient(circle, #2a2a2a 1px, transparent 1px)'
+            'radial-gradient(circle, #cbd5e1 1px, transparent 1px)',
+            'radial-gradient(circle, #1e293b 1px, transparent 1px)'
           ),
           backgroundSize: '20px 20px',
         }}

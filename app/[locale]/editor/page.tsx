@@ -40,9 +40,201 @@ import { Toolbar } from '@/components/craft/Toolbar';
 import { PreviewModal } from '@/components/craft/PreviewModal';
 import { RenderNode } from '@/components/craft/RenderNode';
 import { KeyboardShortcuts } from '@/components/craft/KeyboardShortcuts';
-import { EditorThemeProvider } from '@/components/craft/EditorThemeContext';
+import { EditorThemeProvider, useEditorTheme } from '@/components/craft/EditorThemeContext';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+/** Layout with theme-aware background and sidebar toggles (must be inside EditorThemeProvider). */
+function EditorLayout({
+  leftPanelOpen,
+  setLeftPanelOpen,
+  rightPanelOpen,
+  setRightPanelOpen,
+  previewMode,
+  outlines,
+  children,
+}: {
+  leftPanelOpen: boolean;
+  setLeftPanelOpen: (v: boolean) => void;
+  rightPanelOpen: boolean;
+  setRightPanelOpen: (v: boolean) => void;
+  previewMode: boolean;
+  outlines: boolean;
+  children: React.ReactNode;
+}) {
+  const { theme } = useEditorTheme();
+  const isDark = theme === 'dark';
+  const areaBg = isDark ? '#0f172a' : '#e2e8f0';
+  const btnBase = isDark
+    ? { background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }
+    : { background: 'rgba(248, 250, 252, 0.9)', border: '1px solid rgba(0,0,0,0.1)', color: '#64748b' };
+
+  return (
+    <div
+      className={`flex-1 flex min-h-0 relative ${outlines ? 'craft-outlines-mode' : ''} ${previewMode ? 'craft-preview-mode' : ''}`}
+      style={{ background: areaBg }}
+    >
+      {!previewMode && (
+        <div
+          className="flex transition-all duration-200 shrink-0 overflow-visible relative"
+          style={{
+            width: leftPanelOpen ? '30rem' : 0,
+            minWidth: leftPanelOpen ? undefined : 0,
+          }}
+        >
+          <div className="flex min-w-0 flex-1 overflow-hidden">
+            <Toolbox />
+            <LayersPanel />
+          </div>
+          {leftPanelOpen && (
+            <button
+              type="button"
+              onClick={() => setLeftPanelOpen(false)}
+              title="Close left panel"
+              style={{
+                position: 'absolute',
+                right: -14,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                ...btnBase,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+                e.currentTarget.style.color = '#FF6B35';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = btnBase.background;
+                e.currentTarget.style.color = btnBase.color;
+              }}
+            >
+              <ChevronLeft size={14} />
+            </button>
+          )}
+        </div>
+      )}
+      {!previewMode && !leftPanelOpen && (
+        <button
+          type="button"
+          onClick={() => setLeftPanelOpen(true)}
+          title="Open left panel"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 28,
+            height: 28,
+            borderRadius: '0 50% 50% 0',
+            ...btnBase,
+            borderLeft: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 10,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+            e.currentTarget.style.color = '#FF6B35';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = btnBase.background;
+            e.currentTarget.style.color = btnBase.color;
+          }}
+        >
+          <ChevronRight size={14} />
+        </button>
+      )}
+      {children}
+      {!previewMode && (
+        <div
+          className="flex transition-all duration-200 shrink-0 overflow-visible relative"
+          style={{
+            width: rightPanelOpen ? '19rem' : 0,
+            minWidth: rightPanelOpen ? undefined : 0,
+          }}
+        >
+          {rightPanelOpen && (
+            <button
+              type="button"
+              onClick={() => setRightPanelOpen(false)}
+              title="Close right panel"
+              style={{
+                position: 'absolute',
+                left: -14,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                ...btnBase,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+                e.currentTarget.style.color = '#FF6B35';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = btnBase.background;
+                e.currentTarget.style.color = btnBase.color;
+              }}
+            >
+              <ChevronRight size={14} />
+            </button>
+          )}
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <SettingsPanel />
+          </div>
+        </div>
+      )}
+      {!previewMode && !rightPanelOpen && (
+        <button
+          type="button"
+          onClick={() => setRightPanelOpen(true)}
+          title="Open right panel"
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 28,
+            height: 28,
+            borderRadius: '50% 0 0 50%',
+            ...btnBase,
+            borderRight: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 10,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+            e.currentTarget.style.color = '#FF6B35';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = btnBase.background;
+            e.currentTarget.style.color = btnBase.color;
+          }}
+        >
+          <ChevronLeft size={14} />
+        </button>
+      )}
+    </div>
+  );
+}
 
 type PageState = {
   id: string;
@@ -359,95 +551,14 @@ export default function EditorPage() {
           projectName={loadedProject?.name}
           onRenameProject={handleRenameProject}
         />
-        <div
-          className={`flex-1 flex min-h-0 relative ${outlines ? 'craft-outlines-mode' : ''} ${previewMode ? 'craft-preview-mode' : ''}`}
-          style={{ background: '#1e293b' }}
+        <EditorLayout
+          leftPanelOpen={leftPanelOpen}
+          setLeftPanelOpen={setLeftPanelOpen}
+          rightPanelOpen={rightPanelOpen}
+          setRightPanelOpen={setRightPanelOpen}
+          previewMode={previewMode}
+          outlines={outlines}
         >
-          {/* Left panel (Toolbox + Layers) + round toggle */}
-          {!previewMode && (
-            <div
-              className="flex transition-all duration-200 shrink-0 overflow-visible relative"
-              style={{
-                width: leftPanelOpen ? '30rem' : 0,
-                minWidth: leftPanelOpen ? undefined : 0,
-                borderRight: leftPanelOpen ? '1px solid rgba(255,255,255,0.08)' : 'none',
-              }}
-            >
-              <div className="flex min-w-0 flex-1 overflow-hidden">
-                <Toolbox />
-                <LayersPanel />
-              </div>
-              {leftPanelOpen && (
-                <button
-                  type="button"
-                  onClick={() => setLeftPanelOpen(false)}
-                  title="Close left panel"
-                  style={{
-                    position: 'absolute',
-                    right: -14,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    background: '#1e293b',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 10,
-                    color: '#64748b',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                    e.currentTarget.style.color = '#FF6B35';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#1e293b';
-                    e.currentTarget.style.color = '#64748b';
-                  }}
-                >
-                  <ChevronLeft size={14} />
-                </button>
-              )}
-            </div>
-          )}
-          {!previewMode && !leftPanelOpen && (
-            <button
-              type="button"
-              onClick={() => setLeftPanelOpen(true)}
-              title="Open left panel"
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 28,
-                height: 28,
-                borderRadius: '0 50% 50% 0',
-                background: '#1e293b',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderLeft: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                zIndex: 10,
-                color: '#64748b',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.color = '#FF6B35';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#1e293b';
-                e.currentTarget.style.color = '#64748b';
-              }}
-            >
-              <ChevronRight size={14} />
-            </button>
-          )}
           <Viewport>
             {frameReady && (
               <Frame key={activePageId} data={frameData ?? undefined}>
@@ -467,91 +578,7 @@ export default function EditorPage() {
               </Frame>
             )}
           </Viewport>
-          {/* Right panel (Settings) + round toggle */}
-          {!previewMode && (
-            <div
-              className="flex transition-all duration-200 shrink-0 overflow-visible relative"
-              style={{
-                width: rightPanelOpen ? '19rem' : 0,
-                minWidth: rightPanelOpen ? undefined : 0,
-                borderLeft: rightPanelOpen ? '1px solid rgba(255,255,255,0.08)' : 'none',
-              }}
-            >
-              {rightPanelOpen && (
-                <button
-                  type="button"
-                  onClick={() => setRightPanelOpen(false)}
-                  title="Close right panel"
-                  style={{
-                    position: 'absolute',
-                    left: -14,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    background: '#1e293b',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 10,
-                    color: '#64748b',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                    e.currentTarget.style.color = '#FF6B35';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#1e293b';
-                    e.currentTarget.style.color = '#64748b';
-                  }}
-                >
-                  <ChevronRight size={14} />
-                </button>
-              )}
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <SettingsPanel />
-              </div>
-            </div>
-          )}
-          {!previewMode && !rightPanelOpen && (
-            <button
-              type="button"
-              onClick={() => setRightPanelOpen(true)}
-              title="Open right panel"
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 28,
-                height: 28,
-                borderRadius: '50% 0 0 50%',
-                background: '#1e293b',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRight: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                zIndex: 10,
-                color: '#64748b',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.color = '#FF6B35';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#1e293b';
-                e.currentTarget.style.color = '#64748b';
-              }}
-            >
-              <ChevronLeft size={14} />
-            </button>
-          )}
-        </div>
+        </EditorLayout>
         <KeyboardShortcuts onSave={() => {
           try {
             // Toolbar handles serialize internally, but shortcut needs a ref-free approach

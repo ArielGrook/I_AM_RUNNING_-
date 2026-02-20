@@ -86,6 +86,19 @@ html::-webkit-scrollbar {
   border-radius: 1px;
 }
 
+/* Craft editor: hide scrollbars on canvas and sidebars */
+.craft-editor-left::-webkit-scrollbar,
+.craft-editor-right::-webkit-scrollbar,
+.craft-canvas-wrapper::-webkit-scrollbar {
+  display: none;
+}
+.craft-editor-left,
+.craft-editor-right,
+.craft-canvas-wrapper {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 /* Shared keyframes */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }

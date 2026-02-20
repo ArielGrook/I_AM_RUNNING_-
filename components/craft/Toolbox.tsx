@@ -145,9 +145,9 @@ export const Toolbox = () => {
   );
 
   return (
-    <div className={`w-60 border-r overflow-y-auto shrink-0 flex flex-col ${t(
-      'bg-white border-gray-200',
-      'bg-[#1e1e1e] border-gray-700/60'
+    <div className={`w-60 overflow-y-auto shrink-0 flex flex-col craft-editor-left ${t(
+      'bg-white',
+      'bg-[#1e1e1e]'
     )}`}>
       <div className={`flex border-b shrink-0 ${t('border-gray-200', 'border-gray-700/60')}`}>
         {tabs.map((tab) => (
@@ -165,7 +165,7 @@ export const Toolbox = () => {
           </button>
         ))}
       </div>
-      <div className="p-3 flex-1 min-h-0 overflow-y-auto">
+      <div className="p-3 flex-1 min-h-0 overflow-y-auto craft-editor-left">
         {activeTab === 'components' && (
           <div className="space-y-0">
             {categories.map((cat) => (

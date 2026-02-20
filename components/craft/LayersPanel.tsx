@@ -168,9 +168,9 @@ export const LayersPanel = () => {
   if (!rootId) return null;
 
   return (
-    <div className={`w-52 border-r flex flex-col shrink-0 overflow-hidden ${t(
-      'bg-white border-gray-200',
-      'bg-[#1e1e1e] border-gray-700/60'
+    <div className={`w-52 flex flex-col shrink-0 overflow-hidden ${t(
+      'bg-white',
+      'bg-[#1e1e1e]'
     )}`}>
       <button
         type="button"
@@ -188,7 +188,7 @@ export const LayersPanel = () => {
         />
       </button>
       {layersOpen && (
-        <div className="max-h-48 overflow-y-auto custom-scrollbar py-1 px-1 relative">
+        <div className="max-h-48 overflow-y-auto craft-editor-left py-1 px-1 relative">
           {renderNode(rootId, 0)}
         </div>
       )}
