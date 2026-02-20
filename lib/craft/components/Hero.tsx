@@ -52,6 +52,8 @@ export const Hero = ({
     dataAttrs['data-animate'] = animationType;
   }
 
+  console.log('[HERO] enabled:', enabled, 'animationType:', animationType, 'dataAttrs:', dataAttrs);
+
   return (
     <section
       ref={(ref) => {
