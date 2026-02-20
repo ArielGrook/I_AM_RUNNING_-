@@ -21,6 +21,7 @@ import {
   HtmlBlock,
 } from '@/lib/craft/components';
 import { PRESETS } from '@/lib/craft/presets';
+import { Icons } from '@/lib/craft/icons';
 import { useEditorTheme } from './EditorThemeContext';
 
 const ROOT_ID = 'ROOT';
@@ -206,7 +207,12 @@ export const Toolbox = () => {
                           'hover:bg-[#1a1a1a]'
                         )}`}
                       >
-                        <span className="text-lg w-6 text-center shrink-0">{item.icon}</span>
+                        <span className="w-6 h-6 flex items-center justify-center shrink-0 text-gray-400 group-hover:text-orange-400 transition-colors">
+                          {(() => {
+                            const IconC = Icons[item.name as keyof typeof Icons];
+                            return IconC ? <IconC width={16} height={16} className="text-gray-400 group-hover:text-orange-400 transition-colors" /> : <span className="text-lg">{item.icon}</span>;
+                          })()}
+                        </span>
                         <span className={`text-sm ${t('text-gray-600 group-hover:text-gray-900', 'text-gray-300 group-hover:text-white')}`}>
                           {item.label}
                         </span>
