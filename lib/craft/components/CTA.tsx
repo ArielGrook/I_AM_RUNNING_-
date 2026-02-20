@@ -66,7 +66,7 @@ export const CTA = ({
 };
 
 const CTASettings = () => {
-  const { actions: { setProp }, gradientFrom, gradientTo, badgeText, title, subtitle, primaryBtnText, secondaryBtnText } = useNode((node) => ({
+  const { actions: { setProp }, gradientFrom, gradientTo, badgeText, title, subtitle, primaryBtnText, secondaryBtnText, animationType, animateDelay } = useNode((node) => ({
     gradientFrom: node.data.props.gradientFrom as string,
     gradientTo: node.data.props.gradientTo as string,
     badgeText: node.data.props.badgeText as string,
@@ -74,6 +74,8 @@ const CTASettings = () => {
     subtitle: node.data.props.subtitle as string,
     primaryBtnText: node.data.props.primaryBtnText as string,
     secondaryBtnText: node.data.props.secondaryBtnText as string,
+    animationType: node.data.props.animationType as string,
+    animateDelay: node.data.props.animateDelay as string,
   }));
 
   const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
@@ -99,6 +101,13 @@ const CTASettings = () => {
           <input type="color" value={gradientFrom ?? '#FF6B35'} onChange={(e) => setT('gradientFrom', 300)(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0" />
           <label className={`${labelCls} shrink-0 w-16`}>To</label>
           <input type="color" value={gradientTo ?? '#f59e0b'} onChange={(e) => setT('gradientTo', 300)(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0" />
+        </div>
+      </section>
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
+        <div className="space-y-2">
+          <div><label className={labelCls}>Type</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option><option value="slide-left">Slide Left</option><option value="scale-in">Scale In</option><option value="blur-in">Blur In</option></select></div>
+          <div><label className={labelCls}>Delay (s)</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option><option value="0.3">0.3s</option><option value="0.5">0.5s</option><option value="0.8">0.8s</option><option value="1">1s</option></select></div>
         </div>
       </section>
     </div>

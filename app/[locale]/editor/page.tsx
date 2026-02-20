@@ -410,9 +410,73 @@ export default function EditorPage() {
       });
       return;
     }
-    const timer = setTimeout(runAnimations, 500);
-    return () => clearTimeout(timer);
-  }, [previewMode, runAnimations]);
+
+    let rafId: number;
+    let timerId: ReturnType<typeof setTimeout>;
+
+    rafId = requestAnimationFrame(() => {
+      rafId = requestAnimationFrame(() => {
+        timerId = setTimeout(async () => {
+          try {
+            const gsapModule = await import('gsap');
+            const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+            const gsap = (gsapModule as { gsap?: unknown; default?: unknown }).gsap || (gsapModule as { default: unknown }).default;
+            (gsap as { registerPlugin: (p: unknown) => void }).registerPlugin(ScrollTrigger);
+
+            (ScrollTrigger as { getAll: () => { kill: () => void }[] }).getAll().forEach((t) => t.kill());
+
+            const elements = document.querySelectorAll('[data-animate]');
+            console.log('[GSAP] data-animate elements found:', elements.length);
+
+            elements.forEach((el) => {
+              console.log('[GSAP] element:', el.tagName, 'type:', el.getAttribute('data-animate'));
+            });
+
+            elements.forEach((el) => {
+              const type = el.getAttribute('data-animate');
+              const delay = parseFloat(el.getAttribute('data-animate-delay') || '0');
+              if (!type || type === 'none') return;
+
+              const fromMap: Record<string, object> = {
+                'fade-in': { opacity: 0, duration: 0.8 },
+                'slide-up': { opacity: 0, y: 60, duration: 0.8 },
+                'slide-left': { opacity: 0, x: -60, duration: 0.8 },
+                'scale-in': { opacity: 0, scale: 0.85, duration: 0.8 },
+                'blur-in': { opacity: 0, filter: 'blur(20px)', duration: 0.9 },
+              };
+
+              const vars = fromMap[type];
+              if (!vars) return;
+
+              (gsap as { set: (target: Element, vars: object) => void }).set(el, { clearProps: 'all' });
+              (gsap as { from: (target: Element, vars: object) => void }).from(el, {
+                ...vars,
+                delay,
+                ease: 'power3.out',
+                scrollTrigger: {
+                  trigger: el,
+                  start: 'top 90%',
+                  once: false,
+                },
+              });
+            });
+
+            (ScrollTrigger as { refresh: () => void }).refresh();
+          } catch (e) {
+            console.error('[GSAP] Error:', e);
+          }
+        }, 100);
+      });
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
+      import('gsap/ScrollTrigger').then((m: { ScrollTrigger?: { getAll: () => { kill: () => void }[] } }) => {
+        m.ScrollTrigger?.getAll?.().forEach((t) => t.kill());
+      });
+    };
+  }, [previewMode]);
 
   const handleSaveFromEditor = useCallback(
     async (serializedJson: string) => {

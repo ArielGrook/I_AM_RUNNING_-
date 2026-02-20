@@ -84,12 +84,14 @@ export const Features = ({
 };
 
 const FeaturesSettings = () => {
-  const { actions: { setProp }, bgColor, title, subtitle, columns, items } = useNode((node) => ({
+  const { actions: { setProp }, bgColor, title, subtitle, columns, items, animationType, animateDelay } = useNode((node) => ({
     bgColor: node.data.props.bgColor as string,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
     columns: node.data.props.columns as number,
     items: node.data.props.items as FeatureItem[],
+    animationType: node.data.props.animationType as string,
+    animateDelay: node.data.props.animateDelay as string,
   }));
 
   const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
@@ -141,6 +143,13 @@ const FeaturesSettings = () => {
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
         <div><label className={labelCls}>Background</label><input type="color" value={bgColor ?? '#0f172a'} onChange={(e) => setT('bgColor', 300)(e.target.value)} className="w-full h-8 rounded cursor-pointer border-0 bg-transparent p-0" /></div>
+      </section>
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
+        <div className="space-y-2">
+          <div><label className={labelCls}>Type</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option><option value="slide-left">Slide Left</option><option value="scale-in">Scale In</option><option value="blur-in">Blur In</option></select></div>
+          <div><label className={labelCls}>Delay (s)</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option><option value="0.3">0.3s</option><option value="0.5">0.5s</option><option value="0.8">0.8s</option><option value="1">1s</option></select></div>
+        </div>
       </section>
     </div>
   );

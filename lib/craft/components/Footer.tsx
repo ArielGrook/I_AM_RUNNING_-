@@ -117,12 +117,14 @@ export const Footer = ({
 };
 
 const FooterSettings = () => {
-  const { actions: { setProp }, bgColor, logoText, tagline, copyright, links } = useNode((node) => ({
+  const { actions: { setProp }, bgColor, logoText, tagline, copyright, links, animationType, animateDelay } = useNode((node) => ({
     bgColor: node.data.props.bgColor as string,
     logoText: node.data.props.logoText as string,
     tagline: node.data.props.tagline as string,
     copyright: node.data.props.copyright as string,
     links: node.data.props.links as LinkItem[],
+    animationType: node.data.props.animationType as string,
+    animateDelay: node.data.props.animateDelay as string,
   }));
 
   const setT = (key: string, ms: number) => (val: unknown) =>
@@ -159,6 +161,13 @@ const FooterSettings = () => {
             </div>
           ))}
           <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.links = [...(p.links as LinkItem[] || []), { label: 'Link', href: '#' }]; })} className="w-full py-1.5 text-xs border border-dashed border-gray-600 text-gray-400 rounded">+ Add link</button>
+        </div>
+      </section>
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
+        <div className="space-y-2">
+          <div><label className={labelCls}>Type</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option><option value="slide-left">Slide Left</option><option value="scale-in">Scale In</option><option value="blur-in">Blur In</option></select></div>
+          <div><label className={labelCls}>Delay (s)</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option><option value="0.3">0.3s</option><option value="0.5">0.5s</option><option value="0.8">0.8s</option><option value="1">1s</option></select></div>
         </div>
       </section>
     </div>
