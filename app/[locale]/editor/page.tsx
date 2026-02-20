@@ -461,6 +461,18 @@ export default function EditorPage() {
               });
             });
 
+            // Elements already in view: show immediately (fixes invisible sections at load)
+            const winH = typeof window !== 'undefined' ? window.innerHeight : 0;
+            elements.forEach((el) => {
+              const rect = el.getBoundingClientRect();
+              if (rect.top < winH && rect.bottom > 0) {
+                (gsap as { set: (target: Element, vars: object) => void }).set(el, { opacity: 1, y: 0, x: 0, scale: 1, filter: 'none' });
+                (ScrollTrigger as { getAll: () => { trigger?: Element; kill: () => void }[] }).getAll().forEach((st: { trigger?: Element; kill: () => void }) => {
+                  if (st.trigger === el) st.kill();
+                });
+              }
+            });
+
             (ScrollTrigger as { refresh: () => void }).refresh();
           } catch (e) {
             console.error('[GSAP] Error:', e);

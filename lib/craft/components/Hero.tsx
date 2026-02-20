@@ -52,6 +52,16 @@ export const Hero = ({
     dataAttrs['data-animate'] = animationType;
   }
 
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Hero Debug]', {
+      enabled,
+      gradientFrom,
+      gradientTo,
+      rootStyle: { backgroundImage: baseGradient },
+      isSelected,
+    });
+  }
+
   return (
     <section
       ref={(ref) => {
