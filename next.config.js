@@ -7,7 +7,10 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 const nextConfig = {
   // React 19 support
   reactStrictMode: true,
-  
+
+  // Transpile ESM-only packages so layout/client chunks don't get raw "export" (Unexpected token 'export')
+  transpilePackages: ['next-intl', 'next-themes'],
+
   // Standalone output for Docker
   output: 'standalone',
   
