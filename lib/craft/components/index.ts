@@ -4,6 +4,7 @@ export { Hero } from './Hero';
 export { Button } from './Button';
 export { Image } from './Image';
 export { Header } from './Header';
+export { Header2 } from './Header2';
 export { CTA } from './CTA';
 export { Features } from './Features';
 export { Footer } from './Footer';

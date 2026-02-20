@@ -10,6 +10,7 @@ import {
   Button,
   Image,
   Header,
+  Header2,
   CTA,
   Features,
   Footer,
@@ -50,6 +51,7 @@ const categories: { key: 'basic' | 'sections' | 'navigation'; title: string; ite
     title: 'Sections',
     items: [
       { name: 'Hero', label: 'Hero', icon: '◉', component: Hero, canvas: true },
+      { name: 'Header2', label: 'Header 2', icon: '▣', component: Header2, canvas: true },
       { name: 'CTA', label: 'CTA', icon: '▶', component: CTA, canvas: true },
       { name: 'Features', label: 'Features', icon: '✦', component: Features, canvas: true },
       { name: 'Testimonials', label: 'Testimonials', icon: '💬', component: Testimonials, canvas: true },
