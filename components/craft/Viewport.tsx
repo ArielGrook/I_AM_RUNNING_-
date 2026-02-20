@@ -1,95 +1,167 @@
 'use client';
 
 import { useEditor } from '@craftjs/core';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useEditorTheme } from './EditorThemeContext';
+import { COLOR_PRESETS } from '@/lib/craft/presets/colors';
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 
-const DEVICES: { key: DeviceMode; icon: string; label: string; width: string }[] = [
-  { key: 'desktop', icon: '🖥', label: 'Desktop', width: '100%' },
-  { key: 'tablet',  icon: '📱', label: '768px',   width: '768px' },
-  { key: 'mobile',  icon: '📲', label: '375px',   width: '375px' },
+const DEVICES: { key: DeviceMode; label: string; width: string }[] = [
+  { key: 'desktop', label: 'Desktop', width: '100%' },
+  { key: 'tablet', label: '768', width: '768px' },
+  { key: 'mobile', label: '375', width: '375px' },
 ];
 
-const ZOOM_LEVELS = [50, 75, 100, 125, 150];
-
 export const Viewport = ({ children }: { children: React.ReactNode }) => {
-  const { connectors, isDragging } = useEditor((state) => ({
+  const { connectors, isDragging, actions, query } = useEditor((state) => ({
     isDragging: state.events.dragged.size > 0,
   }));
   const [device, setDevice] = useState<DeviceMode>('desktop');
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const { t } = useEditorTheme();
 
   const activeDevice = DEVICES.find((d) => d.key === device)!;
 
+  const applyColorPreset = useCallback(
+    (preset: { id: string; label: string; bg: string }) => {
+      try {
+        const serialized = query.getSerializedNodes();
+        Object.keys(serialized).forEach((id) => {
+          if (id === 'ROOT') return;
+          actions.setProp(id, (props: Record<string, unknown>) => {
+            props.accentColor = preset.bg;
+          });
+        });
+        setActivePresetId(preset.id);
+      } catch {
+        // noop
+      }
+    },
+    [query, actions]
+  );
+
   return (
     <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${t('bg-[#e2e8f0]', 'bg-[#1f1f1f]')}`}>
-      {/* Toolbar strip */}
-      <div className={`flex items-center justify-between px-4 py-1.5 border-b shrink-0 ${t(
-        'bg-gray-50 border-gray-200',
-        'bg-[#1a1a1a] border-[#2a2a2a]'
-      )}`}>
-        {/* Device toggle */}
-        <div className="flex items-center gap-1">
-          {DEVICES.map((d) => (
-            <button
-              key={d.key}
-              onClick={() => setDevice(d.key)}
-              title={d.label}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                device === d.key
-                  ? 'bg-[#FF6B35] text-white shadow-sm shadow-[#FF6B35]/30'
-                  : t('text-gray-500 hover:text-gray-700 hover:bg-gray-200/60', 'text-gray-500 hover:text-gray-300 hover:bg-gray-700/60')
-              }`}
-            >
-              {d.icon}
-            </button>
-          ))}
-          <span className={`ml-2 text-[10px] font-mono ${t('text-gray-400', 'text-gray-600')}`}>{activeDevice.label}</span>
-
-          {/* Grid toggle */}
-          <div className={`w-px h-4 mx-1.5 ${t('bg-gray-200', 'bg-gray-700')}`} />
+      {/* Secondary toolbar — viewport, accent presets, zoom */}
+      <div
+        className="flex items-center justify-between gap-3 shrink-0 px-4"
+        style={{
+          height: 44,
+          background: '#1a1a1a',
+          borderBottom: '1px solid #2a2a2a',
+        }}
+      >
+        {/* Left: viewport switcher pill */}
+        <div
+          className="flex items-center rounded-lg overflow-hidden"
+          style={{ background: '#111111', border: '1px solid #2a2a2a' }}
+        >
           <button
-            onClick={() => setShowGrid((g) => !g)}
-            title="Toggle alignment grid"
-            className={`px-2 py-1 rounded text-xs font-medium transition-all ${
-              showGrid
-                ? 'bg-[#FF6B35] text-white shadow-sm shadow-[#FF6B35]/30'
-                : t('text-gray-500 hover:text-gray-700 hover:bg-gray-200/60', 'text-gray-500 hover:text-gray-300 hover:bg-gray-700/60')
-            }`}
+            type="button"
+            onClick={() => setDevice('desktop')}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-150"
+            style={{
+              background: device === 'desktop' ? '#2a2a2a' : 'transparent',
+              color: device === 'desktop' ? '#ffffff' : '#71717a',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
-            ⊞
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+              <rect x="1" y="2" width="12" height="8" rx="1" />
+              <path d="M5 10v2M9 10v2M4 12h6" strokeLinecap="round" />
+            </svg>
+            <span className="hidden sm:inline">Desktop</span>
+          </button>
+          <div style={{ width: 1, height: 20, background: '#2a2a2a' }} />
+          <button
+            type="button"
+            onClick={() => setDevice('tablet')}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-150"
+            style={{
+              background: device === 'tablet' ? '#2a2a2a' : 'transparent',
+              color: device === 'tablet' ? '#ffffff' : '#71717a',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+              <rect x="0.6" y="0.6" width="10.8" height="12.8" rx="1.2" />
+              <circle cx="6" cy="12" r="0.6" fill="currentColor" />
+            </svg>
+            <span className="hidden sm:inline">768</span>
+          </button>
+          <div style={{ width: 1, height: 20, background: '#2a2a2a' }} />
+          <button
+            type="button"
+            onClick={() => setDevice('mobile')}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-150"
+            style={{
+              background: device === 'mobile' ? '#2a2a2a' : 'transparent',
+              color: device === 'mobile' ? '#ffffff' : '#71717a',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="9" height="14" viewBox="0 0 9 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+              <rect x="0.6" y="0.6" width="7.8" height="12.8" rx="1.4" />
+              <circle cx="4.5" cy="12" r="0.6" fill="currentColor" />
+              <path d="M3 2h3" strokeLinecap="round" />
+            </svg>
+            <span className="hidden sm:inline">375</span>
           </button>
         </div>
 
-        {/* Zoom */}
-        <div className="flex items-center gap-1">
+        {/* Center: color presets */}
+        <div
+          className="flex items-center gap-1.5 px-3"
+          style={{ borderLeft: '1px solid #2a2a2a', borderRight: '1px solid #2a2a2a' }}
+        >
+          <span className="text-xs text-[#52525b] mr-1">Accent</span>
+          {COLOR_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => applyColorPreset(preset)}
+              title={preset.label}
+              className="rounded-full transition-all duration-150 hover:scale-110 flex-shrink-0"
+              style={{
+                width: activePresetId === preset.id ? 18 : 14,
+                height: activePresetId === preset.id ? 18 : 14,
+                background: preset.bg,
+                outline: activePresetId === preset.id ? `2px solid ${preset.bg}` : '2px solid transparent',
+                outlineOffset: 2,
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Right: zoom */}
+        <div
+          className="flex items-center gap-1 rounded-lg"
+          style={{ background: '#111111', border: '1px solid #2a2a2a' }}
+        >
           <button
-            onClick={() => setZoom((z) => Math.max(50, z - 25))}
-            className={`w-6 h-6 flex items-center justify-center rounded text-xs ${t(
-              'text-gray-500 hover:text-gray-800 hover:bg-gray-200/60',
-              'text-gray-500 hover:text-white hover:bg-gray-700/60'
-            )}`}
-          >−</button>
-          <select
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className={`bg-transparent text-[10px] font-mono border-0 outline-none cursor-pointer text-center ${t('text-gray-500', 'text-gray-400')}`}
+            type="button"
+            onClick={() => setZoom((z) => Math.max(50, z - 10))}
+            className="px-2 py-1.5 text-sm text-[#71717a] hover:text-white transition-colors border-none bg-transparent cursor-pointer"
           >
-            {ZOOM_LEVELS.map((z) => (
-              <option key={z} value={z} className={t('bg-white', 'bg-[#1a1a1a]')}>{z}%</option>
-            ))}
-          </select>
+            −
+          </button>
+          <span className="text-xs text-[#a1a1aa] min-w-[36px] text-center">{zoom}%</span>
           <button
-            onClick={() => setZoom((z) => Math.min(150, z + 25))}
-            className={`w-6 h-6 flex items-center justify-center rounded text-xs ${t(
-              'text-gray-500 hover:text-gray-800 hover:bg-gray-200/60',
-              'text-gray-500 hover:text-white hover:bg-gray-700/60'
-            )}`}
-          >+</button>
+            type="button"
+            onClick={() => setZoom((z) => Math.min(150, z + 10))}
+            className="px-2 py-1.5 text-sm text-[#71717a] hover:text-white transition-colors border-none bg-transparent cursor-pointer"
+          >
+            +
+          </button>
         </div>
       </div>
 
