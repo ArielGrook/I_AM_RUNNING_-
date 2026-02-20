@@ -26,7 +26,7 @@ export const Viewport = ({ children }: { children: React.ReactNode }) => {
   const activeDevice = DEVICES.find((d) => d.key === device)!;
 
   return (
-    <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${t('bg-gray-100', 'bg-[#141414]')}`}>
+    <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${t('bg-gray-100', 'bg-[#1e293b]')}`}>
       {/* Toolbar strip */}
       <div className={`flex items-center justify-between px-4 py-1.5 border-b shrink-0 ${t(
         'bg-gray-50 border-gray-200',

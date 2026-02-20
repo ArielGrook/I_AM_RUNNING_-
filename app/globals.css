@@ -994,7 +994,7 @@ footer[data-cy="craft-canvas"]:empty::after {
   width: 16px;
   height: 16px;
   background: #ff6b35;
-  border: 2px solid white;
+  border: 2px solid rgba(255,255,255,0.2);
   border-radius: 50%;
   cursor: grab;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
@@ -1019,7 +1019,7 @@ footer[data-cy="craft-canvas"]:empty::after {
   width: 16px;
   height: 16px;
   background: #ff6b35;
-  border: 2px solid white;
+  border: 2px solid rgba(255,255,255,0.2);
   border-radius: 50%;
   cursor: grab;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
@@ -1067,7 +1067,7 @@ footer[data-cy="craft-canvas"]:empty::after {
   width: 16px !important;
   height: 16px !important;
   background-color: #ff6b35 !important;
-  border: 2px solid white !important;
+  border: 2px solid rgba(255,255,255,0.2) !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
   cursor: grab !important;
 }
