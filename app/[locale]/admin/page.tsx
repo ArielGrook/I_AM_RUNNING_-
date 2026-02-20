@@ -18,12 +18,14 @@ import {
   LogOut,
   RefreshCw,
   Search,
+  Globe,
 } from 'lucide-react';
 import { subscribeToProjects, unsubscribe, type ProjectUpdate } from '@/lib/supabase/realtime';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { generateProjectPreview, getCachedPreview } from '@/lib/utils/preview';
 import { cn } from '@/lib/utils';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import Link from 'next/link';
 
 interface Project {
   id: string;
@@ -97,6 +99,9 @@ export default function AdminPage() {
     if (loginInput === 'admin' && passwordInput === 'super.admin') {
       setIsAuthenticated(true);
       setError('');
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('admin_session', 'true');
+      }
     } else {
       setError('Invalid credentials');
     }
@@ -104,6 +109,9 @@ export default function AdminPage() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('admin_session');
+    }
     setLoginInput('');
     setPasswordInput('');
     setError('');
@@ -291,6 +299,15 @@ export default function AdminPage() {
                 <div>{t('totalProjects')}: {projects.length}</div>
                 <div>{t('totalUsers')}: {users.length}</div>
               </div>
+            </div>
+            <div>
+              <Link
+                href={`/${locale}/admin/seo`}
+                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
+              >
+                <Globe className="w-4 h-4" />
+                SEO Settings
+              </Link>
             </div>
           </div>
         </aside>

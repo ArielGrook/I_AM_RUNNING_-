@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useAuth } from '@/lib/hooks/useAuth';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -30,11 +29,10 @@ const DEFAULTS: SeoSettings = {
   google_analytics_id: '',
 };
 
-export default function SeoPage() {
+export default function AdminSeoPage() {
   const router = useRouter();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
-  const { user, loading: authLoading, isAuthenticated, canAccessEditor } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +40,11 @@ export default function SeoPage() {
   const [form, setForm] = useState<SeoSettings>(DEFAULTS);
 
   useEffect(() => {
+    const hasSession = typeof window !== 'undefined' && sessionStorage.getItem('admin_session');
+    if (!hasSession) {
+      router.replace(`/${locale}/admin`);
+      return;
+    }
     async function load() {
       const supabase = createSupabaseClient();
       const { data } = await supabase.from('site_settings').select('*').limit(1).maybeSingle();
@@ -60,8 +63,8 @@ export default function SeoPage() {
       }
       setLoading(false);
     }
-    if (!authLoading) load();
-  }, [authLoading]);
+    load();
+  }, [locale, router]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -103,62 +106,61 @@ export default function SeoPage() {
     setSaving(false);
   };
 
-  if (authLoading || loading) {
+  const hasSession = typeof window !== 'undefined' && sessionStorage.getItem('admin_session');
+  if (!hasSession) {
+    return null;
+  }
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#1a1a1a]">
-        <div className="text-xl text-gray-600 dark:text-[#e5e5e5]">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-xl text-gray-600">Loading...</div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    router.push(`/${locale}/auth/login?redirect=/${locale}/dashboard/seo`);
-    return null;
-  }
-
-  if (!canAccessEditor) {
-    router.push(`/${locale}/subscription?reason=editor_access`);
-    return null;
-  }
-
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-[#1a1a1a]">
-      <aside className="w-64 bg-white dark:bg-[#2d2d2d] border-r border-gray-200 dark:border-[#404040] fixed h-full flex flex-col">
+    <div className="flex min-h-screen bg-gray-50">
+      <aside className="w-64 bg-white border-r border-gray-200 fixed h-full flex flex-col">
         <div className="p-6">
           <Link
-            href={`/${locale}/dashboard`}
-            className="flex items-center gap-2 px-4 py-2 bg-[#FF6B35] hover:bg-[#e55a28] text-white rounded-lg font-medium transition-colors mb-4 inline-flex w-fit"
+            href={`/${locale}/admin`}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors mb-4 inline-flex w-fit"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>Back to Dashboard</span>
+            <span>Back to Admin</span>
           </Link>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-[#e5e5e5]">SEO Settings</h2>
+          <h2 className="text-2xl font-bold text-gray-900">SEO Settings</h2>
         </div>
       </aside>
 
       <main className="ml-64 flex-1 p-8">
         <div className="max-w-2xl">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-[#e5e5e5] mb-6">SEO Metadata</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">SEO Metadata</h1>
+
+          <p className="text-sm text-gray-500 mb-4">
+            To save changes, you must be logged in to the site with marcenko.artiom@gmail.com (RLS policy).
+          </p>
 
           {error && (
-            <div className="mb-4 p-4 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm">
+            <div className="mb-4 p-4 rounded-lg bg-red-100 text-red-700 text-sm">
               {error}
             </div>
           )}
           {success && (
-            <div className="mb-4 p-4 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm">
+            <div className="mb-4 p-4 rounded-lg bg-green-100 text-green-700 text-sm">
               Settings saved successfully.
             </div>
           )}
 
-          <div className="space-y-6 bg-white dark:bg-[#2d2d2d] rounded-xl p-8 border border-gray-200 dark:border-[#404040]">
+          <div className="space-y-6 bg-white rounded-xl p-8 border border-gray-200">
             {/* Meta Title */}
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-[#e5e5e5]">
+              <label className="block text-sm font-medium mb-2 text-gray-900">
                 Meta Title
               </label>
               <div className="flex justify-between items-center mb-1">
-                <span className="text-xs text-gray-500 dark:text-[#9ca3af]">60 chars recommended</span>
+                <span className="text-xs text-gray-500">60 chars recommended</span>
                 <span className={form.meta_title.length > 60 ? 'text-red-400 text-sm' : 'text-gray-400 text-sm'}>
                   {form.meta_title.length}/60
                 </span>
@@ -168,18 +170,18 @@ export default function SeoPage() {
                 value={form.meta_title}
                 onChange={(e) => setForm((f) => ({ ...f, meta_title: e.target.value }))}
                 maxLength={120}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-[#404040] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="I AM RUNNING — Website Builder"
               />
             </div>
 
             {/* Meta Description */}
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-[#e5e5e5]">
+              <label className="block text-sm font-medium mb-2 text-gray-900">
                 Meta Description
               </label>
               <div className="flex justify-between items-center mb-1">
-                <span className="text-xs text-gray-500 dark:text-[#9ca3af]">160 chars recommended</span>
+                <span className="text-xs text-gray-500">160 chars recommended</span>
                 <span className={form.meta_description.length > 160 ? 'text-red-400 text-sm' : 'text-gray-400 text-sm'}>
                   {form.meta_description.length}/160
                 </span>
@@ -189,92 +191,92 @@ export default function SeoPage() {
                 onChange={(e) => setForm((f) => ({ ...f, meta_description: e.target.value }))}
                 rows={3}
                 maxLength={320}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-[#404040] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Create professional websites in minutes. No code required."
               />
             </div>
 
             {/* Keywords */}
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-[#e5e5e5]">
+              <label className="block text-sm font-medium mb-2 text-gray-900">
                 Keywords
               </label>
               <input
                 type="text"
                 value={form.meta_keywords}
                 onChange={(e) => setForm((f) => ({ ...f, meta_keywords: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-[#404040] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="website builder, landing page, no-code, saas"
               />
-              <p className="text-xs text-gray-500 dark:text-[#9ca3af] mt-1">Comma-separated keywords</p>
+              <p className="text-xs text-gray-500 mt-1">Comma-separated keywords</p>
             </div>
 
             {/* OG Title */}
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-[#e5e5e5]">
+              <label className="block text-sm font-medium mb-2 text-gray-900">
                 OG Title
               </label>
               <input
                 type="text"
                 value={form.og_title}
                 onChange={(e) => setForm((f) => ({ ...f, og_title: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-[#404040] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="I AM RUNNING — Website Builder"
               />
             </div>
 
             {/* OG Description */}
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-[#e5e5e5]">
+              <label className="block text-sm font-medium mb-2 text-gray-900">
                 OG Description
               </label>
               <textarea
                 value={form.og_description}
                 onChange={(e) => setForm((f) => ({ ...f, og_description: e.target.value }))}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-[#404040] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Create professional websites in minutes."
               />
             </div>
 
             {/* OG Image URL */}
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-[#e5e5e5]">
+              <label className="block text-sm font-medium mb-2 text-gray-900">
                 OG Image URL
               </label>
               <input
                 type="url"
                 value={form.og_image}
                 onChange={(e) => setForm((f) => ({ ...f, og_image: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-[#404040] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="https://iamrunning.online/og-image.png"
               />
             </div>
 
             {/* Canonical URL */}
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-[#e5e5e5]">
+              <label className="block text-sm font-medium mb-2 text-gray-900">
                 Canonical URL
               </label>
               <input
                 type="url"
                 value={form.canonical_url}
                 onChange={(e) => setForm((f) => ({ ...f, canonical_url: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-[#404040] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="https://iamrunning.online"
               />
             </div>
 
             {/* Google Analytics ID */}
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-[#e5e5e5]">
+              <label className="block text-sm font-medium mb-2 text-gray-900">
                 Google Analytics ID
               </label>
               <input
                 type="text"
                 value={form.google_analytics_id}
                 onChange={(e) => setForm((f) => ({ ...f, google_analytics_id: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-[#404040] rounded-lg bg-white dark:bg-[#3a3a3a] text-gray-900 dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="G-XXXXXXXXXX"
               />
             </div>
@@ -282,7 +284,7 @@ export default function SeoPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="w-full px-4 py-3 bg-[#FF6B35] hover:bg-[#e55a28] disabled:opacity-60 text-white rounded-lg font-medium transition-colors"
+              className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white rounded-lg font-medium transition-colors"
             >
               {saving ? 'Saving...' : 'Save'}
             </button>

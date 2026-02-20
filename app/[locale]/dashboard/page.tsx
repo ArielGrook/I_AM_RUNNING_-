@@ -8,7 +8,6 @@ import { createSupabaseClient } from '@/lib/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ru, enUS, he } from 'date-fns/locale';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -261,14 +260,6 @@ export default function DashboardPage() {
               </svg>
               <span className="font-medium">{t('tabs.help')}</span>
             </button>
-
-            <Link
-              href={`/${locale}/dashboard/seo`}
-              className="w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center gap-3 text-gray-700 dark:text-[#e5e5e5] hover:bg-gray-100 dark:hover:bg-[#3a3a3a]"
-            >
-              <Search className="w-5 h-5 flex-shrink-0" />
-              <span className="font-medium">SEO Settings</span>
-            </Link>
 
             <button
               onClick={toggleDarkMode}
