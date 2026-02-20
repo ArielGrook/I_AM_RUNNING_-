@@ -36,7 +36,7 @@ export const Hero = ({
     actions,
   } = useNode();
   const isSelected = useNode((node) => node.events.selected);
-  const enabled = useEditor((state) => state.options.enabled);
+  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const [editingField, setEditingField] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,8 +51,6 @@ export const Hero = ({
   if (!enabled && animationType && animationType !== 'none') {
     dataAttrs['data-animate'] = animationType;
   }
-
-  console.log('[HERO] enabled:', enabled, 'animationType:', animationType, 'dataAttrs:', dataAttrs);
 
   return (
     <section

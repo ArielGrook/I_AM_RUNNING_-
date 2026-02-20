@@ -47,7 +47,7 @@ export const Button = ({
     actions,
   } = useNode();
   const isSelected = useNode((node) => node.events.selected);
-  const enabled = useEditor((state) => state.options.enabled);
+  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const [editingField, setEditingField] = useState(false);
 
   useEffect(() => {

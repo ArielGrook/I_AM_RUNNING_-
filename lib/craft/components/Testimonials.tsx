@@ -28,7 +28,7 @@ export const Testimonials = ({
 }) => {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
-  const enabled = useEditor((state) => state.options.enabled);
+  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
 
   const dataAttrs: Record<string, string> = {};

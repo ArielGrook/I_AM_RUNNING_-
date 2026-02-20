@@ -26,7 +26,7 @@ export const CTA = ({
 }) => {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
-  const enabled = useEditor((state) => state.options.enabled);
+  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
   const gradient = `linear-gradient(135deg, ${gradientFrom} 0%, ${gradientTo} 100%)`;
   const gridLines = 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)';
