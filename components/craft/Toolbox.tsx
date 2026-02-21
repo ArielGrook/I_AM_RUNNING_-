@@ -16,6 +16,11 @@ import {
   Features,
   TronFeatures,
   TronPortfolio,
+  TronTestimonials,
+  TronPricing,
+  TronFAQ,
+  TronFooter,
+  TronContact,
   Footer,
   Testimonials,
   Pricing,
@@ -36,7 +41,7 @@ const tabs: { id: TabId; label: string }[] = [
   { id: 'presets', label: '⚡ Presets' },
 ];
 
-const categories: { key: 'basic' | 'sections' | 'navigation'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
+const categories: { key: 'basic' | 'sections' | 'tronSections' | 'navigation'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
   {
     key: 'basic',
     title: 'Basic',
@@ -66,6 +71,17 @@ const categories: { key: 'basic' | 'sections' | 'navigation'; title: string; ite
     ],
   },
   {
+    key: 'tronSections',
+    title: 'TRON SECTIONS',
+    items: [
+      { name: 'TronTestimonials', label: 'Tron Testimonials', icon: '💬', component: TronTestimonials, canvas: true },
+      { name: 'TronPricing', label: 'Tron Pricing', icon: '💰', component: TronPricing, canvas: true },
+      { name: 'TronFAQ', label: 'Tron FAQ', icon: '❓', component: TronFAQ, canvas: true },
+      { name: 'TronFooter', label: 'Tron Footer', icon: '▬', component: TronFooter, canvas: true },
+      { name: 'TronContact', label: 'Tron Contact', icon: '✉', component: TronContact, canvas: true },
+    ],
+  },
+  {
     key: 'navigation',
     title: 'Navigation',
     items: [
@@ -80,8 +96,8 @@ export const Toolbox = () => {
   const { t } = useEditorTheme();
   const [activeTab, setActiveTab] = useState<TabId>('components');
   const [importing, setImporting] = useState(false);
-  const [openGroups, setOpenGroups] = useState({ basic: true, sections: true, navigation: true });
-  const toggleGroup = (key: 'basic' | 'sections' | 'navigation') =>
+  const [openGroups, setOpenGroups] = useState({ basic: true, sections: true, tronSections: true, navigation: true });
+  const toggleGroup = (key: 'basic' | 'sections' | 'tronSections' | 'navigation') =>
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleZipImport = useCallback(
