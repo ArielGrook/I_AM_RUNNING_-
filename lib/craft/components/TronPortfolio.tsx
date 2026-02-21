@@ -54,9 +54,30 @@ export const TronPortfolio = ({
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  const tokens = colorScheme === 'dark'
-    ? { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: accentColor }
-    : { bg: '#ffffff', text: '#0a0a0a', muted: '#52525b', accent: accentColor };
+  const tokens = {
+    dark: {
+      bg: '#000000',
+      text: '#ffffff',
+      muted: '#52525b',
+      accent: accentColor,
+      gridColor: 'rgba(255,255,255,0.03)',
+      cardBg: 'rgba(255,255,255,0.02)',
+      cardBorder: 'rgba(255,255,255,0.08)',
+    },
+    light: {
+      bg: '#ffffff',
+      bgSecondary: '#f8fafc',
+      text: '#0a0a0a',
+      textSecondary: '#52525b',
+      accent: accentColor,
+      border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      cardBorder: 'rgba(0,0,0,0.08)',
+      gridColor: 'rgba(0,0,0,0.06)',
+      muted: '#52525b',
+    },
+  };
+  const t = tokens[colorScheme];
 
   const list = items ?? DEFAULT_ITEMS;
   const maxIndex = Math.max(0, Math.ceil(list.length / perPage) - 1);
@@ -64,7 +85,7 @@ export const TronPortfolio = ({
   const rgb = hexToRgb(accentColor ?? '#e11d48');
 
   const gridLines =
-    'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)';
+    `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
   const dataAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
@@ -78,15 +99,15 @@ export const TronPortfolio = ({
       {...dataAttrs}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
       style={{
-        background: tokens.bg,
+        background: t.bg,
         backgroundImage: gridLines,
         backgroundSize: '50px 50px',
       }}
     >
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10 md:mb-12">
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: tokens.text, margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 16, color: tokens.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
+          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
+          <p style={{ fontSize: 16, color: t.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -97,8 +118,8 @@ export const TronPortfolio = ({
             onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
             style={{
               background: 'transparent',
-              border: `1px solid ${tokens.accent}`,
-              color: tokens.accent,
+            border: `1px solid ${t.accent}`,
+            color: t.accent,
               width: 40,
               height: 40,
               borderRadius: 4,
@@ -130,8 +151,8 @@ export const TronPortfolio = ({
                   <div
                     style={{
                       aspectRatio: '16/9',
-                      background: item.imageUrl ? 'transparent' : 'rgba(255,255,255,0.05)',
-                      border: `1px solid rgba(${rgb}, 0.2)`,
+                      background: item.imageUrl ? 'transparent' : t.cardBg,
+                      border: `1px solid ${t.cardBorder}`,
                       borderRadius: 4,
                       overflow: 'hidden',
                       display: 'flex',
@@ -145,8 +166,8 @@ export const TronPortfolio = ({
                       <span style={{ color: '#52525b', fontSize: 14 }}>Add image</span>
                     )}
                   </div>
-                  <h3 style={{ fontSize: 17, fontWeight: 600, color: tokens.text, margin: '12px 0 4px' }}>{item.title}</h3>
-                  <p style={{ fontSize: 14, color: tokens.muted, margin: 0 }}>{item.description}</p>
+                  <h3 style={{ fontSize: 17, fontWeight: 600, color: t.text, margin: '12px 0 4px' }}>{item.title}</h3>
+                  <p style={{ fontSize: 14, color: t.muted, margin: 0 }}>{item.description}</p>
                 </div>
               ))}
             </div>
@@ -159,8 +180,8 @@ export const TronPortfolio = ({
             onClick={() => setActiveIndex((i) => Math.min(maxIndex, i + 1))}
             style={{
               background: 'transparent',
-              border: `1px solid ${tokens.accent}`,
-              color: tokens.accent,
+            border: `1px solid ${t.accent}`,
+            color: t.accent,
               width: 40,
               height: 40,
               borderRadius: 4,

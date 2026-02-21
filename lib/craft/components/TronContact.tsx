@@ -28,13 +28,34 @@ export const TronContact = ({
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
-  const tokens = colorScheme === 'dark'
-    ? { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: accentColor }
-    : { bg: '#ffffff', text: '#0a0a0a', muted: '#52525b', accent: accentColor };
+  const tokens = {
+    dark: {
+      bg: '#000000',
+      text: '#ffffff',
+      muted: '#52525b',
+      accent: accentColor,
+      gridColor: 'rgba(255,255,255,0.03)',
+      border: 'rgba(255,255,255,0.08)',
+      cardBg: 'rgba(255,255,255,0.02)',
+      cardBorder: 'rgba(255,255,255,0.08)',
+    },
+    light: {
+      bg: '#ffffff',
+      bgSecondary: '#f8fafc',
+      text: '#0a0a0a',
+      textSecondary: '#52525b',
+      accent: accentColor,
+      border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      cardBorder: 'rgba(0,0,0,0.08)',
+      gridColor: 'rgba(0,0,0,0.06)',
+      muted: '#52525b',
+    },
+  };
+  const t = tokens[colorScheme];
   const rgb = hexToRgb(accentColor ?? '#e11d48');
-  const gridColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.06)';
   const gridLines =
-    `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
+    `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
   const dataAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
@@ -43,9 +64,9 @@ export const TronContact = ({
   }
 
   const fieldStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.03)',
-    border: `1px solid rgba(${rgb}, 0.2)`,
-    color: tokens.text,
+    background: t.cardBg,
+    border: `1px solid ${t.cardBorder}`,
+    color: t.text,
     borderRadius: 4,
     padding: '12px 16px',
     width: '100%',
@@ -60,12 +81,12 @@ export const TronContact = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
-      style={{ background: tokens.bg, backgroundImage: gridLines, backgroundSize: '50px 50px' }}
+      style={{ background: t.bg, backgroundImage: gridLines, backgroundSize: '50px 50px' }}
     >
       <div className="max-w-xl mx-auto">
         <div className="text-center mb-10 md:mb-12">
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: tokens.text, margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 16, color: tokens.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
+          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
+          <p style={{ fontSize: 16, color: t.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
         </div>
         <form
           onSubmit={(e) => e.preventDefault()}
@@ -78,11 +99,11 @@ export const TronContact = ({
             className="placeholder:text-[#52525b]"
             style={fieldStyle}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = tokens.accent;
+              e.currentTarget.style.borderColor = t.accent;
               e.currentTarget.style.boxShadow = `0 0 10px rgba(${rgb}, 0.2)`;
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = `rgba(${rgb}, 0.2)`;
+              e.currentTarget.style.borderColor = t.cardBorder;
               e.currentTarget.style.boxShadow = 'none';
             }}
           />
@@ -93,11 +114,11 @@ export const TronContact = ({
             className="placeholder:text-[#52525b]"
             style={fieldStyle}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = tokens.accent;
+              e.currentTarget.style.borderColor = t.accent;
               e.currentTarget.style.boxShadow = `0 0 10px rgba(${rgb}, 0.2)`;
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = `rgba(${rgb}, 0.2)`;
+              e.currentTarget.style.borderColor = t.cardBorder;
               e.currentTarget.style.boxShadow = 'none';
             }}
           />
@@ -108,11 +129,11 @@ export const TronContact = ({
             className="placeholder:text-[#52525b]"
             style={{ ...fieldStyle, resize: 'vertical', minHeight: 120 }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = tokens.accent;
+              e.currentTarget.style.borderColor = t.accent;
               e.currentTarget.style.boxShadow = `0 0 10px rgba(${rgb}, 0.2)`;
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = `rgba(${rgb}, 0.2)`;
+              e.currentTarget.style.borderColor = t.cardBorder;
               e.currentTarget.style.boxShadow = 'none';
             }}
           />
@@ -123,7 +144,7 @@ export const TronContact = ({
               padding: '14px 20px',
               borderRadius: 4,
               border: 'none',
-              background: tokens.accent,
+              background: t.accent,
               color: '#fff',
               fontSize: 16,
               fontWeight: 600,

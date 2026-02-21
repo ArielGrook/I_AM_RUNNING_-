@@ -44,13 +44,21 @@ export const HeaderTron = ({
       textSecondary: '#a1a1aa',
       accent: accentColor,
       border: 'rgba(255,255,255,0.08)',
+      gridColor: 'rgba(255,255,255,0.03)',
+      bgSecondary: '#0a0a0a',
+      cardBg: 'rgba(255,255,255,0.02)',
+      cardBorder: 'rgba(255,255,255,0.08)',
     },
     light: {
-      bg: 'rgba(255,255,255,0.92)',
+      bg: '#ffffff',
+      bgSecondary: '#f8fafc',
       text: '#0a0a0a',
       textSecondary: '#52525b',
       accent: accentColor,
       border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      cardBorder: 'rgba(0,0,0,0.08)',
+      gridColor: 'rgba(0,0,0,0.06)',
     },
   };
   const t = tokens[colorScheme];

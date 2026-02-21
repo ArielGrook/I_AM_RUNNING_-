@@ -51,30 +51,46 @@ export const HeroTron = ({
     [enabled]
   );
 
-  const tokens = colorScheme === 'dark'
-    ? { bg: '#0a0a0a', text: '#ffffff', accent: accentColor }
-    : { bg: '#ffffff', text: '#0a0a0a', accent: accentColor };
-
+  const tokens = {
+    dark: {
+      bg: '#0a0a0a',
+      text: '#ffffff',
+      accent: accentColor,
+      gridColor: 'rgba(255,255,255,0.03)',
+    },
+    light: {
+      bg: '#ffffff',
+      bgSecondary: '#f8fafc',
+      text: '#0a0a0a',
+      textSecondary: '#52525b',
+      accent: accentColor,
+      border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      cardBorder: 'rgba(0,0,0,0.08)',
+      gridColor: 'rgba(0,0,0,0.06)',
+    },
+  };
+  const t = tokens[colorScheme];
   const rgb = hexToRgb(accentColor);
+  const spotlightOpacity = colorScheme === 'light' ? 0.05 : 0.08;
 
-  const gridColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.06)';
   const gridOnly =
-    `linear-gradient(${gridColor} 1px, transparent 1px),
-     linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
+    `linear-gradient(${t.gridColor} 1px, transparent 1px),
+     linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
   const spotlightOnly =
     `radial-gradient(
        600px circle at ${cursor.x}px ${cursor.y}px,
-       rgba(${rgb},${spotlightIntensity}) 0%,
+       rgba(${rgb},${spotlightOpacity}) 0%,
        transparent 60%
      )`;
   const withSpotlight =
     `radial-gradient(
        600px circle at ${cursor.x}px ${cursor.y}px,
-       rgba(${rgb},${spotlightIntensity}) 0%,
+       rgba(${rgb},${spotlightOpacity}) 0%,
        transparent 60%
      ),
-     linear-gradient(${gridColor} 1px, transparent 1px),
-     linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
+     linear-gradient(${t.gridColor} 1px, transparent 1px),
+     linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
   const showSpotlight = isHovered && !enabled;
   let backgroundImage: string;
@@ -94,7 +110,7 @@ export const HeroTron = ({
     justifyContent: 'center',
     overflow: 'hidden',
     position: 'relative',
-    background: tokens.bg,
+    background: t.bg,
     backgroundImage,
     backgroundSize,
   };
@@ -134,7 +150,7 @@ export const HeroTron = ({
             {badgeText}
           </span>
         )}
-        <h1 style={{ fontSize: 'clamp(40px, 6vw, 80px)', fontWeight: 800, letterSpacing: '-0.03em', color: tokens.text, marginBottom: 24, margin: '0 0 24px 0' }}>{title}</h1>
+        <h1 style={{ fontSize: 'clamp(40px, 6vw, 80px)', fontWeight: 800, letterSpacing: '-0.03em', color: t.text, marginBottom: 24, margin: '0 0 24px 0' }}>{title}</h1>
         <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: '#71717a', lineHeight: 1.7, maxWidth: 520, margin: '0 auto 40px' }}>{subtitle}</p>
         <a
           href={ctaHref}

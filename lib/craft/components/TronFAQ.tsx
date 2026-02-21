@@ -41,13 +41,34 @@ export const TronFAQ = ({
 
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const tokens = colorScheme === 'dark'
-    ? { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: accentColor }
-    : { bg: '#ffffff', text: '#0a0a0a', muted: '#52525b', accent: accentColor };
+  const tokens = {
+    dark: {
+      bg: '#000000',
+      text: '#ffffff',
+      muted: '#52525b',
+      accent: accentColor,
+      gridColor: 'rgba(255,255,255,0.03)',
+      border: 'rgba(255,255,255,0.08)',
+      cardBg: 'rgba(255,255,255,0.02)',
+      cardBorder: 'rgba(255,255,255,0.08)',
+    },
+    light: {
+      bg: '#ffffff',
+      bgSecondary: '#f8fafc',
+      text: '#0a0a0a',
+      textSecondary: '#52525b',
+      accent: accentColor,
+      border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      cardBorder: 'rgba(0,0,0,0.08)',
+      gridColor: 'rgba(0,0,0,0.06)',
+      muted: '#52525b',
+    },
+  };
+  const t = tokens[colorScheme];
   const rgb = hexToRgb(accentColor ?? '#e11d48');
-  const gridColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.06)';
   const gridLines =
-    `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
+    `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
   const dataAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
@@ -62,12 +83,12 @@ export const TronFAQ = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
-      style={{ background: tokens.bg, backgroundImage: gridLines, backgroundSize: '50px 50px' }}
+      style={{ background: t.bg, backgroundImage: gridLines, backgroundSize: '50px 50px' }}
     >
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12 md:mb-16">
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: tokens.text, margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 16, color: tokens.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
+          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
+          <p style={{ fontSize: 16, color: t.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
         </div>
         <div>
           {list.map((item, i) => {
@@ -77,10 +98,10 @@ export const TronFAQ = ({
                 key={i}
                 {...(isOpen ? { 'data-mobile-dropdown': '' } : {})}
                 style={{
-                  borderBottom: `1px solid rgba(${rgb}, 0.15)`,
+                  borderBottom: `1px solid ${t.border}`,
                   transition: 'background 0.15s',
                 }}
-                onMouseEnter={(e) => { if (!enabled) e.currentTarget.style.background = `rgba(${rgb}, 0.03)`; }}
+                onMouseEnter={(e) => { if (!enabled) e.currentTarget.style.background = t.cardBg; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
               >
                 <button
@@ -89,14 +110,14 @@ export const TronFAQ = ({
                   className="w-full flex items-center justify-between gap-4 py-4 text-left"
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'inherit' }}
                 >
-                  <span style={{ fontSize: 16, fontWeight: 500, color: tokens.text }}>{item.question}</span>
+                  <span style={{ fontSize: 16, fontWeight: 500, color: t.text }}>{item.question}</span>
                   <span
                     style={{
                       flexShrink: 0,
                       display: 'inline-block',
                       transition: 'transform 0.2s ease',
                       transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                      color: tokens.accent,
+                      color: t.accent,
                     }}
                   >
                     ▼

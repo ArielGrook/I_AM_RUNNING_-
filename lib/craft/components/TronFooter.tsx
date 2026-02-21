@@ -36,13 +36,34 @@ export const TronFooter = ({
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
-  const tokens = colorScheme === 'dark'
-    ? { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: accentColor }
-    : { bg: '#ffffff', text: '#0a0a0a', muted: '#52525b', accent: accentColor };
+  const tokens = {
+    dark: {
+      bg: '#000000',
+      text: '#ffffff',
+      muted: '#52525b',
+      accent: accentColor,
+      gridColor: 'rgba(255,255,255,0.03)',
+      border: 'rgba(255,255,255,0.08)',
+      cardBg: 'rgba(255,255,255,0.02)',
+      cardBorder: 'rgba(255,255,255,0.08)',
+    },
+    light: {
+      bg: '#ffffff',
+      bgSecondary: '#f8fafc',
+      text: '#0a0a0a',
+      textSecondary: '#52525b',
+      accent: accentColor,
+      border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      cardBorder: 'rgba(0,0,0,0.08)',
+      gridColor: 'rgba(0,0,0,0.06)',
+      muted: '#52525b',
+    },
+  };
+  const t = tokens[colorScheme];
   const rgb = hexToRgb(accentColor ?? '#e11d48');
-  const gridColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.06)';
   const gridLines =
-    `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
+    `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
   const list = columns ?? DEFAULT_COLUMNS;
   const firstLetter = (logoText || 'B').charAt(0).toUpperCase();
@@ -52,8 +73,8 @@ export const TronFooter = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-16 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
       style={{
-        background: tokens.bg,
-        borderTop: `1px solid rgba(${rgb}, 0.2)`,
+        background: t.bg,
+        borderTop: `1px solid ${t.border}`,
         backgroundImage: gridLines,
         backgroundSize: '50px 50px',
       }}
@@ -66,8 +87,8 @@ export const TronFooter = ({
                 width: 40,
                 height: 40,
                 borderRadius: 4,
-                background: tokens.accent,
-                color: tokens.bg,
+                background: t.accent,
+                color: t.bg,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -78,22 +99,22 @@ export const TronFooter = ({
             >
               {firstLetter}
             </div>
-            <p style={{ fontSize: 14, color: tokens.muted, lineHeight: 1.6, margin: 0, maxWidth: 280 }}>{description}</p>
+            <p style={{ fontSize: 14, color: t.muted, lineHeight: 1.6, margin: 0, maxWidth: 280 }}>{description}</p>
           </div>
           {list.map((col, i) => (
             <div key={i}>
-              <h4 style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: tokens.accent, margin: '0 0 12px' }}>{col.title}</h4>
+              <h4 style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: t.accent, margin: '0 0 12px' }}>{col.title}</h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {(col.links ?? []).map((link, j) => (
                   <li key={j} style={{ marginBottom: 8 }}>
-                    <a href={link.href} style={{ fontSize: 14, color: tokens.text, textDecoration: 'none' }}>{link.label}</a>
+                    <a href={link.href} style={{ fontSize: 14, color: t.text, textDecoration: 'none' }}>{link.label}</a>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 32, paddingTop: 24, borderTop: `1px solid rgba(${rgb}, 0.15)` }}>
+        <div style={{ marginTop: 32, paddingTop: 24, borderTop: `1px solid ${t.border}` }}>
           <p style={{ fontSize: 13, color: '#52525b', margin: 0 }}>{copyright}</p>
         </div>
       </div>

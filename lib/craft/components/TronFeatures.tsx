@@ -38,13 +38,34 @@ export const TronFeatures = ({
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
-  const tokens = colorScheme === 'dark'
-    ? { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: accentColor }
-    : { bg: '#ffffff', text: '#0a0a0a', muted: '#52525b', accent: accentColor };
+  const tokens = {
+    dark: {
+      bg: '#000000',
+      text: '#ffffff',
+      muted: '#52525b',
+      accent: accentColor,
+      gridColor: 'rgba(255,255,255,0.03)',
+      cardBg: 'rgba(255,255,255,0.02)',
+      cardBorder: 'rgba(255,255,255,0.08)',
+    },
+    light: {
+      bg: '#ffffff',
+      bgSecondary: '#f8fafc',
+      text: '#0a0a0a',
+      textSecondary: '#52525b',
+      accent: accentColor,
+      border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      cardBorder: 'rgba(0,0,0,0.08)',
+      gridColor: 'rgba(0,0,0,0.06)',
+      muted: '#52525b',
+    },
+  };
+  const t = tokens[colorScheme];
   const rgb = hexToRgb(accentColor);
 
   const gridLines =
-    'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)';
+    `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
   const dataAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
@@ -60,7 +81,7 @@ export const TronFeatures = ({
       {...dataAttrs}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
       style={{
-        background: tokens.bg,
+        background: t.bg,
         backgroundImage: gridLines,
         backgroundSize: '50px 50px',
       }}
@@ -71,13 +92,13 @@ export const TronFeatures = ({
             style={{
               fontSize: 'clamp(28px, 4vw, 48px)',
               fontWeight: 800,
-              color: tokens.text,
+              color: t.text,
               margin: 0,
             }}
           >
             {title}
           </h2>
-          <p style={{ fontSize: 16, color: tokens.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
+          <p style={{ fontSize: 16, color: t.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {list.map((item, i) => (
@@ -85,8 +106,8 @@ export const TronFeatures = ({
               key={i}
               className="transition-all duration-200"
               style={{
-                border: `1px solid rgba(${rgb}, 0.25)`,
-                background: `rgba(${rgb}, 0.03)`,
+                border: `1px solid ${t.cardBorder}`,
+                background: t.cardBg,
                 borderRadius: 4,
                 padding: 32,
               }}
@@ -107,7 +128,7 @@ export const TronFeatures = ({
                   marginBottom: 20,
                 }}
               />
-              <h3 style={{ fontSize: 17, fontWeight: 600, color: tokens.text, margin: '0 0 8px' }}>{item.title}</h3>
+              <h3 style={{ fontSize: 17, fontWeight: 600, color: t.text, margin: '0 0 8px' }}>{item.title}</h3>
               <p style={{ fontSize: 14, color: '#71717a', lineHeight: 1.6, margin: 0 }}>{item.description}</p>
             </div>
           ))}

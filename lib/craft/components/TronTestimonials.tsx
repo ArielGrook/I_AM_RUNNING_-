@@ -71,12 +71,32 @@ export const TronTestimonials = ({
     return () => cancelAnimationFrame(animFrame);
   }, [enabled, autoplay, speed, row1Direction, row2Direction, maxOffset]);
 
-  const tokens = colorScheme === 'dark'
-    ? { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: accentColor }
-    : { bg: '#ffffff', text: '#0a0a0a', muted: '#52525b', accent: accentColor };
-  const gridColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.06)';
+  const tokens = {
+    dark: {
+      bg: '#000000',
+      text: '#ffffff',
+      muted: '#52525b',
+      accent: accentColor,
+      gridColor: 'rgba(255,255,255,0.03)',
+      cardBg: 'rgba(255,255,255,0.02)',
+      cardBorder: 'rgba(255,255,255,0.08)',
+    },
+    light: {
+      bg: '#ffffff',
+      bgSecondary: '#f8fafc',
+      text: '#0a0a0a',
+      textSecondary: '#52525b',
+      accent: accentColor,
+      border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      cardBorder: 'rgba(0,0,0,0.08)',
+      gridColor: 'rgba(0,0,0,0.06)',
+      muted: '#52525b',
+    },
+  };
+  const t = tokens[colorScheme];
   const gridLines =
-    `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
+    `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
   const dataAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
@@ -101,15 +121,15 @@ export const TronTestimonials = ({
           style={{
             width: CARD_WIDTH,
             flexShrink: 0,
-            border: 'none',
+            border: `1px solid ${t.cardBorder}`,
             borderRadius: 4,
             padding: 24,
-            background: 'rgba(255,255,255,0.03)',
+            background: t.cardBg,
           }}
         >
           <p style={{ fontSize: 14, color: '#a1a1aa', fontStyle: 'italic', lineHeight: 1.6, margin: '0 0 16px' }}>"{item.quote}"</p>
-          <p style={{ fontSize: 15, fontWeight: 600, color: tokens.text, margin: 0 }}>{item.author}</p>
-          <p style={{ fontSize: 13, color: tokens.accent, marginTop: 4, marginBottom: 0 }}>{item.role}</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: t.text, margin: 0 }}>{item.author}</p>
+          <p style={{ fontSize: 13, color: t.accent, marginTop: 4, marginBottom: 0 }}>{item.role}</p>
         </div>
       ))}
     </div>
@@ -121,15 +141,15 @@ export const TronTestimonials = ({
       {...dataAttrs}
       className={`w-full max-w-full py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
       style={{
-        background: tokens.bg,
+        background: t.bg,
         backgroundImage: gridLines,
         backgroundSize: '50px 50px',
       }}
     >
       <div className="px-4 md:px-8">
         <div className="text-center mb-12 md:mb-16 max-w-6xl mx-auto">
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: tokens.text, margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 16, color: tokens.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
+          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
+          <p style={{ fontSize: 16, color: t.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
         </div>
       </div>
       <div

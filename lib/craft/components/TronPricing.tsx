@@ -13,8 +13,25 @@ function hexToRgb(hex: string): string {
 }
 
 const tokens = {
-  dark: { bg: '#000000', text: '#ffffff', muted: '#52525b' },
-  light: { bg: '#ffffff', text: '#0a0a0a', muted: '#52525b' },
+  dark: {
+    bg: '#000000',
+    text: '#ffffff',
+    muted: '#52525b',
+    gridColor: 'rgba(255,255,255,0.03)',
+    cardBg: 'rgba(255,255,255,0.02)',
+    cardBorder: 'rgba(255,255,255,0.08)',
+  },
+  light: {
+    bg: '#ffffff',
+    bgSecondary: '#f8fafc',
+    text: '#0a0a0a',
+    textSecondary: '#52525b',
+    muted: '#52525b',
+    border: 'rgba(0,0,0,0.08)',
+    cardBg: 'rgba(0,0,0,0.02)',
+    cardBorder: 'rgba(0,0,0,0.08)',
+    gridColor: 'rgba(0,0,0,0.06)',
+  },
 };
 
 // --- PricingCard (editable child node) ---
@@ -56,8 +73,8 @@ export const PricingCard = ({
       data-animate-card="pricing"
       className={isSelected ? 'outline outline-2 outline-red-500' : ''}
       style={{
-        background: highlighted ? `rgba(${rgb},0.05)` : 'rgba(255,255,255,0.02)',
-        border: highlighted ? `1px solid ${accentColor}` : '1px solid rgba(255,255,255,0.08)',
+        background: highlighted ? `rgba(${rgb},0.05)` : t.cardBg,
+        border: highlighted ? `1px solid ${accentColor}` : `1px solid ${t.cardBorder}`,
         borderRadius: 4,
         padding: 32,
         display: 'flex',
@@ -226,15 +243,13 @@ export const TronPricing = ({
 }) => {
   const { id: sectionId, connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
-  const { query } = useEditor();
+  const editor = useEditor();
+  const query = editor?.query;
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
-  const tokens = colorScheme === 'dark'
-    ? { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: accentColor }
-    : { bg: '#ffffff', text: '#0a0a0a', muted: '#52525b', accent: accentColor };
-  const gridColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.06)';
+  const t = tokens[colorScheme];
   const gridLines =
-    `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
+    `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
   const dataAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
@@ -244,23 +259,25 @@ export const TronPricing = ({
 
   const cardIds = [`${sectionId}-card-0`, `${sectionId}-card-1`, `${sectionId}-card-2`];
 
+  const getNodeSafe = typeof query?.getNode === 'function' ? query.getNode.bind(query) : () => null;
+
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
-      style={{ background: tokens.bg, backgroundImage: gridLines, backgroundSize: '50px 50px' }}
+      style={{ background: t.bg, backgroundImage: gridLines, backgroundSize: '50px 50px' }}
     >
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12 md:mb-16">
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: tokens.text, margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 16, color: tokens.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
+          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
+          <p style={{ fontSize: 16, color: t.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {cardIds.map((cardId, i) => {
-            const node = query.getNode(cardId);
-            const exists = node != null;
-            const cardProps = exists && node.data.props
+            const node = getNodeSafe(cardId);
+            const exists = node != null && node.data?.props;
+            const cardProps = exists
               ? { ...node.data.props, accentColor, colorScheme }
               : { ...CARD_DEFAULTS[i], accentColor, colorScheme };
             return (
