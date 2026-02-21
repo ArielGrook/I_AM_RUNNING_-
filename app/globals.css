@@ -55,9 +55,7 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  /* * { @apply border-border; } */
   /* Tailwind preflight: сброс границ нод; outline только у невыделенных */
   .craftjs-renderer * {
     border-width: 0 !important;
