@@ -7,6 +7,7 @@ import {
   Container,
   Text,
   Hero,
+  Hero2,
   Button,
   Image,
   Header,
@@ -51,6 +52,7 @@ const categories: { key: 'basic' | 'sections' | 'navigation'; title: string; ite
     title: 'Sections',
     items: [
       { name: 'Hero', label: 'Hero', icon: '◉', component: Hero, canvas: true },
+      { name: 'Hero2', label: 'Hero 2', icon: '◎', component: Hero2, canvas: true },
       { name: 'Header2', label: 'Header 2', icon: '▣', component: Header2, canvas: true },
       { name: 'CTA', label: 'CTA', icon: '▶', component: CTA, canvas: true },
       { name: 'Features', label: 'Features', icon: '✦', component: Features, canvas: true },

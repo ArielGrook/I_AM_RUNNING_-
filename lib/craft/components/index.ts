@@ -1,6 +1,7 @@
 export { Container } from './Container';
 export { Text } from './Text';
 export { Hero } from './Hero';
+export { Hero2 } from './Hero2';
 export { Button } from './Button';
 export { Image } from './Image';
 export { Header } from './Header';
