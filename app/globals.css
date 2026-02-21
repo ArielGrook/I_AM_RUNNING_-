@@ -458,6 +458,11 @@ html::-webkit-scrollbar {
   box-shadow: none !important;
 }
 
+/* Исключение из Tailwind base: * { @apply border-border } — не давать границу всем подряд; дизайнерские border в style={{}} остаются */
+.craftjs-renderer * {
+  border: none;
+}
+
 /* Selection: solid orange only (keep intentional); выше по специфичности чем .craftjs-renderer [data-id] */
 .craft-node-selected,
 .craftjs-renderer .craft-node-selected {
