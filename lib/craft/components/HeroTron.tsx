@@ -2,7 +2,7 @@
 
 import { useNode, useEditor } from '@craftjs/core';
 import { Element } from '@craftjs/core';
-import React, { useState, useCallback, useRef, useLayoutEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 
 function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
@@ -36,13 +36,7 @@ export const HeroTronHeading = ({ text, accentColor, colorScheme, animationType,
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const t = tokens[colorScheme];
-  const divRef = useRef<HTMLDivElement | null>(null);
   const displayText = safeStr(text, 'Build faster.');
-  useLayoutEffect(() => {
-    if (divRef.current && document.activeElement !== divRef.current) {
-      divRef.current.textContent = displayText;
-    }
-  }, [displayText]);
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
     animAttrs['data-animate'] = animationType;
@@ -50,11 +44,12 @@ export const HeroTronHeading = ({ text, accentColor, colorScheme, animationType,
   }
   return (
     <div
-      ref={(r) => { divRef.current = r; if (r) connect(drag(r)); }}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
       contentEditable={enabled}
       suppressContentEditableWarning
       {...animAttrs}
       onBlur={(e) => setProp((p: Record<string, unknown>) => { p.text = e.currentTarget.textContent || ''; }, 500)}
+      dangerouslySetInnerHTML={{ __html: displayText }}
       style={{
         color: t.text,
         fontSize: 'clamp(40px, 6vw, 80px)',
@@ -62,6 +57,7 @@ export const HeroTronHeading = ({ text, accentColor, colorScheme, animationType,
         letterSpacing: '-0.03em',
         margin: '0 0 24px 0',
         outline: 'none',
+        cursor: enabled ? 'text' : 'default',
         minHeight: '1.2em',
       }}
     />
@@ -102,13 +98,7 @@ export interface HeroTronSubheadingProps {
 export const HeroTronSubheading = ({ text, accentColor, colorScheme, animationType, animateDelay }: HeroTronSubheadingProps) => {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
-  const divRef = useRef<HTMLDivElement | null>(null);
   const displayText = safeStr(text, 'Create modern websites in minutes.');
-  useLayoutEffect(() => {
-    if (divRef.current && document.activeElement !== divRef.current) {
-      divRef.current.textContent = displayText;
-    }
-  }, [displayText]);
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
     animAttrs['data-animate'] = animationType;
@@ -116,11 +106,12 @@ export const HeroTronSubheading = ({ text, accentColor, colorScheme, animationTy
   }
   return (
     <div
-      ref={(r) => { divRef.current = r; if (r) connect(drag(r)); }}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
       contentEditable={enabled}
       suppressContentEditableWarning
       {...animAttrs}
       onBlur={(e) => setProp((p: Record<string, unknown>) => { p.text = e.currentTarget.textContent || ''; }, 500)}
+      dangerouslySetInnerHTML={{ __html: displayText }}
       style={{
         fontSize: 'clamp(16px, 2vw, 20px)',
         color: '#71717a',
@@ -128,6 +119,7 @@ export const HeroTronSubheading = ({ text, accentColor, colorScheme, animationTy
         maxWidth: 520,
         margin: '0 auto 40px',
         outline: 'none',
+        cursor: enabled ? 'text' : 'default',
         minHeight: '1.2em',
       }}
     />
