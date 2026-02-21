@@ -2,6 +2,7 @@
 
 import { useNode, useEditor } from '@craftjs/core';
 import React, { useState, useEffect } from 'react';
+import { getSupabaseClient } from '@/lib/supabase/client';
 
 type TronPortfolioItem = { imageUrl: string; title: string; description: string };
 
@@ -223,7 +224,37 @@ const TronPortfolioSettings = () => {
         <div className="space-y-3">
           {(items ?? []).map((item, i) => (
             <div key={i} className="p-2 rounded bg-gray-800/60 space-y-2">
-              <input type="text" value={item.imageUrl} onChange={(e) => updateItem(i, 'imageUrl', e.target.value)} className={inputCls} placeholder="Image URL" />
+              <div className="flex items-center gap-2 flex-wrap">
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt="" style={{ width: 60, height: 40, objectFit: 'cover', borderRadius: 4 }} />
+                ) : null}
+                <label className="cursor-pointer">
+                  <span className="inline-block px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-gray-300 hover:border-gray-500">
+                    {item.imageUrl ? 'Change image' : 'Upload image'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const supabase = getSupabaseClient();
+                      const path = `portfolio/${Date.now()}-${file.name}`;
+                      const { error } = await supabase.storage.from('project-assets').upload(path, file);
+                      if (!error) {
+                        const { data: urlData } = supabase.storage.from('project-assets').getPublicUrl(path);
+                        setProp((p: Record<string, unknown>) => {
+                          const arr = [...(p.items as TronPortfolioItem[])];
+                          arr[i] = { ...arr[i], imageUrl: urlData.publicUrl };
+                          p.items = arr;
+                        });
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
               <input type="text" value={item.title} onChange={(e) => updateItem(i, 'title', e.target.value)} className={inputCls} placeholder="Title" />
               <input type="text" value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} className={inputCls} placeholder="Description" />
               <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.items = (p.items as TronPortfolioItem[]).filter((_, j) => j !== i); })} className="text-xs text-red-400">Remove</button>

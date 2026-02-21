@@ -1,11 +1,11 @@
 export { Container } from './Container';
 export { Text } from './Text';
 export { Hero } from './Hero';
-export { Hero2 } from './Hero2';
+export { HeroTron } from './HeroTron';
 export { Button } from './Button';
 export { Image } from './Image';
 export { Header } from './Header';
-export { Header2 } from './Header2';
+export { HeaderTron } from './HeaderTron';
 export { CTA } from './CTA';
 export { Features } from './Features';
 export { TronFeatures } from './TronFeatures';
