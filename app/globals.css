@@ -58,6 +58,15 @@
   * {
     @apply border-border;
   }
+  /* Tailwind preflight: сброс границ нод; outline только у невыделенных */
+  .craftjs-renderer * {
+    border-width: 0 !important;
+    border-style: none !important;
+  }
+  .craftjs-renderer [data-id]:not(.craft-node-selected) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
   body {
     @apply bg-background text-foreground;
   }

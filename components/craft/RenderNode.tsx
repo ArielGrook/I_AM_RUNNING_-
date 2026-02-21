@@ -66,11 +66,16 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
     setPos({ top: rect.top, left: rect.left, width: rect.width });
   }, [dom]);
 
-  // Outline: только при выделении, без hover-рамки
+  // Outline: только при выделении, без hover-рамки; сброс border/outline/boxShadow когда не выделен
   useEffect(() => {
     if (!dom) return;
     dom.classList.toggle('craft-node-hovered', false); // hover-рамку не показываем
     dom.classList.toggle('craft-node-selected', !!isActive);
+    if (!isActive) {
+      dom.style.outline = '';
+      dom.style.border = '';
+      dom.style.boxShadow = '';
+    }
     return () => {
       dom.classList.remove('craft-node-hovered', 'craft-node-selected');
     };
