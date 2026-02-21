@@ -13,20 +13,23 @@ export const TronContact = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
   title = 'Get in touch',
-  subtitle = 'We\'d love to hear from you. Send us a message.',
-  animationType = 'none',
-  animateDelay = '0',
+  subtitle = "We'd love to hear from you. Send us a message.",
+  placeholderName = 'Name',
+  placeholderEmail = 'Email',
+  placeholderMessage = 'Message',
+  submitButtonText = 'Submit',
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
   title?: string;
   subtitle?: string;
-  animationType?: string;
-  animateDelay?: string;
+  placeholderName?: string;
+  placeholderEmail?: string;
+  placeholderMessage?: string;
+  submitButtonText?: string;
 }) => {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
-  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
   const tokens = {
     dark: {
@@ -57,12 +60,6 @@ export const TronContact = ({
   const gridLines =
     `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
-  const dataAttrs: Record<string, string> = {};
-  if (!enabled && animationType && animationType !== 'none') {
-    dataAttrs['data-animate'] = animationType;
-    dataAttrs['data-animate-delay'] = animateDelay ?? '0';
-  }
-
   const fieldStyle: React.CSSProperties = {
     background: t.cardBg,
     border: `1px solid ${t.cardBorder}`,
@@ -79,7 +76,6 @@ export const TronContact = ({
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      {...dataAttrs}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
       style={{ background: t.bg, backgroundImage: gridLines, backgroundSize: '50px 50px' }}
     >
@@ -95,7 +91,7 @@ export const TronContact = ({
           <input
             type="text"
             name="name"
-            placeholder="Name"
+            placeholder={placeholderName}
             className="placeholder:text-[#52525b]"
             style={fieldStyle}
             onFocus={(e) => {
@@ -110,7 +106,7 @@ export const TronContact = ({
           <input
             type="email"
             name="email"
-            placeholder="Email"
+            placeholder={placeholderEmail}
             className="placeholder:text-[#52525b]"
             style={fieldStyle}
             onFocus={(e) => {
@@ -124,7 +120,7 @@ export const TronContact = ({
           />
           <textarea
             name="message"
-            placeholder="Message"
+            placeholder={placeholderMessage}
             rows={4}
             className="placeholder:text-[#52525b]"
             style={{ ...fieldStyle, resize: 'vertical', minHeight: 120 }}
@@ -151,7 +147,7 @@ export const TronContact = ({
               cursor: 'pointer',
             }}
           >
-            Submit
+            {submitButtonText}
           </button>
         </form>
       </div>
@@ -160,13 +156,15 @@ export const TronContact = ({
 };
 
 const TronContactSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, title, subtitle, animationType, animateDelay } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, title, subtitle, placeholderName, placeholderEmail, placeholderMessage, submitButtonText } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
-    animationType: node.data.props.animationType as string,
-    animateDelay: node.data.props.animateDelay as string,
+    placeholderName: node.data.props.placeholderName as string,
+    placeholderEmail: node.data.props.placeholderEmail as string,
+    placeholderMessage: node.data.props.placeholderMessage as string,
+    submitButtonText: node.data.props.submitButtonText as string,
   }));
   const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
@@ -186,13 +184,10 @@ const TronContactSettings = () => {
         <div className="space-y-3">
           <div><label className={labelCls}>Title</label><input type="text" value={title ?? ''} onChange={(e) => setT('title', 500)(e.target.value)} className={inputCls} /></div>
           <div><label className={labelCls}>Subtitle</label><input type="text" value={subtitle ?? ''} onChange={(e) => setT('subtitle', 500)(e.target.value)} className={inputCls} /></div>
-        </div>
-      </section>
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
-        <div className="space-y-2">
-          <div><label className={labelCls}>Type</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
-          <div><label className={labelCls}>Delay (s)</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
+          <div><label className={labelCls}>Placeholder Name</label><input type="text" value={placeholderName ?? ''} onChange={(e) => setT('placeholderName', 500)(e.target.value)} className={inputCls} placeholder="Name" /></div>
+          <div><label className={labelCls}>Placeholder Email</label><input type="text" value={placeholderEmail ?? ''} onChange={(e) => setT('placeholderEmail', 500)(e.target.value)} className={inputCls} placeholder="Email" /></div>
+          <div><label className={labelCls}>Placeholder Message</label><input type="text" value={placeholderMessage ?? ''} onChange={(e) => setT('placeholderMessage', 500)(e.target.value)} className={inputCls} placeholder="Message" /></div>
+          <div><label className={labelCls}>Submit button text</label><input type="text" value={submitButtonText ?? ''} onChange={(e) => setT('submitButtonText', 500)(e.target.value)} className={inputCls} placeholder="Submit" /></div>
         </div>
       </section>
     </div>
@@ -206,8 +201,10 @@ TronContact.craft = {
     accentColor: '#e11d48',
     title: 'Get in touch',
     subtitle: "We'd love to hear from you. Send us a message.",
-    animationType: 'none',
-    animateDelay: '0',
+    placeholderName: 'Name',
+    placeholderEmail: 'Email',
+    placeholderMessage: 'Message',
+    submitButtonText: 'Submit',
   },
   related: { settings: TronContactSettings },
   custom: {

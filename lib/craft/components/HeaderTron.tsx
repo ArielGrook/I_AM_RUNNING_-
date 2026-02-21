@@ -63,14 +63,6 @@ export const HeaderTron = ({
   };
   const t = tokens[colorScheme];
 
-  const dataAttrs: Record<string, string> = {};
-  if (!enabled && animationType && animationType !== 'none') {
-    dataAttrs['data-animate'] = animationType;
-    if (animateDelay && animateDelay !== '0') {
-      dataAttrs['data-animate-delay'] = animateDelay;
-    }
-  }
-
   const logoDisplay = logoText?.length ? (
     <>
       <span style={{ color: t.accent }}>{logoText[0]}</span>
@@ -90,7 +82,6 @@ export const HeaderTron = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="header"
       data-block-category="navigation"
-      {...dataAttrs}
       className={`w-full sticky top-0 z-50 transition-[background] duration-200 ${isSelected ? 'outline outline-2 outline-red-500 outline-offset-0' : ''}`}
       style={{
         background: t.bg,

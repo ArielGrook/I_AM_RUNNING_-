@@ -87,16 +87,9 @@ export const TronPortfolio = ({
   const gridLines =
     `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
-  const dataAttrs: Record<string, string> = {};
-  if (!enabled && animationType && animationType !== 'none') {
-    dataAttrs['data-animate'] = animationType;
-    dataAttrs['data-animate-delay'] = animateDelay ?? '0';
-  }
-
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      {...dataAttrs}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
       style={{
         background: t.bg,

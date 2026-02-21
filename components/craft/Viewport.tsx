@@ -45,6 +45,20 @@ export const Viewport = ({
   const { connectors, isDragging, actions, query } = useEditor((state) => ({
     isDragging: state.events.dragged.size > 0,
   }));
+  const { spotlightIntensity } = useEditor((state) => {
+    let intensity = 0.12;
+    const nodes = state.nodes || {};
+    for (const id of Object.keys(nodes)) {
+      if (id === 'ROOT') continue;
+      const node = nodes[id];
+      const v = node?.data?.props?.spotlightIntensity;
+      if (v != null && typeof v === 'number') {
+        intensity = v;
+        break;
+      }
+    }
+    return { spotlightIntensity: intensity };
+  });
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
@@ -276,7 +290,7 @@ export const Viewport = ({
                     transition: 'opacity 300ms ease',
                     opacity: spotlight.visible ? 1 : 0,
                     background: spotlight.visible
-                      ? `radial-gradient(600px at ${spotlight.x}px ${spotlight.y}px, rgba(${hexToRgb(accentColor)},0.08) 0%, transparent 60%)`
+                      ? `radial-gradient(600px at ${spotlight.x}px ${spotlight.y}px, rgba(${hexToRgb(accentColor)},${spotlightIntensity}) 0%, transparent 60%)`
                       : 'none',
                   }}
                 />
