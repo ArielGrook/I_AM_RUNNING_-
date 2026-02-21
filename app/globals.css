@@ -461,6 +461,21 @@ html::-webkit-scrollbar {
   outline: none !important;
 }
 
+/* Убрать дефолтные границы Craft.js нод (подэлементы без серой рамки) */
+[data-id]:not(.craft-node-selected) {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* В preview mode — вообще никаких границ */
+.craft-preview-mode [data-id],
+.craft-preview-mode .craftjs-renderer [data-id] {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 /* Selection: solid orange only (keep intentional) */
 .craft-node-selected {
   outline: 2px solid #FF6B35 !important;
@@ -1433,12 +1448,15 @@ footer[data-cy="craft-canvas"]:empty::after {
   color: #52525b !important;
 }
 
-/* Remove dashed outlines on canvas */
+/* Remove dashed outlines on canvas (aligned with rules above) */
 .craftjs-renderer [data-id]:not(.craft-node-selected) {
   outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 [data-id]:not(.craft-node-selected) {
   outline: none !important;
-  border-style: solid !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
