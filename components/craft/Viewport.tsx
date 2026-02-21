@@ -85,17 +85,18 @@ export const Viewport = ({
   const activeDevice = DEVICES.find((d) => d.key === viewport)!;
 
   const applyColorPreset = useCallback(
-    (preset: { id: string; label: string; bg: string }) => {
+    (preset: { id: string; label: string; bg: string; isGradient?: boolean; gradientFrom?: string; accent?: string }) => {
       try {
+        const accent = preset.isGradient ? preset.gradientFrom : (preset.accent ?? preset.bg);
         const serialized = query.getSerializedNodes();
         Object.keys(serialized).forEach((id) => {
           if (id === 'ROOT') return;
           actions.setProp(id, (props: Record<string, unknown>) => {
-            props.accentColor = preset.bg;
+            props.accentColor = accent;
           });
         });
         setActivePresetId(preset.id);
-        setAccentColor(preset.bg);
+        setAccentColor(accent);
       } catch {
         // noop
       }
@@ -176,25 +177,28 @@ export const Viewport = ({
           style={{ borderLeft: '1px solid #2a2a2a', borderRight: '1px solid #2a2a2a' }}
         >
           <span className="text-xs text-[#52525b] mr-1">Accent</span>
-          {COLOR_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => applyColorPreset(preset)}
-              title={preset.label}
-              className="rounded-full transition-all duration-150 hover:scale-110 flex-shrink-0"
-              style={{
-                width: activePresetId === preset.id ? 18 : 14,
-                height: activePresetId === preset.id ? 18 : 14,
-                background: preset.bg,
-                outline: activePresetId === preset.id ? `2px solid ${preset.bg}` : '2px solid transparent',
-                outlineOffset: 2,
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            />
-          ))}
+          {COLOR_PRESETS.map((preset) => {
+            const outlineColor = 'isGradient' in preset && preset.isGradient ? preset.gradientFrom : preset.bg;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => applyColorPreset(preset)}
+                title={preset.label}
+                className="rounded-full transition-all duration-150 hover:scale-110 flex-shrink-0"
+                style={{
+                  width: activePresetId === preset.id ? 18 : 14,
+                  height: activePresetId === preset.id ? 18 : 14,
+                  background: preset.bg,
+                  outline: activePresetId === preset.id ? `2px solid ${outlineColor}` : '2px solid transparent',
+                  outlineOffset: 2,
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              />
+            );
+          })}
         </div>
 
         {/* Right: zoom */}
