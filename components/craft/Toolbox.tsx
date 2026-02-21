@@ -41,7 +41,7 @@ const tabs: { id: TabId; label: string }[] = [
   { id: 'presets', label: '⚡ Presets' },
 ];
 
-const categories: { key: 'basic' | 'sections' | 'tronSections' | 'navigation'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
+const categories: { key: 'basic' | 'sections' | 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
   {
     key: 'basic',
     title: 'Basic',
@@ -56,37 +56,31 @@ const categories: { key: 'basic' | 'sections' | 'tronSections' | 'navigation'; t
   },
   {
     key: 'sections',
-    title: 'Sections',
+    title: 'CLASSIC',
     items: [
       { name: 'Hero', label: 'Hero', icon: '◉', component: Hero, canvas: true },
-      { name: 'HeroTron', label: 'Hero Tron', icon: '◎', component: HeroTron, canvas: true },
-      { name: 'HeaderTron', label: 'Header Tron', icon: '▣', component: HeaderTron, canvas: true },
-      { name: 'CTA', label: 'CTA', icon: '▶', component: CTA, canvas: true },
+      { name: 'Header', label: 'Header', icon: '☰', component: Header, canvas: true },
       { name: 'Features', label: 'Features', icon: '✦', component: Features, canvas: true },
-      { name: 'TronFeatures', label: 'Tron Features', icon: '◇', component: TronFeatures, canvas: true },
-      { name: 'TronPortfolio', label: 'Tron Portfolio', icon: '▣', component: TronPortfolio, canvas: true },
+      { name: 'CTA', label: 'CTA', icon: '▶', component: CTA, canvas: true },
       { name: 'Testimonials', label: 'Testimonials', icon: '💬', component: Testimonials, canvas: true },
       { name: 'Pricing', label: 'Pricing', icon: '💰', component: Pricing, canvas: true },
       { name: 'FAQ', label: 'FAQ', icon: '❓', component: FAQ, canvas: true },
+      { name: 'Footer', label: 'Footer', icon: '▬', component: Footer, canvas: true },
     ],
   },
   {
     key: 'tronSections',
-    title: 'TRON SECTIONS',
+    title: 'TRON',
     items: [
+      { name: 'HeaderTron', label: 'Header Tron', icon: '▣', component: HeaderTron, canvas: true },
+      { name: 'HeroTron', label: 'Hero Tron', icon: '◎', component: HeroTron, canvas: true },
+      { name: 'TronFeatures', label: 'Tron Features', icon: '◇', component: TronFeatures, canvas: true },
+      { name: 'TronPortfolio', label: 'Tron Portfolio', icon: '▣', component: TronPortfolio, canvas: true },
       { name: 'TronTestimonials', label: 'Tron Testimonials', icon: '💬', component: TronTestimonials, canvas: true },
       { name: 'TronPricing', label: 'Tron Pricing', icon: '💰', component: TronPricing, canvas: true },
       { name: 'TronFAQ', label: 'Tron FAQ', icon: '❓', component: TronFAQ, canvas: true },
       { name: 'TronFooter', label: 'Tron Footer', icon: '▬', component: TronFooter, canvas: true },
       { name: 'TronContact', label: 'Tron Contact', icon: '✉', component: TronContact, canvas: true },
-    ],
-  },
-  {
-    key: 'navigation',
-    title: 'Navigation',
-    items: [
-      { name: 'Header', label: 'Header', icon: '☰', component: Header, canvas: true },
-      { name: 'Footer', label: 'Footer', icon: '▬', component: Footer, canvas: true },
     ],
   },
 ];
@@ -96,8 +90,8 @@ export const Toolbox = () => {
   const { t } = useEditorTheme();
   const [activeTab, setActiveTab] = useState<TabId>('components');
   const [importing, setImporting] = useState(false);
-  const [openGroups, setOpenGroups] = useState({ basic: true, sections: true, tronSections: true, navigation: true });
-  const toggleGroup = (key: 'basic' | 'sections' | 'tronSections' | 'navigation') =>
+  const [openGroups, setOpenGroups] = useState({ basic: true, sections: true, tronSections: true });
+  const toggleGroup = (key: 'basic' | 'sections' | 'tronSections') =>
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleZipImport = useCallback(

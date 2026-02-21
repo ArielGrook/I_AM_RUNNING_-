@@ -1,7 +1,7 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 
 type TronFAQItem = { question: string; answer: string };
 
@@ -39,19 +39,7 @@ export const TronFAQ = ({
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
-  const [cursor, setCursor] = useState({ x: 0, y: 0 });
-  const [hovered, setHovered] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => {
-      if (!enabled) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      }
-    },
-    [enabled]
-  );
 
   const tokens = colorScheme === 'dark'
     ? { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: accentColor }
@@ -60,10 +48,6 @@ export const TronFAQ = ({
   const gridColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.06)';
   const gridLines =
     `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
-  const spotlight =
-    `radial-gradient(500px circle at ${cursor.x}px ${cursor.y}px, rgba(${rgb}, 0.08), transparent 60%)`;
-  const backgroundImage = hovered && !enabled ? `${spotlight}, ${gridLines}` : gridLines;
-  const backgroundSize = hovered && !enabled ? 'auto, 50px 50px, 50px 50px' : '50px 50px';
 
   const dataAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
@@ -78,10 +62,7 @@ export const TronFAQ = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
-      style={{ background: tokens.bg, backgroundImage, backgroundSize }}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      style={{ background: tokens.bg, backgroundImage: gridLines, backgroundSize: '50px 50px' }}
     >
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12 md:mb-16">

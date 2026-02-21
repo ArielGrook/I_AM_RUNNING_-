@@ -22,6 +22,7 @@ type ViewportProps = {
   setDesktopData: (v: string | null) => void;
   mobileData: string | null;
   setMobileData: (v: string | null) => void;
+  previewMode?: boolean;
 };
 
 export const Viewport = ({
@@ -32,6 +33,7 @@ export const Viewport = ({
   setDesktopData,
   mobileData,
   setMobileData,
+  previewMode = false,
 }: ViewportProps) => {
   const { connectors, isDragging, actions, query } = useEditor((state) => ({
     isDragging: state.events.dragged.size > 0,
@@ -39,6 +41,7 @@ export const Viewport = ({
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [spotlight, setSpotlight] = useState({ x: 0, y: 0, visible: false });
   const { t } = useEditorTheme();
 
   const switchViewport = useCallback(
@@ -239,7 +242,34 @@ export const Viewport = ({
                   : t('shadow-[0_0_40px_rgba(0,0,0,0.1)]', 'shadow-[0_0_60px_rgba(0,0,0,0.4)]')
               }`}
               style={{ borderRadius: viewport !== 'desktop' ? 12 : 0 }}
+              onMouseMove={(e) => {
+                if (previewMode) {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setSpotlight({
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top,
+                    visible: true,
+                  });
+                }
+              }}
+              onMouseLeave={() => previewMode && setSpotlight((s) => ({ ...s, visible: false }))}
             >
+              {/* Global cursor spotlight (preview only) */}
+              {previewMode && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                    transition: 'opacity 300ms ease',
+                    opacity: spotlight.visible ? 1 : 0,
+                    background: spotlight.visible
+                      ? `radial-gradient(600px at ${spotlight.x}px ${spotlight.y}px, rgba(225,29,72,0.08) 0%, transparent 60%)`
+                      : 'none',
+                  }}
+                />
+              )}
               {/* Alignment grid overlay */}
               {showGrid && (
                 <div

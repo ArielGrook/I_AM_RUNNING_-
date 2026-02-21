@@ -1,7 +1,7 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 
 type TronFooterLink = { label: string; href: string };
 type TronFooterColumn = { title: string; links: TronFooterLink[] };
@@ -36,19 +36,6 @@ export const TronFooter = ({
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
-  const [cursor, setCursor] = useState({ x: 0, y: 0 });
-  const [hovered, setHovered] = useState(false);
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => {
-      if (!enabled) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      }
-    },
-    [enabled]
-  );
-
   const tokens = colorScheme === 'dark'
     ? { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: accentColor }
     : { bg: '#ffffff', text: '#0a0a0a', muted: '#52525b', accent: accentColor };
@@ -56,10 +43,6 @@ export const TronFooter = ({
   const gridColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.06)';
   const gridLines =
     `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
-  const spotlight =
-    `radial-gradient(500px circle at ${cursor.x}px ${cursor.y}px, rgba(${rgb}, 0.08), transparent 60%)`;
-  const backgroundImage = hovered && !enabled ? `${spotlight}, ${gridLines}` : gridLines;
-  const backgroundSize = hovered && !enabled ? 'auto, 50px 50px, 50px 50px' : '50px 50px';
 
   const list = columns ?? DEFAULT_COLUMNS;
   const firstLetter = (logoText || 'B').charAt(0).toUpperCase();
@@ -71,12 +54,9 @@ export const TronFooter = ({
       style={{
         background: tokens.bg,
         borderTop: `1px solid rgba(${rgb}, 0.2)`,
-        backgroundImage,
-        backgroundSize,
+        backgroundImage: gridLines,
+        backgroundSize: '50px 50px',
       }}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">

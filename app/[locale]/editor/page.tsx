@@ -754,6 +754,7 @@ export default function EditorPage() {
             setDesktopData={setDesktopData}
             mobileData={mobileData}
             setMobileData={setMobileData}
+            previewMode={previewMode}
           >
             {frameReady && (
               <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
