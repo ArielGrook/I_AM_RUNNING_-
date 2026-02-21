@@ -1300,10 +1300,14 @@ footer[data-cy="craft-canvas"]:empty::after {
   color: #fdba74 !important;
 }
 
-/* Craft.js visual indicators */
+/* Craft.js visual indicators — outline только при hover/selected, иначе none */
 [data-craftjs-element] {
   position: relative;
   transition: outline 0.1s ease;
+}
+
+[data-craftjs-element]:not(:hover):not(.component-selected) {
+  outline: none !important;
 }
 
 [data-craftjs-element]:hover {
@@ -1314,6 +1318,11 @@ footer[data-cy="craft-canvas"]:empty::after {
 [data-craftjs-element].component-selected {
   outline: 2px solid #FF6B35;
   outline-offset: 2px;
+}
+
+/* Сброс Tailwind outline у потомков — только [data-id] показывает selection */
+.craftjs-renderer [data-id] *:not(.craft-inline-editing) {
+  outline: none !important;
 }
 
 /* Craft.js canvas viewport simulation */
