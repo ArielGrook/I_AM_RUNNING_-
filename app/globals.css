@@ -1436,7 +1436,7 @@ footer[data-cy="craft-canvas"]:empty::after {
 }
 
 /* Remove dashed outlines on canvas */
-.craftjs-renderer *:not(.craft-node-selected) {
+.craftjs-renderer [data-id]:not(.craft-node-selected) {
   outline: none !important;
 }
 [data-id]:not(.craft-node-selected) {
