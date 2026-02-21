@@ -15,6 +15,14 @@ const tokens = {
   light: { bg: '#ffffff', text: '#0a0a0a', textSecondary: '#52525b', accent: '#e11d48', border: 'rgba(0,0,0,0.08)', gridColor: 'rgba(0,0,0,0.06)' },
 };
 
+/** Avoid "[object Object]" when a prop is accidentally an object. */
+function safeStr(val: unknown, fallback: string): string {
+  if (typeof val === 'string') return val;
+  if (val == null) return fallback;
+  if (typeof val === 'object') return fallback;
+  return String(val);
+}
+
 // --- HeroTronHeading ---
 export interface HeroTronHeadingProps {
   text: string;
@@ -41,7 +49,7 @@ export const HeroTronHeading = ({ text, accentColor, colorScheme, animationType,
       className={isSelected ? 'outline outline-2 outline-red-500' : ''}
       style={{ fontSize: 'clamp(40px, 6vw, 80px)', fontWeight: 800, letterSpacing: '-0.03em', color: t.text, margin: '0 0 24px 0' }}
     >
-      {text || 'Build faster.'}
+      {safeStr(text, 'Build faster.')}
     </h1>
   );
 };
@@ -54,7 +62,7 @@ const HeroTronHeadingSettings = () => {
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
   return (
     <div className="p-3 space-y-3 text-white">
-      <div><label className={labelCls}>Text</label><input type="text" value={text ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.text = e.target.value; }, 1000)} className={inputCls} placeholder="Build faster." /></div>
+      <div><label className={labelCls}>Text</label><input type="text" value={safeStr(text, '')} onChange={(e) => setProp((p: Record<string, unknown>) => { p.text = e.target.value; }, 1000)} className={inputCls} placeholder="Build faster." /></div>
       <div><label className={labelCls}>Animation</label><select value={animationType} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
       <div><label className={labelCls}>Delay (s)</label><select value={animateDelay} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
     </div>
@@ -94,7 +102,7 @@ export const HeroTronSubheading = ({ text, accentColor, colorScheme, animationTy
       className={isSelected ? 'outline outline-2 outline-red-500' : ''}
       style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: '#71717a', lineHeight: 1.7, maxWidth: 520, margin: '0 auto 40px' }}
     >
-      {text || 'Create modern websites in minutes.'}
+      {safeStr(text, 'Create modern websites in minutes.')}
     </p>
   );
 };
@@ -107,7 +115,7 @@ const HeroTronSubheadingSettings = () => {
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
   return (
     <div className="p-3 space-y-3 text-white">
-      <div><label className={labelCls}>Text</label><textarea value={text ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.text = e.target.value; }, 1000)} className={inputCls} rows={2} placeholder="Create modern websites in minutes." /></div>
+      <div><label className={labelCls}>Text</label><textarea value={safeStr(text, '')} onChange={(e) => setProp((p: Record<string, unknown>) => { p.text = e.target.value; }, 1000)} className={inputCls} rows={2} placeholder="Create modern websites in minutes." /></div>
       <div><label className={labelCls}>Animation</label><select value={animationType} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
       <div><label className={labelCls}>Delay (s)</label><select value={animateDelay} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
     </div>
@@ -162,7 +170,7 @@ export const HeroTronButton = ({ text, href, style: btnStyle, accentColor, color
   return (
     <a
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      href={href}
+      href={safeStr(href, '#')}
       {...animAttrs}
       className={isSelected ? 'outline outline-2 outline-red-500' : ''}
       style={wrapperStyle}
@@ -175,7 +183,7 @@ export const HeroTronButton = ({ text, href, style: btnStyle, accentColor, color
         e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
-      {text || 'Get Started'}
+      {safeStr(text, 'Get Started')}
     </a>
   );
 };
@@ -194,8 +202,8 @@ const HeroTronButtonSettings = () => {
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
   return (
     <div className="p-3 space-y-3 text-white">
-      <div><label className={labelCls}>Text</label><input type="text" value={text ?? ''} onChange={(e) => setT('text', 500)(e.target.value)} className={inputCls} placeholder="Get Started" /></div>
-      <div><label className={labelCls}>Link</label><input type="text" value={href ?? ''} onChange={(e) => setT('href', 500)(e.target.value)} className={inputCls} placeholder="#" /></div>
+      <div><label className={labelCls}>Text</label><input type="text" value={safeStr(text, '')} onChange={(e) => setT('text', 500)(e.target.value)} className={inputCls} placeholder="Get Started" /></div>
+      <div><label className={labelCls}>Link</label><input type="text" value={safeStr(href, '')} onChange={(e) => setT('href', 500)(e.target.value)} className={inputCls} placeholder="#" /></div>
       <div><label className={labelCls}>Style</label><select value={btnStyle ?? 'filled'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.style = e.target.value; })} className={inputCls}><option value="filled">Filled</option><option value="outline">Outline</option></select></div>
       <div><label className={labelCls}>Animation</label><select value={animationType} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
       <div><label className={labelCls}>Delay (s)</label><select value={animateDelay} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
@@ -282,15 +290,12 @@ export const HeroTron = ({
   const subheadingNode = getNodeSafe(subheadingId);
   const buttonNode = getNodeSafe(buttonId);
 
-  const headingProps = headingNode?.data?.props
-    ? { ...headingNode.data.props, accentColor, colorScheme }
-    : { ...DEFAULT_HEADING, accentColor, colorScheme };
-  const subheadingProps = subheadingNode?.data?.props
-    ? { ...subheadingNode.data.props, accentColor, colorScheme }
-    : { ...DEFAULT_SUBHEADING, accentColor, colorScheme };
-  const buttonProps = buttonNode?.data?.props
-    ? { ...buttonNode.data.props, accentColor, colorScheme }
-    : { ...DEFAULT_BUTTON, accentColor, colorScheme };
+  const rawHeading = headingNode?.data?.props ? { ...headingNode.data.props, accentColor, colorScheme } : { ...DEFAULT_HEADING, accentColor, colorScheme };
+  const rawSubheading = subheadingNode?.data?.props ? { ...subheadingNode.data.props, accentColor, colorScheme } : { ...DEFAULT_SUBHEADING, accentColor, colorScheme };
+  const rawButton = buttonNode?.data?.props ? { ...buttonNode.data.props, accentColor, colorScheme } : { ...DEFAULT_BUTTON, accentColor, colorScheme };
+  const headingProps = { ...rawHeading, text: safeStr(rawHeading.text, 'Build faster.') };
+  const subheadingProps = { ...rawSubheading, text: safeStr(rawSubheading.text, 'Create modern websites in minutes.') };
+  const buttonProps = { ...rawButton, text: safeStr(rawButton.text, 'Get Started'), href: safeStr(rawButton.href, '#') };
 
   return (
     <section
@@ -327,7 +332,7 @@ export const HeroTron = ({
               marginBottom: 32,
             }}
           >
-            {badgeText}
+            {safeStr(badgeText, '✦ New')}
           </span>
         )}
         <Element id={headingId} is={HeroTronHeading} canvas {...headingProps} />
@@ -363,7 +368,7 @@ const HeroTronSettings = () => {
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
-          <div><label className={labelCls}>Badge text</label><input type="text" value={badgeText ?? ''} onChange={(e) => setT('badgeText', 500)(e.target.value)} className={inputCls} placeholder="✦ New" /></div>
+          <div><label className={labelCls}>Badge text</label><input type="text" value={safeStr(badgeText, '')} onChange={(e) => setT('badgeText', 500)(e.target.value)} className={inputCls} placeholder="✦ New" /></div>
         </div>
       </section>
     </div>
