@@ -519,18 +519,18 @@ footer[data-cy="craft-canvas"]:empty::after {
   display: none !important;
 }
 
-/* ── Outlines mode (toggle) — subtle borders, no dashed on canvas by default ── */
-.craft-outlines-mode [class*="craft-"] > *,
-.craft-outlines-mode .craftjs-renderer > * {
-  outline: 1px solid rgba(148, 163, 184, 0.25) !important;
-  outline-offset: -1px;
+/* ── Outlines mode (toggle) — подключено к кнопке в toolbar ── */
+[data-outlines="false"] [data-id] {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
-.craft-outlines-mode div[draggable] {
-  outline: 1px solid rgba(148, 163, 184, 0.2) !important;
+[data-outlines="true"] [data-id]:not(.craft-node-selected) {
+  outline: 1px dashed rgba(255, 255, 255, 0.15) !important;
 }
 
-/* ── Preview mode — hide all editor chrome ── */
+/* ── Preview mode — hide all editor chrome, рамок никогда нет ── */
+.craft-preview-mode .craftjs-renderer [data-id],
 .craft-preview-mode .craft-node-hovered,
 .craft-preview-mode .craft-node-selected {
   outline: none !important;

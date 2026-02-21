@@ -97,7 +97,8 @@ function EditorLayout({
 
   return (
     <div
-      className={`flex-1 flex min-h-0 relative ${outlines ? 'craft-outlines-mode' : ''} ${previewMode ? 'craft-preview-mode' : ''}`}
+      className={`flex-1 flex min-h-0 relative ${previewMode ? 'craft-preview-mode' : ''}`}
+      data-outlines={outlines ? 'true' : 'false'}
       style={{ background: areaBg }}
     >
       {!previewMode && (
