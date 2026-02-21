@@ -814,20 +814,9 @@ export default function EditorPage() {
           >
             {frameReady && (
               <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
-                <Frame key={activePageId} data={frameData ?? undefined}>
-                  {!frameData && (
-                    <Element
-                      is={Container}
-                      canvas
-                      background="#ffffff"
-                      padding={0}
-                      gap={0}
-                      flexDirection="column"
-                      alignItems="stretch"
-                      style={{ minHeight: '100vh' }}
-                    >
-                    </Element>
-                  )}
+                <Frame key={activePageId} data={undefined}>
+                  <Element is={Container} canvas>
+                  </Element>
                 </Frame>
               </div>
             )}
