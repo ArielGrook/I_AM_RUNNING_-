@@ -2,7 +2,7 @@
 
 import { useNode, useEditor } from '@craftjs/core';
 import { Element } from '@craftjs/core';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useLayoutEffect } from 'react';
 
 function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
@@ -33,24 +33,38 @@ export interface HeroTronHeadingProps {
 }
 
 export const HeroTronHeading = ({ text, accentColor, colorScheme, animationType, animateDelay }: HeroTronHeadingProps) => {
-  const { connectors: { connect, drag } } = useNode();
-  const isSelected = useNode((n) => n.events.selected);
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const t = tokens[colorScheme];
+  const divRef = useRef<HTMLDivElement | null>(null);
+  const displayText = safeStr(text, 'Build faster.');
+  useLayoutEffect(() => {
+    if (divRef.current && document.activeElement !== divRef.current) {
+      divRef.current.textContent = displayText;
+    }
+  }, [displayText]);
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
     animAttrs['data-animate'] = animationType;
     if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
   }
   return (
-    <h1
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
+    <div
+      ref={(r) => { divRef.current = r; if (r) connect(drag(r)); }}
+      contentEditable={enabled}
+      suppressContentEditableWarning
       {...animAttrs}
-      className=""
-      style={{ fontSize: 'clamp(40px, 6vw, 80px)', fontWeight: 800, letterSpacing: '-0.03em', color: t.text, margin: '0 0 24px 0' }}
-    >
-      {safeStr(text, 'Build faster.')}
-    </h1>
+      onBlur={(e) => setProp((p: Record<string, unknown>) => { p.text = e.currentTarget.textContent || ''; }, 500)}
+      style={{
+        color: t.text,
+        fontSize: 'clamp(40px, 6vw, 80px)',
+        fontWeight: 800,
+        letterSpacing: '-0.03em',
+        margin: '0 0 24px 0',
+        outline: 'none',
+        minHeight: '1.2em',
+      }}
+    />
   );
 };
 
@@ -86,24 +100,37 @@ export interface HeroTronSubheadingProps {
 }
 
 export const HeroTronSubheading = ({ text, accentColor, colorScheme, animationType, animateDelay }: HeroTronSubheadingProps) => {
-  const { connectors: { connect, drag } } = useNode();
-  const isSelected = useNode((n) => n.events.selected);
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
-  const t = tokens[colorScheme];
+  const divRef = useRef<HTMLDivElement | null>(null);
+  const displayText = safeStr(text, 'Create modern websites in minutes.');
+  useLayoutEffect(() => {
+    if (divRef.current && document.activeElement !== divRef.current) {
+      divRef.current.textContent = displayText;
+    }
+  }, [displayText]);
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
     animAttrs['data-animate'] = animationType;
     if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
   }
   return (
-    <p
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
+    <div
+      ref={(r) => { divRef.current = r; if (r) connect(drag(r)); }}
+      contentEditable={enabled}
+      suppressContentEditableWarning
       {...animAttrs}
-      className=""
-      style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: '#71717a', lineHeight: 1.7, maxWidth: 520, margin: '0 auto 40px' }}
-    >
-      {safeStr(text, 'Create modern websites in minutes.')}
-    </p>
+      onBlur={(e) => setProp((p: Record<string, unknown>) => { p.text = e.currentTarget.textContent || ''; }, 500)}
+      style={{
+        fontSize: 'clamp(16px, 2vw, 20px)',
+        color: '#71717a',
+        lineHeight: 1.7,
+        maxWidth: 520,
+        margin: '0 auto 40px',
+        outline: 'none',
+        minHeight: '1.2em',
+      }}
+    />
   );
 };
 
