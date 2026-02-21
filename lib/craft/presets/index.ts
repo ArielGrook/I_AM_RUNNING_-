@@ -4,6 +4,10 @@ import { Hero } from '../components/Hero';
 import { Features } from '../components/Features';
 import { CTA } from '../components/CTA';
 import { Footer } from '../components/Footer';
+import { Header2 } from '../components/Header2';
+import { Hero2 } from '../components/Hero2';
+import { TronFeatures } from '../components/TronFeatures';
+import { TronPortfolio } from '../components/TronPortfolio';
 
 export const PRESETS = [
   {
@@ -42,6 +46,20 @@ export const PRESETS = [
       React.createElement(Footer, {
         bgColor: '#0a0f1e',
       }),
+    ],
+  },
+  {
+    id: 'tron',
+    name: 'Tron',
+    description: 'Dark neon landing with spotlight hero and carousel',
+    thumbnail: '◇',
+    category: 'Tech',
+    getElements: () => [
+      React.createElement(Header2, { accentColor: '#e11d48' }),
+      React.createElement(Hero2, { accentColor: '#e11d48', showGrid: true }),
+      React.createElement(TronFeatures, { accentColor: '#e11d48' }),
+      React.createElement(TronPortfolio, { accentColor: '#e11d48' }),
+      React.createElement(Footer, { bgColor: '#0a0a0a' }),
     ],
   },
 ];

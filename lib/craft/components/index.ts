@@ -8,6 +8,8 @@ export { Header } from './Header';
 export { Header2 } from './Header2';
 export { CTA } from './CTA';
 export { Features } from './Features';
+export { TronFeatures } from './TronFeatures';
+export { TronPortfolio } from './TronPortfolio';
 export { Footer } from './Footer';
 export { Testimonials } from './Testimonials';
 export { Pricing } from './Pricing';
