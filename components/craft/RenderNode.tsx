@@ -66,10 +66,10 @@ export const RenderNode = ({ render }: { render: React.ReactElement }) => {
     setPos({ top: rect.top, left: rect.left, width: rect.width });
   }, [dom]);
 
-  // Outline classes
+  // Outline: только при выделении, без hover-рамки
   useEffect(() => {
     if (!dom) return;
-    dom.classList.toggle('craft-node-hovered', !!(isHover && !isActive));
+    dom.classList.toggle('craft-node-hovered', false); // hover-рамку не показываем
     dom.classList.toggle('craft-node-selected', !!isActive);
     return () => {
       dom.classList.remove('craft-node-hovered', 'craft-node-selected');
