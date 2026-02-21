@@ -461,14 +461,18 @@ html::-webkit-scrollbar {
   outline: none !important;
 }
 
-/* Убрать дефолтные границы Craft.js нод (подэлементы без серой рамки) */
+/* Убрать дефолтные границы Craft.js нод */
 [data-id]:not(.craft-node-selected) {
   outline: none !important;
   border: none !important;
   box-shadow: none !important;
 }
 
-/* В preview mode — вообще никаких границ */
+/* В preview mode / renderer — никаких границ у невыделенных нод (выделение — outline от .craft-node-selected) */
+.craftjs-renderer [data-id]:not(.craft-node-selected) {
+  outline: none !important;
+  box-shadow: none !important;
+}
 .craft-preview-mode [data-id],
 .craft-preview-mode .craftjs-renderer [data-id] {
   outline: none !important;
