@@ -1,15 +1,8 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
+import { Element } from '@craftjs/core';
 import React from 'react';
-
-type TronFeatureItem = { title: string; description: string };
-
-const DEFAULT_ITEMS: TronFeatureItem[] = [
-  { title: 'Lightning Fast', description: 'Optimized for speed. Under 1s load time.' },
-  { title: 'Secure by Default', description: 'Enterprise-grade security built in.' },
-  { title: 'Easy to Use', description: 'No learning curve. Build in minutes.' },
-];
 
 function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
@@ -17,12 +10,118 @@ function hexToRgb(hex: string): string {
   return `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}`;
 }
 
+const tokens = {
+  dark: {
+    bg: '#000000',
+    text: '#ffffff',
+    textSecondary: '#a1a1aa',
+    muted: '#52525b',
+    accent: '#e11d48',
+    gridColor: 'rgba(255,255,255,0.03)',
+    cardBg: 'rgba(255,255,255,0.02)',
+    cardBorder: 'rgba(255,255,255,0.08)',
+  },
+  light: {
+    bg: '#ffffff',
+    bgSecondary: '#f8fafc',
+    text: '#0a0a0a',
+    textSecondary: '#52525b',
+    accent: '#e11d48',
+    border: 'rgba(0,0,0,0.08)',
+    cardBg: 'rgba(0,0,0,0.02)',
+    cardBorder: 'rgba(0,0,0,0.08)',
+    gridColor: 'rgba(0,0,0,0.06)',
+    muted: '#52525b',
+  },
+};
+
+// --- FeatureCard (editable child node) ---
+
+export interface FeatureCardProps {
+  title: string;
+  description: string;
+  accentColor: string;
+  colorScheme: 'dark' | 'light';
+}
+
+export const FeatureCard = ({
+  title,
+  description,
+  accentColor,
+  colorScheme,
+}: FeatureCardProps) => {
+  const { connectors: { connect, drag } } = useNode();
+  const isSelected = useNode((n) => n.events.selected);
+  const t = tokens[colorScheme];
+
+  return (
+    <div
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      className={isSelected ? 'outline outline-2 outline-red-500' : ''}
+      style={{
+        background: t.cardBg,
+        border: `1px solid ${t.cardBorder}`,
+        borderRadius: 4,
+        padding: 32,
+        cursor: 'default',
+        transition: 'border-color 200ms, box-shadow 200ms',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = `rgba(${hexToRgb(accentColor)},0.5)`;
+        e.currentTarget.style.boxShadow = `0 0 20px rgba(${hexToRgb(accentColor)},0.1)`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = t.cardBorder;
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+    >
+      <div style={{ width: 40, height: 2, background: accentColor, marginBottom: 20 }} />
+      <h3 style={{ color: t.text, fontSize: 17, fontWeight: 600, marginBottom: 10 }}>{title}</h3>
+      <p style={{ color: t.textSecondary, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{description}</p>
+    </div>
+  );
+};
+
+const FeatureCardSettings = () => {
+  const { actions: { setProp } } = useNode();
+  const { title = '', description = '' } = useNode((node) => node.data.props) ?? {};
+  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
+  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
+
+  return (
+    <div className="p-4 space-y-3 text-white">
+      <div><label className={labelCls}>Title</label><input value={title ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.title = e.target.value; }, 500)} className={inputCls} /></div>
+      <div><label className={labelCls}>Description</label><textarea value={description ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.description = e.target.value; }, 500)} className={inputCls} rows={3} /></div>
+    </div>
+  );
+};
+
+FeatureCard.craft = {
+  displayName: 'Feature Card',
+  props: {
+    title: 'Feature Title',
+    description: 'Feature description here.',
+    accentColor: '#e11d48',
+    colorScheme: 'dark',
+  },
+  related: { settings: FeatureCardSettings },
+  rules: { canDrag: () => true, canMoveIn: () => false },
+};
+
+// --- Default content for the 3 card slots ---
+
+const DEFAULT_CARD_0: Omit<FeatureCardProps, 'accentColor' | 'colorScheme'> = { title: 'Lightning Fast', description: 'Under 1s load time.' };
+const DEFAULT_CARD_1: Omit<FeatureCardProps, 'accentColor' | 'colorScheme'> = { title: 'Secure by Default', description: 'Enterprise-grade security.' };
+const DEFAULT_CARD_2: Omit<FeatureCardProps, 'accentColor' | 'colorScheme'> = { title: 'Easy to Use', description: 'No learning curve.' };
+const CARD_DEFAULTS = [DEFAULT_CARD_0, DEFAULT_CARD_1, DEFAULT_CARD_2];
+
+// --- TronFeatures (section with 3 card nodes) ---
+
 export const TronFeatures = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
   title = 'Everything you need',
   subtitle = 'Powerful tools built for modern businesses',
-  items = DEFAULT_ITEMS,
   animationType = 'none',
   animateDelay = '0',
 }: {
@@ -30,40 +129,16 @@ export const TronFeatures = ({
   accentColor?: string;
   title?: string;
   subtitle?: string;
-  items?: TronFeatureItem[];
   animationType?: string;
   animateDelay?: string;
 }) => {
-  const { connectors: { connect, drag } } = useNode();
+  const { id: sectionId, connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
+  const editor = useEditor();
+  const query = editor?.query;
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
-  const tokens = {
-    dark: {
-      bg: '#000000',
-      text: '#ffffff',
-      muted: '#52525b',
-      accent: accentColor,
-      gridColor: 'rgba(255,255,255,0.03)',
-      cardBg: 'rgba(255,255,255,0.02)',
-      cardBorder: 'rgba(255,255,255,0.08)',
-    },
-    light: {
-      bg: '#ffffff',
-      bgSecondary: '#f8fafc',
-      text: '#0a0a0a',
-      textSecondary: '#52525b',
-      accent: accentColor,
-      border: 'rgba(0,0,0,0.08)',
-      cardBg: 'rgba(0,0,0,0.02)',
-      cardBorder: 'rgba(0,0,0,0.08)',
-      gridColor: 'rgba(0,0,0,0.06)',
-      muted: '#52525b',
-    },
-  };
   const t = tokens[colorScheme];
-  const rgb = hexToRgb(accentColor);
-
   const gridLines =
     `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
 
@@ -73,7 +148,8 @@ export const TronFeatures = ({
     dataAttrs['data-animate-delay'] = animateDelay ?? '0';
   }
 
-  const list = items ?? DEFAULT_ITEMS;
+  const cardIds = [`${sectionId}-card-0`, `${sectionId}-card-1`, `${sectionId}-card-2`];
+  const getNodeSafe = typeof query?.getNode === 'function' ? query.getNode.bind(query) : () => null;
 
   return (
     <section
@@ -100,38 +176,23 @@ export const TronFeatures = ({
           </h2>
           <p style={{ fontSize: 16, color: t.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {list.map((item, i) => (
-            <div
-              key={i}
-              className="transition-all duration-200"
-              style={{
-                border: `1px solid ${t.cardBorder}`,
-                background: t.cardBg,
-                borderRadius: 4,
-                padding: 32,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = `rgba(${rgb}, 0.6)`;
-                e.currentTarget.style.boxShadow = `0 0 20px rgba(${rgb}, 0.1)`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = `rgba(${rgb}, 0.25)`;
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <div
-                style={{
-                  height: 2,
-                  width: 40,
-                  background: accentColor,
-                  marginBottom: 20,
-                }}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cardIds.map((cardId, i) => {
+            const node = getNodeSafe(cardId);
+            const exists = node != null && node.data?.props;
+            const cardProps = exists
+              ? { ...node.data.props, accentColor, colorScheme }
+              : { ...CARD_DEFAULTS[i], accentColor, colorScheme };
+            return (
+              <Element
+                key={cardId}
+                id={cardId}
+                is={FeatureCard}
+                canvas
+                {...cardProps}
               />
-              <h3 style={{ fontSize: 17, fontWeight: 600, color: t.text, margin: '0 0 8px' }}>{item.title}</h3>
-              <p style={{ fontSize: 14, color: '#71717a', lineHeight: 1.6, margin: 0 }}>{item.description}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -145,7 +206,6 @@ const TronFeaturesSettings = () => {
     accentColor,
     title,
     subtitle,
-    items,
     animationType,
     animateDelay,
   } = useNode((node) => ({
@@ -153,7 +213,6 @@ const TronFeaturesSettings = () => {
     accentColor: node.data.props.accentColor as string,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
-    items: node.data.props.items as TronFeatureItem[],
     animationType: node.data.props.animationType as string,
     animateDelay: node.data.props.animateDelay as string,
   }));
@@ -162,14 +221,6 @@ const TronFeaturesSettings = () => {
     setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
-
-  const updateItem = (index: number, field: keyof TronFeatureItem, value: string) => {
-    setProp((p: Record<string, unknown>) => {
-      const arr = [...(p.items as TronFeatureItem[])];
-      arr[index] = { ...arr[index], [field]: value };
-      p.items = arr;
-    });
-  };
 
   return (
     <div className="p-3 space-y-5 text-white">
@@ -198,19 +249,6 @@ const TronFeaturesSettings = () => {
         </div>
       </section>
       <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Items</h3>
-        <div className="space-y-3">
-          {(items ?? []).map((item, i) => (
-            <div key={i} className="p-2 rounded bg-gray-800/60 space-y-2">
-              <input type="text" value={item.title} onChange={(e) => updateItem(i, 'title', e.target.value)} className={inputCls} placeholder="Title" />
-              <input type="text" value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} className={inputCls} placeholder="Description" />
-              <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.items = (p.items as TronFeatureItem[]).filter((_, j) => j !== i); })} className="text-xs text-red-400">Remove</button>
-            </div>
-          ))}
-          <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.items = [...(p.items as TronFeatureItem[] || []), { title: 'Feature', description: 'Description.' }]; })} className="w-full py-1.5 text-xs border border-dashed border-gray-600 text-gray-400 rounded">+ Add item</button>
-        </div>
-      </section>
-      <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
         <div className="space-y-2">
           <div><label className={labelCls}>Type</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option><option value="scale-in">Scale In</option></select></div>
@@ -228,7 +266,6 @@ TronFeatures.craft = {
     accentColor: '#e11d48',
     title: 'Everything you need',
     subtitle: 'Powerful tools built for modern businesses',
-    items: DEFAULT_ITEMS,
     animationType: 'none',
     animateDelay: '0',
   },

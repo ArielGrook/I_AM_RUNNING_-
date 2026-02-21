@@ -8,7 +8,7 @@ export { Header } from './Header';
 export { HeaderTron } from './HeaderTron';
 export { CTA } from './CTA';
 export { Features } from './Features';
-export { TronFeatures } from './TronFeatures';
+export { TronFeatures, FeatureCard } from './TronFeatures';
 export { TronPortfolio } from './TronPortfolio';
 export { TronTestimonials } from './TronTestimonials';
 export { TronPricing, PricingCard } from './TronPricing';
