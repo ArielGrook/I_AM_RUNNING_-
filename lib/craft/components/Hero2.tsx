@@ -12,6 +12,8 @@ function hexToRgb(hex: string): string {
 export const Hero2 = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  spotlightIntensity = 0.12,
+  showGrid = true,
   badgeText = '✦ New',
   title = 'Build faster.',
   subtitle = 'Create modern websites in minutes.',
@@ -22,6 +24,8 @@ export const Hero2 = ({
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  spotlightIntensity?: number;
+  showGrid?: boolean;
   badgeText?: string;
   title?: string;
   subtitle?: string;
@@ -51,23 +55,38 @@ export const Hero2 = ({
     ? { bg: '#0a0a0a', text: '#ffffff', accent: accentColor }
     : { bg: '#ffffff', text: '#0a0a0a', accent: accentColor };
 
-  const spotlightOpacity = colorScheme === 'dark' ? 0.12 : 0.08;
   const rgb = hexToRgb(accentColor);
 
   const gridColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.06)';
   const gridOnly =
     `linear-gradient(${gridColor} 1px, transparent 1px),
      linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
+  const spotlightOnly =
+    `radial-gradient(
+       600px circle at ${cursor.x}px ${cursor.y}px,
+       rgba(${rgb},${spotlightIntensity}) 0%,
+       transparent 60%
+     )`;
   const withSpotlight =
     `radial-gradient(
        600px circle at ${cursor.x}px ${cursor.y}px,
-       rgba(${rgb},${spotlightOpacity}) 0%,
+       rgba(${rgb},${spotlightIntensity}) 0%,
        transparent 60%
      ),
      linear-gradient(${gridColor} 1px, transparent 1px),
      linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`;
 
   const showSpotlight = isHovered && !enabled;
+  let backgroundImage: string;
+  let backgroundSize: string;
+  if (showSpotlight) {
+    backgroundImage = showGrid ? withSpotlight : spotlightOnly;
+    backgroundSize = showGrid ? 'auto, 50px 50px, 50px 50px' : 'auto';
+  } else {
+    backgroundImage = showGrid ? gridOnly : 'none';
+    backgroundSize = showGrid ? '50px 50px, 50px 50px' : 'auto';
+  }
+
   const backgroundStyle: React.CSSProperties = {
     minHeight: '100vh',
     display: 'flex',
@@ -76,8 +95,8 @@ export const Hero2 = ({
     overflow: 'hidden',
     position: 'relative',
     background: tokens.bg,
-    backgroundImage: showSpotlight ? withSpotlight : gridOnly,
-    backgroundSize: showSpotlight ? 'auto, 50px 50px, 50px 50px' : '50px 50px, 50px 50px',
+    backgroundImage,
+    backgroundSize,
   };
 
   const dataAttrs: Record<string, string> = {};
@@ -184,6 +203,8 @@ const Hero2Settings = () => {
     actions: { setProp },
     colorScheme,
     accentColor,
+    spotlightIntensity,
+    showGrid,
     badgeText,
     title,
     subtitle,
@@ -194,6 +215,8 @@ const Hero2Settings = () => {
   } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
+    spotlightIntensity: node.data.props.spotlightIntensity as number,
+    showGrid: node.data.props.showGrid as boolean,
     badgeText: node.data.props.badgeText as string,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
@@ -233,6 +256,28 @@ const Hero2Settings = () => {
               className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
             />
             <span className="text-[10px] font-mono text-gray-500 truncate">{accentColor}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="hero2-show-grid"
+              checked={showGrid ?? true}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
+              className="rounded border-gray-600 bg-gray-700"
+            />
+            <label htmlFor="hero2-show-grid" className={labelCls}>Show grid</label>
+          </div>
+          <div>
+            <label className={labelCls}>Spotlight intensity — {Math.round((spotlightIntensity ?? 0.12) * 100)}%</label>
+            <input
+              type="range"
+              min={0}
+              max={0.3}
+              step={0.01}
+              value={spotlightIntensity ?? 0.12}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.spotlightIntensity = parseFloat(e.target.value); }, 300)}
+              className="w-full h-2 rounded bg-gray-700 accent-red-500"
+            />
           </div>
         </div>
       </section>
@@ -306,6 +351,8 @@ Hero2.craft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#e11d48',
+    spotlightIntensity: 0.12,
+    showGrid: true,
     badgeText: '✦ New',
     title: 'Build faster.',
     subtitle: 'Create modern websites in minutes.',
