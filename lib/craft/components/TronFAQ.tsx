@@ -31,7 +31,8 @@ export const FAQItem = ({ question, answer, accentColor, colorScheme, animationT
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const [isOpen, setIsOpen] = useState(false);
   const t = tokens[colorScheme];
-  const rgb = hexToRgb(accentColor ?? '#e11d48');
+  const accent = accentColor ?? '#e11d48';
+  const rgb = hexToRgb(accent);
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
     animAttrs['data-animate'] = animationType;
@@ -54,7 +55,7 @@ export const FAQItem = ({ question, answer, accentColor, colorScheme, animationT
         style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'inherit' }}
       >
         <span style={{ fontSize: 16, fontWeight: 500, color: t.text }}>{question || 'Question'}</span>
-        <span style={{ flexShrink: 0, display: 'inline-block', transition: 'transform 0.2s ease', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', color: t.accent }}>▼</span>
+        <span style={{ flexShrink: 0, display: 'inline-block', transition: 'transform 0.2s ease', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', color: accent }}>▼</span>
       </button>
       <div style={{ overflow: 'hidden', maxHeight: isOpen ? 200 : 0, transition: 'max-height 0.25s ease' }}>
         <p style={{ fontSize: 14, color: '#71717a', lineHeight: 1.6, paddingTop: 12, paddingBottom: 16, margin: 0 }}>{answer || 'Answer'}</p>

@@ -28,13 +28,13 @@ export interface TestimonialCardProps {
   animateDelay: string;
 }
 
-function TestimonialCardContent({ quote, author, role, company, accentColor, colorScheme }: Pick<TestimonialCardProps, 'quote' | 'author' | 'role' | 'company' | 'accentColor' | 'colorScheme'>) {
+function TestimonialCardContent({ quote, author, role, company, accentColor = '#e11d48', colorScheme }: Pick<TestimonialCardProps, 'quote' | 'author' | 'role' | 'company' | 'accentColor' | 'colorScheme'>) {
   const t = tokens[colorScheme];
   return (
     <>
       <p style={{ fontSize: 14, color: '#a1a1aa', fontStyle: 'italic', lineHeight: 1.6, margin: '0 0 16px' }}>"{quote}"</p>
       <p style={{ fontSize: 15, fontWeight: 600, color: t.text, margin: 0 }}>{author}</p>
-      <p style={{ fontSize: 13, color: t.accent, marginTop: 4, marginBottom: 0 }}>{role}{company ? `, ${company}` : ''}</p>
+      <p style={{ fontSize: 13, color: accentColor, marginTop: 4, marginBottom: 0 }}>{role}{company ? `, ${company}` : ''}</p>
     </>
   );
 }

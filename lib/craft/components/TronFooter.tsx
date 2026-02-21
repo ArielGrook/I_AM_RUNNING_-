@@ -22,7 +22,7 @@ export interface FooterColumnProps {
   animateDelay: string;
 }
 
-export const FooterColumn = ({ title, links, description, accentColor, colorScheme, animationType, animateDelay }: FooterColumnProps) => {
+export const FooterColumn = ({ title, links, description, accentColor = '#e11d48', colorScheme, animationType, animateDelay }: FooterColumnProps) => {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((n) => n.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
@@ -48,7 +48,7 @@ export const FooterColumn = ({ title, links, description, accentColor, colorSche
               width: 40,
               height: 40,
               borderRadius: 4,
-              background: t.accent,
+              background: accentColor,
               color: t.bg,
               display: 'flex',
               alignItems: 'center',
@@ -64,7 +64,7 @@ export const FooterColumn = ({ title, links, description, accentColor, colorSche
         </>
       ) : (
         <>
-          <h4 style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: t.accent, margin: '0 0 12px' }}>{title || 'Links'}</h4>
+          <h4 style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: accentColor, margin: '0 0 12px' }}>{title || 'Links'}</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {(links ?? []).map((link, j) => (
               <li key={j} style={{ marginBottom: 8 }}>

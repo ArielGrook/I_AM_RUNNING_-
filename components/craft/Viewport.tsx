@@ -102,12 +102,17 @@ export const Viewport = ({
     (preset: { id: string; label: string; accent: string; bg: string }) => {
       try {
         const accent = preset.accent;
-        const serialized = query.getSerializedNodes();
-        Object.keys(serialized).forEach((id) => {
+        const state = query.getState();
+        const nodes = state?.nodes ?? {};
+        Object.keys(nodes).forEach((id) => {
           if (id === 'ROOT') return;
-          actions.setProp(id, (props: Record<string, unknown>) => {
-            props.accentColor = accent;
-          });
+          const node = nodes[id];
+          const props = node?.data?.props;
+          if (props && 'accentColor' in props) {
+            actions.setProp(id, (p: Record<string, unknown>) => {
+              p.accentColor = accent;
+            });
+          }
         });
         setActivePresetId(preset.id);
         setAccentColor(accent);
