@@ -452,36 +452,15 @@ html::-webkit-scrollbar {
   display: none !important;
 }
 
-/* Remove Craft.js default dashed outlines (no dashed on load/viewport switch/text edit) */
-[data-id] {
-  outline: none !important;
-}
-.craftjs-renderer > * {
-  border: none !important;
-  outline: none !important;
-}
-
-/* Убрать дефолтные границы Craft.js нод */
-[data-id]:not(.craft-node-selected) {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* В preview mode / renderer — никаких границ у невыделенных нод (выделение — outline от .craft-node-selected) */
-.craftjs-renderer [data-id]:not(.craft-node-selected) {
+/* Craft.js: убрать дефолтные границы нод (редактор и preview) */
+.craftjs-renderer [data-id] {
   outline: none !important;
   box-shadow: none !important;
 }
-.craft-preview-mode [data-id],
-.craft-preview-mode .craftjs-renderer [data-id] {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
 
-/* Selection: solid orange only (keep intentional) */
-.craft-node-selected {
+/* Selection: solid orange only (keep intentional); выше по специфичности чем .craftjs-renderer [data-id] */
+.craft-node-selected,
+.craftjs-renderer .craft-node-selected {
   outline: 2px solid #FF6B35 !important;
   outline-offset: 0px;
 }
@@ -1451,16 +1430,3 @@ footer[data-cy="craft-canvas"]:empty::after {
 .craft-settings-panel textarea::placeholder {
   color: #52525b !important;
 }
-
-/* Remove dashed outlines on canvas (aligned with rules above) */
-.craftjs-renderer [data-id]:not(.craft-node-selected) {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-[data-id]:not(.craft-node-selected) {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-

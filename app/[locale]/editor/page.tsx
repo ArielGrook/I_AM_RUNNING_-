@@ -766,7 +766,12 @@ export default function EditorPage() {
           HtmlBlock,
         }}
         onRender={RenderNode}
-        indicator={{ success: 'transparent', error: 'transparent' }}
+        indicator={{
+          success: 'transparent',
+          error: 'transparent',
+          transition: 'none',
+          thickness: 0,
+        }}
       >
         <PreviewController previewMode={previewMode} />
         <Toolbar
