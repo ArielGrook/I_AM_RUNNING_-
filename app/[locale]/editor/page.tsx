@@ -457,6 +457,21 @@ export default function EditorPage() {
         }
       });
 
+      const cardEls = document.querySelectorAll('[data-animate-from]');
+      cardEls.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        const from = htmlEl.getAttribute('data-animate-from');
+        if (!from || from === 'none') return;
+        const fromY = from === 'slide-top' ? -80 : 80;
+        (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, { opacity: 0, y: fromY, immediateRender: false }, {
+          opacity: 1,
+          y: 0,
+          duration: 0.7,
+          ease: 'power2.out',
+          scrollTrigger: { trigger: htmlEl, start: 'top 88%', once: true },
+        });
+      });
+
       (ScrollTrigger as { refresh: () => void }).refresh();
     } catch (e) {
       console.error('[GSAP] Error:', e);
@@ -549,6 +564,25 @@ export default function EditorPage() {
             },
           });
         }
+      });
+
+      const cardEls = document.querySelectorAll('[data-animate-from]');
+      cardEls.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        const from = htmlEl.getAttribute('data-animate-from');
+        if (!from || from === 'none') return;
+        const fromY = from === 'slide-top' ? -80 : 80;
+        (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, { opacity: 0, y: fromY, immediateRender: false }, {
+          opacity: 1,
+          y: 0,
+          duration: 0.7,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: htmlEl,
+            start: 'top 88%',
+            once: true,
+          },
+        });
       });
 
       (ScrollTrigger as { refresh: () => void }).refresh();

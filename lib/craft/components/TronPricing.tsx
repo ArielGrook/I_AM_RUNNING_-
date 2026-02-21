@@ -4,6 +4,9 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 
 type TronPlanItem = { name: string; price: string; features: string[]; highlighted?: boolean; ctaText: string };
+type CardAnimFrom = 'slide-top' | 'slide-bottom' | 'none';
+
+const DEFAULT_CARD_ANIMATIONS: CardAnimFrom[] = ['slide-top', 'slide-bottom', 'slide-top'];
 
 const DEFAULT_PLANS: TronPlanItem[] = [
   { name: 'Starter', price: '29', features: ['Up to 5 projects', 'Basic support', '1GB storage'], highlighted: false, ctaText: 'Get Started' },
@@ -23,6 +26,7 @@ export const TronPricing = ({
   title = 'Simple pricing',
   subtitle = 'Choose the plan that fits your team',
   plans = DEFAULT_PLANS,
+  cardAnimations = DEFAULT_CARD_ANIMATIONS,
   animationType = 'none',
   animateDelay = '0',
 }: {
@@ -31,6 +35,7 @@ export const TronPricing = ({
   title?: string;
   subtitle?: string;
   plans?: TronPlanItem[];
+  cardAnimations?: CardAnimFrom[];
   animationType?: string;
   animateDelay?: string;
 }) => {
@@ -70,6 +75,8 @@ export const TronPricing = ({
           {list.map((plan, i) => (
             <div
               key={i}
+              data-animate-from={cardAnimations[i] ?? 'none'}
+              data-animate-card="pricing"
               style={{
                 border: plan.highlighted ? `1px solid ${tokens.accent}` : `1px solid rgba(${rgb}, 0.2)`,
                 borderRadius: 4,
@@ -117,12 +124,13 @@ export const TronPricing = ({
 };
 
 const TronPricingSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, title, subtitle, plans, animationType, animateDelay } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, title, subtitle, plans, cardAnimations, animationType, animateDelay } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
     plans: node.data.props.plans as TronPlanItem[],
+    cardAnimations: node.data.props.cardAnimations as CardAnimFrom[],
     animationType: node.data.props.animationType as string,
     animateDelay: node.data.props.animateDelay as string,
   }));
@@ -164,6 +172,14 @@ const TronPricingSettings = () => {
     });
   };
 
+  const updateCardAnimation = (index: number, value: CardAnimFrom) => {
+    setProp((p: Record<string, unknown>) => {
+      const arr = [...(p.cardAnimations as CardAnimFrom[] ?? DEFAULT_CARD_ANIMATIONS)];
+      arr[index] = value;
+      p.cardAnimations = arr;
+    });
+  };
+
   return (
     <div className="p-3 space-y-5 text-white">
       <section>
@@ -188,6 +204,14 @@ const TronPricingSettings = () => {
               <input type="text" value={plan.name} onChange={(e) => updatePlan(i, 'name', e.target.value)} className={inputCls} placeholder="Plan name" />
               <input type="text" value={plan.price} onChange={(e) => updatePlan(i, 'price', e.target.value)} className={inputCls} placeholder="Price" />
               <input type="text" value={plan.ctaText} onChange={(e) => updatePlan(i, 'ctaText', e.target.value)} className={inputCls} placeholder="Button text" />
+              <div>
+                <label className={labelCls}>Animate from</label>
+                <select value={(cardAnimations ?? [])[i] ?? 'none'} onChange={(e) => updateCardAnimation(i, e.target.value as CardAnimFrom)} className={inputCls}>
+                  <option value="none">None</option>
+                  <option value="slide-top">Top</option>
+                  <option value="slide-bottom">Bottom</option>
+                </select>
+              </div>
               <label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={plan.highlighted ?? false} onChange={(e) => updatePlan(i, 'highlighted', e.target.checked)} className="rounded border-gray-600 bg-gray-700" /> Highlighted</label>
               {(plan.features ?? []).map((f, j) => (
                 <div key={j} className="flex gap-1">
@@ -196,10 +220,10 @@ const TronPricingSettings = () => {
                 </div>
               ))}
               <button type="button" onClick={() => addFeature(i)} className="text-xs text-gray-400">+ Add feature</button>
-              <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.plans = (p.plans as TronPlanItem[]).filter((_, j) => j !== i); })} className="text-xs text-red-400">Remove plan</button>
+              <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.plans = (p.plans as TronPlanItem[]).filter((_, j) => j !== i); p.cardAnimations = (p.cardAnimations as CardAnimFrom[] ?? []).filter((_, j) => j !== i); })} className="text-xs text-red-400">Remove plan</button>
             </div>
           ))}
-          <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.plans = [...(p.plans as TronPlanItem[] || []), { name: 'Plan', price: '99', features: ['Feature 1'], highlighted: false, ctaText: 'Get Started' }]; })} className="w-full py-1.5 text-xs border border-dashed border-gray-600 text-gray-400 rounded">+ Add plan</button>
+          <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.plans = [...(p.plans as TronPlanItem[] || []), { name: 'Plan', price: '99', features: ['Feature 1'], highlighted: false, ctaText: 'Get Started' }]; p.cardAnimations = [...(p.cardAnimations as CardAnimFrom[] ?? []), 'none']; })} className="w-full py-1.5 text-xs border border-dashed border-gray-600 text-gray-400 rounded">+ Add plan</button>
         </div>
       </section>
       <section>
@@ -221,6 +245,7 @@ TronPricing.craft = {
     title: 'Simple pricing',
     subtitle: 'Choose the plan that fits your team',
     plans: DEFAULT_PLANS,
+    cardAnimations: DEFAULT_CARD_ANIMATIONS,
     animationType: 'none',
     animateDelay: '0',
   },

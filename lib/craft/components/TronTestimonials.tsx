@@ -1,7 +1,11 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+
+const CARD_WIDTH = 320;
+const GAP = 24;
+const CAROUSEL_SPEED = 0.5;
 
 type TronTestimonialItem = { quote: string; author: string; role: string };
 
@@ -38,6 +42,25 @@ export const TronTestimonials = ({
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
+  const [offset, setOffset] = useState(0);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    if (enabled) return;
+    let animFrame: number;
+    const animate = () => {
+      setOffset((prev) => {
+        if (pausedRef.current) return prev;
+        const list = items ?? DEFAULT_ITEMS;
+        const maxOffset = list.length * (CARD_WIDTH + GAP);
+        return prev >= maxOffset ? 0 : prev + CAROUSEL_SPEED;
+      });
+      animFrame = requestAnimationFrame(animate);
+    };
+    animFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animFrame);
+  }, [enabled, items?.length]);
+
   const tokens = colorScheme === 'dark'
     ? { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: accentColor }
     : { bg: '#ffffff', text: '#0a0a0a', muted: '#52525b', accent: accentColor };
@@ -53,6 +76,7 @@ export const TronTestimonials = ({
   }
 
   const list = items ?? DEFAULT_ITEMS;
+  const doubled = [...list, ...list];
 
   return (
     <section
@@ -70,32 +94,47 @@ export const TronTestimonials = ({
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: tokens.text, margin: 0 }}>{title}</h2>
           <p style={{ fontSize: 16, color: tokens.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {list.map((item, i) => (
-            <div
-              key={i}
-              style={{
-                border: `1px solid rgba(${rgb}, 0.2)`,
-                borderRadius: 4,
-                padding: 24,
-                background: colorScheme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                if (enabled) return;
-                e.currentTarget.style.borderColor = `rgba(${rgb}, 0.5)`;
-                e.currentTarget.style.boxShadow = `0 0 15px rgba(${rgb}, 0.1)`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = `rgba(${rgb}, 0.2)`;
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <p style={{ fontSize: 14, color: '#a1a1aa', fontStyle: 'italic', lineHeight: 1.6, margin: '0 0 16px' }}>"{item.quote}"</p>
-              <p style={{ fontSize: 15, fontWeight: 600, color: tokens.text, margin: 0 }}>{item.author}</p>
-              <p style={{ fontSize: 13, color: tokens.accent, marginTop: 4, marginBottom: 0 }}>{item.role}</p>
-            </div>
-          ))}
+        <div
+          style={{ overflow: 'hidden' }}
+          onMouseEnter={() => { pausedRef.current = true; }}
+          onMouseLeave={() => { pausedRef.current = false; }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              gap: GAP,
+              transform: `translateX(-${offset}px)`,
+              width: 'max-content',
+            }}
+          >
+            {doubled.map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  width: CARD_WIDTH,
+                  flexShrink: 0,
+                  border: `1px solid rgba(${rgb}, 0.2)`,
+                  borderRadius: 4,
+                  padding: 24,
+                  background: colorScheme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (enabled) return;
+                  e.currentTarget.style.borderColor = `rgba(${rgb}, 0.5)`;
+                  e.currentTarget.style.boxShadow = `0 0 15px rgba(${rgb}, 0.1)`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = `rgba(${rgb}, 0.2)`;
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <p style={{ fontSize: 14, color: '#a1a1aa', fontStyle: 'italic', lineHeight: 1.6, margin: '0 0 16px' }}>"{item.quote}"</p>
+                <p style={{ fontSize: 15, fontWeight: 600, color: tokens.text, margin: 0 }}>{item.author}</p>
+                <p style={{ fontSize: 13, color: tokens.accent, marginTop: 4, marginBottom: 0 }}>{item.role}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
