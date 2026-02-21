@@ -11,7 +11,7 @@ export { Features } from './Features';
 export { TronFeatures } from './TronFeatures';
 export { TronPortfolio } from './TronPortfolio';
 export { TronTestimonials } from './TronTestimonials';
-export { TronPricing } from './TronPricing';
+export { TronPricing, PricingCard } from './TronPricing';
 export { TronFAQ } from './TronFAQ';
 export { TronFooter } from './TronFooter';
 export { TronContact } from './TronContact';
