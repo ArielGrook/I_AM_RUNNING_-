@@ -43,7 +43,7 @@ export const FAQ = ({
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
-      className={`px-4 md:px-8 py-12 md:py-20 w-full max-w-full ${isSelected ? 'craft-node-selected craft-node-selected--classic' : ''}`}
+      className={`px-4 md:px-8 py-12 md:py-20 w-full max-w-full `}
       style={{ background: bgColor }}
     >
       <div className="max-w-2xl mx-auto w-full">

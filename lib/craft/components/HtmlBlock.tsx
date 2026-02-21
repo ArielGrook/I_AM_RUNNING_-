@@ -27,7 +27,7 @@ export const HtmlBlock = ({
   return (
     <div
       ref={(ref) => ref && connect(drag(ref))}
-      className={isSelected ? 'craft-node-selected craft-node-selected--classic' : ''}
+      className=""
       style={{ position: 'relative', width: '100%' }}
     >
       {rawCss ? <style dangerouslySetInnerHTML={{ __html: rawCss }} /> : null}

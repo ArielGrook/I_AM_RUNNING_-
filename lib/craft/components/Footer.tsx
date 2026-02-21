@@ -48,7 +48,7 @@ export const Footer = ({
     <footer
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
-      className={`border-t border-white/10 px-4 md:px-8 pt-12 md:pt-16 pb-8 w-full max-w-full ${isSelected ? 'craft-node-selected craft-node-selected--classic' : ''}`}
+      className={`border-t border-white/10 px-4 md:px-8 pt-12 md:pt-16 pb-8 w-full max-w-full `}
       style={{ background: bgColor }}
     >
       <div className="flex flex-col md:flex-row justify-between gap-8 max-w-6xl mx-auto">

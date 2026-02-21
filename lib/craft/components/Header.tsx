@@ -48,7 +48,7 @@ export const Header = ({
     <header
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
-      className={`flex items-center justify-between px-4 md:px-8 w-full max-w-full border-b border-white/10 backdrop-blur-xl ${sticky ? 'sticky top-0' : 'relative'} z-50 ${isSelected ? 'craft-node-selected craft-node-selected--classic' : ''}`}
+      className={`flex items-center justify-between px-4 md:px-8 w-full max-w-full border-b border-white/10 backdrop-blur-xl ${sticky ? 'sticky top-0' : 'relative'} z-50 `}
       style={{ background: bgColor, height: 64 }}
     >
       <div className="text-xl font-extrabold text-white shrink-0">

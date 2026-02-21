@@ -90,7 +90,7 @@ export const TronPortfolio = ({
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'craft-node-selected' : ''}`}
+      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
       style={{
         background: t.bg,
         backgroundImage: gridLines,

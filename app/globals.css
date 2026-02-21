@@ -59,9 +59,6 @@
   .craftjs-renderer [data-id] {
     outline: none !important;
   }
-  .craftjs-renderer [data-id].craft-node-selected {
-    outline: 2px solid #FF6B35 !important;
-  }
   /* Tailwind preflight: сброс границ нод */
   .craftjs-renderer * {
     border-width: 0 !important;
@@ -471,8 +468,8 @@ html::-webkit-scrollbar {
   box-shadow: none !important;
 }
 
-/* Перекрыть любые Craft.js inline borders; isSelected outline оставляем */
-.craftjs-renderer > * > *:not(.craft-node-selected) {
+/* Перекрыть любые Craft.js inline borders — outline только через badge */
+.craftjs-renderer > * > * {
   outline: none !important;
 }
 
@@ -481,25 +478,7 @@ html::-webkit-scrollbar {
   border: none;
 }
 
-/* Selection: Tron = red, Classic = orange (via craft-node-selected--classic) */
-.craft-node-selected {
-  outline: 2px solid rgb(239 68 68) !important;
-  outline-offset: 0;
-}
-.craft-node-selected--classic {
-  outline: 2px solid #FF6B35 !important;
-  outline-offset: 0;
-}
-.craftjs-renderer .craft-node-selected {
-  outline: 2px solid rgb(239 68 68) !important;
-  outline-offset: 0;
-}
-.craftjs-renderer .craft-node-selected--classic {
-  outline: 2px solid #FF6B35 !important;
-  outline-offset: 0;
-}
-
-/* Hover: no dashed (was causing dotted lines on canvas) */
+/* Selection: outline только через badge, не на нодах */
 .craft-node-hovered {
   outline: none !important;
 }
@@ -548,14 +527,11 @@ footer[data-cy="craft-canvas"]:empty::after {
   display: none !important;
 }
 
-/* ── Outlines mode (toggle) — подключено к кнопке в toolbar ── */
-[data-outlines="false"] [data-id] {
+/* ── Outlines mode — outline только через badge, никаких outline на нодах ── */
+[data-outlines="false"] [data-id],
+[data-outlines="true"] [data-id] {
   outline: none !important;
   box-shadow: none !important;
-}
-
-[data-outlines="true"] [data-id]:not(.craft-node-selected) {
-  outline: 1px dashed rgba(255, 255, 255, 0.15) !important;
 }
 
 /* ── Preview mode — hide all editor chrome, рамок никогда нет ── */
@@ -1318,28 +1294,14 @@ footer[data-cy="craft-canvas"]:empty::after {
   color: #fdba74 !important;
 }
 
-/* Craft.js visual indicators — outline только при hover/selected, иначе none */
-[data-craftjs-element] {
-  position: relative;
-  transition: outline 0.1s ease;
-}
-
-[data-craftjs-element]:not(:hover):not(.component-selected) {
+/* Craft.js: outline только через badge, никаких outline на нодах */
+[data-craftjs-element],
+[data-craftjs-element]:hover,
+[data-craftjs-element].component-selected {
   outline: none !important;
 }
 
-[data-craftjs-element]:hover {
-  outline: 2px solid #FF6B35;
-  outline-offset: 2px;
-}
-
-[data-craftjs-element].component-selected {
-  outline: 2px solid #FF6B35;
-  outline-offset: 2px;
-}
-
-/* Сброс Tailwind outline у потомков — outline только у craft-node-selected */
-.craftjs-renderer [data-id] *:not(.craft-inline-editing):not(.craft-node-selected):not(.craft-node-selected--classic) {
+.craftjs-renderer [data-id] *:not(.craft-inline-editing) {
   outline: none !important;
 }
 

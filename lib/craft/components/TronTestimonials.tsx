@@ -53,7 +53,7 @@ export const TestimonialCard = ({ quote, author, role, company, avatarUrl, accen
     <div
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...animAttrs}
-      className={isSelected ? 'craft-node-selected' : ''}
+      className=""
       style={{ width: CARD_WIDTH, flexShrink: 0, border: `1px solid ${t.cardBorder}`, borderRadius: 4, padding: 24, background: t.cardBg }}
     >
       <TestimonialCardContent quote={quote} author={author} role={role} company={company} accentColor={accentColor} colorScheme={colorScheme} />
@@ -195,7 +195,7 @@ export const TronTestimonials = ({
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      className={`w-full max-w-full py-12 md:py-20 ${isSelected ? 'craft-node-selected' : ''}`}
+      className={`w-full max-w-full py-12 md:py-20 `}
       style={{
         background: t.bg,
         backgroundImage: gridLines,

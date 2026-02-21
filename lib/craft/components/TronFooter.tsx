@@ -39,7 +39,7 @@ export const FooterColumn = ({ title, links, description, accentColor, colorSche
     <div
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...animAttrs}
-      className={isSelected ? 'craft-node-selected' : ''}
+      className=""
     >
       {isBrand ? (
         <>
@@ -148,7 +148,7 @@ export const TronFooter = ({
   return (
     <footer
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-16 ${isSelected ? 'craft-node-selected' : ''}`}
+      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-16 `}
       style={{
         background: t.bg,
         borderTop: `1px solid ${t.border}`,

@@ -82,7 +82,7 @@ export const HeaderTron = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="header"
       data-block-category="navigation"
-      className={`w-full sticky top-0 z-50 transition-[background] duration-200 ${isSelected ? 'craft-node-selected' : ''}`}
+      className={`w-full sticky top-0 z-50 transition-[background] duration-200 `}
       style={{
         background: t.bg,
         backdropFilter: 'blur(20px)',
