@@ -446,6 +446,12 @@ html::-webkit-scrollbar {
    CRAFT.JS EDITOR — Hover & Select Indicators
    ═══════════════════════════════════════════════════════ */
 
+/* Hide pseudo-elements on renderer that may draw diagonal lines */
+.craftjs-renderer::before,
+.craftjs-renderer::after {
+  display: none !important;
+}
+
 /* Remove Craft.js default dashed outlines (no dashed on load/viewport switch/text edit) */
 [data-id] {
   outline: none !important;
