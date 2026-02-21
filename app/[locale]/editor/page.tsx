@@ -287,6 +287,45 @@ function PreviewController({ previewMode }: { previewMode: boolean }) {
   return null;
 }
 
+/** Applies colorScheme to all Tron nodes when previewScheme changes (in preview mode). */
+function PreviewSchemeController({
+  previewMode,
+  previewScheme,
+  onResetToDark,
+}: {
+  previewMode: boolean;
+  previewScheme: 'dark' | 'light';
+  onResetToDark: () => void;
+}) {
+  const { query, actions } = useEditor();
+
+  useEffect(() => {
+    if (!previewMode) return;
+    try {
+      const state = query.getState();
+      const nodes = state?.nodes ?? {};
+      Object.keys(nodes).forEach((id) => {
+        if (id === 'ROOT') return;
+        const node = nodes[id];
+        const props = node?.data?.props;
+        if (props && 'colorScheme' in props) {
+          actions.setProp(id, (p: Record<string, unknown>) => {
+            p.colorScheme = previewScheme;
+          });
+        }
+      });
+    } catch {
+      // noop
+    }
+  }, [previewScheme, previewMode, query, actions]);
+
+  useEffect(() => {
+    if (!previewMode) onResetToDark();
+  }, [previewMode, onResetToDark]);
+
+  return null;
+}
+
 export default function EditorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -302,6 +341,7 @@ export default function EditorPage() {
   const [previewHTML, setPreviewHTML] = useState('');
   const [outlines, setOutlines] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [previewScheme, setPreviewScheme] = useState<'dark' | 'light'>('dark');
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [frameData, setFrameData] = useState<string | null>(null);
@@ -660,6 +700,10 @@ export default function EditorPage() {
     [projectId, loadedProject, pages, activePageId, isSaving, viewport, desktopData, mobileData]
   );
 
+  const handleResetPreviewScheme = useCallback(() => {
+    setPreviewScheme('dark');
+  }, []);
+
   const handlePreview = () => {
     setPreviewHTML(
       '<div style="padding:40px;text-align:center;">Preview - HTML serializer coming soon</div>'
@@ -775,6 +819,11 @@ export default function EditorPage() {
         }}
       >
         <PreviewController previewMode={previewMode} />
+        <PreviewSchemeController
+          previewMode={previewMode}
+          previewScheme={previewScheme}
+          onResetToDark={handleResetPreviewScheme}
+        />
         <Toolbar
           onSave={handleSaveFromEditor}
           onPreview={handlePreview}
@@ -790,6 +839,8 @@ export default function EditorPage() {
           onToggleOutlines={() => setOutlines((o) => !o)}
           previewMode={previewMode}
           onTogglePreview={() => setPreviewMode((p) => !p)}
+          previewScheme={previewScheme}
+          setPreviewScheme={setPreviewScheme}
           onReplayAnimations={runAnimations}
           projectId={projectId}
           projectName={loadedProject?.name}

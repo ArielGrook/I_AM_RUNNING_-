@@ -24,6 +24,8 @@ export const Toolbar = ({
   onToggleOutlines,
   previewMode,
   onTogglePreview,
+  previewScheme = 'dark',
+  setPreviewScheme,
   onReplayAnimations,
   projectId,
   projectName,
@@ -43,6 +45,8 @@ export const Toolbar = ({
   onToggleOutlines: () => void;
   previewMode: boolean;
   onTogglePreview: () => void;
+  previewScheme?: 'dark' | 'light';
+  setPreviewScheme?: (s: 'dark' | 'light' | ((prev: 'dark' | 'light') => 'dark' | 'light')) => void;
   onReplayAnimations?: () => void | Promise<void>;
   projectId?: string | null;
   projectName?: string;
@@ -119,6 +123,31 @@ export const Toolbar = ({
   const activeBtnCls = `px-3 py-2 h-9 rounded-md text-[13px] font-medium transition-all bg-[#FF6B35]/15 text-[#FF6B35] border border-[#FF6B35]/30`;
   const dividerCls = `w-px h-6 mx-1.5 ${t('bg-gray-200', 'bg-gray-700/60')}`;
 
+  const applySchemeToTronNodes = (scheme: 'dark' | 'light') => {
+    try {
+      const state = query.getState();
+      const nodes = state?.nodes ?? {};
+      Object.keys(nodes).forEach((id) => {
+        if (id === 'ROOT') return;
+        const node = nodes[id];
+        const props = node?.data?.props;
+        if (props && 'colorScheme' in props) {
+          actions.setProp(id, (p: Record<string, unknown>) => {
+            p.colorScheme = scheme;
+          });
+        }
+      });
+    } catch {
+      // noop
+    }
+  };
+
+  const handleExitPreview = () => {
+    applySchemeToTronNodes('dark');
+    setPreviewScheme?.('dark');
+    onTogglePreview();
+  };
+
   if (previewMode) {
     return (
       <div className={`h-12 border-b flex items-center justify-center px-3 gap-2 shrink-0 ${t(
@@ -126,6 +155,23 @@ export const Toolbar = ({
         'bg-[#1a1a1a] border-gray-700/60'
       )}`}>
         <span className={`text-xs font-medium ${t('text-gray-500', 'text-gray-400')}`}>Preview Mode</span>
+        {setPreviewScheme && (
+          <button
+            type="button"
+            onClick={() => setPreviewScheme((s) => (s === 'dark' ? 'light' : 'dark'))}
+            style={{
+              background: previewScheme === 'light' ? '#ffffff' : '#0a0a0a',
+              color: previewScheme === 'light' ? '#0a0a0a' : '#ffffff',
+              border: '1px solid #3a3a3a',
+              borderRadius: 6,
+              padding: '6px 14px',
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            {previewScheme === 'dark' ? '☀ Light' : '☾ Dark'}
+          </button>
+        )}
         {onReplayAnimations && (
           <button
             type="button"
@@ -135,7 +181,7 @@ export const Toolbar = ({
             ▶ Replay
           </button>
         )}
-        <button onClick={onTogglePreview} className="px-3 py-1.5 rounded-md text-xs font-semibold bg-[#FF6B35] text-white hover:bg-[#ff8555] transition-all">
+        <button onClick={handleExitPreview} className="px-3 py-1.5 rounded-md text-xs font-semibold bg-[#FF6B35] text-white hover:bg-[#ff8555] transition-all">
           Exit Preview
         </button>
       </div>

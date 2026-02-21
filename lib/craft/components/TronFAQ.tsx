@@ -12,7 +12,7 @@ function hexToRgb(hex: string): string {
 
 const tokens = {
   dark: { bg: '#000000', text: '#ffffff', muted: '#52525b', accent: '#e11d48', gridColor: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.08)', cardBg: 'rgba(255,255,255,0.02)', cardBorder: 'rgba(255,255,255,0.08)' },
-  light: { bg: '#ffffff', text: '#0a0a0a', textSecondary: '#52525b', muted: '#52525b', accent: '#e11d48', border: 'rgba(0,0,0,0.08)', cardBg: 'rgba(0,0,0,0.02)', cardBorder: 'rgba(0,0,0,0.08)', gridColor: 'rgba(0,0,0,0.06)' },
+  light: { bg: '#ffffff', bgSecondary: '#f8fafc', text: '#0a0a0a', textSecondary: '#52525b', muted: '#52525b', accent: '#e11d48', border: 'rgba(0,0,0,0.08)', gridColor: 'rgba(0,0,0,0.06)', cardBg: 'rgba(0,0,0,0.02)', cardBorder: 'rgba(0,0,0,0.1)' },
 };
 
 // --- FAQItem (editable child node) ---
