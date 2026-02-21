@@ -458,6 +458,11 @@ html::-webkit-scrollbar {
   box-shadow: none !important;
 }
 
+/* Перекрыть любые Craft.js inline borders; isSelected outline оставляем */
+.craftjs-renderer > * > *:not(.craft-node-selected) {
+  outline: none !important;
+}
+
 /* Исключение из Tailwind base: * { @apply border-border } — не давать границу всем подряд; дизайнерские border в style={{}} остаются */
 .craftjs-renderer * {
   border: none;
