@@ -1447,3 +1447,14 @@ footer[data-cy="craft-canvas"]:empty::after {
   box-shadow: none !important;
   outline: none !important;
 }
+
+/* Максимальная специфичность: сброс границ нод; border: revert — браузерный дефолт, не Tailwind */
+html body .craftjs-renderer * {
+  outline: none !important;
+  border: revert !important;
+  box-shadow: revert !important;
+}
+
+html body .craftjs-renderer [data-id].craft-node-selected {
+  outline: 2px solid #FF6B35 !important;
+}
