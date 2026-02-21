@@ -2,7 +2,7 @@
 
 import { useNode, useEditor } from '@craftjs/core';
 import { Element } from '@craftjs/core';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
@@ -35,6 +35,8 @@ export interface HeroTronHeadingProps {
 export const HeroTronHeading = ({ text, accentColor, colorScheme, animationType, animateDelay }: HeroTronHeadingProps) => {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
+  const divRef = useRef<HTMLDivElement | null>(null);
+  const isFocusedRef = useRef(false);
   const t = tokens[colorScheme];
   const displayText = safeStr(text, 'Build faster.');
   const animAttrs: Record<string, string> = {};
@@ -42,14 +44,27 @@ export const HeroTronHeading = ({ text, accentColor, colorScheme, animationType,
     animAttrs['data-animate'] = animationType;
     if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
   }
+  useEffect(() => {
+    if (!divRef.current || isFocusedRef.current) return;
+    if (divRef.current.textContent !== displayText) {
+      divRef.current.textContent = displayText;
+    }
+  }, [displayText]);
   return (
     <div
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      ref={(ref) => {
+        divRef.current = ref;
+        if (ref) connect(drag(ref));
+      }}
       contentEditable={enabled}
       suppressContentEditableWarning
       {...animAttrs}
-      onBlur={(e) => setProp((p: Record<string, unknown>) => { p.text = e.currentTarget.textContent || ''; }, 500)}
-      dangerouslySetInnerHTML={{ __html: displayText }}
+      onFocus={() => { isFocusedRef.current = true; }}
+      onBlur={(e) => {
+        isFocusedRef.current = false;
+        const val = e.currentTarget.textContent || '';
+        setProp((p: Record<string, unknown>) => { p.text = val; }, 500);
+      }}
       style={{
         color: t.text,
         fontSize: 'clamp(40px, 6vw, 80px)',
@@ -98,20 +113,35 @@ export interface HeroTronSubheadingProps {
 export const HeroTronSubheading = ({ text, accentColor, colorScheme, animationType, animateDelay }: HeroTronSubheadingProps) => {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
+  const divRef = useRef<HTMLDivElement | null>(null);
+  const isFocusedRef = useRef(false);
   const displayText = safeStr(text, 'Create modern websites in minutes.');
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType && animationType !== 'none') {
     animAttrs['data-animate'] = animationType;
     if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
   }
+  useEffect(() => {
+    if (!divRef.current || isFocusedRef.current) return;
+    if (divRef.current.textContent !== displayText) {
+      divRef.current.textContent = displayText;
+    }
+  }, [displayText]);
   return (
     <div
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      ref={(ref) => {
+        divRef.current = ref;
+        if (ref) connect(drag(ref));
+      }}
       contentEditable={enabled}
       suppressContentEditableWarning
       {...animAttrs}
-      onBlur={(e) => setProp((p: Record<string, unknown>) => { p.text = e.currentTarget.textContent || ''; }, 500)}
-      dangerouslySetInnerHTML={{ __html: displayText }}
+      onFocus={() => { isFocusedRef.current = true; }}
+      onBlur={(e) => {
+        isFocusedRef.current = false;
+        const val = e.currentTarget.textContent || '';
+        setProp((p: Record<string, unknown>) => { p.text = val; }, 500);
+      }}
       style={{
         fontSize: 'clamp(16px, 2vw, 20px)',
         color: '#71717a',
