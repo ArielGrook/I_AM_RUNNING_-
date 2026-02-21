@@ -442,11 +442,17 @@ export default function EditorPage() {
         const inViewport = rect.top < window.innerHeight * 0.95;
 
         if (inViewport) {
-          (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, fromVars, toVars);
+          (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, fromVars, { ...toVars, delay: 0.2 });
         } else {
           (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, fromVars, {
             ...toVars,
-            scrollTrigger: { trigger: htmlEl, start: 'top 88%', toggleActions: 'play none none none' },
+            scrollTrigger: {
+              trigger: htmlEl,
+              start: 'top 85%',
+              end: 'bottom 20%',
+              toggleActions: 'play none none none',
+              once: true,
+            },
           });
         }
       });
@@ -530,14 +536,16 @@ export default function EditorPage() {
         const inViewport = rect.top < window.innerHeight * 0.95;
 
         if (inViewport) {
-          (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, fromVars, toVars);
+          (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, fromVars, { ...toVars, delay: 0.2 });
         } else {
           (gsap as { fromTo: (target: Element, from: object, to: object) => void }).fromTo(htmlEl, fromVars, {
             ...toVars,
             scrollTrigger: {
               trigger: htmlEl,
-              start: 'top 88%',
+              start: 'top 85%',
+              end: 'bottom 20%',
               toggleActions: 'play none none none',
+              once: true,
             },
           });
         }
@@ -748,21 +756,23 @@ export default function EditorPage() {
             setMobileData={setMobileData}
           >
             {frameReady && (
-              <Frame key={activePageId} data={frameData ?? undefined}>
-                {!frameData && (
-                  <Element
-                    is={Container}
-                    canvas
-                    background="#ffffff"
-                    padding={0}
-                    gap={0}
-                    flexDirection="column"
-                    alignItems="stretch"
-                    style={{ minHeight: '100vh' }}
-                  >
-                  </Element>
-                )}
-              </Frame>
+              <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
+                <Frame key={activePageId} data={frameData ?? undefined}>
+                  {!frameData && (
+                    <Element
+                      is={Container}
+                      canvas
+                      background="#ffffff"
+                      padding={0}
+                      gap={0}
+                      flexDirection="column"
+                      alignItems="stretch"
+                      style={{ minHeight: '100vh' }}
+                    >
+                    </Element>
+                  )}
+                </Frame>
+              </div>
             )}
           </Viewport>
         </EditorLayout>
