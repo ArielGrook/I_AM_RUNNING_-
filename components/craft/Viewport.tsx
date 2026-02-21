@@ -210,7 +210,7 @@ export const Viewport = ({
 
       {/* Canvas area */}
       <div
-        className="flex-1 overflow-auto craft-viewport-scroll craft-canvas-wrapper"
+        className="flex-1 overflow-auto overflow-hidden craft-viewport-scroll craft-canvas-wrapper"
         style={{
           background: t('#e2e8f0', '#1f1f1f'),
           backgroundImage: t(

@@ -1435,3 +1435,12 @@ footer[data-cy="craft-canvas"]:empty::after {
   color: #52525b !important;
 }
 
+/* Remove dashed outlines on canvas */
+.craftjs-renderer *:not(.craft-node-selected) {
+  outline: none !important;
+}
+[data-id]:not(.craft-node-selected) {
+  outline: none !important;
+  border-style: solid !important;
+}
+
