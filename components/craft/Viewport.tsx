@@ -14,6 +14,13 @@ const DEVICES: { key: DeviceMode; label: string; width: string }[] = [
   { key: 'mobile', label: '375', width: '375px' },
 ];
 
+const hexToRgb = (hex: string) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r},${g},${b}`;
+};
+
 type ViewportProps = {
   children: React.ReactNode;
   viewport: DeviceMode;
@@ -41,6 +48,7 @@ export const Viewport = ({
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [accentColor, setAccentColor] = useState('#e11d48');
   const [spotlight, setSpotlight] = useState({ x: 0, y: 0, visible: false });
   const { t } = useEditorTheme();
 
@@ -87,6 +95,7 @@ export const Viewport = ({
           });
         });
         setActivePresetId(preset.id);
+        setAccentColor(preset.bg);
       } catch {
         // noop
       }
@@ -265,7 +274,7 @@ export const Viewport = ({
                     transition: 'opacity 300ms ease',
                     opacity: spotlight.visible ? 1 : 0,
                     background: spotlight.visible
-                      ? `radial-gradient(600px at ${spotlight.x}px ${spotlight.y}px, rgba(225,29,72,0.08) 0%, transparent 60%)`
+                      ? `radial-gradient(600px at ${spotlight.x}px ${spotlight.y}px, rgba(${hexToRgb(accentColor)},0.08) 0%, transparent 60%)`
                       : 'none',
                   }}
                 />
