@@ -56,7 +56,13 @@
 
 @layer base {
   /* * { @apply border-border; } */
-  /* Tailwind preflight: сброс границ нод; outline только у невыделенных */
+  .craftjs-renderer [data-id] {
+    outline: none !important;
+  }
+  .craftjs-renderer [data-id].craft-node-selected {
+    outline: 2px solid #FF6B35 !important;
+  }
+  /* Tailwind preflight: сброс границ нод */
   .craftjs-renderer * {
     border-width: 0 !important;
     border-style: none !important;
@@ -475,11 +481,22 @@ html::-webkit-scrollbar {
   border: none;
 }
 
-/* Selection: solid orange only (keep intentional); выше по специфичности чем .craftjs-renderer [data-id] */
-.craft-node-selected,
-.craftjs-renderer .craft-node-selected {
+/* Selection: Tron = red, Classic = orange (via craft-node-selected--classic) */
+.craft-node-selected {
+  outline: 2px solid rgb(239 68 68) !important;
+  outline-offset: 0;
+}
+.craft-node-selected--classic {
   outline: 2px solid #FF6B35 !important;
-  outline-offset: 0px;
+  outline-offset: 0;
+}
+.craftjs-renderer .craft-node-selected {
+  outline: 2px solid rgb(239 68 68) !important;
+  outline-offset: 0;
+}
+.craftjs-renderer .craft-node-selected--classic {
+  outline: 2px solid #FF6B35 !important;
+  outline-offset: 0;
 }
 
 /* Hover: no dashed (was causing dotted lines on canvas) */
@@ -544,7 +561,8 @@ footer[data-cy="craft-canvas"]:empty::after {
 /* ── Preview mode — hide all editor chrome, рамок никогда нет ── */
 .craft-preview-mode .craftjs-renderer [data-id],
 .craft-preview-mode .craft-node-hovered,
-.craft-preview-mode .craft-node-selected {
+.craft-preview-mode .craft-node-selected,
+.craft-preview-mode .craft-node-selected--classic {
   outline: none !important;
 }
 
@@ -1320,8 +1338,8 @@ footer[data-cy="craft-canvas"]:empty::after {
   outline-offset: 2px;
 }
 
-/* Сброс Tailwind outline у потомков — только [data-id] показывает selection */
-.craftjs-renderer [data-id] *:not(.craft-inline-editing) {
+/* Сброс Tailwind outline у потомков — outline только у craft-node-selected */
+.craftjs-renderer [data-id] *:not(.craft-inline-editing):not(.craft-node-selected):not(.craft-node-selected--classic) {
   outline: none !important;
 }
 

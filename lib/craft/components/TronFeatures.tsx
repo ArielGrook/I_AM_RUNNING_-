@@ -57,7 +57,7 @@ export const FeatureCard = ({
   return (
     <div
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      className={isSelected ? 'outline outline-2 outline-red-500' : ''}
+      className={isSelected ? 'craft-node-selected' : ''}
       style={{
         background: t.cardBg,
         border: `1px solid ${t.cardBorder}`,
@@ -148,7 +148,7 @@ export const TronFeatures = ({
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
+      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
         backgroundImage: gridLines,

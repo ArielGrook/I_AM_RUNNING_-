@@ -41,13 +41,11 @@ export const CTA = ({
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
-      className="px-4 md:px-8 py-12 md:py-24 text-center w-full max-w-full"
+      className={`px-4 md:px-8 py-12 md:py-24 text-center w-full max-w-full ${isSelected ? 'craft-node-selected craft-node-selected--classic' : ''}`}
       style={{
         backgroundImage: `${gridLines}, ${gradient}`,
         backgroundSize: '40px 40px, 100% 100%',
         backgroundRepeat: 'repeat, no-repeat',
-        outline: isSelected ? '2px solid #f97316' : undefined,
-        outlineOffset: '2px',
       }}
     >
       <div className="max-w-6xl mx-auto">

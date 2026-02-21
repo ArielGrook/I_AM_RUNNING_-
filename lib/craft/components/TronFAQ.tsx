@@ -42,7 +42,7 @@ export const FAQItem = ({ question, answer, accentColor, colorScheme, animationT
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...(isOpen ? { 'data-mobile-dropdown': '' } : {})}
       {...animAttrs}
-      className={isSelected ? 'outline outline-2 outline-red-500' : ''}
+      className={isSelected ? 'craft-node-selected' : ''}
       style={{ borderBottom: `1px solid ${t.border}`, transition: 'background 0.15s' }}
       onMouseEnter={(e) => { if (!enabled) e.currentTarget.style.background = t.cardBg; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
@@ -120,7 +120,7 @@ export const TronFAQ = ({
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
+      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'craft-node-selected' : ''}`}
       style={{ background: t.bg, backgroundImage: gridLines, backgroundSize: '50px 50px' }}
     >
       <div className="max-w-3xl mx-auto">

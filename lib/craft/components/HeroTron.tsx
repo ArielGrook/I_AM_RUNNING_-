@@ -46,7 +46,7 @@ export const HeroTronHeading = ({ text, accentColor, colorScheme, animationType,
     <h1
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...animAttrs}
-      className={isSelected ? 'outline outline-2 outline-red-500' : ''}
+      className={isSelected ? 'craft-node-selected' : ''}
       style={{ fontSize: 'clamp(40px, 6vw, 80px)', fontWeight: 800, letterSpacing: '-0.03em', color: t.text, margin: '0 0 24px 0' }}
     >
       {safeStr(text, 'Build faster.')}
@@ -99,7 +99,7 @@ export const HeroTronSubheading = ({ text, accentColor, colorScheme, animationTy
     <p
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...animAttrs}
-      className={isSelected ? 'outline outline-2 outline-red-500' : ''}
+      className={isSelected ? 'craft-node-selected' : ''}
       style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: '#71717a', lineHeight: 1.7, maxWidth: 520, margin: '0 auto 40px' }}
     >
       {safeStr(text, 'Create modern websites in minutes.')}
@@ -172,7 +172,7 @@ export const HeroTronButton = ({ text, href, style: btnStyle, accentColor, color
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       href={safeStr(href, '#')}
       {...animAttrs}
-      className={isSelected ? 'outline outline-2 outline-red-500' : ''}
+      className={isSelected ? 'craft-node-selected' : ''}
       style={wrapperStyle}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = isFilled ? `0 0 50px rgba(${rgb},0.5)` : `0 0 20px rgba(${rgb},0.2)`;
@@ -302,7 +302,7 @@ export const HeroTron = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="hero"
       data-block-category="header"
-      className={`w-full relative overflow-hidden ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
+      className={`w-full relative overflow-hidden ${isSelected ? 'craft-node-selected' : ''}`}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

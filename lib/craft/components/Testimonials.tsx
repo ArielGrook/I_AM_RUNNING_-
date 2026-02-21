@@ -41,12 +41,8 @@ export const Testimonials = ({
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
-      className="px-4 md:px-8 py-12 md:py-20 w-full max-w-full"
-      style={{
-        background: bgColor,
-        outline: isSelected ? '2px solid #f97316' : undefined,
-        outlineOffset: '2px',
-      }}
+      className={`px-4 md:px-8 py-12 md:py-20 w-full max-w-full ${isSelected ? 'craft-node-selected craft-node-selected--classic' : ''}`}
+      style={{ background: bgColor }}
     >
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">

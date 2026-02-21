@@ -76,7 +76,7 @@ export const TronContact = ({
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'outline outline-2 outline-red-500' : ''}`}
+      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 ${isSelected ? 'craft-node-selected' : ''}`}
       style={{ background: t.bg, backgroundImage: gridLines, backgroundSize: '50px 50px' }}
     >
       <div className="max-w-xl mx-auto">

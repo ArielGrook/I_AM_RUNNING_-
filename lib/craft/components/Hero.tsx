@@ -71,15 +71,13 @@ export const Hero = ({
         }
       }}
       {...dataAttrs}
-      className="flex flex-col items-center justify-center text-center px-4 md:px-8 lg:px-16 py-12 md:py-20 w-full max-w-full relative overflow-hidden"
+      className={`flex flex-col items-center justify-center text-center px-4 md:px-8 lg:px-16 py-12 md:py-20 w-full max-w-full relative overflow-hidden ${isSelected ? 'craft-node-selected craft-node-selected--classic' : ''}`}
       style={{
         minHeight: `${minHeight}px`,
         backgroundImage: `${radialGlow}, ${gridLines}, ${baseGradient}`,
         backgroundSize: '100% 100%, 60px 60px, 60px 60px, 100% 100%',
         backgroundPosition: '0 0, 0 0, 0 0, 0 0',
         backgroundRepeat: 'no-repeat, repeat, repeat, no-repeat' as const,
-        outline: isSelected ? '2px solid #f97316' : undefined,
-        outlineOffset: '2px',
         cursor: editingField ? 'text' : undefined,
       }}
     >

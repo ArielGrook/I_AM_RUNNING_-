@@ -27,7 +27,7 @@ export const HtmlBlock = ({
   return (
     <div
       ref={(ref) => ref && connect(drag(ref))}
-      className={isSelected ? 'outline outline-2 outline-orange-500 outline-offset-2' : ''}
+      className={isSelected ? 'craft-node-selected craft-node-selected--classic' : ''}
       style={{ position: 'relative', width: '100%' }}
     >
       {rawCss ? <style dangerouslySetInnerHTML={{ __html: rawCss }} /> : null}
