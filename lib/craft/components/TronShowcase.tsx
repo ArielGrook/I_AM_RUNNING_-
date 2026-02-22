@@ -146,77 +146,20 @@ export const TronShowcase = ({
       className={`w-full max-w-full flex flex-col md:flex-row min-h-screen ${isSelected ? 'craft-node-selected' : ''}`}
       style={{ minHeight: '100vh', width: '100%', ...backgroundStyle }}
     >
-      {/* Left — content, 65% (first on mobile) */}
-      <div className="order-1 w-full md:w-[65%] flex flex-col justify-center px-6 py-10 md:px-20 md:py-20 min-h-0 md:min-h-[100vh]">
-        <span
-            style={{
-              fontSize: 11,
-              border: `1px solid ${hexToRgba(accentColor, 0.3)}`,
-              color: accentColor,
-              padding: '3px 10px',
-              marginBottom: 24,
-              display: 'inline-block',
-              width: 'fit-content',
-            }}
-          >
-            {activeTab.tabTitle}
-          </span>
-          <div
-            style={{
-              opacity: contentOpacity,
-              transform: `translateY(${contentTranslateY}px)`,
-              transition: isTransitioning ? 'opacity 250ms ease, transform 250ms ease' : 'none',
-            }}
-          >
-            <h2
-              contentEditable={enabled}
-              suppressContentEditableWarning
-              onBlur={(e) =>
-                updateTabContent(activeTab.id, 'contentTitle', e.currentTarget.textContent ?? '')
-              }
-              dangerouslySetInnerHTML={{ __html: activeTab.contentTitle }}
-              style={{
-                fontSize: 'clamp(32px, 4vw, 56px)',
-                fontWeight: 800,
-                color: t.text,
-                margin: 0,
-                marginBottom: 16,
-                outline: 'none',
-              }}
-            />
-            <div
-              contentEditable={enabled}
-              suppressContentEditableWarning
-              onBlur={(e) =>
-                updateTabContent(activeTab.id, 'contentText', e.currentTarget.textContent ?? '')
-              }
-              dangerouslySetInnerHTML={{ __html: activeTab.contentText }}
-              style={{
-                fontSize: 16,
-                lineHeight: 1.8,
-                color: t.textSecondary,
-                margin: 0,
-                outline: 'none',
-              }}
-            />
-          </div>
-      </div>
-
-      {/* Right — tabs, 35% */}
+      {/* Left — tabs, 35% (vertical on desktop, horizontal on mobile) */}
       <div
-        className="order-2 w-full md:w-[35%] flex flex-col flex-shrink-0 overflow-x-auto md:overflow-visible"
+        className="order-1 w-full md:w-[35%] flex flex-row md:flex-col flex-shrink-0 min-h-0 md:min-h-[100vh] overflow-x-auto md:overflow-visible border-b md:border-b-0 md:border-r"
         style={{
-          borderTop: `1px solid ${t.border}`,
-          borderLeft: `1px solid ${t.border}`,
+          borderColor: t.border,
         }}
       >
         <div
-          className="px-6 pt-6 md:px-8 md:pt-8 pb-2 text-[11px] font-semibold uppercase tracking-widest shrink-0"
+          className="shrink-0 md:w-full p-8 pt-8 pb-4 text-[11px] font-semibold uppercase tracking-widest"
           style={{ color: t.textSecondary }}
         >
           {sectionLabel}
         </div>
-        <div className="flex flex-row md:flex-col overflow-x-auto md:overflow-visible min-h-0">
+        <div className="flex flex-row md:flex-col overflow-x-auto md:overflow-visible min-h-0 flex-1 md:flex-initial">
           {safeTabs.map((tab) => {
             const isActive = tab.id === activeId;
             return (
@@ -224,21 +167,80 @@ export const TronShowcase = ({
                 key={tab.id}
                 type="button"
                 onClick={() => handleTabClick(tab.id)}
-                className="shrink-0 md:w-full text-left transition-all duration-[200ms] ease-out py-4 px-5 md:py-5 md:px-8"
+                className="shrink-0 md:w-full text-left transition-all duration-[200ms] ease-out py-4 px-5 md:py-5 md:px-8 border-b-2 md:border-b-0 border-l-0 md:border-l-2"
                 style={{
-                  width: 'max-content',
-                  minWidth: 140,
                   fontSize: 15,
                   color: isActive ? accentColor : '#a1a1aa',
                   background: isActive ? hexToRgba(accentColor, 0.06) : 'transparent',
-                  borderLeft: '2px solid ' + (isActive ? accentColor : 'transparent'),
-                  borderBottom: '2px solid ' + (isActive ? accentColor : 'transparent'),
+                  borderLeftColor: isActive ? accentColor : 'transparent',
+                  borderBottomColor: isActive ? accentColor : 'transparent',
                 }}
               >
                 {tab.tabTitle}
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Right — content, 65% */}
+      <div
+        className="order-2 w-full md:w-[65%] flex flex-col justify-center min-h-[50vh] md:min-h-[100vh]"
+        style={{
+          padding: 'clamp(40px, 6vw, 80px)',
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            border: `1px solid ${hexToRgba(accentColor, 0.3)}`,
+            color: accentColor,
+            padding: '3px 10px',
+            marginBottom: 24,
+            display: 'inline-block',
+            width: 'fit-content',
+          }}
+        >
+          {activeTab.tabTitle}
+        </span>
+        <div
+          style={{
+            opacity: contentOpacity,
+            transform: `translateY(${contentTranslateY}px)`,
+            transition: isTransitioning ? 'opacity 250ms ease, transform 250ms ease' : 'none',
+          }}
+        >
+          <h2
+            contentEditable={enabled}
+            suppressContentEditableWarning
+            onBlur={(e) =>
+              updateTabContent(activeTab.id, 'contentTitle', e.currentTarget.textContent ?? '')
+            }
+            dangerouslySetInnerHTML={{ __html: activeTab.contentTitle }}
+            style={{
+              fontSize: 'clamp(32px, 4vw, 56px)',
+              fontWeight: 800,
+              color: t.text,
+              margin: 0,
+              marginBottom: 16,
+              outline: 'none',
+            }}
+          />
+          <div
+            contentEditable={enabled}
+            suppressContentEditableWarning
+            onBlur={(e) =>
+              updateTabContent(activeTab.id, 'contentText', e.currentTarget.textContent ?? '')
+            }
+            dangerouslySetInnerHTML={{ __html: activeTab.contentText }}
+            style={{
+              fontSize: 16,
+              lineHeight: 1.8,
+              color: t.textSecondary,
+              margin: 0,
+              outline: 'none',
+            }}
+          />
         </div>
       </div>
     </section>
@@ -405,4 +407,4 @@ TronShowcase.craft = {
     supportsColorPreset: true,
   },
   rules: { canDrag: () => true, canMoveIn: () => false },
-};
+};
