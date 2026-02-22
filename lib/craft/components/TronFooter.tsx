@@ -129,10 +129,12 @@ const DEFAULT_COLS = [DEFAULT_COL_0, DEFAULT_COL_1, DEFAULT_COL_2];
 export const TronFooter = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  showGrid = true,
   copyright = '© 2025 Company. All rights reserved.',
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  showGrid?: boolean;
   copyright?: string;
 }) => {
   const { id: sectionId, connectors: { connect, drag } } = useNode();
@@ -140,8 +142,15 @@ export const TronFooter = ({
   const editor = useEditor();
   const query = editor?.query;
   const t = tokens[colorScheme];
-  const gridLines =
-    `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
+  const gridLines = showGrid
+    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+    : 'none';
+  const backgroundStyle = {
+    background: t.bg,
+    borderTop: `1px solid ${t.border}`,
+    backgroundImage: gridLines,
+    backgroundSize: showGrid ? '50px 50px' : 'auto',
+  };
   const getNodeSafe = typeof query?.getNode === 'function' ? query.getNode.bind(query) : () => null;
   const colIds = [`${sectionId}-col-0`, `${sectionId}-col-1`, `${sectionId}-col-2`];
 
@@ -149,12 +158,7 @@ export const TronFooter = ({
     <footer
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-16 `}
-      style={{
-        background: t.bg,
-        borderTop: `1px solid ${t.border}`,
-        backgroundImage: gridLines,
-        backgroundSize: '50px 50px',
-      }}
+      style={backgroundStyle}
     >
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
@@ -175,9 +179,10 @@ export const TronFooter = ({
 };
 
 const TronFooterSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, copyright } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, showGrid, copyright } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
+    showGrid: node.data.props.showGrid as boolean,
     copyright: node.data.props.copyright as string,
   }));
   const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
@@ -191,6 +196,10 @@ const TronFooterSettings = () => {
         <div className="space-y-3">
           <div><label className={labelCls}>Color scheme</label><select value={colorScheme ?? 'dark'} onChange={(e) => setT('colorScheme', 300)(e.target.value)} className={inputCls}><option value="dark">Dark</option><option value="light">Light</option></select></div>
           <div className="flex items-center gap-2"><label className={`${labelCls} shrink-0 w-20`}>Accent</label><input type="color" value={accentColor ?? '#e11d48'} onChange={(e) => setT('accentColor', 300)(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0" /><span className="text-[10px] font-mono text-gray-500 truncate">{accentColor}</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ color: '#a1a1aa', fontSize: 12 }}>Show Grid</label>
+            <input type="checkbox" checked={showGrid ?? true} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })} />
+          </div>
         </div>
       </section>
       <section>
@@ -208,6 +217,7 @@ TronFooter.craft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#e11d48',
+    showGrid: true,
     copyright: '© 2025 Company. All rights reserved.',
   },
   related: { settings: TronFooterSettings },

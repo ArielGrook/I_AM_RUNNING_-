@@ -21,6 +21,7 @@ function hexToRgb(hex: string): string {
 export const TronPortfolio = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  showGrid = true,
   title = 'Our Work',
   subtitle = 'Selected projects and case studies',
   items = DEFAULT_ITEMS,
@@ -29,6 +30,7 @@ export const TronPortfolio = ({
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  showGrid?: boolean;
   title?: string;
   subtitle?: string;
   items?: TronPortfolioItem[];
@@ -89,18 +91,20 @@ export const TronPortfolio = ({
   const clampedIndex = Math.min(activeIndex, maxIndex);
   const rgb = hexToRgb(accentColor ?? '#e11d48');
 
-  const gridLines =
-    `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
+  const gridLines = showGrid
+    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+    : 'none';
+  const backgroundStyle = {
+    background: t.bg,
+    backgroundImage: gridLines,
+    backgroundSize: showGrid ? '50px 50px' : 'auto',
+  };
 
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
-      style={{
-        background: t.bg,
-        backgroundImage: gridLines,
-        backgroundSize: '50px 50px',
-      }}
+      style={backgroundStyle}
     >
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10 md:mb-12">
@@ -204,6 +208,7 @@ const TronPortfolioSettings = () => {
     actions: { setProp },
     colorScheme,
     accentColor,
+    showGrid,
     title,
     subtitle,
     items,
@@ -212,6 +217,7 @@ const TronPortfolioSettings = () => {
   } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
+    showGrid: node.data.props.showGrid as boolean,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
     items: node.data.props.items as TronPortfolioItem[],
@@ -234,6 +240,17 @@ const TronPortfolioSettings = () => {
 
   return (
     <div className="p-3 space-y-5 text-white">
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
+        <div className="space-y-3">
+          <div><label className={labelCls}>Color scheme</label><select value={colorScheme ?? 'dark'} onChange={(e) => setT('colorScheme', 300)(e.target.value)} className={inputCls}><option value="dark">Dark</option><option value="light">Light</option></select></div>
+          <div className="flex items-center gap-2"><label className={`${labelCls} shrink-0 w-20`}>Accent</label><input type="color" value={accentColor ?? '#e11d48'} onChange={(e) => setT('accentColor', 300)(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0" /><span className="text-[10px] font-mono text-gray-500 truncate">{accentColor}</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ color: '#a1a1aa', fontSize: 12 }}>Show Grid</label>
+            <input type="checkbox" checked={showGrid ?? true} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })} />
+          </div>
+        </div>
+      </section>
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
@@ -301,6 +318,7 @@ TronPortfolio.craft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#e11d48',
+    showGrid: true,
     title: 'Our Work',
     subtitle: 'Selected projects and case studies',
     items: DEFAULT_ITEMS,

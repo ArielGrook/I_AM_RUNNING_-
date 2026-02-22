@@ -120,6 +120,7 @@ const CARD_DEFAULTS = [DEFAULT_CARD_0, DEFAULT_CARD_1, DEFAULT_CARD_2];
 export const TronFeatures = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  showGrid = true,
   title = 'Everything you need',
   subtitle = 'Powerful tools built for modern businesses',
   animationType = 'none',
@@ -127,6 +128,7 @@ export const TronFeatures = ({
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  showGrid?: boolean;
   title?: string;
   subtitle?: string;
   animationType?: string;
@@ -139,8 +141,14 @@ export const TronFeatures = ({
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
   const t = tokens[colorScheme];
-  const gridLines =
-    `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
+  const gridLines = showGrid
+    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+    : 'none';
+  const backgroundStyle = {
+    background: t.bg,
+    backgroundImage: gridLines,
+    backgroundSize: showGrid ? '50px 50px' : 'auto',
+  };
 
   const cardIds = [`${sectionId}-card-0`, `${sectionId}-card-1`, `${sectionId}-card-2`];
   const getNodeSafe = typeof query?.getNode === 'function' ? query.getNode.bind(query) : () => null;
@@ -149,11 +157,7 @@ export const TronFeatures = ({
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
-      style={{
-        background: t.bg,
-        backgroundImage: gridLines,
-        backgroundSize: '50px 50px',
-      }}
+      style={backgroundStyle}
     >
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12 md:mb-16">
@@ -197,6 +201,7 @@ const TronFeaturesSettings = () => {
     actions: { setProp },
     colorScheme,
     accentColor,
+    showGrid,
     title,
     subtitle,
     animationType,
@@ -204,6 +209,7 @@ const TronFeaturesSettings = () => {
   } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
+    showGrid: node.data.props.showGrid as boolean,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
     animationType: node.data.props.animationType as string,
@@ -232,6 +238,14 @@ const TronFeaturesSettings = () => {
             <input type="color" value={accentColor ?? '#e11d48'} onChange={(e) => setT('accentColor', 300)(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0" />
             <span className="text-[10px] font-mono text-gray-500 truncate">{accentColor}</span>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ color: '#a1a1aa', fontSize: 12 }}>Show Grid</label>
+            <input
+              type="checkbox"
+              checked={showGrid ?? true}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
+            />
+          </div>
         </div>
       </section>
       <section>
@@ -257,6 +271,7 @@ TronFeatures.craft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#e11d48',
+    showGrid: true,
     title: 'Everything you need',
     subtitle: 'Powerful tools built for modern businesses',
     animationType: 'none',
