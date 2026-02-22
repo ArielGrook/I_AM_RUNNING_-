@@ -385,7 +385,7 @@ export default function EditorPage() {
       if (craftPages && Array.isArray(craftPages) && craftPages.length > 0) {
         const mappedPages = craftPages.map((p: { id?: string; name?: string; slug?: string; data?: string | null; desktopData?: string | null; mobileData?: string | null }) => {
           const name = p.name || 'Page';
-          const slug = p.slug ?? name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page';
+          const slug = p.slug ?? (name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page');
           return {
             id: p.id || String(Math.random()),
             name,
