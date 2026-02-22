@@ -1,7 +1,7 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface ShowcaseTab {
   id: string;
@@ -84,6 +84,17 @@ export const TronShowcase = ({
   const [contentOpacity, setContentOpacity] = useState(1);
   const [contentTranslateY, setContentTranslateY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [tabHeight, setTabHeight] = useState(56);
+  const firstTabRef = useRef<HTMLButtonElement>(null);
+
+  const activeIndex = safeTabs.findIndex((t) => t.id === activeId);
+  const effectiveActiveIndex = activeIndex >= 0 ? activeIndex : 0;
+
+  useEffect(() => {
+    if (isMobile) return;
+    const h = firstTabRef.current?.offsetHeight;
+    if (typeof h === 'number' && h > 0) setTabHeight(h);
+  }, [isMobile, safeTabs.length]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -153,7 +164,7 @@ export const TronShowcase = ({
       data-block-category="content"
       className={`w-full ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
-        minHeight: '100vh',
+        minHeight: '75vh',
         width: '100%',
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
@@ -167,11 +178,12 @@ export const TronShowcase = ({
           flexShrink: 0,
           display: 'flex',
           flexDirection: isMobile ? 'row' : 'column',
-          minHeight: isMobile ? 'auto' : '100vh',
+          minHeight: isMobile ? 'auto' : '75vh',
           borderRight: isMobile ? 'none' : `1px solid ${t.border}`,
           borderBottom: isMobile ? `1px solid ${t.border}` : 'none',
           overflowX: isMobile ? 'auto' : 'visible',
           overflowY: isMobile ? 'visible' : 'auto',
+          ...(isMobile ? { scrollbarWidth: 'none' as const } : {}),
         }}
       >
         <div
@@ -190,18 +202,45 @@ export const TronShowcase = ({
         </div>
         <div
           style={{
+            position: 'relative',
+            flex: isMobile ? 1 : 'initial',
+            minHeight: 0,
             display: 'flex',
             flexDirection: isMobile ? 'row' : 'column',
             overflowX: isMobile ? 'auto' : 'visible',
-            minHeight: 0,
-            flex: isMobile ? 1 : 'initial',
           }}
         >
-          {safeTabs.map((tab) => {
+          {!isMobile && (
+            <>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 1,
+                  background: t.border,
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  width: 2,
+                  height: tabHeight,
+                  top: effectiveActiveIndex * tabHeight,
+                  background: accentColor,
+                  transition: 'top 300ms ease',
+                }}
+              />
+            </>
+          )}
+          {safeTabs.map((tab, index) => {
             const isActive = tab.id === activeId;
             return (
               <button
                 key={tab.id}
+                ref={index === 0 ? firstTabRef : undefined}
                 type="button"
                 onClick={() => handleTabClick(tab.id)}
                 style={{
@@ -210,7 +249,7 @@ export const TronShowcase = ({
                   minWidth: isMobile ? 140 : undefined,
                   textAlign: 'left',
                   transition: 'all 200ms ease-out',
-                  padding: isMobile ? '16px 20px' : '20px 32px',
+                  padding: isMobile ? '14px 20px' : '20px 32px',
                   fontSize: 15,
                   color: isActive ? accentColor : '#a1a1aa',
                   background: isActive ? hexToRgba(accentColor, 0.06) : 'transparent',
@@ -218,6 +257,18 @@ export const TronShowcase = ({
                   borderBottom: isMobile ? `2px solid ${isActive ? accentColor : 'transparent'}` : 'none',
                 }}
               >
+                <span
+                  style={{
+                    color: accentColor,
+                    opacity: 0.6,
+                    fontSize: 11,
+                    marginRight: 12,
+                    fontWeight: 700,
+                    display: isMobile ? 'none' : 'inline',
+                  }}
+                >
+                  {String(index + 1).padStart(2, '0')} /
+                </span>
                 {tab.tabTitle}
               </button>
             );
@@ -228,14 +279,39 @@ export const TronShowcase = ({
       {/* Right — content */}
       <div
         style={{
+          position: 'relative',
           width: isMobile ? '100%' : '65%',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          minHeight: isMobile ? '50vh' : '100vh',
-          padding: 'clamp(40px, 6vw, 80px)',
+          minHeight: isMobile ? '50vh' : '75vh',
+          padding: isMobile ? '32px 24px' : 'clamp(40px, 6vw, 80px)',
         }}
       >
+        {/* Accent dot — top right */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 24,
+            right: 32,
+            width: 8,
+            height: 8,
+            background: accentColor,
+          }}
+        />
+        {/* Counter — bottom right */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 24,
+            right: 32,
+            fontSize: 11,
+            color: t.textSecondary,
+            letterSpacing: '0.1em',
+          }}
+        >
+          {String(effectiveActiveIndex + 1).padStart(2, '0')} / {String(safeTabs.length).padStart(2, '0')}
+        </div>
         <span
           style={{
             fontSize: 11,
