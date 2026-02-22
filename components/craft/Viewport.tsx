@@ -169,20 +169,21 @@ export const Viewport = ({
       <div
         className="craft-canvas-toolbar flex items-center justify-between gap-3 shrink-0 px-4 h-11 border-b"
       >
-        {/* Left: viewport switcher pill */}
+        {/* Left: viewport switcher (Desktop / Tablet / Mobile) */}
         <div
           className="flex items-center rounded-lg overflow-hidden"
-          style={{ background: '#111111', border: '1px solid #2a2a2a' }}
+          style={{ background: 'rgba(255, 107, 53, 0.08)', border: '1px solid rgba(255, 107, 53, 0.3)' }}
         >
           <button
             type="button"
             onClick={() => switchViewport('desktop')}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-150"
             style={{
-              background: viewport === 'desktop' ? '#2a2a2a' : 'transparent',
-              color: viewport === 'desktop' ? '#ffffff' : '#71717a',
+              background: viewport === 'desktop' ? 'rgba(255, 107, 53, 0.2)' : 'transparent',
+              color: '#FF6B35',
               border: 'none',
               cursor: 'pointer',
+              fontWeight: viewport === 'desktop' ? 600 : 500,
             }}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -191,16 +192,17 @@ export const Viewport = ({
             </svg>
             <span className="hidden sm:inline">Desktop</span>
           </button>
-          <div style={{ width: 1, height: 20, background: '#2a2a2a' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255, 107, 53, 0.25)' }} />
           <button
             type="button"
             onClick={() => switchViewport('tablet')}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-150"
             style={{
-              background: viewport === 'tablet' ? '#2a2a2a' : 'transparent',
-              color: viewport === 'tablet' ? '#ffffff' : '#71717a',
+              background: viewport === 'tablet' ? 'rgba(255, 107, 53, 0.2)' : 'transparent',
+              color: '#FF6B35',
               border: 'none',
               cursor: 'pointer',
+              fontWeight: viewport === 'tablet' ? 600 : 500,
             }}
           >
             <svg width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -209,16 +211,17 @@ export const Viewport = ({
             </svg>
             <span className="hidden sm:inline">768</span>
           </button>
-          <div style={{ width: 1, height: 20, background: '#2a2a2a' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255, 107, 53, 0.25)' }} />
           <button
             type="button"
             onClick={() => switchViewport('mobile')}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all duration-150"
             style={{
-              background: viewport === 'mobile' ? '#2a2a2a' : 'transparent',
-              color: viewport === 'mobile' ? '#ffffff' : '#71717a',
+              background: viewport === 'mobile' ? 'rgba(255, 107, 53, 0.2)' : 'transparent',
+              color: '#FF6B35',
               border: 'none',
               cursor: 'pointer',
+              fontWeight: viewport === 'mobile' ? 600 : 500,
             }}
           >
             <svg width="9" height="14" viewBox="0 0 9 14" fill="none" stroke="currentColor" strokeWidth="1.2">
