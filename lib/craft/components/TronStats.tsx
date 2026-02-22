@@ -109,6 +109,7 @@ export const StatItem = ({
         padding: '16px 24px',
         cursor: 'default',
         transition: 'box-shadow 200ms',
+        minWidth: 0,
       }}
       onMouseEnter={(e) => {
         if (!enabled) e.currentTarget.style.boxShadow = `0 0 30px rgba(${rgb}, 0.15)`;
@@ -152,6 +153,10 @@ export const StatItem = ({
           textTransform: 'uppercase',
           letterSpacing: '0.1em',
           outline: 'none',
+          minWidth: 0,
+          width: '100%',
+          wordBreak: 'normal',
+          overflowWrap: 'break-word',
         }}
       />
     </div>
@@ -298,7 +303,7 @@ export const TronStats = ({
     >
       <div className="max-w-6xl mx-auto">
         <div
-          className="grid grid-cols-2 lg:grid-cols-4"
+          className="grid grid-cols-1 lg:grid-cols-4"
           style={{ gap: 0 }}
         >
           {Array.from({ length: itemCount }, (_, i) => {
