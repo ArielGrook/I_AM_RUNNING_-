@@ -62,7 +62,7 @@ export const TronShowcase = ({
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
-  const effectiveTabs = (tabs && tabs.length > 0) ? tabs : DEFAULT_TABS;
+  const effectiveTabs = tabs?.length ? tabs : DEFAULT_TABS;
   const [activeId, setActiveId] = useState<string>(effectiveTabs[0]?.id ?? '1');
   const [visible, setVisible] = useState(true);
   const prevIdRef = useRef(activeId);
@@ -104,37 +104,89 @@ export const TronShowcase = ({
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
 
-  const activeTab = effectiveTabs.find((tab) => tab.id === activeId) ?? effectiveTabs[0];
+  const activeTab = effectiveTabs.find((t) => t.id === activeId) ?? effectiveTabs[0];
 
-  const tabsPanel = (
-    <div
-      className="w-full md:w-[35%] flex-shrink-0 flex flex-col order-1 md:order-none craft-showcase-tabs-scroll overflow-x-auto md:overflow-visible"
+  return (
+    <section
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      data-block-type="showcase"
+      className={`w-full max-w-full flex flex-col md:flex-row ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
-        background: t.bgSecondary,
-        borderLeft: tabsPosition === 'right' ? `1px solid ${t.border}` : 'none',
-        borderRight: tabsPosition === 'left' ? `1px solid ${t.border}` : 'none',
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
+        minHeight: '100vh',
+        width: '100%',
+        background: t.bg,
+        backgroundImage: gridLines,
+        backgroundSize: showGrid ? '50px 50px' : 'auto',
+        ['--showcase-border' as string]: t.border,
+        ['--showcase-accent' as string]: accentColor,
       }}
     >
-      <div style={{ padding: '32px 32px 16px', fontSize: 11, letterSpacing: '0.15em', color: accentColor, textTransform: 'uppercase' }}>
-        {sectionLabel}
+      {/* ЛЕВАЯ КОЛОНКА — КОНТЕНТ — 65% на desktop, 100% на mobile */}
+      <div
+        className="w-full md:w-[65%] min-h-[100vh] flex flex-col justify-center order-2 md:order-none py-10 px-6 md:py-20 md:px-20"
+      >
+        <div
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(10px)',
+            transition: 'opacity 250ms ease, transform 250ms ease',
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '3px 10px',
+              border: `1px solid rgba(${rgb}, 0.3)`,
+              background: `rgba(${rgb}, 0.08)`,
+              color: accentColor,
+              fontSize: 11,
+              letterSpacing: '0.08em',
+              marginBottom: 24,
+              borderRadius: 2,
+            }}
+          >
+            {activeTab?.tabTitle ?? ''}
+          </span>
+          <div
+            contentEditable={enabled}
+            suppressContentEditableWarning
+            onBlur={(e) => updateTab(activeId, 'contentTitle', e.currentTarget.textContent ?? '')}
+            dangerouslySetInnerHTML={{ __html: activeTab?.contentTitle ?? '' }}
+            style={{ fontSize: 'clamp(32px, 4vw, 56px)', fontWeight: 800, color: t.text, marginTop: 0, outline: 'none' }}
+          />
+          <div
+            contentEditable={enabled}
+            suppressContentEditableWarning
+            onBlur={(e) => updateTab(activeId, 'contentText', e.currentTarget.textContent ?? '')}
+            dangerouslySetInnerHTML={{ __html: activeTab?.contentText ?? '' }}
+            style={{ fontSize: 16, lineHeight: 1.8, color: t.textSecondary, marginTop: 16, outline: 'none' }}
+          />
+        </div>
       </div>
-      <div className="flex flex-row md:flex-col flex-shrink-0">
+
+      <div
+        className="w-full md:w-[35%] min-h-[100vh] flex flex-row md:flex-col order-1 md:order-none craft-showcase-tabs-scroll overflow-x-auto md:overflow-visible border-t border-t-[var(--showcase-border)] md:border-t-0 md:border-l md:border-l-[var(--showcase-border)]"
+        style={{
+          background: t.bgSecondary,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+      >
+        <span className="shrink-0" style={{ padding: '32px 32px 16px', fontSize: 11, letterSpacing: '0.15em', color: accentColor, textTransform: 'uppercase' }}>
+          {sectionLabel}
+        </span>
         {effectiveTabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActiveId(tab.id)}
-            className="shrink-0 min-w-[120px] md:min-w-0 md:w-full md:!border-b-0"
+            onMouseEnter={(e) => { if (activeId !== tab.id) e.currentTarget.style.color = t.text; }}
+            onMouseLeave={(e) => { if (activeId !== tab.id) e.currentTarget.style.color = t.textSecondary; }}
+            className={`shrink-0 min-w-[120px] md:min-w-0 md:!w-full py-4 px-5 md:py-5 md:px-8 border-b-2 md:border-b-0 md:border-l-2 ${activeId === tab.id ? '!border-b-[var(--showcase-accent)] md:!border-l-[var(--showcase-accent)]' : 'border-b-transparent md:border-l-transparent'}`}
             style={{
-              padding: '20px 32px',
-              textAlign: 'left',
               width: '100%',
               border: 'none',
-              borderLeft: tabsPosition === 'right' ? `2px solid ${activeId === tab.id ? accentColor : 'transparent'}` : 'none',
-              borderRight: tabsPosition === 'left' ? `2px solid ${activeId === tab.id ? accentColor : 'transparent'}` : 'none',
-              borderBottom: `2px solid ${activeId === tab.id ? accentColor : 'transparent'}`,
+              textAlign: 'left',
               background: activeId === tab.id ? `rgba(${rgb}, 0.06)` : 'transparent',
               color: activeId === tab.id ? accentColor : t.textSecondary,
               fontWeight: activeId === tab.id ? 600 : 400,
@@ -147,93 +199,6 @@ export const TronShowcase = ({
           </button>
         ))}
       </div>
-    </div>
-  );
-
-  const contentPanel = (
-    <div
-      className="flex-1 flex flex-col justify-center order-2 md:order-none min-h-[60vh] md:min-h-0"
-      style={{
-        padding: 'clamp(32px, 5vw, 80px)',
-      }}
-    >
-      <div
-        style={{
-          opacity: visible ? 1 : 0,
-          transform: visible ? 'translateY(0)' : 'translateY(12px)',
-          transition: 'opacity 250ms ease, transform 250ms ease',
-        }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            padding: '3px 10px',
-            border: `1px solid rgba(${rgb}, 0.3)`,
-            background: `rgba(${rgb}, 0.08)`,
-            color: accentColor,
-            letterSpacing: '0.08em',
-            borderRadius: 2,
-            display: 'inline-block',
-            marginBottom: 24,
-          }}
-        >
-          {activeTab?.tabTitle ?? ''}
-        </span>
-
-        <div
-          contentEditable={enabled}
-          suppressContentEditableWarning
-          onBlur={(e) => updateTab(activeId, 'contentTitle', e.currentTarget.textContent ?? '')}
-          dangerouslySetInnerHTML={{ __html: activeTab?.contentTitle ?? '' }}
-          style={{
-            fontSize: 'clamp(28px, 4vw, 52px)',
-            fontWeight: 800,
-            color: t.text,
-            marginTop: 24,
-            outline: 'none',
-          }}
-        />
-
-        <div
-          contentEditable={enabled}
-          suppressContentEditableWarning
-          onBlur={(e) => updateTab(activeId, 'contentText', e.currentTarget.textContent ?? '')}
-          dangerouslySetInnerHTML={{ __html: activeTab?.contentText ?? '' }}
-          style={{
-            fontSize: 16,
-            lineHeight: 1.8,
-            color: t.textSecondary,
-            marginTop: 16,
-            outline: 'none',
-          }}
-        />
-      </div>
-    </div>
-  );
-
-  return (
-    <section
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
-      data-block-type="showcase"
-      className={`w-full max-w-full flex flex-col md:flex-row ${isSelected ? 'craft-node-selected' : ''}`}
-      style={{
-        minHeight: '100vh',
-        background: t.bg,
-        backgroundImage: gridLines,
-        backgroundSize: showGrid ? '50px 50px' : 'auto',
-      }}
-    >
-      {tabsPosition === 'left' ? (
-        <>
-          {tabsPanel}
-          {contentPanel}
-        </>
-      ) : (
-        <>
-          {contentPanel}
-          {tabsPanel}
-        </>
-      )}
     </section>
   );
 };
