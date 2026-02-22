@@ -364,7 +364,7 @@ export const HeroTron = ({
         justifyContent: 'center',
         overflow: 'hidden',
         position: 'relative',
-        background: t.bg,
+        background: colorScheme === 'dark' ? '#0a0a0a' : t.bg,
         backgroundImage,
         backgroundSize,
       }}
