@@ -56,7 +56,6 @@ export const Toolbar = ({
   const canUndo = query.history.canUndo();
   const canRedo = query.history.canRedo();
   const { theme, toggle, t } = useEditorTheme();
-  const [canvasScheme, setCanvasScheme] = useState<'dark' | 'light'>('dark');
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingPageName, setEditingPageName] = useState('');
   const [editingProject, setEditingProject] = useState(false);
@@ -283,31 +282,6 @@ export const Toolbar = ({
         👁 Preview
       </button>
 
-      {/* Canvas color scheme (dark/light) */}
-      <button
-        type="button"
-        onClick={() => {
-          const newScheme = canvasScheme === 'dark' ? 'light' : 'dark';
-          setCanvasScheme(newScheme);
-          applySchemeToTronNodes(newScheme);
-        }}
-        style={{
-          background: canvasScheme === 'dark' ? '#0a0a0a' : '#ffffff',
-          color: canvasScheme === 'dark' ? '#ffffff' : '#0a0a0a',
-          border: '1px solid #3a3a3a',
-          borderRadius: 6,
-          padding: '4px 12px',
-          fontSize: 12,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-        }}
-        title={canvasScheme === 'dark' ? 'Switch canvas to light' : 'Switch canvas to dark'}
-      >
-        {canvasScheme === 'dark' ? '☀' : '☾'}
-      </button>
-
       {/* Export */}
       <button onClick={handleExportJSON} className={btnCls} title="Export JSON">
         📥 Export
@@ -327,11 +301,28 @@ export const Toolbar = ({
           <button
             key={page.id}
             onClick={() => editingPageId !== page.id && handlePageClick(page.id)}
-            className="px-3 py-2 h-9 rounded-md text-[13px] font-medium transition-all flex items-center"
+            className="rounded-md flex items-center transition-all"
             style={
               page.id === activePageId
-                ? { background: '#ffffff', color: '#0a0a0a', border: '1px solid #e5e5e5' }
-                : { background: 'transparent', color: '#0a0a0a', border: '1px solid #e5e5e5' }
+                ? {
+                    background: 'rgba(255, 107, 53, 0.2)',
+                    color: '#FF6B35',
+                    border: '1px solid rgba(255, 107, 53, 0.4)',
+                    borderRadius: 6,
+                    padding: '4px 12px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }
+                : {
+                    background: 'transparent',
+                    color: '#FF6B35',
+                    border: '1px solid rgba(255, 107, 53, 0.2)',
+                    borderRadius: 6,
+                    padding: '4px 12px',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }
             }
           >
             {editingPageId === page.id ? (

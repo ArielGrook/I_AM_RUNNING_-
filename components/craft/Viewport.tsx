@@ -14,6 +14,21 @@ const DEVICES: { key: DeviceMode; label: string; width: string }[] = [
   { key: 'mobile', label: '375', width: '375px' },
 ];
 
+const orangeButtonStyle = {
+  background: 'rgba(255, 107, 53, 0.15)',
+  color: '#FF6B35',
+  border: '1px solid rgba(255, 107, 53, 0.3)',
+  borderRadius: 6,
+  width: 28,
+  height: 28,
+  display: 'flex' as const,
+  alignItems: 'center' as const,
+  justifyContent: 'center' as const,
+  cursor: 'pointer' as const,
+  fontSize: 16,
+  fontWeight: 600,
+};
+
 const hexToRgb = (hex: string) => {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -64,7 +79,30 @@ export const Viewport = ({
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [accentColor, setAccentColor] = useState('#e11d48');
   const [spotlight, setSpotlight] = useState({ x: 0, y: 0, visible: false });
+  const [canvasScheme, setCanvasScheme] = useState<'dark' | 'light'>('dark');
   const { t } = useEditorTheme();
+
+  const applySchemeToTronNodes = useCallback(
+    (scheme: 'dark' | 'light') => {
+      try {
+        const state = query.getState();
+        const nodes = state?.nodes ?? {};
+        Object.keys(nodes).forEach((id) => {
+          if (id === 'ROOT') return;
+          const node = nodes[id];
+          const props = node?.data?.props;
+          if (props && 'colorScheme' in props) {
+            actions.setProp(id, (p: Record<string, unknown>) => {
+              p.colorScheme = scheme;
+            });
+          }
+        });
+      } catch {
+        // noop
+      }
+    },
+    [query, actions]
+  );
 
   const switchViewport = useCallback(
     (newViewport: DeviceMode) => {
@@ -218,6 +256,28 @@ export const Viewport = ({
           </button>
         )}
 
+        {/* Canvas color scheme (dark/light) */}
+        <button
+          type="button"
+          onClick={() => {
+            const newScheme = canvasScheme === 'dark' ? 'light' : 'dark';
+            setCanvasScheme(newScheme);
+            applySchemeToTronNodes(newScheme);
+          }}
+          style={{
+            background: canvasScheme === 'dark' ? 'rgba(255,107,53,0.15)' : 'rgba(255,107,53,0.3)',
+            color: '#FF6B35',
+            border: '1px solid rgba(255,107,53,0.3)',
+            borderRadius: 6,
+            padding: '4px 10px',
+            fontSize: 12,
+            cursor: 'pointer',
+          }}
+          title={canvasScheme === 'dark' ? 'Switch canvas to light' : 'Switch canvas to dark'}
+        >
+          {canvasScheme === 'dark' ? '☀' : '☾'}
+        </button>
+
         {/* Center: color presets */}
         <div
           className="flex items-center gap-1.5 px-3"
@@ -250,45 +310,11 @@ export const Viewport = ({
 
         {/* Right: zoom */}
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setZoom((z) => Math.max(50, z - 10))}
-            style={{
-              background: 'rgba(255, 107, 53, 0.15)',
-              color: '#FF6B35',
-              border: '1px solid rgba(255, 107, 53, 0.3)',
-              borderRadius: 6,
-              width: 28,
-              height: 28,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: 16,
-              fontWeight: 600,
-            }}
-          >
+          <button type="button" onClick={() => setZoom((z) => Math.max(50, z - 10))} style={orangeButtonStyle}>
             −
           </button>
           <span style={{ color: '#FF6B35', fontSize: 12, minWidth: 40, textAlign: 'center' }}>{zoom}%</span>
-          <button
-            type="button"
-            onClick={() => setZoom((z) => Math.min(150, z + 10))}
-            style={{
-              background: 'rgba(255, 107, 53, 0.15)',
-              color: '#FF6B35',
-              border: '1px solid rgba(255, 107, 53, 0.3)',
-              borderRadius: 6,
-              width: 28,
-              height: 28,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: 16,
-              fontWeight: 600,
-            }}
-          >
+          <button type="button" onClick={() => setZoom((z) => Math.min(150, z + 10))} style={orangeButtonStyle}>
             +
           </button>
         </div>
