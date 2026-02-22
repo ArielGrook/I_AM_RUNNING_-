@@ -82,13 +82,15 @@ export const Viewport = ({
           actions.deserialize(json);
         }
       } else {
-        if (mobileData) {
+        if (!mobileData) {
+          const desktopJson = lz.decompress(desktopData || currentCompressed, {
+            inputEncoding: 'Base64',
+          }) as string;
+          actions.deserialize(desktopJson);
+          setMobileData(desktopData || currentCompressed);
+        } else {
           const json = lz.decompress(mobileData, { inputEncoding: 'Base64' }) as string;
           actions.deserialize(json);
-        } else if (desktopData) {
-          const json = lz.decompress(desktopData, { inputEncoding: 'Base64' }) as string;
-          actions.deserialize(json);
-          setMobileData(desktopData);
         }
       }
       setViewport(newViewport);

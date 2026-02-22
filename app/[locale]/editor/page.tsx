@@ -656,8 +656,8 @@ export default function EditorPage() {
       setIsSaving(true);
       try {
         const compressed = lz.compress(serializedJson, { outputEncoding: 'Base64' });
-        const latestDesktop = viewport === 'desktop' ? compressed : (desktopData || compressed);
-        const latestMobile = viewport !== 'desktop' ? compressed : (mobileData || compressed);
+        const latestDesktop = viewport === 'desktop' ? compressed : (desktopData ?? compressed);
+        const latestMobile = viewport !== 'desktop' ? compressed : (mobileData ?? null);
         const updatedPages = pages.map((p) =>
           p.id === activePageId
             ? { ...p, data: latestDesktop, desktopData: latestDesktop, mobileData: latestMobile }
@@ -715,8 +715,8 @@ export default function EditorPage() {
     (targetId: string, currentPageJson: string) => {
       const compressed =
         currentPageJson && lz.compress(currentPageJson, { outputEncoding: 'Base64' });
-      const latestDesktop = viewport === 'desktop' ? compressed : (desktopData || compressed);
-      const latestMobile = viewport !== 'desktop' ? compressed : (mobileData || compressed);
+      const latestDesktop = viewport === 'desktop' ? compressed : (desktopData ?? compressed);
+      const latestMobile = viewport !== 'desktop' ? compressed : (mobileData ?? null);
       setPages((prev) =>
         prev.map((p) =>
           p.id === activePageId
@@ -865,7 +865,7 @@ export default function EditorPage() {
           >
             {frameReady && (
               <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
-                <Frame key={activePageId} data={undefined}>
+                <Frame key={activePageId} data={frameData ?? undefined}>
                   <Element is={Container} canvas>
                   </Element>
                 </Frame>
