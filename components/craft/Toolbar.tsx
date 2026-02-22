@@ -158,7 +158,11 @@ export const Toolbar = ({
         {setPreviewScheme && (
           <button
             type="button"
-            onClick={() => setPreviewScheme((s) => (s === 'dark' ? 'light' : 'dark'))}
+            onClick={() => {
+              const newScheme = previewScheme === 'dark' ? 'light' : 'dark';
+              setPreviewScheme(newScheme);
+              applySchemeToTronNodes(newScheme);
+            }}
             style={{
               background: previewScheme === 'light' ? '#ffffff' : '#0a0a0a',
               color: previewScheme === 'light' ? '#0a0a0a' : '#ffffff',

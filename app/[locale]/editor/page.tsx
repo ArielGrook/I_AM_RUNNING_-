@@ -315,45 +315,6 @@ function DesktopToMobileSync({
 }
 
 
-/** Applies colorScheme to all Tron nodes when previewScheme changes (in preview mode). */
-function PreviewSchemeController({
-  previewMode,
-  previewScheme,
-  onResetToDark,
-}: {
-  previewMode: boolean;
-  previewScheme: 'dark' | 'light';
-  onResetToDark: () => void;
-}) {
-  const { query, actions } = useEditor();
-
-  useEffect(() => {
-    if (!previewMode) return;
-    try {
-      const state = query.getState();
-      const nodes = state?.nodes ?? {};
-      Object.keys(nodes).forEach((id) => {
-        if (id === 'ROOT') return;
-        const node = nodes[id];
-        const props = node?.data?.props;
-        if (props && 'colorScheme' in props) {
-          actions.setProp(id, (p: Record<string, unknown>) => {
-            p.colorScheme = previewScheme;
-          });
-        }
-      });
-    } catch {
-      // noop
-    }
-  }, [previewScheme, previewMode, query, actions]);
-
-  useEffect(() => {
-    if (!previewMode) onResetToDark();
-  }, [previewMode, onResetToDark]);
-
-  return null;
-}
-
 export default function EditorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -728,10 +689,6 @@ export default function EditorPage() {
     [projectId, loadedProject, pages, activePageId, isSaving, viewport, desktopData, mobileData]
   );
 
-  const handleResetPreviewScheme = useCallback(() => {
-    setPreviewScheme('dark');
-  }, []);
-
   const handlePreview = () => {
     setPreviewHTML(
       '<div style="padding:40px;text-align:center;">Preview - HTML serializer coming soon</div>'
@@ -851,11 +808,6 @@ export default function EditorPage() {
           viewport={viewport}
           mobileData={mobileData}
           setMobileData={setMobileData}
-        />
-        <PreviewSchemeController
-          previewMode={previewMode}
-          previewScheme={previewScheme}
-          onResetToDark={handleResetPreviewScheme}
         />
         <Toolbar
           onSave={handleSaveFromEditor}
