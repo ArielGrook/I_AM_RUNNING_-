@@ -32,6 +32,7 @@ import {
 import { PRESETS } from '@/lib/craft/presets';
 import { Icons } from '@/lib/craft/icons';
 import { useEditorTheme } from './EditorThemeContext';
+import { usePendingInsert } from './PendingInsertContext';
 
 const ROOT_ID = 'ROOT';
 type TabId = 'components' | 'presets';
@@ -88,6 +89,7 @@ const categories: { key: 'basic' | 'sections' | 'tronSections'; title: string; i
 export const Toolbox = () => {
   const { connectors, actions, query } = useEditor();
   const { t } = useEditorTheme();
+  const { setPendingComponent } = usePendingInsert();
   const [activeTab, setActiveTab] = useState<TabId>('components');
   const [importing, setImporting] = useState(false);
   const [openGroups, setOpenGroups] = useState({ basic: true, sections: true, tronSections: true });
@@ -220,6 +222,10 @@ export const Toolbox = () => {
                             );
                           }
                         }}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setPendingComponent(item.name)}
+                        onKeyDown={(e) => e.key === 'Enter' && setPendingComponent(item.name)}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab active:cursor-grabbing transition-colors group select-none ${t(
                           'hover:bg-gray-100',
                           'hover:bg-[#1a1a1a]'

@@ -56,6 +56,7 @@ import { Toolbar } from '@/components/craft/Toolbar';
 import { PreviewModal } from '@/components/craft/PreviewModal';
 import { RenderNode } from '@/components/craft/RenderNode';
 import { KeyboardShortcuts } from '@/components/craft/KeyboardShortcuts';
+import { PendingInsertProvider } from '@/components/craft/PendingInsertContext';
 import { EditorThemeProvider, useEditorTheme } from '@/components/craft/EditorThemeContext';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -757,44 +758,46 @@ export default function EditorPage() {
     );
   }
 
+  const resolver = {
+    Container,
+    Text,
+    Hero,
+    HeroTron,
+    HeroTronHeading,
+    HeroTronSubheading,
+    HeroTronButton,
+    Button,
+    Image,
+    Header,
+    HeaderTron,
+    CTA,
+    Features,
+    TronFeatures,
+    FeatureCard,
+    TronPortfolio,
+    TronTestimonials,
+    TestimonialCard,
+    TronPricing,
+    PricingCard,
+    TronFAQ,
+    FAQItem,
+    TronFooter,
+    FooterColumn,
+    TronContact,
+    Footer,
+    Testimonials,
+    Pricing,
+    FAQ,
+    Divider,
+    Video,
+    HtmlBlock,
+  };
+
   return (
     <EditorThemeProvider>
       <EditorRoot>
       <Editor
-        resolver={{
-          Container,
-          Text,
-          Hero,
-          HeroTron,
-          HeroTronHeading,
-          HeroTronSubheading,
-          HeroTronButton,
-          Button,
-          Image,
-          Header,
-          HeaderTron,
-          CTA,
-          Features,
-          TronFeatures,
-          FeatureCard,
-          TronPortfolio,
-          TronTestimonials,
-          TestimonialCard,
-          TronPricing,
-          PricingCard,
-          TronFAQ,
-          FAQItem,
-          TronFooter,
-          FooterColumn,
-          TronContact,
-          Footer,
-          Testimonials,
-          Pricing,
-          FAQ,
-          Divider,
-          Video,
-          HtmlBlock,
-        }}
+        resolver={resolver}
         onRender={RenderNode}
         indicator={{
           success: 'transparent',
@@ -803,6 +806,7 @@ export default function EditorPage() {
           thickness: 0,
         }}
       >
+        <PendingInsertProvider componentMap={resolver}>
         <PreviewController previewMode={previewMode} />
         <DesktopToMobileSync
           viewport={viewport}
@@ -879,6 +883,7 @@ export default function EditorPage() {
           onClose={() => setPreviewOpen(false)}
           data={previewHTML}
         />
+        </PendingInsertProvider>
       </Editor>
       </EditorRoot>
     </EditorThemeProvider>

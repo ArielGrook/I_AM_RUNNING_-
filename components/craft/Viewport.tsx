@@ -1,9 +1,10 @@
 'use client';
 
 import { useEditor } from '@craftjs/core';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import lz from 'lzutf8';
 import { useEditorTheme } from './EditorThemeContext';
+import { usePendingInsert } from './PendingInsertContext';
 import { COLOR_PRESETS } from '@/lib/craft/presets/colors';
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
@@ -20,6 +21,73 @@ const hexToRgb = (hex: string) => {
   const b = parseInt(hex.slice(5, 7), 16);
   return `${r},${g},${b}`;
 };
+
+function InsertButton({
+  position,
+  nodeId,
+  rootContainerId,
+  canvasRect,
+  componentName,
+  onInsert,
+}: {
+  position: number;
+  nodeId?: string;
+  rootContainerId: string | null;
+  canvasRect: DOMRect | null;
+  componentName: string;
+  onInsert: (name: string, pos: number) => void;
+}) {
+  const nodeEl =
+    typeof document !== 'undefined'
+      ? nodeId
+        ? document.querySelector(`[data-id="${nodeId}"]`)
+        : rootContainerId
+          ? document.querySelector(`[data-id="${rootContainerId}"]`)
+          : null
+      : null;
+  const rect = nodeEl ? (nodeEl as HTMLElement).getBoundingClientRect() : null;
+
+  const top = canvasRect && rect
+    ? position === 0
+      ? Math.max(0, rect.top - canvasRect.top - 14)
+      : rect.bottom - canvasRect.top - 14
+    : 0;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: '50%',
+        top,
+        transform: 'translate(-50%, -50%)',
+        zIndex: 101,
+        pointerEvents: 'all',
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onInsert(componentName, position);
+      }}
+    >
+      <div
+        style={{
+          background: '#e11d48',
+          color: 'white',
+          borderRadius: 4,
+          padding: '4px 16px',
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          boxShadow: '0 0 12px rgba(225,29,72,0.4)',
+        }}
+      >
+        + Вставить сюда
+      </div>
+    </div>
+  );
+}
 
 type ViewportProps = {
   children: React.ReactNode;
@@ -45,6 +113,23 @@ export const Viewport = ({
   const { connectors, isDragging, actions, query } = useEditor((state) => ({
     isDragging: state.events.dragged.size > 0,
   }));
+  const {
+    pendingComponent,
+    setPendingComponent,
+    insertComponent,
+    rootContainerId,
+    sectionIds,
+  } = usePendingInsert();
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPendingComponent(null);
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [setPendingComponent]);
+
   const { spotlightIntensity } = useEditor((state) => {
     let intensity = 0.12;
     const nodes = state.nodes || {};
@@ -272,7 +357,10 @@ export const Viewport = ({
             }}
           >
             <div
-              ref={(ref) => { if (ref) connectors.select(ref, ''); }}
+              ref={(ref) => {
+                (canvasRef as React.MutableRefObject<HTMLDivElement | null>).current = ref;
+                if (ref) connectors.select(ref, '');
+              }}
               className={`min-h-screen bg-white transition-all duration-200 relative ${
                 isDragging
                   ? 'ring-2 ring-[#FF6B35]/60 ring-offset-2 ring-offset-transparent shadow-[0_0_50px_rgba(255,107,53,0.2)]'
@@ -291,6 +379,45 @@ export const Viewport = ({
               }}
               onMouseLeave={() => previewMode && setSpotlight((s) => ({ ...s, visible: false }))}
             >
+              {/* Insert position overlay: click-to-insert when a component is selected in Toolbox */}
+              {!previewMode && pendingComponent && (
+                <div
+                  role="presentation"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 100,
+                    pointerEvents: 'all',
+                  }}
+                  onClick={() => setPendingComponent(null)}
+                >
+                  {(() => {
+                    const canvasRect = canvasRef.current?.getBoundingClientRect() ?? null;
+                    return (
+                      <>
+                        <InsertButton
+                          position={0}
+                          rootContainerId={rootContainerId}
+                          canvasRect={canvasRect}
+                          componentName={pendingComponent}
+                          onInsert={insertComponent}
+                        />
+                        {sectionIds.map((nodeId, index) => (
+                          <InsertButton
+                            key={nodeId}
+                            position={index + 1}
+                            nodeId={nodeId}
+                            rootContainerId={rootContainerId}
+                            canvasRect={canvasRect}
+                            componentName={pendingComponent}
+                            onInsert={insertComponent}
+                          />
+                        ))}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
               {/* Global cursor spotlight (preview only) */}
               {previewMode && (
                 <div
