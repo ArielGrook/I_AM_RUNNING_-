@@ -4,13 +4,20 @@ import { useNode, useEditor } from '@craftjs/core';
 import React, { useState, useContext } from 'react';
 import { PagesContext } from '@/lib/craft/context/PagesContext';
 
-type NavLinkItem = { label: string; href: string };
+type NavLinkType = 'section' | 'page' | 'external';
+type NavLinkItem = { label: string; href: string; type?: NavLinkType };
+
+function linkTypeFromHref(href: string): NavLinkType {
+  if (href.startsWith('#')) return 'section';
+  if (href.startsWith('/')) return 'page';
+  return 'external';
+}
 
 const DEFAULT_NAV_LINKS: NavLinkItem[] = [
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'About', href: '#about' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Features', href: '#features', type: 'section' },
+  { label: 'Pricing', href: '#pricing', type: 'section' },
+  { label: 'About', href: '#about', type: 'section' },
+  { label: 'Contact', href: '#contact', type: 'section' },
 ];
 
 export const HeaderTron = ({
@@ -40,13 +47,18 @@ export const HeaderTron = ({
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null);
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
-    e.preventDefault();
-    if (enabled) return;
+    if (enabled) {
+      e.preventDefault();
+      return;
+    }
     if (href.startsWith('#')) {
+      e.preventDefault();
       document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
     } else if (href.startsWith('/')) {
+      e.preventDefault();
       navigateTo(href.replace(/^\//, ''));
     } else {
+      e.preventDefault();
       window.open(href, '_blank');
     }
   };
@@ -93,6 +105,7 @@ export const HeaderTron = ({
 
   return (
     <header
+      id="header"
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="header"
       data-block-category="navigation"
@@ -184,9 +197,38 @@ const HeaderTronSettings = () => {
     animationType: node.data.props.animationType as string,
     animateDelay: node.data.props.animateDelay as string,
   }));
+  const { nodes } = useEditor((s) => ({ nodes: s.nodes }));
+  const { pages } = useContext(PagesContext);
   const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
+
+  const availableSections = React.useMemo(() => {
+    const nodeList = nodes ? Object.values(nodes) : [];
+    return nodeList
+      .filter((n) => (n?.data?.props as Record<string, unknown>)?.['data-block-type'])
+      .map((n) => {
+        const props = n?.data?.props as Record<string, unknown> | undefined;
+        const blockType = props?.['data-block-type'] as string;
+        const displayName = (n?.data?.displayName as string) || blockType || n?.id;
+        return { id: n?.id ?? '', label: displayName, blockType: blockType ?? '' };
+      })
+      .filter((s) => s.blockType);
+  }, [nodes]);
+
+  const updateLink = (i: number, field: 'label' | 'href' | 'type', value: string) => {
+    setProp((p: Record<string, unknown>) => {
+      const arr = [...(p.navLinks as NavLinkItem[])];
+      if (!arr[i]) return;
+      if (field === 'type') {
+        arr[i] = { ...arr[i], type: value as NavLinkType, href: value === 'section' ? '#' : value === 'page' ? '/' : '' };
+      } else {
+        arr[i] = { ...arr[i], [field]: value };
+      }
+      p.navLinks = arr;
+    }, 300);
+  };
+
   const links = navLinks ?? DEFAULT_NAV_LINKS;
   return (
     <div className="p-3 space-y-5 text-white">
@@ -207,15 +249,55 @@ const HeaderTronSettings = () => {
       </section>
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Nav Links</h3>
-        <div className="space-y-2">
-          {links.map((link, i) => (
-            <div key={i} className="flex gap-2 items-center mb-2">
-              <input value={link.label} placeholder="Label" className="flex-1 bg-[#2a2a2a] border border-[#3a3a3a] rounded px-2 py-1.5 text-sm text-white" onChange={(e) => setProp((p: Record<string, unknown>) => { const arr = [...(p.navLinks as NavLinkItem[])]; if (arr[i]) arr[i] = { ...arr[i], label: e.target.value }; p.navLinks = arr; }, 500)} />
-              <input value={link.href} placeholder="#section" className="flex-1 bg-[#2a2a2a] border border-[#3a3a3a] rounded px-2 py-1.5 text-sm text-white" onChange={(e) => setProp((p: Record<string, unknown>) => { const arr = [...(p.navLinks as NavLinkItem[])]; if (arr[i]) arr[i] = { ...arr[i], href: e.target.value }; p.navLinks = arr; }, 500)} />
-              <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.navLinks = (p.navLinks as NavLinkItem[]).filter((_, idx) => idx !== i); })} className="text-red-400 hover:text-red-300 text-lg leading-none px-1" title="Remove link">×</button>
-            </div>
-          ))}
-          {links.length < 6 && <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.navLinks = [...(p.navLinks as NavLinkItem[]), { label: 'New Link', href: '#' }]; })} className="w-full border border-dashed border-[#3a3a3a] rounded py-2 text-sm text-gray-500 hover:text-gray-300 hover:border-gray-500 transition-colors mt-1">+ Add Link</button>}
+        <div className="space-y-3">
+          {links.map((link, i) => {
+            const type = link.type ?? linkTypeFromHref(link.href);
+            return (
+              <div key={i} className="border border-[#3a3a3a] rounded p-2 space-y-2">
+                <div className="flex gap-2 items-center">
+                  <input value={link.label} placeholder="Label" className="flex-1 bg-[#2a2a2a] border border-[#3a3a3a] rounded px-2 py-1.5 text-xs text-white" onChange={(e) => setProp((p: Record<string, unknown>) => { const arr = [...(p.navLinks as NavLinkItem[])]; if (arr[i]) arr[i] = { ...arr[i], label: e.target.value }; p.navLinks = arr; }, 500)} />
+                  <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.navLinks = (p.navLinks as NavLinkItem[]).filter((_, idx) => idx !== i); })} className="text-red-400 hover:text-red-300 text-lg leading-none px-1" title="Remove link">×</button>
+                </div>
+                <div>
+                  <label className={labelCls}>Link type</label>
+                  <select value={type} onChange={(e) => updateLink(i, 'type', e.target.value)} className={inputCls}>
+                    <option value="section">Section on page</option>
+                    <option value="page">Another page</option>
+                    <option value="external">External URL</option>
+                  </select>
+                </div>
+                {type === 'section' && (
+                  <div>
+                    <label className={labelCls}>Section</label>
+                    <select value={link.href} onChange={(e) => updateLink(i, 'href', e.target.value)} className={inputCls}>
+                      <option value="">Select section...</option>
+                      {availableSections.map((s) => (
+                        <option key={s.id} value={`#${s.blockType}`}>{s.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {type === 'page' && (
+                  <div>
+                    <label className={labelCls}>Page</label>
+                    <select value={link.href} onChange={(e) => updateLink(i, 'href', e.target.value)} className={inputCls}>
+                      <option value="">Select page...</option>
+                      {pages.map((p) => (
+                        <option key={p.id} value={`/${p.slug}`}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {type === 'external' && (
+                  <div>
+                    <label className={labelCls}>URL</label>
+                    <input value={link.href} placeholder="https://..." onChange={(e) => updateLink(i, 'href', e.target.value)} className={inputCls} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {links.length < 6 && <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.navLinks = [...(p.navLinks as NavLinkItem[]), { label: 'New Link', href: '#', type: 'section' }]; })} className="w-full border border-dashed border-[#3a3a3a] rounded py-2 text-sm text-gray-500 hover:text-gray-300 hover:border-gray-500 transition-colors mt-1">+ Add Link</button>}
         </div>
       </section>
       <section>
@@ -235,7 +317,8 @@ HeaderTron.craft = {
     colorScheme: 'dark',
     accentColor: '#e11d48',
     logoText: 'BRAND',
-    navLinks: [{ label: 'Features', href: '#features' }, { label: 'Pricing', href: '#pricing' }, { label: 'About', href: '#about' }, { label: 'Contact', href: '#contact' }],
+    navLinks: [{ label: 'Features', href: '#features', type: 'section' }, { label: 'Pricing', href: '#pricing', type: 'section' }, { label: 'About', href: '#about', type: 'section' }, { label: 'Contact', href: '#contact', type: 'section' }],
+    'data-block-type': 'header',
     ctaText: 'Get Started',
     ctaHref: '#',
     animationType: 'none',

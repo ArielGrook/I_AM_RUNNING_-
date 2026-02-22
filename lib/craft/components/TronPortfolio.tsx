@@ -102,8 +102,10 @@ export const TronPortfolio = ({
 
   return (
     <section
+      id="portfolio"
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
+      data-block-type="portfolio"
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
       style={backgroundStyle}
     >
@@ -325,6 +327,7 @@ TronPortfolio.craft = {
     items: DEFAULT_ITEMS,
     animationType: 'none',
     animateDelay: '0',
+    'data-block-type': 'portfolio',
   },
   related: { settings: TronPortfolioSettings },
   custom: {

@@ -83,8 +83,10 @@ export const TronContact = ({
 
   return (
     <section
+      id="contact"
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
+      data-block-type="contact"
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
       style={backgroundStyle}
     >
@@ -219,6 +221,7 @@ TronContact.craft = {
     placeholderName: 'Name',
     placeholderEmail: 'Email',
     placeholderMessage: 'Message',
+    'data-block-type': 'contact',
     submitButtonText: 'Submit',
   },
   related: { settings: TronContactSettings },

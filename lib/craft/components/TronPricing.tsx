@@ -265,8 +265,10 @@ export const TronPricing = ({
 
   return (
     <section
+      id="pricing"
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
+      data-block-type="pricing"
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
       style={backgroundStyle}
     >
@@ -353,6 +355,7 @@ TronPricing.craft = {
     subtitle: 'Choose the plan that fits your team',
     animationType: 'none',
     animateDelay: '0',
+    'data-block-type': 'pricing',
   },
   related: { settings: TronPricingSettings },
   custom: {

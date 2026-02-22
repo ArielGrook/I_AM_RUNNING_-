@@ -210,8 +210,10 @@ export const TronTestimonials = ({
 
   return (
     <section
+      id="testimonials"
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
+      data-block-type="testimonials"
       className={`w-full max-w-full py-12 md:py-20 `}
       style={backgroundStyle}
     >
@@ -360,6 +362,7 @@ TronTestimonials.craft = {
     doubleRow: false,
     row1Direction: 'left',
     row2Direction: 'right',
+    'data-block-type': 'testimonials',
     autoplay: true,
     speed: 0.5,
   },

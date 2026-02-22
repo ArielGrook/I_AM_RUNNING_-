@@ -155,8 +155,10 @@ export const TronFeatures = ({
 
   return (
     <section
+      id="features"
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
+      data-block-type="features"
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
       style={backgroundStyle}
     >
@@ -277,6 +279,7 @@ TronFeatures.craft = {
     subtitle: 'Powerful tools built for modern businesses',
     animationType: 'none',
     animateDelay: '0',
+    'data-block-type': 'features',
   },
   related: { settings: TronFeaturesSettings },
   custom: {

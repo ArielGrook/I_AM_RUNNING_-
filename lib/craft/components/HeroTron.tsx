@@ -348,6 +348,7 @@ export const HeroTron = ({
 
   return (
     <section
+      id="hero"
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="hero"
@@ -427,7 +428,7 @@ const HeroTronSettings = () => {
 
 HeroTron.craft = {
   displayName: 'Hero Tron',
-  props: { colorScheme: 'dark', accentColor: '#e11d48', spotlightIntensity: 0.12, showGrid: true, badgeText: '✦ New' },
+  props: { colorScheme: 'dark', accentColor: '#e11d48', spotlightIntensity: 0.12, showGrid: true, badgeText: '✦ New', 'data-block-type': 'hero' },
   related: { settings: HeroTronSettings },
   custom: { styleTags: ['dark', 'minimal', 'bold'], businessTags: ['startup', 'saas', 'tech', 'agency'], featureTags: ['hero', 'above-fold', 'fullscreen', 'interactive'], supportsTheme: true, supportsColorPreset: true },
   rules: { canDrag: () => true, canMoveIn: () => false },

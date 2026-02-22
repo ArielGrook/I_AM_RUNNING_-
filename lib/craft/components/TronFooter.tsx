@@ -156,8 +156,10 @@ export const TronFooter = ({
 
   return (
     <footer
+      id="footer"
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
+      data-block-type="footer"
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-16 `}
       style={backgroundStyle}
     >
@@ -220,6 +222,7 @@ TronFooter.craft = {
     accentColor: '#e11d48',
     showGrid: true,
     copyright: '© 2025 Company. All rights reserved.',
+    'data-block-type': 'footer',
   },
   related: { settings: TronFooterSettings },
   custom: {

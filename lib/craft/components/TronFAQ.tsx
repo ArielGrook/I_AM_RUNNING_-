@@ -139,8 +139,10 @@ export const TronFAQ = ({
 
   return (
     <section
+      id="faq"
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
+      data-block-type="faq"
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
       style={backgroundStyle}
     >
@@ -213,6 +215,7 @@ TronFAQ.craft = {
     showGrid: true,
     title: 'Frequently asked questions',
     subtitle: 'Everything you need to know',
+    'data-block-type': 'faq',
   },
   related: { settings: TronFAQSettings },
   custom: {
