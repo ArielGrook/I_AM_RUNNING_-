@@ -16,6 +16,7 @@ export { TronPricing, PricingCard } from './TronPricing';
 export { TronFAQ, FAQItem } from './TronFAQ';
 export { TronFooter, FooterColumn } from './TronFooter';
 export { TronContact } from './TronContact';
+export { TronShowcase } from './TronShowcase';
 export { Footer } from './Footer';
 export { Testimonials } from './Testimonials';
 export { Pricing } from './Pricing';

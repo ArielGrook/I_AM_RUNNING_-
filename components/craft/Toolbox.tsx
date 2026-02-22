@@ -22,6 +22,7 @@ import {
   TronFAQ,
   TronFooter,
   TronContact,
+  TronShowcase,
   Footer,
   Testimonials,
   Pricing,
@@ -83,6 +84,7 @@ const categories: { key: 'basic' | 'sections' | 'tronSections'; title: string; i
       { name: 'TronFAQ', label: 'Tron FAQ', icon: '❓', component: TronFAQ, canvas: true },
       { name: 'TronFooter', label: 'Tron Footer', icon: '▬', component: TronFooter, canvas: true },
       { name: 'TronContact', label: 'Tron Contact', icon: '✉', component: TronContact, canvas: true },
+      { name: 'TronShowcase', label: 'Tron Showcase', icon: '▤', component: TronShowcase, canvas: true },
     ],
   },
 ];
