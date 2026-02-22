@@ -24,7 +24,7 @@ export const COLOR_PRESETS: ColorPreset[] = [
     id: 'ocean',
     label: 'Ocean',
     accent: '#06b6d4',
-    bg: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)',
+    bg: 'linear-gradient(135deg, #06b6d4 0%, #6366f1 100%)',
     isGradient: true,
   },
   {
@@ -39,6 +39,20 @@ export const COLOR_PRESETS: ColorPreset[] = [
     label: 'Fire',
     accent: '#ef4444',
     bg: 'linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)',
+    isGradient: true,
+  },
+  {
+    id: 'rose',
+    label: 'Rose',
+    accent: '#e11d48',
+    bg: 'linear-gradient(135deg, #e11d48 0%, #fb7185 100%)',
+    isGradient: true,
+  },
+  {
+    id: 'shadow',
+    label: 'Shadow',
+    accent: '#18181b',
+    bg: 'linear-gradient(135deg, #000000 0%, #52525b 100%)',
     isGradient: true,
   },
 ];
