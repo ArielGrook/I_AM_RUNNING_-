@@ -203,20 +203,18 @@ export const Viewport = ({
               setMobileData(desktopData);
             }}
             style={{
-              background: '#1a1a1a',
-              color: '#a1a1aa',
-              border: '1px solid #2a2a2a',
+              background: 'rgba(255, 107, 53, 0.15)',
+              color: '#FF6B35',
+              border: '1px solid rgba(255, 107, 53, 0.3)',
               borderRadius: 6,
               padding: '4px 12px',
               fontSize: 12,
+              fontWeight: 500,
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
             }}
             title="Скопировать Desktop на Mobile"
           >
-            🖥 → 📱
+            Copy to Mobile
           </button>
         )}
 
@@ -251,22 +249,45 @@ export const Viewport = ({
         </div>
 
         {/* Right: zoom */}
-        <div
-          className="flex items-center gap-1 rounded-lg"
-          style={{ background: '#111111', border: '1px solid #2a2a2a' }}
-        >
+        <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => setZoom((z) => Math.max(50, z - 10))}
-            className="px-2 py-1.5 text-sm text-[#71717a] hover:text-white transition-colors border-none bg-transparent cursor-pointer"
+            style={{
+              background: 'rgba(255, 107, 53, 0.15)',
+              color: '#FF6B35',
+              border: '1px solid rgba(255, 107, 53, 0.3)',
+              borderRadius: 6,
+              width: 28,
+              height: 28,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: 16,
+              fontWeight: 600,
+            }}
           >
             −
           </button>
-          <span className="text-xs text-[#a1a1aa] min-w-[36px] text-center">{zoom}%</span>
+          <span style={{ color: '#FF6B35', fontSize: 12, minWidth: 40, textAlign: 'center' }}>{zoom}%</span>
           <button
             type="button"
             onClick={() => setZoom((z) => Math.min(150, z + 10))}
-            className="px-2 py-1.5 text-sm text-[#71717a] hover:text-white transition-colors border-none bg-transparent cursor-pointer"
+            style={{
+              background: 'rgba(255, 107, 53, 0.15)',
+              color: '#FF6B35',
+              border: '1px solid rgba(255, 107, 53, 0.3)',
+              borderRadius: 6,
+              width: 28,
+              height: 28,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: 16,
+              fontWeight: 600,
+            }}
           >
             +
           </button>

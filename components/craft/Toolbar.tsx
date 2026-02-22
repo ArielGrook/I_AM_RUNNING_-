@@ -220,8 +220,17 @@ export const Toolbar = ({
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
             if (e.key === 'Escape') setEditingProject(false);
           }}
-          style={{ width: `${Math.max(editingProjectName.length * 8, 80)}px` }}
-          className="bg-transparent border-b border-orange-500 outline-none text-white text-sm px-1 ml-1"
+          style={{
+            width: `${Math.max(editingProjectName.length * 8, 80)}px`,
+            color: '#0a0a0a',
+            background: '#ffffff',
+            border: '1px solid #e5e5e5',
+            borderRadius: 4,
+            padding: '2px 8px',
+            fontSize: 13,
+            outline: 'none',
+          }}
+          className="ml-1"
         />
       ) : (
         <span
@@ -318,14 +327,12 @@ export const Toolbar = ({
           <button
             key={page.id}
             onClick={() => editingPageId !== page.id && handlePageClick(page.id)}
-            className={`px-3 py-2 h-9 rounded-md text-[13px] font-medium transition-all flex items-center ${
+            className="px-3 py-2 h-9 rounded-md text-[13px] font-medium transition-all flex items-center"
+            style={
               page.id === activePageId
-                ? 'bg-[#FF6B35]/15 text-[#FF6B35] border border-[#FF6B35]/30'
-                : t(
-                    'text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-transparent',
-                    'text-gray-500 hover:text-gray-300 hover:bg-gray-700/40 border border-transparent'
-                  )
-            }`}
+                ? { background: '#ffffff', color: '#0a0a0a', border: '1px solid #e5e5e5' }
+                : { background: 'transparent', color: '#0a0a0a', border: '1px solid #e5e5e5' }
+            }
           >
             {editingPageId === page.id ? (
               <input
