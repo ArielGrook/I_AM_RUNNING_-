@@ -37,6 +37,7 @@ const DEFAULT_TABS: ShowcaseTab[] = [
 const tokens = {
   dark: {
     bg: '#0a0a0a',
+    bgSecondary: '#0a0a0a',
     text: '#ffffff',
     textSecondary: '#a1a1aa',
     border: 'rgba(255,255,255,0.08)',
@@ -151,7 +152,7 @@ export const TronShowcase = ({
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
   const backgroundStyle = {
-    background: t.bg,
+    background: colorScheme === 'dark' ? '#0a0a0a' : t.bg,
     backgroundImage: gridLines,
     backgroundSize: showGrid ? '50px 50px' : 'auto',
   };
@@ -164,7 +165,7 @@ export const TronShowcase = ({
       data-block-category="content"
       className={`w-full ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
-        minHeight: '75vh',
+        minHeight: '60vh',
         width: '100%',
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
@@ -174,11 +175,11 @@ export const TronShowcase = ({
       {/* Left — tabs */}
       <div
         style={{
-          width: isMobile ? '100%' : '35%',
+          width: isMobile ? '100%' : '350px',
           flexShrink: 0,
           display: 'flex',
           flexDirection: isMobile ? 'row' : 'column',
-          minHeight: isMobile ? 'auto' : '75vh',
+          minHeight: isMobile ? 'auto' : '60vh',
           borderRight: isMobile ? 'none' : `1px solid ${t.border}`,
           borderBottom: isMobile ? `1px solid ${t.border}` : 'none',
           overflowX: isMobile ? 'auto' : 'visible',
@@ -280,11 +281,11 @@ export const TronShowcase = ({
       <div
         style={{
           position: 'relative',
-          width: isMobile ? '100%' : '65%',
+          ...(isMobile ? { width: '100%' } : { flex: 1 }),
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          minHeight: isMobile ? '50vh' : '75vh',
+          minHeight: isMobile ? '50vh' : '60vh',
           padding: isMobile ? '32px 24px' : 'clamp(40px, 6vw, 80px)',
         }}
       >
@@ -299,19 +300,6 @@ export const TronShowcase = ({
             background: accentColor,
           }}
         />
-        {/* Counter — bottom right */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 24,
-            right: 32,
-            fontSize: 11,
-            color: t.textSecondary,
-            letterSpacing: '0.1em',
-          }}
-        >
-          {String(effectiveActiveIndex + 1).padStart(2, '0')} / {String(safeTabs.length).padStart(2, '0')}
-        </div>
         <span
           style={{
             fontSize: 11,
