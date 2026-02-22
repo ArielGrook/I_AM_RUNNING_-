@@ -13,6 +13,7 @@ export const Toolbar = ({
   onSave,
   onPreview,
   onAddPage,
+  onDeletePage,
   pages,
   setPages,
   activePageId,
@@ -34,6 +35,7 @@ export const Toolbar = ({
   onSave: (serializedJson: string) => void;
   onPreview: () => void;
   onAddPage: () => void;
+  onDeletePage?: (pageId: string) => void;
   pages: PageItem[];
   setPages: React.Dispatch<React.SetStateAction<PageItem[]>>;
   activePageId: string;
@@ -297,67 +299,93 @@ export const Toolbar = ({
 
       {/* Pages */}
       <div className="flex items-center gap-1">
-        {pages.map((page) => (
-          <button
+        {pages.map((page, index) => (
+          <div
             key={page.id}
-            onClick={() => editingPageId !== page.id && handlePageClick(page.id)}
-            className="rounded-md flex items-center transition-all"
-            style={
-              page.id === activePageId
-                ? {
-                    background: 'rgba(255, 107, 53, 0.2)',
-                    color: '#FF6B35',
-                    border: '1px solid rgba(255, 107, 53, 0.4)',
-                    borderRadius: 6,
-                    padding: '4px 12px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }
-                : {
-                    background: 'transparent',
-                    color: '#FF6B35',
-                    border: '1px solid rgba(255, 107, 53, 0.2)',
-                    borderRadius: 6,
-                    padding: '4px 12px',
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }
-            }
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 4 }}
           >
-            {editingPageId === page.id ? (
-              <input
-                autoFocus
-                value={editingPageName}
-                onChange={(e) => setEditingPageName(e.target.value)}
-                onBlur={() => {
-                  if (editingPageName.trim()) {
-                    setPages((prev) =>
-                      prev.map((p) => (p.id === page.id ? { ...p, name: editingPageName.trim() } : p))
-                    );
-                  }
-                  setEditingPageId(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                  if (e.key === 'Escape') setEditingPageId(null);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                style={{ width: `${Math.max(editingPageName.length * 8, 60)}px` }}
-                className="bg-transparent border-b border-orange-500 outline-none text-white text-sm px-1"
-              />
-            ) : (
-              <span
-                onDoubleClick={(e) => {
+            <button
+              onClick={() => editingPageId !== page.id && handlePageClick(page.id)}
+              className="rounded-md flex items-center transition-all"
+              style={
+                page.id === activePageId
+                  ? {
+                      background: 'rgba(255, 107, 53, 0.2)',
+                      color: '#FF6B35',
+                      border: '1px solid rgba(255, 107, 53, 0.4)',
+                      borderRadius: 6,
+                      padding: '4px 12px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }
+                  : {
+                      background: 'transparent',
+                      color: '#FF6B35',
+                      border: '1px solid rgba(255, 107, 53, 0.2)',
+                      borderRadius: 6,
+                      padding: '4px 12px',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }
+              }
+            >
+              {editingPageId === page.id ? (
+                <input
+                  autoFocus
+                  value={editingPageName}
+                  onChange={(e) => setEditingPageName(e.target.value)}
+                  onBlur={() => {
+                    if (editingPageName.trim()) {
+                      setPages((prev) =>
+                        prev.map((p) => (p.id === page.id ? { ...p, name: editingPageName.trim() } : p))
+                      );
+                    }
+                    setEditingPageId(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    if (e.key === 'Escape') setEditingPageId(null);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ width: `${Math.max(editingPageName.length * 8, 60)}px` }}
+                  className="bg-transparent border-b border-orange-500 outline-none text-white text-sm px-1"
+                />
+              ) : (
+                <span
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    setEditingPageId(page.id);
+                    setEditingPageName(page.name);
+                  }}
+                >
+                  {page.name}
+                </span>
+              )}
+            </button>
+            {pages.length > 1 && index > 0 && onDeletePage && (
+              <button
+                type="button"
+                onClick={(e) => {
                   e.stopPropagation();
-                  setEditingPageId(page.id);
-                  setEditingPageName(page.name);
+                  onDeletePage(page.id);
                 }}
+                style={{
+                  background: 'transparent',
+                  color: '#FF6B35',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  padding: '0 2px',
+                  lineHeight: 1,
+                  opacity: 0.6,
+                }}
+                title="Удалить страницу"
               >
-                {page.name}
-              </span>
+                ×
+              </button>
             )}
-          </button>
+          </div>
         ))}
         <button
           onClick={onAddPage}

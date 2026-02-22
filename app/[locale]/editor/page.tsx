@@ -741,6 +741,53 @@ export default function EditorPage() {
     setMobileData(null);
   };
 
+  const handleDeletePage = useCallback(
+    async (pageId: string) => {
+      if (pages.length <= 1 || !loadedProject) return;
+      const newPages = pages.filter((p) => p.id !== pageId);
+      setPages(newPages);
+      const newActiveId = activePageId === pageId ? newPages[0].id : activePageId;
+      if (activePageId === pageId) {
+        setActivePageId(newPages[0].id);
+        const first = newPages[0];
+        const dataToLoad = first.desktopData ?? first.data ?? null;
+        if (dataToLoad) {
+          try {
+            const json = lz.decompress(dataToLoad, { inputEncoding: 'Base64' }) as string;
+            setFrameData(json);
+          } catch {
+            setFrameData(null);
+          }
+        } else {
+          setFrameData(null);
+        }
+        setDesktopData(first.desktopData ?? first.data ?? null);
+        setMobileData(first.mobileData ?? null);
+        setViewport('desktop');
+      }
+      const project = {
+        id: loadedProject.id,
+        name: loadedProject.name,
+        description: loadedProject.description,
+        pages: [],
+        metadata: {
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          version: '1.0.0',
+        },
+      } as Parameters<typeof saveProjectToSupabase>[0];
+      const { error } = await saveProjectToSupabase(
+        project,
+        null,
+        { craft: { schemaVersion: 2, pages: newPages, activePageId: newActiveId } },
+        null,
+        loadedProject.version
+      );
+      if (error) console.error('Delete page save failed:', error);
+    },
+    [pages, activePageId, loadedProject]
+  );
+
   // Wait for project load before mounting Editor so Frame gets correct data on first paint
   if (authLoading || !isAuthenticated || !projectId) {
     return (
@@ -813,6 +860,7 @@ export default function EditorPage() {
           onSave={handleSaveFromEditor}
           onPreview={handlePreview}
           onAddPage={handleAddPage}
+          onDeletePage={handleDeletePage}
           pages={pages}
           setPages={setPages}
           activePageId={activePageId}
