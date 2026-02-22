@@ -56,6 +56,7 @@ export const Toolbar = ({
   const canUndo = query.history.canUndo();
   const canRedo = query.history.canRedo();
   const { theme, toggle, t } = useEditorTheme();
+  const [canvasScheme, setCanvasScheme] = useState<'dark' | 'light'>('dark');
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingPageName, setEditingPageName] = useState('');
   const [editingProject, setEditingProject] = useState(false);
@@ -271,6 +272,31 @@ export const Toolbar = ({
       {/* Preview */}
       <button onClick={onTogglePreview} className={btnCls} title="Preview mode (hide panels)">
         👁 Preview
+      </button>
+
+      {/* Canvas color scheme (dark/light) */}
+      <button
+        type="button"
+        onClick={() => {
+          const newScheme = canvasScheme === 'dark' ? 'light' : 'dark';
+          setCanvasScheme(newScheme);
+          applySchemeToTronNodes(newScheme);
+        }}
+        style={{
+          background: canvasScheme === 'dark' ? '#0a0a0a' : '#ffffff',
+          color: canvasScheme === 'dark' ? '#ffffff' : '#0a0a0a',
+          border: '1px solid #3a3a3a',
+          borderRadius: 6,
+          padding: '4px 12px',
+          fontSize: 12,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+        title={canvasScheme === 'dark' ? 'Switch canvas to light' : 'Switch canvas to dark'}
+      >
+        {canvasScheme === 'dark' ? '☀' : '☾'}
       </button>
 
       {/* Export */}
