@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const CARD_WIDTH = 320;
 const GAP = 24;
-const NUM_CARDS = 3;
+const MAX_ITEMS = 8;
 
 type RowDirection = 'left' | 'right';
 
@@ -87,10 +87,12 @@ TestimonialCard.craft = {
   rules: { canDrag: () => true, canMoveIn: () => false },
 };
 
-const DEFAULT_CARD_PROPS: Omit<TestimonialCardProps, 'accentColor' | 'colorScheme'>[] = [
-  { quote: 'This product changed how we work. Highly recommend.', author: 'Jane Doe', role: 'CEO', company: 'Acme Inc', avatarUrl: '', animationType: 'none', animateDelay: '0' },
-  { quote: 'Fast, reliable, and the support team is amazing.', author: 'John Smith', role: 'CTO', company: 'Startup', avatarUrl: '', animationType: 'none', animateDelay: '0' },
-  { quote: 'Best investment we made this year. No regrets.', author: 'Alex Lee', role: 'Founder', company: '', avatarUrl: '', animationType: 'none', animateDelay: '0' },
+export type TestimonialItem = { quote: string; author: string; role: string };
+
+const DEFAULT_ITEMS: TestimonialItem[] = [
+  { quote: 'This product changed how we work. Highly recommend.', author: 'Jane Doe', role: 'CEO' },
+  { quote: 'Fast, reliable, and the support team is amazing.', author: 'John Smith', role: 'CTO' },
+  { quote: 'Best investment we made this year. No regrets.', author: 'Alex Lee', role: 'Founder' },
 ];
 
 // --- TronTestimonials section ---
@@ -100,6 +102,7 @@ export const TronTestimonials = ({
   showGrid = true,
   title = 'What people say',
   subtitle = 'Trusted by teams worldwide',
+  items = DEFAULT_ITEMS,
   doubleRow = false,
   row1Direction = 'left',
   row2Direction = 'right',
@@ -111,6 +114,7 @@ export const TronTestimonials = ({
   showGrid?: boolean;
   title?: string;
   subtitle?: string;
+  items?: TestimonialItem[];
   doubleRow?: boolean;
   row1Direction?: RowDirection;
   row2Direction?: RowDirection;
@@ -118,16 +122,13 @@ export const TronTestimonials = ({
   speed?: number;
 }) => {
   const { id: sectionId, connectors: { connect, drag } } = useNode();
-  const isSelected = useNode((node) => node.events.selected);
-  const editor = useEditor();
-  const query = editor?.query;
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
   const [offsets, setOffsets] = useState({ offset1: 0, offset2: 0 });
   const pausedRef = useRef(false);
-  const maxOffset = NUM_CARDS * (CARD_WIDTH + GAP);
-  const getNodeSafe = typeof query?.getNode === 'function' ? query.getNode.bind(query) : () => null;
-  const cardIds = Array.from({ length: NUM_CARDS }, (_, i) => `${sectionId}-card-${i}`);
+  const numCards = Math.max(1, items.length);
+  const maxOffset = numCards * (CARD_WIDTH + GAP);
+  const cardIds = Array.from({ length: numCards }, (_, i) => `${sectionId}-card-${i}`);
 
   useEffect(() => {
     if (enabled || !autoplay) return;
@@ -159,10 +160,17 @@ export const TronTestimonials = ({
     backgroundSize: showGrid ? '50px 50px' : 'auto',
   };
 
-  const getCardProps = (cardIndex: number) => {
-    const node = getNodeSafe(cardIds[cardIndex]);
-    const base = node?.data?.props ? { ...node.data.props, accentColor, colorScheme } : { ...DEFAULT_CARD_PROPS[cardIndex], accentColor, colorScheme };
-    return base as TestimonialCardProps;
+  const getCardProps = (cardIndex: number): TestimonialCardProps => {
+    const item = items[cardIndex] ?? { quote: '', author: '', role: '' };
+    return {
+      ...item,
+      company: '',
+      avatarUrl: '',
+      accentColor,
+      colorScheme,
+      animationType: 'none',
+      animateDelay: '0',
+    };
   };
 
   const renderRow = (offset: number) => (
@@ -174,10 +182,10 @@ export const TronTestimonials = ({
         width: 'max-content',
       }}
     >
-      {[...Array(NUM_CARDS * 2)].map((_, i) => {
-        const cardIndex = i % NUM_CARDS;
+      {[...Array(numCards * 2)].map((_, i) => {
+        const cardIndex = i % numCards;
         const props = getCardProps(cardIndex);
-        if (i < NUM_CARDS) {
+        if (i < numCards) {
           return (
             <Element
               key={cardIds[cardIndex]}
@@ -226,12 +234,14 @@ export const TronTestimonials = ({
 };
 
 const TronTestimonialsSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, showGrid, title, subtitle, doubleRow, row1Direction, row2Direction, autoplay, speed } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, showGrid, title, subtitle, items, doubleRow, row1Direction, row2Direction, autoplay, speed } = useNode((node) => ({
+    ...node,
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
     showGrid: node.data.props.showGrid as boolean,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
+    items: (node.data.props.items as TestimonialItem[]) ?? DEFAULT_ITEMS,
     doubleRow: node.data.props.doubleRow as boolean,
     row1Direction: node.data.props.row1Direction as RowDirection,
     row2Direction: node.data.props.row2Direction as RowDirection,
@@ -241,9 +251,71 @@ const TronTestimonialsSettings = () => {
   const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
+  const propsItems = items ?? DEFAULT_ITEMS;
 
   return (
     <div className="p-3 space-y-5 text-white">
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Testimonials</h3>
+        <div className="space-y-3">
+          {propsItems.map((item, i) => (
+            <div key={i} style={{ marginBottom: 12, padding: 12, border: '1px solid #2a2a2a', borderRadius: 4 }}>
+              <input
+                placeholder="Цитата"
+                value={item.quote}
+                onChange={(e) => setProp((p: Record<string, unknown>) => {
+                  const arr = (p.items as TestimonialItem[]) ?? [];
+                  (p as { items: TestimonialItem[] }).items = arr.map((it, idx) => idx === i ? { ...it, quote: e.target.value } : it);
+                }, 500)}
+                className={inputCls}
+                style={{ marginBottom: 6 }}
+              />
+              <input
+                placeholder="Имя автора"
+                value={item.author}
+                onChange={(e) => setProp((p: Record<string, unknown>) => {
+                  const arr = (p.items as TestimonialItem[]) ?? [];
+                  (p as { items: TestimonialItem[] }).items = arr.map((it, idx) => idx === i ? { ...it, author: e.target.value } : it);
+                }, 500)}
+                className={inputCls}
+                style={{ marginBottom: 6 }}
+              />
+              <input
+                placeholder="Должность"
+                value={item.role}
+                onChange={(e) => setProp((p: Record<string, unknown>) => {
+                  const arr = (p.items as TestimonialItem[]) ?? [];
+                  (p as { items: TestimonialItem[] }).items = arr.map((it, idx) => idx === i ? { ...it, role: e.target.value } : it);
+                }, 500)}
+                className={inputCls}
+                style={{ marginBottom: 8 }}
+              />
+              <button
+                type="button"
+                onClick={() => setProp((p: Record<string, unknown>) => {
+                  const arr = (p.items as TestimonialItem[]) ?? [];
+                  (p as { items: TestimonialItem[] }).items = arr.filter((_, idx) => idx !== i);
+                })}
+                className="text-xs px-2 py-1 rounded bg-red-900/50 text-red-200 hover:bg-red-800/50 border border-red-700/50"
+              >
+                × Удалить
+              </button>
+            </div>
+          ))}
+          {propsItems.length < MAX_ITEMS && (
+            <button
+              type="button"
+              onClick={() => setProp((p: Record<string, unknown>) => {
+                const arr = (p.items as TestimonialItem[]) ?? [];
+                (p as { items: TestimonialItem[] }).items = [...arr, { quote: 'New testimonial text.', author: 'Author Name', role: 'Position' }];
+              })}
+              className="text-xs px-3 py-2 rounded bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600"
+            >
+              + Add Testimonial
+            </button>
+          )}
+        </div>
+      </section>
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
         <div className="space-y-3">
@@ -284,6 +356,7 @@ TronTestimonials.craft = {
     showGrid: true,
     title: 'What people say',
     subtitle: 'Trusted by teams worldwide',
+    items: DEFAULT_ITEMS,
     doubleRow: false,
     row1Direction: 'left',
     row2Direction: 'right',
