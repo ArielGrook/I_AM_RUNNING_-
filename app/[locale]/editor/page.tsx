@@ -287,6 +287,34 @@ function PreviewController({ previewMode }: { previewMode: boolean }) {
   return null;
 }
 
+/** Syncs desktop canvas to mobile in real-time when mobileData is empty. */
+function DesktopToMobileSync({
+  viewport,
+  mobileData,
+  setMobileData,
+}: {
+  viewport: 'desktop' | 'tablet' | 'mobile';
+  mobileData: string | null;
+  setMobileData: (v: string | null) => void;
+}) {
+  const { query, nodes } = useEditor((state) => ({ nodes: state.nodes }));
+
+  useEffect(() => {
+    if (viewport === 'desktop' && !mobileData) {
+      try {
+        const json = query.serialize();
+        const compressed = lz.compress(json, { outputEncoding: 'Base64' });
+        setMobileData(compressed);
+      } catch {
+        // noop
+      }
+    }
+  }, [nodes, viewport, mobileData, setMobileData, query]);
+
+  return null;
+}
+
+
 /** Applies colorScheme to all Tron nodes when previewScheme changes (in preview mode). */
 function PreviewSchemeController({
   previewMode,
@@ -819,6 +847,11 @@ export default function EditorPage() {
         }}
       >
         <PreviewController previewMode={previewMode} />
+        <DesktopToMobileSync
+          viewport={viewport}
+          mobileData={mobileData}
+          setMobileData={setMobileData}
+        />
         <PreviewSchemeController
           previewMode={previewMode}
           previewScheme={previewScheme}
