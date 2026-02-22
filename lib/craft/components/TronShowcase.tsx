@@ -405,8 +405,4 @@ TronShowcase.craft = {
     supportsColorPreset: true,
   },
   rules: { canDrag: () => true, canMoveIn: () => false },
-};
-</think>
-Упрощаю разметку: одна левая колонка с адаптивными классами, без дублирования блоков.
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-Read
+};
