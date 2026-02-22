@@ -155,9 +155,9 @@ ShowcaseTab.craft = {
 // --- Default tabs ---
 type TabData = { tabTitle: string; contentTitle: string; contentText: string; mediaType: MediaType; mediaUrl?: string };
 const DEFAULT_TABS: TabData[] = [
-  { tabTitle: 'Преимущества', contentTitle: 'Почему выбирают нас', contentText: 'Мы создаём решения которые работают на результат...', mediaType: 'none' },
-  { tabTitle: 'Цены', contentTitle: 'Прозрачные тарифы', contentText: 'Никаких скрытых платежей. Платишь только за результат...', mediaType: 'none' },
-  { tabTitle: 'Опыт', contentTitle: '5 лет на рынке', contentText: 'За это время реализованы десятки проектов...', mediaType: 'none' },
+  { tabTitle: 'Преимущества', contentTitle: 'Почему выбирают нас', contentText: 'Мы создаём решения которые работают на результат. Качество, скорость, результат — три кита нашей работы.', mediaType: 'none', mediaUrl: '' },
+  { tabTitle: 'Цены', contentTitle: 'Прозрачные тарифы', contentText: 'Никаких скрытых платежей. Платишь только за результат. Гибкие пакеты под любой бюджет.', mediaType: 'none', mediaUrl: '' },
+  { tabTitle: 'Опыт', contentTitle: '5 лет на рынке', contentText: 'За это время реализованы десятки проектов в разных нишах. Каждый проект — это новый опыт и рост.', mediaType: 'none', mediaUrl: '' },
 ];
 
 // --- TronShowcase (section) ---
@@ -181,7 +181,8 @@ export const TronShowcase = ({
   const { query, actions } = useEditor();
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
-  const tabCount = Math.max(2, Math.min(8, tabs?.length ?? 3));
+  const effectiveTabs = (tabs && tabs.length > 0) ? tabs : DEFAULT_TABS;
+  const tabCount = Math.max(2, Math.min(8, effectiveTabs.length));
   const tabIds = Array.from({ length: tabCount }, (_, i) => `${sectionId}-tab-${i}`);
 
   const [activeTab, setActiveTab] = useState<string>(tabIds[0]);
@@ -263,7 +264,7 @@ export const TronShowcase = ({
 
   const tabsPanel = (
     <div
-      className="flex flex-col w-full md:w-[35%] flex-shrink-0 order-1 md:order-none"
+      className="flex flex-col w-full md:w-[35%] md:min-h-[100vh] min-h-0 flex-shrink-0 order-1 md:order-none"
       style={{
         background: t.bgSecondary,
         borderLeft: tabsPosition === 'right' ? `1px solid ${t.border}` : 'none',
@@ -280,7 +281,7 @@ export const TronShowcase = ({
         {tabIds.map((tabId) => {
           const node = getNodeSafe(tabId);
           const exists = node != null && node.data?.props;
-          const data = tabs?.[tabIds.indexOf(tabId)] ?? DEFAULT_TABS[tabIds.indexOf(tabId)] ?? DEFAULT_TABS[0];
+          const data = effectiveTabs[tabIds.indexOf(tabId)] ?? DEFAULT_TABS[0];
           const itemProps = exists
             ? { ...node.data.props, accentColor, colorScheme, isActive: activeTab === tabId, onSelect: () => handleSelectTab(tabId), tabsPosition }
             : {
@@ -305,7 +306,7 @@ export const TronShowcase = ({
 
   const contentPanel = (
     <div
-      className="flex-1 min-w-0 flex flex-col overflow-hidden px-6 py-7 md:px-14 md:py-12 order-2 md:order-none"
+      className="flex-1 min-w-0 flex flex-col min-h-[60vh] md:min-h-[100vh] h-full overflow-auto px-6 py-7 md:px-14 md:py-12 order-2 md:order-none"
       style={{
         background: t.bg,
         boxShadow: enabled ? `inset 0 0 0 1px rgba(${rgb}, 0.2)` : undefined,
@@ -350,7 +351,7 @@ export const TronShowcase = ({
       key={`${colorScheme}-${showGrid}-${tabsPosition}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="showcase"
-      className={`w-full max-w-full min-h-[600px] flex flex-col md:flex-row ${isSelected ? 'craft-node-selected' : ''}`}
+      className={`w-full max-w-full min-h-[100vh] flex flex-col md:flex-row ${isSelected ? 'craft-node-selected' : ''}`}
       style={backgroundStyle}
     >
       {tabsPosition === 'left' ? (
