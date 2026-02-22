@@ -49,6 +49,7 @@ import {
   Video,
   HtmlBlock,
 } from '@/lib/craft/components';
+import { PagesProvider } from '@/lib/craft/context/PagesContext';
 import { Toolbox } from '@/components/craft/Toolbox';
 import { SettingsPanel } from '@/components/craft/SettingsPanel';
 import { Viewport } from '@/components/craft/Viewport';
@@ -265,6 +266,7 @@ function EditorLayout({
 type PageState = {
   id: string;
   name: string;
+  slug?: string;
   data: string | null;
   desktopData?: string | null;
   mobileData?: string | null;
@@ -381,13 +383,18 @@ export default function EditorPage() {
       };
       const craftPages = pd?.craft?.pages;
       if (craftPages && Array.isArray(craftPages) && craftPages.length > 0) {
-        const mappedPages = craftPages.map((p: { id?: string; name?: string; data?: string | null; desktopData?: string | null; mobileData?: string | null }) => ({
-          id: p.id || String(Math.random()),
-          name: p.name || 'Page',
-          data: p.data ?? null,
-          desktopData: p.desktopData ?? p.data ?? null,
-          mobileData: p.mobileData ?? null,
-        }));
+        const mappedPages = craftPages.map((p: { id?: string; name?: string; slug?: string; data?: string | null; desktopData?: string | null; mobileData?: string | null }) => {
+          const name = p.name || 'Page';
+          const slug = p.slug ?? name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page';
+          return {
+            id: p.id || String(Math.random()),
+            name,
+            slug,
+            data: p.data ?? null,
+            desktopData: p.desktopData ?? p.data ?? null,
+            mobileData: p.mobileData ?? null,
+          };
+        });
         setPages(mappedPages);
         const activeId = pd?.craft?.activePageId || craftPages[0].id || '1';
         setActivePageId(activeId);
@@ -731,9 +738,11 @@ export default function EditorPage() {
 
   const handleAddPage = () => {
     const newId = String(Date.now());
+    const name = `Page ${pages.length + 1}`;
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page';
     setPages((prev) => [
       ...prev,
-      { id: newId, name: `Page ${prev.length + 1}`, data: null, desktopData: null, mobileData: null },
+      { id: newId, name, slug, data: null, desktopData: null, mobileData: null },
     ]);
     setActivePageId(newId);
     setFrameData(null);
@@ -850,6 +859,11 @@ export default function EditorPage() {
           thickness: 3,
         }}
       >
+        <PagesProvider
+          pages={pages}
+          activePageId={activePageId}
+          onPageChange={handlePageChange}
+        >
         <PreviewController previewMode={previewMode} />
         <DesktopToMobileSync
           viewport={viewport}
@@ -927,6 +941,7 @@ export default function EditorPage() {
           onClose={() => setPreviewOpen(false)}
           data={previewHTML}
         />
+        </PagesProvider>
       </Editor>
       </EditorRoot>
     </EditorThemeProvider>

@@ -1,12 +1,13 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import ContentEditable from 'react-contenteditable';
 import * as LucideIcons from 'lucide-react';
+import { PagesContext } from '@/lib/craft/context/PagesContext';
 
 type ButtonVariant = 'solid' | 'outline' | 'ghost';
-type LinkType = 'none' | 'external' | 'page';
+type LinkType = 'none' | 'external' | 'page' | 'section';
 
 const ICON_OPTIONS = [
   'none', 'ArrowRight', 'ArrowLeft', 'ChevronRight', 'Download',
@@ -28,8 +29,10 @@ export const Button = ({
   borderRadius = 8,
   variant = 'solid',
   iconName = 'none',
-  linkType = 'none',
+  linkType = 'external',
   href = '',
+  pageSlug = '',
+  sectionId = '',
   size = 'md',
 }: {
   text?: string;
@@ -40,6 +43,8 @@ export const Button = ({
   iconName?: string;
   linkType?: LinkType;
   href?: string;
+  pageSlug?: string;
+  sectionId?: string;
   size?: 'sm' | 'md' | 'lg';
 }) => {
   const {
@@ -48,7 +53,20 @@ export const Button = ({
   } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
+  const { navigateTo } = useContext(PagesContext);
   const [editingField, setEditingField] = useState(false);
+
+  const handleClick = () => {
+    if (enabled) return;
+    if (linkType === 'page' && pageSlug) {
+      navigateTo(pageSlug);
+    } else if (linkType === 'section' && sectionId) {
+      const sel = sectionId.startsWith('#') ? sectionId : `#${sectionId}`;
+      document.querySelector(sel)?.scrollIntoView({ behavior: 'smooth' });
+    } else if ((linkType === 'external' || linkType === 'none') && href) {
+      window.open(href, '_blank');
+    }
+  };
 
   useEffect(() => {
     if (!isSelected) setEditingField(false);
@@ -110,25 +128,12 @@ export const Button = ({
     else connect(drag(ref as unknown as HTMLElement));
   };
 
-  if (linkType === 'external' && href) {
-    return (
-      <a
-        ref={refFn as (ref: HTMLAnchorElement | null) => void}
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={baseStyle}
-      >
-        {inner}
-      </a>
-    );
-  }
-
   return (
     <button
       ref={refFn as (ref: HTMLButtonElement | null) => void}
       type="button"
       style={baseStyle}
+      onClick={handleClick}
     >
       {inner}
     </button>
@@ -138,7 +143,7 @@ export const Button = ({
 const ButtonSettings = () => {
   const {
     actions: { setProp },
-    text, bgColor, textColor, borderRadius, variant, iconName, linkType, href, size,
+    text, bgColor, textColor, borderRadius, variant, iconName, linkType, href, pageSlug, sectionId, size,
   } = useNode((node) => ({
     text:         node.data.props.text as string,
     bgColor:      node.data.props.bgColor as string,
@@ -148,8 +153,11 @@ const ButtonSettings = () => {
     iconName:     node.data.props.iconName as string,
     linkType:     node.data.props.linkType as LinkType,
     href:         node.data.props.href as string,
+    pageSlug:     node.data.props.pageSlug as string,
+    sectionId:    node.data.props.sectionId as string,
     size:         node.data.props.size as string,
   }));
+  const { pages } = useContext(PagesContext);
 
   const set = (key: string) => (val: string | number) =>
     setProp((p: Record<string, unknown>) => { p[key] = val; });
@@ -263,25 +271,51 @@ const ButtonSettings = () => {
         <div className="space-y-3">
           <div>
             <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Type</label>
-            <div className="flex gap-1">
-              {(['none', 'external', 'page'] as LinkType[]).map((lt) => (
-                <button key={lt} onClick={() => set('linkType')(lt)}
-                  className={`flex-1 py-1 text-xs rounded border capitalize transition-colors ${
-                    linkType === lt ? 'border-[#FF6B35] text-[#FF6B35] bg-[#FF6B35]/10' : 'border-gray-600 text-gray-400 hover:border-gray-400'
-                  }`}
-                >{lt}</button>
-              ))}
-            </div>
+            <select
+              value={linkType ?? 'external'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.linkType = e.target.value; })}
+              className="w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white"
+            >
+              <option value="external">External URL</option>
+              <option value="page">Page in project</option>
+              <option value="section">Section on page</option>
+              <option value="none">None</option>
+            </select>
           </div>
-          {linkType !== 'none' && (
+          {linkType === 'page' && (
             <div>
-              <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">
-                {linkType === 'external' ? 'URL' : 'Page path'}
-              </label>
+              <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Page</label>
+              <select
+                value={pageSlug ?? ''}
+                onChange={(e) => setProp((p: Record<string, unknown>) => { p.pageSlug = e.target.value; })}
+                className="w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white"
+              >
+                {pages.map((p) => (
+                  <option key={p.id} value={p.slug}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {linkType === 'section' && (
+            <div>
+              <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">Section ID</label>
               <input
-                type="text" value={href ?? ''}
-                onChange={(e) => set('href')(e.target.value)}
-                placeholder={linkType === 'external' ? 'https://...' : '/about'}
+                type="text"
+                value={sectionId ?? ''}
+                onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionId = e.target.value; }, 500)}
+                placeholder="#section-id"
+                className="w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white font-mono"
+              />
+            </div>
+          )}
+          {(linkType === 'external' || linkType === 'none') && (
+            <div>
+              <label className="block text-xs mb-1.5 text-gray-400 uppercase tracking-wide">URL</label>
+              <input
+                type="text"
+                value={href ?? ''}
+                onChange={(e) => setT('href', 500)(e.target.value)}
+                placeholder="https://..."
                 className="w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white font-mono"
               />
             </div>
@@ -302,8 +336,10 @@ Button.craft = {
     borderRadius: 8,
     variant:      'solid',
     iconName:     'none',
-    linkType:     'none',
+    linkType:     'external',
     href:         '',
+    pageSlug:     '',
+    sectionId:    '',
     size:         'md',
   },
   rules: {

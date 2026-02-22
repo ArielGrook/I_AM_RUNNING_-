@@ -1,7 +1,8 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { PagesContext } from '@/lib/craft/context/PagesContext';
 
 type NavLinkItem = { label: string; href: string };
 
@@ -34,8 +35,21 @@ export const HeaderTron = ({
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
+  const { navigateTo } = useContext(PagesContext);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null);
+
+  const handleNavClick = (e: React.MouseEvent, href: string) => {
+    e.preventDefault();
+    if (enabled) return;
+    if (href.startsWith('#')) {
+      document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+    } else if (href.startsWith('/')) {
+      navigateTo(href.replace(/^\//, ''));
+    } else {
+      window.open(href, '_blank');
+    }
+  };
 
   const tokens = {
     dark: {
@@ -100,9 +114,10 @@ export const HeaderTron = ({
               <a
                 key={i}
                 href={link.href}
+                onClick={(e) => handleNavClick(e, link.href)}
                 onMouseEnter={() => setHoveredNavIndex(i)}
                 onMouseLeave={() => setHoveredNavIndex(null)}
-                style={{ fontSize: 14, fontWeight: 500, color: hoveredNavIndex === i ? t.text : t.textSecondary, transition: 'color 150ms ease', textDecoration: 'none' }}
+                style={{ fontSize: 14, fontWeight: 500, color: hoveredNavIndex === i ? t.text : t.textSecondary, transition: 'color 150ms ease', textDecoration: 'none', cursor: 'pointer' }}
               >
                 {link.label}
               </a>
@@ -112,7 +127,8 @@ export const HeaderTron = ({
             <a
               href={ctaHref}
               className="hidden md:block"
-              style={{ background: t.accent, color: '#ffffff', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600, transition: 'opacity 150ms ease, transform 150ms ease', textDecoration: 'none' }}
+              onClick={(e) => handleNavClick(e, ctaHref)}
+              style={{ background: t.accent, color: '#ffffff', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600, transition: 'opacity 150ms ease, transform 150ms ease', textDecoration: 'none', cursor: 'pointer' }}
               onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
@@ -141,9 +157,9 @@ export const HeaderTron = ({
               <a
                 key={i}
                 href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={(e) => { handleNavClick(e, link.href); setMobileMenuOpen(false); }}
                 className="block px-6 py-3 text-sm font-medium transition-colors duration-150"
-                style={{ color: t.text, textDecoration: 'none', borderBottom: i < links.length - 1 ? `1px solid ${t.border}` : 'none' }}
+                style={{ color: t.text, textDecoration: 'none', borderBottom: i < links.length - 1 ? `1px solid ${t.border}` : 'none', cursor: 'pointer' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = t.accent; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = t.text; }}
               >
