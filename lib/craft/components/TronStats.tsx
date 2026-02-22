@@ -103,7 +103,7 @@ export const StatItem = ({
         elRef.current = ref;
         if (ref) connect(drag(ref));
       }}
-      className={`${isSelected ? 'craft-node-selected' : ''} max-lg:!border-r-0`}
+      className={`${isSelected ? 'craft-node-selected' : ''} flex flex-col items-center text-center w-full max-sm:!border-r-0`}
       style={{
         borderRight: hasDividerRight ? `1px solid ${t.border}` : undefined,
         padding: '16px 24px',
@@ -146,12 +146,10 @@ export const StatItem = ({
         suppressContentEditableWarning
         onBlur={(e) => setProp((p: Record<string, unknown>) => { p.label = e.currentTarget.textContent ?? ''; }, 1000)}
         dangerouslySetInnerHTML={{ __html: label || '' }}
+        className="text-sm sm:text-xs sm:uppercase sm:tracking-widest"
         style={{
-          fontSize: 'clamp(13px, 1.5vw, 15px)',
           color: t.textSecondary,
           marginTop: 8,
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
           outline: 'none',
           minWidth: 0,
           width: '100%',
@@ -302,10 +300,7 @@ export const TronStats = ({
       style={backgroundStyle}
     >
       <div className="max-w-6xl mx-auto">
-        <div
-          className="grid grid-cols-1 lg:grid-cols-4"
-          style={{ gap: 0 }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {Array.from({ length: itemCount }, (_, i) => {
             const statId = `${sectionId}-stat-${i}`;
             const node = getNodeSafe(statId);
