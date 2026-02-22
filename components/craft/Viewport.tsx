@@ -192,6 +192,34 @@ export const Viewport = ({
           </button>
         </div>
 
+        {/* Copy Desktop → Mobile (only when not desktop) */}
+        {viewport !== 'desktop' && (
+          <button
+            type="button"
+            onClick={() => {
+              if (!desktopData) return;
+              const json = lz.decompress(desktopData, { inputEncoding: 'Base64' }) as string;
+              actions.deserialize(json);
+              setMobileData(desktopData);
+            }}
+            style={{
+              background: '#1a1a1a',
+              color: '#a1a1aa',
+              border: '1px solid #2a2a2a',
+              borderRadius: 6,
+              padding: '4px 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+            title="Скопировать Desktop на Mobile"
+          >
+            🖥 → 📱
+          </button>
+        )}
+
         {/* Center: color presets */}
         <div
           className="flex items-center gap-1.5 px-3"
