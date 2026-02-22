@@ -44,7 +44,12 @@ export const FAQItem = ({ question, answer, accentColor, colorScheme, animationT
       {...(isOpen ? { 'data-mobile-dropdown': '' } : {})}
       {...animAttrs}
       className=""
-      style={{ borderBottom: `1px solid ${t.border}`, transition: 'background 0.15s' }}
+      style={{
+        position: 'relative',
+        width: '100%',
+        borderBottom: `1px solid ${t.border}`,
+        transition: 'background 0.15s',
+      }}
       onMouseEnter={(e) => { if (!enabled) e.currentTarget.style.background = t.cardBg; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
     >
@@ -57,7 +62,13 @@ export const FAQItem = ({ question, answer, accentColor, colorScheme, animationT
         <span style={{ fontSize: 16, fontWeight: 500, color: t.text }}>{question || 'Question'}</span>
         <span style={{ flexShrink: 0, display: 'inline-block', transition: 'transform 0.2s ease', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', color: accent }}>▼</span>
       </button>
-      <div style={{ overflow: 'hidden', maxHeight: isOpen ? 200 : 0, transition: 'max-height 0.25s ease' }}>
+      <div
+        style={{
+          overflow: 'hidden',
+          maxHeight: isOpen ? 500 : 0,
+          transition: 'max-height 300ms ease',
+        }}
+      >
         <p style={{ fontSize: 14, color: '#71717a', lineHeight: 1.6, paddingTop: 12, paddingBottom: 16, margin: 0 }}>{answer || 'Answer'}</p>
       </div>
     </div>
@@ -129,7 +140,13 @@ export const TronFAQ = ({
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
           <p style={{ fontSize: 16, color: t.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
         </div>
-        <div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%',
+          }}
+        >
           {faqIds.map((faqId, i) => {
             const node = getNodeSafe(faqId);
             const props = node?.data?.props
