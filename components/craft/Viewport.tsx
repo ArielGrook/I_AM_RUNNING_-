@@ -255,13 +255,18 @@ export const Viewport = ({
           backgroundSize: '20px 20px',
         }}
       >
-        <div className="p-6 min-h-full flex justify-center">
+        <div
+          className={`min-h-full flex justify-center ${viewport === 'desktop' ? 'p-6' : 'p-0'}`}
+          style={{ margin: 0 }}
+        >
           <div
             className="transition-all duration-300"
             data-viewport={viewport}
             style={{
               width: activeDevice.width,
               maxWidth: '100%',
+              margin: 0,
+              padding: 0,
               transform: `scale(${zoom / 100})`,
               transformOrigin: 'top center',
             }}

@@ -1325,6 +1325,13 @@ footer[data-cy="craft-canvas"]:empty::after {
   position: relative;
 }
 
+/* No padding around canvas on mobile/tablet viewport */
+.craft-canvas-wrapper [data-viewport="mobile"],
+.craft-canvas-wrapper [data-viewport="tablet"] {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 /* Все абсолютные dropdown внутри mobile канвы
    ограничены шириной родителя */
 [data-viewport="mobile"] [data-mobile-dropdown] {
