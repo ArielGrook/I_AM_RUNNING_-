@@ -1,9 +1,10 @@
 'use client';
 
 import { useEditor } from '@craftjs/core';
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useEditorTheme } from './EditorThemeContext';
+import { PagesContext } from '@/lib/craft/context/PagesContext';
 
 type PageItem = { id: string; name: string };
 
@@ -151,45 +152,89 @@ export const Toolbar = ({
   };
 
   if (previewMode) {
+    const { pages: contextPages, currentPage, navigateTo } = useContext(PagesContext);
+    const showPageTabs = contextPages.length > 1;
+
     return (
-      <div className={`h-12 border-b flex items-center justify-center px-3 gap-2 shrink-0 ${t(
+      <div className={`h-12 border-b flex items-center justify-between px-3 gap-2 shrink-0 ${t(
         'bg-white border-gray-200',
         'bg-[#1a1a1a] border-gray-700/60'
       )}`}>
-        <span className={`text-xs font-medium ${t('text-gray-500', 'text-gray-400')}`}>Preview Mode</span>
-        {setPreviewScheme && (
-          <button
-            type="button"
-            onClick={() => {
-              const newScheme = previewScheme === 'dark' ? 'light' : 'dark';
-              setPreviewScheme(newScheme);
-              applySchemeToTronNodes(newScheme);
-            }}
-            style={{
-              background: previewScheme === 'light' ? '#ffffff' : '#0a0a0a',
-              color: previewScheme === 'light' ? '#0a0a0a' : '#ffffff',
-              border: '1px solid #3a3a3a',
-              borderRadius: 6,
-              padding: '6px 14px',
-              fontSize: 13,
-              cursor: 'pointer',
-            }}
-          >
-            {previewScheme === 'dark' ? '☀ Light' : '☾ Dark'}
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-medium ${t('text-gray-500', 'text-gray-400')}`}>Preview Mode</span>
+          {setPreviewScheme && (
+            <button
+              type="button"
+              onClick={() => {
+                const newScheme = previewScheme === 'dark' ? 'light' : 'dark';
+                setPreviewScheme(newScheme);
+                applySchemeToTronNodes(newScheme);
+              }}
+              style={{
+                background: previewScheme === 'light' ? '#ffffff' : '#0a0a0a',
+                color: previewScheme === 'light' ? '#0a0a0a' : '#ffffff',
+                border: '1px solid #3a3a3a',
+                borderRadius: 6,
+                padding: '6px 14px',
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              {previewScheme === 'dark' ? '☀ Light' : '☾ Dark'}
+            </button>
+          )}
+          {onReplayAnimations && (
+            <button
+              type="button"
+              onClick={() => onReplayAnimations()}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 rounded-lg text-sm font-medium transition-all"
+            >
+              ▶ Replay
+            </button>
+          )}
+          <button onClick={handleExitPreview} className="px-3 py-1.5 rounded-md text-xs font-semibold bg-[#FF6B35] text-white hover:bg-[#ff8555] transition-all">
+            Exit Preview
           </button>
-        )}
-        {onReplayAnimations && (
-          <button
-            type="button"
-            onClick={() => onReplayAnimations()}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 rounded-lg text-sm font-medium transition-all"
+        </div>
+        {showPageTabs && (
+          <div
+            className="craft-preview-pages-scroll flex items-center gap-1 overflow-x-auto overflow-y-hidden min-w-0 max-w-[50%] ml-2"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            ▶ Replay
-          </button>
+            {contextPages.map((page) => (
+              <button
+                key={page.id}
+                type="button"
+                onClick={() => navigateTo(page.slug)}
+                className="rounded-md flex items-center transition-all shrink-0"
+                style={
+                  page.id === currentPage
+                    ? {
+                        background: 'rgba(255, 107, 53, 0.2)',
+                        color: '#FF6B35',
+                        border: '1px solid rgba(255, 107, 53, 0.4)',
+                        borderRadius: 6,
+                        padding: '4px 12px',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }
+                    : {
+                        background: 'transparent',
+                        color: '#FF6B35',
+                        border: '1px solid rgba(255, 107, 53, 0.2)',
+                        borderRadius: 6,
+                        padding: '4px 12px',
+                        fontSize: 12,
+                        cursor: 'pointer',
+                      }
+                }
+              >
+                {page.name}
+              </button>
+            ))}
+          </div>
         )}
-        <button onClick={handleExitPreview} className="px-3 py-1.5 rounded-md text-xs font-semibold bg-[#FF6B35] text-white hover:bg-[#ff8555] transition-all">
-          Exit Preview
-        </button>
       </div>
     );
   }

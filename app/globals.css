@@ -99,12 +99,14 @@ html::-webkit-scrollbar {
 /* Craft editor: hide scrollbars on canvas and sidebars */
 .craft-editor-left::-webkit-scrollbar,
 .craft-editor-right::-webkit-scrollbar,
-.craft-canvas-wrapper::-webkit-scrollbar {
+.craft-canvas-wrapper::-webkit-scrollbar,
+.craft-preview-pages-scroll::-webkit-scrollbar {
   display: none;
 }
 .craft-editor-left,
 .craft-editor-right,
-.craft-canvas-wrapper {
+.craft-canvas-wrapper,
+.craft-preview-pages-scroll {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
