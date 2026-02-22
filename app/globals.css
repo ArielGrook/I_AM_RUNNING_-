@@ -480,6 +480,11 @@ html::-webkit-scrollbar {
   z-index: 10;
 }
 
+/* Увеличить кликабельную область каждого блока снизу */
+.craftjs-renderer > div > [data-id] {
+  margin-bottom: 8px !important;
+}
+
 /* Перекрыть любые Craft.js inline borders — outline только через badge */
 .craftjs-renderer > * > * {
   outline: none !important;
