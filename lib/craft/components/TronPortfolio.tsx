@@ -1,7 +1,7 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 type TronPortfolioItem = { imageUrl: string; title: string; description: string };
@@ -41,17 +41,22 @@ export const TronPortfolio = ({
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [perPage, setPerPage] = useState(3);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
     const update = () => {
-      const w = typeof window !== 'undefined' ? window.innerWidth : 1024;
+      const w = el.offsetWidth;
+      if (w <= 0) return;
       if (w < 768) setPerPage(1);
       else if (w < 1024) setPerPage(2);
       else setPerPage(3);
     };
     update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   const tokens = {
@@ -124,21 +129,24 @@ export const TronPortfolio = ({
             ←
           </button>
 
-          <div className="flex-1 overflow-hidden">
+          <div ref={carouselRef} className="flex-1 overflow-hidden min-w-0">
             <div
               className="flex"
               style={{
-                transform: `translateX(-${clampedIndex * 100}%)`,
+                transform: `translateX(-${clampedIndex * (perPage / list.length) * 100}%)`,
                 transition: 'transform 400ms ease',
+                width: `${(list.length / perPage) * 100}%`,
               }}
             >
               {list.map((item, i) => (
                 <div
                   key={i}
                   style={{
-                    minWidth: `${100 / perPage}%`,
+                    width: `${100 / list.length}%`,
+                    minWidth: `${100 / list.length}%`,
                     padding: '0 8px',
                     boxSizing: 'border-box',
+                    flexShrink: 0,
                   }}
                 >
                   <div
