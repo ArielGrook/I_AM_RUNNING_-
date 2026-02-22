@@ -348,6 +348,7 @@ export const HeroTron = ({
 
   return (
     <section
+      key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="hero"
       data-block-category="header"

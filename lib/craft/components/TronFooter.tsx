@@ -156,6 +156,7 @@ export const TronFooter = ({
 
   return (
     <footer
+      key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       className={`w-full max-w-full px-4 md:px-8 py-12 md:py-16 `}
       style={backgroundStyle}

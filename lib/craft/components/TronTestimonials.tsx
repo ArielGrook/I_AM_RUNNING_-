@@ -202,6 +202,7 @@ export const TronTestimonials = ({
 
   return (
     <section
+      key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       className={`w-full max-w-full py-12 md:py-20 `}
       style={backgroundStyle}
