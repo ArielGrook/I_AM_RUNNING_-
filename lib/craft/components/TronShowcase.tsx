@@ -1,8 +1,7 @@
 'use client';
 
-import { useNode, useEditor } from '@craftjs/core';
-import { Element } from '@craftjs/core';
 import React, { useState, useEffect, useRef } from 'react';
+import { useNode, useEditor } from '@craftjs/core';
 
 function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
@@ -29,330 +28,200 @@ const tokens = {
   },
 };
 
-export type MediaType = 'none' | 'image' | 'video';
-export type TabsPosition = 'left' | 'right';
-
-export interface ShowcaseTabProps {
+export interface Tab {
+  id: string;
   tabTitle: string;
   contentTitle: string;
   contentText: string;
-  mediaType: MediaType;
-  mediaUrl: string;
-  accentColor: string;
-  colorScheme: 'dark' | 'light';
-  isActive?: boolean;
-  onSelect?: () => void;
-  tabsPosition?: TabsPosition;
 }
 
-// --- ShowcaseTab: tab button (left or right panel) ---
-export const ShowcaseTab = ({
-  tabTitle,
-  accentColor,
-  colorScheme,
-  isActive = false,
-  onSelect,
-  tabsPosition = 'right',
-}: ShowcaseTabProps) => {
-  const { connectors: { connect, drag } } = useNode();
-  const isSelected = useNode((node) => node.events.selected);
-  const t = tokens[colorScheme];
-  const rgb = hexToRgb(accentColor);
-
-  const isRight = tabsPosition === 'right';
-  const borderStyle = isRight
-    ? { borderLeftWidth: 2, borderLeftStyle: 'solid' as const, borderLeftColor: isActive ? accentColor : 'transparent' }
-    : { borderRightWidth: 2, borderRightStyle: 'solid' as const, borderRightColor: isActive ? accentColor : 'transparent' };
-
-  return (
-    <div
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
-      role="button"
-      tabIndex={0}
-      onClick={() => onSelect?.()}
-      onKeyDown={(e) => e.key === 'Enter' && onSelect?.()}
-      className={`${isSelected ? 'craft-node-selected' : ''} md:w-full flex-shrink-0 max-md:!border-l-0 max-md:!border-r-0 md:!border-b-0 md:!py-6 md:!px-8`}
-      style={{
-        padding: '14px 20px',
-        borderBottomWidth: 2,
-        borderBottomStyle: 'solid',
-        borderBottomColor: isActive ? accentColor : 'transparent',
-        textAlign: 'left',
-        fontSize: 'clamp(13px, 1.6vw, 15px)',
-        fontWeight: isActive ? 600 : 400,
-        color: isActive ? accentColor : t.textSecondary,
-        background: isActive ? `rgba(${rgb}, 0.06)` : 'transparent',
-        cursor: 'pointer',
-        transition: 'all 200ms ease',
-        width: '100%',
-        ...borderStyle,
-      }}
-      onMouseEnter={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.color = t.text;
-          e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.color = t.textSecondary;
-          e.currentTarget.style.background = 'transparent';
-        }
-      }}
-    >
-      {tabTitle || 'Tab'}
-    </div>
-  );
-};
-
-const ShowcaseTabSettings = () => {
-  const { actions: { setProp } } = useNode();
-  const props = useNode((node) => node.data.props) as Record<string, unknown>;
-  const tabTitle = (props.tabTitle as string) ?? '';
-  const contentTitle = (props.contentTitle as string) ?? '';
-  const contentText = (props.contentText as string) ?? '';
-  const mediaType = (props.mediaType as MediaType) ?? 'none';
-  const mediaUrl = (props.mediaUrl as string) ?? '';
-
-  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
-  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
-
-  return (
-    <div className="p-4 space-y-3 text-white">
-      <div><label className={labelCls}>Название кнопки (tab title)</label><input value={tabTitle} onChange={(e) => setProp((p: Record<string, unknown>) => { p.tabTitle = e.target.value; }, 500)} className={inputCls} /></div>
-      <div><label className={labelCls}>Content title</label><input value={contentTitle} onChange={(e) => setProp((p: Record<string, unknown>) => { p.contentTitle = e.target.value; }, 500)} className={inputCls} /></div>
-      <div><label className={labelCls}>Content text</label><textarea value={contentText} onChange={(e) => setProp((p: Record<string, unknown>) => { p.contentText = e.target.value; }, 1000)} className={inputCls} rows={3} /></div>
-      <div>
-        <label className={labelCls}>Media type — Нет / Изображение (jpg, png, gif, webp, svg) / Видео (mp4, webm, mov)</label>
-        <select value={mediaType} onChange={(e) => setProp((p: Record<string, unknown>) => { p.mediaType = e.target.value; })} className={inputCls}>
-          <option value="none">Нет</option>
-          <option value="image">Изображение</option>
-          <option value="video">Видео</option>
-        </select>
-      </div>
-      {mediaType !== 'none' && (
-        <div><label className={labelCls}>Media URL</label><input value={mediaUrl} onChange={(e) => setProp((p: Record<string, unknown>) => { p.mediaUrl = e.target.value; }, 500)} className={inputCls} placeholder="https://... или путь к файлу" /></div>
-      )}
-    </div>
-  );
-};
-
-ShowcaseTab.craft = {
-  displayName: 'Showcase Tab',
-  props: {
-    tabTitle: 'Tab',
-    contentTitle: '',
-    contentText: '',
-    mediaType: 'none' as MediaType,
-    mediaUrl: '',
-    accentColor: '#e11d48',
-    colorScheme: 'dark' as const,
-  },
-  related: { settings: ShowcaseTabSettings },
-  rules: { canDrag: () => true, canMoveIn: () => false },
-};
-
-// --- Default tabs ---
-type TabData = { tabTitle: string; contentTitle: string; contentText: string; mediaType: MediaType; mediaUrl?: string };
-const DEFAULT_TABS: TabData[] = [
-  { tabTitle: 'Преимущества', contentTitle: 'Почему выбирают нас', contentText: 'Мы создаём решения которые работают на результат. Качество, скорость, результат — три кита нашей работы.', mediaType: 'none', mediaUrl: '' },
-  { tabTitle: 'Цены', contentTitle: 'Прозрачные тарифы', contentText: 'Никаких скрытых платежей. Платишь только за результат. Гибкие пакеты под любой бюджет.', mediaType: 'none', mediaUrl: '' },
-  { tabTitle: 'Опыт', contentTitle: '5 лет на рынке', contentText: 'За это время реализованы десятки проектов в разных нишах. Каждый проект — это новый опыт и рост.', mediaType: 'none', mediaUrl: '' },
-];
-
-// --- TronShowcase (section) ---
-export const TronShowcase = ({
-  colorScheme = 'dark',
-  accentColor = '#e11d48',
-  showGrid = true,
-  sectionLabel = 'ЧТО МЫ ПРЕДЛАГАЕМ',
-  tabsPosition = 'right',
-  tabs = DEFAULT_TABS,
-}: {
+export interface TronShowcaseProps {
+  tabs?: Tab[];
+  sectionLabel?: string;
+  tabsPosition?: 'left' | 'right';
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
   showGrid?: boolean;
-  sectionLabel?: string;
-  tabsPosition?: TabsPosition;
-  tabs?: TabData[];
-}) => {
-  const { id: sectionId, connectors: { connect, drag } } = useNode();
+}
+
+const DEFAULT_TABS: Tab[] = [
+  { id: '1', tabTitle: 'Преимущества', contentTitle: 'Почему выбирают нас', contentText: 'Мы создаём решения которые работают на результат. Качество, скорость и надёжность — основа каждого проекта.' },
+  { id: '2', tabTitle: 'Цены', contentTitle: 'Прозрачные тарифы', contentText: 'Никаких скрытых платежей. Гибкие пакеты под любой бюджет. Платишь только за результат.' },
+  { id: '3', tabTitle: 'Опыт', contentTitle: '5 лет на рынке', contentText: 'За это время реализованы десятки проектов в разных нишах. Каждый проект — новый опыт.' },
+];
+
+export const TronShowcase = ({
+  tabs = DEFAULT_TABS,
+  sectionLabel = 'ЧТО МЫ ПРЕДЛАГАЕМ',
+  tabsPosition = 'right',
+  colorScheme = 'dark',
+  accentColor = '#e11d48',
+  showGrid = true,
+}: TronShowcaseProps) => {
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
-  const { query, actions } = useEditor();
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
   const effectiveTabs = (tabs && tabs.length > 0) ? tabs : DEFAULT_TABS;
-  const tabCount = Math.max(2, Math.min(8, effectiveTabs.length));
-  const tabIds = Array.from({ length: tabCount }, (_, i) => `${sectionId}-tab-${i}`);
-
-  const [activeTab, setActiveTab] = useState<string>(tabIds[0]);
-  const [displayedTabId, setDisplayedTabId] = useState<string>(tabIds[0]);
-  const [leaving, setLeaving] = useState(false);
-  const [contentVisible, setContentVisible] = useState(true);
-  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activeId, setActiveId] = useState<string>(effectiveTabs[0]?.id ?? '1');
+  const [visible, setVisible] = useState(true);
+  const prevIdRef = useRef(activeId);
 
   useEffect(() => {
-    if (!tabIds.includes(activeTab)) {
-      const next = tabIds[0];
-      setActiveTab(next);
-      setDisplayedTabId(next);
-      setContentVisible(true);
+    if (!effectiveTabs.some((t) => t.id === activeId)) {
+      setActiveId(effectiveTabs[0]?.id ?? '1');
     }
-  }, [tabIds.join(','), activeTab]);
+  }, [effectiveTabs, activeId]);
 
-  const handleSelectTab = (id: string) => {
-    if (id === activeTab) return;
-    setActiveTab(id);
-    setLeaving(true);
-    if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
-    leaveTimerRef.current = setTimeout(() => {
-      leaveTimerRef.current = null;
-      setDisplayedTabId(id);
-      setLeaving(false);
-      setContentVisible(false);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setContentVisible(true));
-      });
-    }, 150);
+  useEffect(() => {
+    if (prevIdRef.current === activeId) return;
+    setVisible(false);
+    const t = setTimeout(() => {
+      prevIdRef.current = activeId;
+      setVisible(true);
+    }, 180);
+    return () => clearTimeout(t);
+  }, [activeId]);
+
+  const updateTab = (id: string, field: keyof Tab, value: string) => {
+    setProp(
+      (p: TronShowcaseProps) => {
+        const list = p.tabs ?? DEFAULT_TABS;
+        const idx = list.findIndex((tab) => tab.id === id);
+        if (idx >= 0) {
+          const next = [...list];
+          next[idx] = { ...next[idx], [field]: value };
+          p.tabs = next;
+        }
+      },
+      500
+    );
   };
-
-  useEffect(() => () => {
-    if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
-  }, []);
 
   const t = tokens[colorScheme];
   const rgb = hexToRgb(accentColor);
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
-  const backgroundStyle = {
-    background: t.bg,
-    backgroundImage: gridLines,
-    backgroundSize: showGrid ? '50px 50px' : 'auto',
-  };
 
-  const getNodeSafe = typeof query?.getNode === 'function' ? query.getNode.bind(query) : () => null;
-  const displayedNode = getNodeSafe(displayedTabId);
-  const displayedProps = (displayedNode?.data?.props ?? {}) as Record<string, unknown>;
-  const contentTitle = (displayedProps.contentTitle as string) ?? '';
-  const contentText = (displayedProps.contentText as string) ?? '';
-  const mediaType = (displayedProps.mediaType as MediaType) ?? 'none';
-  const mediaUrl = (displayedProps.mediaUrl as string) ?? '';
-  const displayedTabTitle = (displayedProps.tabTitle as string) ?? '';
-
-  const setDisplayedTabProp = (key: string, value: unknown, throttleMs?: number) => {
-    if (!displayedTabId) return;
-    actions?.setProp?.(displayedTabId, (p: Record<string, unknown>) => { p[key] = value; }, throttleMs ?? 0);
-  };
-
-  const mediaBlock = mediaType !== 'none' && mediaUrl && (
-    <div
-      style={{
-        marginTop: 32,
-        border: `1px solid ${t.border}`,
-        borderRadius: 4,
-        overflow: 'hidden',
-        maxHeight: 400,
-        width: '100%',
-        boxShadow: `0 8px 40px rgba(${rgb}, 0.15)`,
-      }}
-    >
-      {mediaType === 'image' && <img src={mediaUrl} alt="" style={{ width: '100%', height: '100%', maxHeight: 400, objectFit: 'cover', display: 'block' }} />}
-      {mediaType === 'video' && <video src={mediaUrl} autoPlay muted loop playsInline style={{ width: '100%', maxHeight: 400, objectFit: 'cover', display: 'block' }} />}
-    </div>
-  );
+  const activeTab = effectiveTabs.find((tab) => tab.id === activeId) ?? effectiveTabs[0];
 
   const tabsPanel = (
     <div
-      className="flex flex-col w-full md:w-[35%] md:min-h-[100vh] min-h-0 flex-shrink-0 order-1 md:order-none"
+      className="w-full md:w-[35%] flex-shrink-0 flex flex-col order-1 md:order-none craft-showcase-tabs-scroll overflow-x-auto md:overflow-visible"
       style={{
         background: t.bgSecondary,
         borderLeft: tabsPosition === 'right' ? `1px solid ${t.border}` : 'none',
         borderRight: tabsPosition === 'left' ? `1px solid ${t.border}` : 'none',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
       }}
     >
       <div style={{ padding: '32px 32px 16px', fontSize: 11, letterSpacing: '0.15em', color: accentColor, textTransform: 'uppercase' }}>
         {sectionLabel}
       </div>
-      <div
-        className="craft-showcase-tabs-scroll flex flex-row md:flex-col overflow-x-auto md:overflow-visible min-h-0"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-      >
-        {tabIds.map((tabId) => {
-          const node = getNodeSafe(tabId);
-          const exists = node != null && node.data?.props;
-          const data = effectiveTabs[tabIds.indexOf(tabId)] ?? DEFAULT_TABS[0];
-          const itemProps = exists
-            ? { ...node.data.props, accentColor, colorScheme, isActive: activeTab === tabId, onSelect: () => handleSelectTab(tabId), tabsPosition }
-            : {
-                tabTitle: data.tabTitle,
-                contentTitle: data.contentTitle,
-                contentText: data.contentText,
-                mediaType: data.mediaType ?? 'none',
-                mediaUrl: data.mediaUrl ?? '',
-                accentColor,
-                colorScheme,
-                isActive: activeTab === tabId,
-                onSelect: () => handleSelectTab(tabId),
-                tabsPosition,
-              };
-          return (
-            <Element key={tabId} id={tabId} is={ShowcaseTab} canvas {...itemProps} />
-          );
-        })}
+      <div className="flex flex-row md:flex-col flex-shrink-0">
+        {effectiveTabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveId(tab.id)}
+            className="shrink-0 min-w-[120px] md:min-w-0 md:w-full md:!border-b-0"
+            style={{
+              padding: '20px 32px',
+              textAlign: 'left',
+              width: '100%',
+              border: 'none',
+              borderLeft: tabsPosition === 'right' ? `2px solid ${activeId === tab.id ? accentColor : 'transparent'}` : 'none',
+              borderRight: tabsPosition === 'left' ? `2px solid ${activeId === tab.id ? accentColor : 'transparent'}` : 'none',
+              borderBottom: `2px solid ${activeId === tab.id ? accentColor : 'transparent'}`,
+              background: activeId === tab.id ? `rgba(${rgb}, 0.06)` : 'transparent',
+              color: activeId === tab.id ? accentColor : t.textSecondary,
+              fontWeight: activeId === tab.id ? 600 : 400,
+              fontSize: 15,
+              transition: 'all 200ms ease',
+              cursor: 'pointer',
+            }}
+          >
+            {tab.tabTitle}
+          </button>
+        ))}
       </div>
     </div>
   );
 
   const contentPanel = (
     <div
-      className="flex-1 min-w-0 flex flex-col min-h-[60vh] md:min-h-[100vh] h-full overflow-auto px-6 py-7 md:px-14 md:py-12 order-2 md:order-none"
+      className="flex-1 flex flex-col justify-center order-2 md:order-none min-h-[60vh] md:min-h-0"
       style={{
-        background: t.bg,
-        boxShadow: enabled ? `inset 0 0 0 1px rgba(${rgb}, 0.2)` : undefined,
-        transition: 'box-shadow 200ms ease',
+        padding: 'clamp(32px, 5vw, 80px)',
       }}
     >
-      <div style={{ padding: '3px 10px', border: `1px solid rgba(${rgb}, 0.3)`, background: `rgba(${rgb}, 0.08)`, color: accentColor, fontSize: 11, borderRadius: 2, letterSpacing: '0.08em', marginBottom: 24, alignSelf: 'flex-start' }}>
-        {displayedTabTitle || 'Tab'}
-      </div>
-      <div style={{ transition: leaving ? 'opacity 150ms ease, transform 150ms ease' : 'none', opacity: leaving ? 0 : 1, transform: leaving ? 'translateY(8px)' : 'translateY(0)' }}>
-        <div
-          key={displayedTabId}
+      <div
+        style={{
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(12px)',
+          transition: 'opacity 250ms ease, transform 250ms ease',
+        }}
+      >
+        <span
           style={{
-            transition: 'opacity 250ms ease, transform 250ms ease',
-            opacity: contentVisible ? 1 : 0,
-            transform: contentVisible ? 'translateY(0)' : 'translateY(8px)',
+            fontSize: 11,
+            padding: '3px 10px',
+            border: `1px solid rgba(${rgb}, 0.3)`,
+            background: `rgba(${rgb}, 0.08)`,
+            color: accentColor,
+            letterSpacing: '0.08em',
+            borderRadius: 2,
+            display: 'inline-block',
+            marginBottom: 24,
           }}
         >
-          <div
-            contentEditable={enabled}
-            suppressContentEditableWarning
-            onBlur={(e) => setDisplayedTabProp('contentTitle', e.currentTarget.textContent ?? '', 1000)}
-            dangerouslySetInnerHTML={{ __html: contentTitle || '' }}
-            style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, outline: 'none' }}
-          />
-          <div
-            contentEditable={enabled}
-            suppressContentEditableWarning
-            onBlur={(e) => setDisplayedTabProp('contentText', e.currentTarget.textContent ?? '', 1000)}
-            dangerouslySetInnerHTML={{ __html: contentText || '' }}
-            style={{ fontSize: 15, lineHeight: 1.8, color: t.textSecondary, marginTop: 16, outline: 'none' }}
-          />
-          {mediaBlock}
-        </div>
+          {activeTab?.tabTitle ?? ''}
+        </span>
+
+        <div
+          contentEditable={enabled}
+          suppressContentEditableWarning
+          onBlur={(e) => updateTab(activeId, 'contentTitle', e.currentTarget.textContent ?? '')}
+          dangerouslySetInnerHTML={{ __html: activeTab?.contentTitle ?? '' }}
+          style={{
+            fontSize: 'clamp(28px, 4vw, 52px)',
+            fontWeight: 800,
+            color: t.text,
+            marginTop: 24,
+            outline: 'none',
+          }}
+        />
+
+        <div
+          contentEditable={enabled}
+          suppressContentEditableWarning
+          onBlur={(e) => updateTab(activeId, 'contentText', e.currentTarget.textContent ?? '')}
+          dangerouslySetInnerHTML={{ __html: activeTab?.contentText ?? '' }}
+          style={{
+            fontSize: 16,
+            lineHeight: 1.8,
+            color: t.textSecondary,
+            marginTop: 16,
+            outline: 'none',
+          }}
+        />
       </div>
     </div>
   );
 
   return (
     <section
-      id="showcase"
-      key={`${colorScheme}-${showGrid}-${tabsPosition}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="showcase"
-      className={`w-full max-w-full min-h-[100vh] flex flex-col md:flex-row ${isSelected ? 'craft-node-selected' : ''}`}
-      style={backgroundStyle}
+      className={`w-full max-w-full flex flex-col md:flex-row ${isSelected ? 'craft-node-selected' : ''}`}
+      style={{
+        minHeight: '100vh',
+        background: t.bg,
+        backgroundImage: gridLines,
+        backgroundSize: showGrid ? '50px 50px' : 'auto',
+      }}
     >
       {tabsPosition === 'left' ? (
         <>
@@ -371,23 +240,39 @@ export const TronShowcase = ({
 
 const TronShowcaseSettings = () => {
   const { actions: { setProp } } = useNode();
-  const { sectionLabel, tabsPosition, tabs = DEFAULT_TABS, colorScheme, accentColor, showGrid } = useNode((node) => ({
+  const { tabs = DEFAULT_TABS, sectionLabel, tabsPosition, colorScheme, accentColor, showGrid } = useNode((node) => ({
+    tabs: node.data.props.tabs as Tab[] | undefined,
     sectionLabel: node.data.props.sectionLabel as string | undefined,
-    tabsPosition: node.data.props.tabsPosition as TabsPosition | undefined,
-    tabs: node.data.props.tabs as TabData[] | undefined,
-    colorScheme: node.data.props.colorScheme as 'dark' | 'light',
-    accentColor: node.data.props.accentColor as string,
-    showGrid: node.data.props.showGrid as boolean,
+    tabsPosition: node.data.props.tabsPosition as 'left' | 'right' | undefined,
+    colorScheme: node.data.props.colorScheme as 'dark' | 'light' | undefined,
+    accentColor: node.data.props.accentColor as string | undefined,
+    showGrid: node.data.props.showGrid as boolean | undefined,
   }));
 
-  const setT = (key: string, ms: number) => (val: unknown) =>
-    setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
+  const setT = (key: keyof TronShowcaseProps, ms: number) => (val: unknown) =>
+    setProp((p: TronShowcaseProps) => { (p as Record<string, unknown>)[key] = val; }, ms);
+
+  const effectiveTabs = (tabs && tabs.length > 0) ? tabs : DEFAULT_TABS;
+  const canAdd = effectiveTabs.length < 8;
+  const canRemove = effectiveTabs.length > 2;
+
+  const updateTabTitle = (id: string, value: string) => {
+    setProp(
+      (p: TronShowcaseProps) => {
+        const list = p.tabs ?? DEFAULT_TABS;
+        const idx = list.findIndex((tab) => tab.id === id);
+        if (idx >= 0) {
+          const next = [...list];
+          next[idx] = { ...next[idx], tabTitle: value };
+          p.tabs = next;
+        }
+      },
+      500
+    );
+  };
+
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
-
-  const currentTabs = Array.isArray(tabs) ? tabs : DEFAULT_TABS;
-  const canAdd = currentTabs.length < 8;
-  const canRemove = currentTabs.length > 2;
 
   return (
     <div className="p-3 space-y-5 text-white">
@@ -403,18 +288,53 @@ const TronShowcaseSettings = () => {
             </select>
           </div>
         </div>
-        <div className="flex items-center gap-2 mt-3">
-          <button type="button" onClick={() => canAdd && setProp((p: Record<string, unknown>) => { const list = (p.tabs as TabData[]) ?? DEFAULT_TABS; p.tabs = [...list, { tabTitle: 'New tab', contentTitle: '', contentText: '', mediaType: 'none' }]; }, 0)} disabled={!canAdd} className="px-2 py-1.5 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#ff8555] disabled:opacity-50">+ Add tab</button>
-          <button type="button" onClick={() => canRemove && setProp((p: Record<string, unknown>) => { const list = (p.tabs as TabData[]) ?? DEFAULT_TABS; p.tabs = list.slice(0, -1); }, 0)} disabled={!canRemove} className="px-2 py-1.5 text-xs rounded bg-gray-600 text-white hover:bg-gray-500 disabled:opacity-50">× Remove</button>
+        <div className="mt-3 space-y-2">
+          <p className="text-[11px] text-gray-500">Tab titles:</p>
+          {effectiveTabs.map((tab) => (
+            <div key={tab.id}>
+              <label className={labelCls}>{tab.tabTitle || 'Tab'}</label>
+              <input value={tab.tabTitle} onChange={(e) => updateTabTitle(tab.id, e.target.value)} className={inputCls} />
+            </div>
+          ))}
         </div>
-        <p className="text-[10px] text-gray-500 mt-1">{currentTabs.length} / 8 tabs</p>
+        <div className="flex items-center gap-2 mt-3">
+          <button
+            type="button"
+            disabled={!canAdd}
+            onClick={() => {
+              if (!canAdd) return;
+              setProp((p: TronShowcaseProps) => {
+                const list = p.tabs ?? DEFAULT_TABS;
+                p.tabs = [...list, { id: String(Date.now()), tabTitle: 'New tab', contentTitle: '', contentText: '' }];
+              }, 0);
+            }}
+            className="px-2 py-1.5 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#ff8555] disabled:opacity-50"
+          >
+            + Add tab
+          </button>
+          <button
+            type="button"
+            disabled={!canRemove}
+            onClick={() => {
+              if (!canRemove) return;
+              setProp((p: TronShowcaseProps) => {
+                const list = p.tabs ?? DEFAULT_TABS;
+                p.tabs = list.slice(0, -1);
+              }, 0);
+            }}
+            className="px-2 py-1.5 text-xs rounded bg-gray-600 text-white hover:bg-gray-500 disabled:opacity-50"
+          >
+            × Remove
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-500 mt-1">{effectiveTabs.length} / 8 tabs</p>
       </section>
       <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
         <div className="space-y-3">
           <div><label className={labelCls}>Color scheme</label><select value={colorScheme ?? 'dark'} onChange={(e) => setT('colorScheme', 300)(e.target.value)} className={inputCls}><option value="dark">Dark</option><option value="light">Light</option></select></div>
           <div className="flex items-center gap-2"><label className={`${labelCls} shrink-0 w-20`}>Accent</label><input type="color" value={accentColor ?? '#e11d48'} onChange={(e) => setT('accentColor', 300)(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0" /><span className="text-[10px] font-mono text-gray-500 truncate">{accentColor}</span></div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><label style={{ color: '#a1a1aa', fontSize: 12 }}>Show Grid</label><input type="checkbox" checked={showGrid ?? true} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })} /></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><label style={{ color: '#a1a1aa', fontSize: 12 }}>Show Grid</label><input type="checkbox" checked={showGrid ?? true} onChange={(e) => setProp((p: TronShowcaseProps) => { (p as Record<string, unknown>).showGrid = e.target.checked; })} /></div>
         </div>
       </section>
     </div>
@@ -424,13 +344,12 @@ const TronShowcaseSettings = () => {
 TronShowcase.craft = {
   displayName: 'Tron Showcase',
   props: {
-    colorScheme: 'dark',
+    tabs: DEFAULT_TABS,
+    sectionLabel: 'ЧТО МЫ ПРЕДЛАГАЕМ',
+    tabsPosition: 'right' as const,
+    colorScheme: 'dark' as const,
     accentColor: '#e11d48',
     showGrid: true,
-    sectionLabel: 'ЧТО МЫ ПРЕДЛАГАЕМ',
-    tabsPosition: 'right' as TabsPosition,
-    tabs: DEFAULT_TABS,
-    'data-block-type': 'showcase',
   },
   related: { settings: TronShowcaseSettings },
   custom: {
