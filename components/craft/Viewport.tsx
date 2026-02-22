@@ -199,10 +199,12 @@ export const Viewport = ({
         >
           <span className="text-xs text-[#52525b] mr-1">Accent</span>
           {COLOR_PRESETS.map((preset) => (
-            <button
+            <div
               key={preset.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => applyColorPreset(preset)}
+              onKeyDown={(e) => e.key === 'Enter' && applyColorPreset(preset)}
               title={preset.label}
               style={{
                 background: preset.bg,
