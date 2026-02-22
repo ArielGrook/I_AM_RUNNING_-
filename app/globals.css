@@ -100,13 +100,15 @@ html::-webkit-scrollbar {
 .craft-editor-left::-webkit-scrollbar,
 .craft-editor-right::-webkit-scrollbar,
 .craft-canvas-wrapper::-webkit-scrollbar,
-.craft-preview-pages-scroll::-webkit-scrollbar {
+.craft-preview-pages-scroll::-webkit-scrollbar,
+.craft-showcase-tabs-scroll::-webkit-scrollbar {
   display: none;
 }
 .craft-editor-left,
 .craft-editor-right,
 .craft-canvas-wrapper,
-.craft-preview-pages-scroll {
+.craft-preview-pages-scroll,
+.craft-showcase-tabs-scroll {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
