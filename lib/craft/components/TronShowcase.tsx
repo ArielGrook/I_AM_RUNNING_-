@@ -83,6 +83,14 @@ export const TronShowcase = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [contentOpacity, setContentOpacity] = useState(1);
   const [contentTranslateY, setContentTranslateY] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     const exists = safeTabs.some((t) => t.id === activeId);
@@ -143,23 +151,52 @@ export const TronShowcase = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="showcase"
       data-block-category="content"
-      className={`w-full max-w-full flex flex-col md:flex-row min-h-screen ${isSelected ? 'craft-node-selected' : ''}`}
-      style={{ minHeight: '100vh', width: '100%', ...backgroundStyle }}
+      className={`w-full ${isSelected ? 'craft-node-selected' : ''}`}
+      style={{
+        minHeight: '100vh',
+        width: '100%',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        ...backgroundStyle,
+      }}
     >
-      {/* Left — tabs, 35% (vertical on desktop, horizontal on mobile) */}
+      {/* Left — tabs */}
       <div
-        className="order-1 w-full md:w-[35%] flex flex-row md:flex-col flex-shrink-0 min-h-0 md:min-h-[100vh] overflow-x-auto md:overflow-visible border-b md:border-b-0 md:border-r"
         style={{
-          borderColor: t.border,
+          width: isMobile ? '100%' : '35%',
+          flexShrink: 0,
+          display: 'flex',
+          flexDirection: isMobile ? 'row' : 'column',
+          minHeight: isMobile ? 'auto' : '100vh',
+          borderRight: isMobile ? 'none' : `1px solid ${t.border}`,
+          borderBottom: isMobile ? `1px solid ${t.border}` : 'none',
+          overflowX: isMobile ? 'auto' : 'visible',
+          overflowY: isMobile ? 'visible' : 'auto',
         }}
       >
         <div
-          className="shrink-0 md:w-full p-8 pt-8 pb-4 text-[11px] font-semibold uppercase tracking-widest"
-          style={{ color: t.textSecondary }}
+          style={{
+            flexShrink: 0,
+            width: isMobile ? 'auto' : '100%',
+            padding: '32px 32px 16px',
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: t.textSecondary,
+          }}
         >
           {sectionLabel}
         </div>
-        <div className="flex flex-row md:flex-col overflow-x-auto md:overflow-visible min-h-0 flex-1 md:flex-initial">
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'row' : 'column',
+            overflowX: isMobile ? 'auto' : 'visible',
+            minHeight: 0,
+            flex: isMobile ? 1 : 'initial',
+          }}
+        >
           {safeTabs.map((tab) => {
             const isActive = tab.id === activeId;
             return (
@@ -167,13 +204,18 @@ export const TronShowcase = ({
                 key={tab.id}
                 type="button"
                 onClick={() => handleTabClick(tab.id)}
-                className="shrink-0 md:w-full text-left transition-all duration-[200ms] ease-out py-4 px-5 md:py-5 md:px-8 border-b-2 md:border-b-0 border-l-0 md:border-l-2"
                 style={{
+                  flexShrink: 0,
+                  width: isMobile ? 'max-content' : '100%',
+                  minWidth: isMobile ? 140 : undefined,
+                  textAlign: 'left',
+                  transition: 'all 200ms ease-out',
+                  padding: isMobile ? '16px 20px' : '20px 32px',
                   fontSize: 15,
                   color: isActive ? accentColor : '#a1a1aa',
                   background: isActive ? hexToRgba(accentColor, 0.06) : 'transparent',
-                  borderLeftColor: isActive ? accentColor : 'transparent',
-                  borderBottomColor: isActive ? accentColor : 'transparent',
+                  borderLeft: isMobile ? 'none' : `2px solid ${isActive ? accentColor : 'transparent'}`,
+                  borderBottom: isMobile ? `2px solid ${isActive ? accentColor : 'transparent'}` : 'none',
                 }}
               >
                 {tab.tabTitle}
@@ -183,10 +225,14 @@ export const TronShowcase = ({
         </div>
       </div>
 
-      {/* Right — content, 65% */}
+      {/* Right — content */}
       <div
-        className="order-2 w-full md:w-[65%] flex flex-col justify-center min-h-[50vh] md:min-h-[100vh]"
         style={{
+          width: isMobile ? '100%' : '65%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          minHeight: isMobile ? '50vh' : '100vh',
           padding: 'clamp(40px, 6vw, 80px)',
         }}
       >
