@@ -13,24 +13,24 @@ function hexToRgb(hex: string): string {
 const tokens = {
   dark: {
     bg: '#0a0a0a',
+    bgSecondary: '#111111',
     text: '#ffffff',
     textSecondary: '#a1a1aa',
     border: 'rgba(255,255,255,0.08)',
     gridColor: 'rgba(255,255,255,0.03)',
-    cardBg: 'rgba(255,255,255,0.03)',
   },
   light: {
     bg: '#ffffff',
+    bgSecondary: '#f8fafc',
     text: '#0a0a0a',
     textSecondary: '#52525b',
     border: 'rgba(0,0,0,0.08)',
     gridColor: 'rgba(0,0,0,0.06)',
-    cardBg: 'rgba(0,0,0,0.02)',
   },
 };
 
 export type MediaType = 'none' | 'image' | 'video';
-export type ImagePosition = 'top' | 'bottom' | 'right';
+export type TabsPosition = 'left' | 'right';
 
 export interface ShowcaseTabProps {
   tabTitle: string;
@@ -38,24 +38,31 @@ export interface ShowcaseTabProps {
   contentText: string;
   mediaType: MediaType;
   mediaUrl: string;
-  imagePosition: ImagePosition;
   accentColor: string;
   colorScheme: 'dark' | 'light';
   isActive?: boolean;
   onSelect?: () => void;
+  tabsPosition?: TabsPosition;
 }
 
-// --- ShowcaseTab: renders the tab button in the left panel ---
+// --- ShowcaseTab: tab button (left or right panel) ---
 export const ShowcaseTab = ({
   tabTitle,
   accentColor,
   colorScheme,
   isActive = false,
   onSelect,
+  tabsPosition = 'right',
 }: ShowcaseTabProps) => {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const t = tokens[colorScheme];
+  const rgb = hexToRgb(accentColor);
+
+  const isRight = tabsPosition === 'right';
+  const borderStyle = isRight
+    ? { borderLeftWidth: 2, borderLeftStyle: 'solid' as const, borderLeftColor: isActive ? accentColor : 'transparent' }
+    : { borderRightWidth: 2, borderRightStyle: 'solid' as const, borderRightColor: isActive ? accentColor : 'transparent' };
 
   return (
     <div
@@ -64,30 +71,32 @@ export const ShowcaseTab = ({
       tabIndex={0}
       onClick={() => onSelect?.()}
       onKeyDown={(e) => e.key === 'Enter' && onSelect?.()}
-      className={`${isSelected ? 'craft-node-selected' : ''} md:border-l-2 border-b-2 md:border-b-0 border-b-transparent flex-shrink-0 md:flex-shrink`}
+      className={`${isSelected ? 'craft-node-selected' : ''} md:w-full flex-shrink-0 max-md:!border-l-0 max-md:!border-r-0 md:!border-b-0 md:!py-6 md:!px-8`}
       style={{
-        padding: '16px 20px',
-        borderLeftColor: isActive ? accentColor : t.border,
-        borderBottomColor: isActive ? accentColor : t.border,
-        fontSize: 'clamp(14px, 1.8vw, 16px)',
+        padding: '14px 20px',
+        borderBottomWidth: 2,
+        borderBottomStyle: 'solid',
+        borderBottomColor: isActive ? accentColor : 'transparent',
+        textAlign: 'left',
+        fontSize: 'clamp(13px, 1.6vw, 15px)',
         fontWeight: isActive ? 600 : 400,
         color: isActive ? accentColor : t.textSecondary,
-        background: isActive ? `rgba(${hexToRgb(accentColor)}, 0.06)` : 'transparent',
+        background: isActive ? `rgba(${rgb}, 0.06)` : 'transparent',
         cursor: 'pointer',
         transition: 'all 200ms ease',
+        width: '100%',
+        ...borderStyle,
       }}
       onMouseEnter={(e) => {
         if (!isActive) {
           e.currentTarget.style.color = t.text;
-          e.currentTarget.style.borderLeftColor = `rgba(${hexToRgb(accentColor)}, 0.4)`;
-          e.currentTarget.style.borderBottomColor = `rgba(${hexToRgb(accentColor)}, 0.4)`;
+          e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
         }
       }}
       onMouseLeave={(e) => {
         if (!isActive) {
           e.currentTarget.style.color = t.textSecondary;
-          e.currentTarget.style.borderLeftColor = t.border;
-          e.currentTarget.style.borderBottomColor = t.border;
+          e.currentTarget.style.background = 'transparent';
         }
       }}
     >
@@ -104,36 +113,25 @@ const ShowcaseTabSettings = () => {
   const contentText = (props.contentText as string) ?? '';
   const mediaType = (props.mediaType as MediaType) ?? 'none';
   const mediaUrl = (props.mediaUrl as string) ?? '';
-  const imagePosition = (props.imagePosition as ImagePosition) ?? 'top';
 
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
 
   return (
     <div className="p-4 space-y-3 text-white">
-      <div><label className={labelCls}>Tab title</label><input value={tabTitle} onChange={(e) => setProp((p: Record<string, unknown>) => { p.tabTitle = e.target.value; }, 500)} className={inputCls} /></div>
+      <div><label className={labelCls}>Название кнопки (tab title)</label><input value={tabTitle} onChange={(e) => setProp((p: Record<string, unknown>) => { p.tabTitle = e.target.value; }, 500)} className={inputCls} /></div>
       <div><label className={labelCls}>Content title</label><input value={contentTitle} onChange={(e) => setProp((p: Record<string, unknown>) => { p.contentTitle = e.target.value; }, 500)} className={inputCls} /></div>
       <div><label className={labelCls}>Content text</label><textarea value={contentText} onChange={(e) => setProp((p: Record<string, unknown>) => { p.contentText = e.target.value; }, 1000)} className={inputCls} rows={3} /></div>
       <div>
-        <label className={labelCls}>Media type</label>
+        <label className={labelCls}>Media type — Нет / Изображение (jpg, png, gif, webp, svg) / Видео (mp4, webm, mov)</label>
         <select value={mediaType} onChange={(e) => setProp((p: Record<string, unknown>) => { p.mediaType = e.target.value; })} className={inputCls}>
-          <option value="none">None</option>
-          <option value="image">Image</option>
-          <option value="video">Video</option>
+          <option value="none">Нет</option>
+          <option value="image">Изображение</option>
+          <option value="video">Видео</option>
         </select>
       </div>
       {mediaType !== 'none' && (
-        <div><label className={labelCls}>Media URL</label><input value={mediaUrl} onChange={(e) => setProp((p: Record<string, unknown>) => { p.mediaUrl = e.target.value; }, 500)} className={inputCls} placeholder="https://..." /></div>
-      )}
-      {mediaType !== 'none' && (
-        <div>
-          <label className={labelCls}>Image position</label>
-          <select value={imagePosition} onChange={(e) => setProp((p: Record<string, unknown>) => { p.imagePosition = e.target.value; })} className={inputCls}>
-            <option value="top">Top</option>
-            <option value="bottom">Bottom</option>
-            <option value="right">Right</option>
-          </select>
-        </div>
+        <div><label className={labelCls}>Media URL</label><input value={mediaUrl} onChange={(e) => setProp((p: Record<string, unknown>) => { p.mediaUrl = e.target.value; }, 500)} className={inputCls} placeholder="https://... или путь к файлу" /></div>
       )}
     </div>
   );
@@ -147,7 +145,6 @@ ShowcaseTab.craft = {
     contentText: '',
     mediaType: 'none' as MediaType,
     mediaUrl: '',
-    imagePosition: 'top' as ImagePosition,
     accentColor: '#e11d48',
     colorScheme: 'dark' as const,
   },
@@ -156,11 +153,11 @@ ShowcaseTab.craft = {
 };
 
 // --- Default tabs ---
-type TabData = { tabTitle: string; contentTitle: string; contentText: string; mediaType: MediaType; mediaUrl?: string; imagePosition?: ImagePosition };
+type TabData = { tabTitle: string; contentTitle: string; contentText: string; mediaType: MediaType; mediaUrl?: string };
 const DEFAULT_TABS: TabData[] = [
-  { tabTitle: 'Преимущества', contentTitle: 'Почему выбирают нас', contentText: 'Мы создаём решения которые работают...', mediaType: 'none' },
-  { tabTitle: 'Цены', contentTitle: 'Прозрачные тарифы', contentText: 'Без скрытых платежей...', mediaType: 'none' },
-  { tabTitle: 'Опыт', contentTitle: '5 лет на рынке', contentText: 'За это время мы...', mediaType: 'none' },
+  { tabTitle: 'Преимущества', contentTitle: 'Почему выбирают нас', contentText: 'Мы создаём решения которые работают на результат...', mediaType: 'none' },
+  { tabTitle: 'Цены', contentTitle: 'Прозрачные тарифы', contentText: 'Никаких скрытых платежей. Платишь только за результат...', mediaType: 'none' },
+  { tabTitle: 'Опыт', contentTitle: '5 лет на рынке', contentText: 'За это время реализованы десятки проектов...', mediaType: 'none' },
 ];
 
 // --- TronShowcase (section) ---
@@ -169,21 +166,20 @@ export const TronShowcase = ({
   accentColor = '#e11d48',
   showGrid = true,
   sectionLabel = 'ЧТО МЫ ПРЕДЛАГАЕМ',
+  tabsPosition = 'right',
   tabs = DEFAULT_TABS,
-  animationType = 'none',
-  animateDelay = '0',
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
   showGrid?: boolean;
   sectionLabel?: string;
+  tabsPosition?: TabsPosition;
   tabs?: TabData[];
-  animationType?: string;
-  animateDelay?: string;
 }) => {
   const { id: sectionId, connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { query, actions } = useEditor();
+  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
   const tabCount = Math.max(2, Math.min(8, tabs?.length ?? 3));
   const tabIds = Array.from({ length: tabCount }, (_, i) => `${sectionId}-tab-${i}`);
@@ -194,7 +190,6 @@ export const TronShowcase = ({
   const [contentVisible, setContentVisible] = useState(true);
   const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync state when tabIds change (e.g. after load)
   useEffect(() => {
     if (!tabIds.includes(activeTab)) {
       const next = tabIds[0];
@@ -225,6 +220,7 @@ export const TronShowcase = ({
   }, []);
 
   const t = tokens[colorScheme];
+  const rgb = hexToRgb(accentColor);
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
@@ -241,10 +237,7 @@ export const TronShowcase = ({
   const contentText = (displayedProps.contentText as string) ?? '';
   const mediaType = (displayedProps.mediaType as MediaType) ?? 'none';
   const mediaUrl = (displayedProps.mediaUrl as string) ?? '';
-  const imagePosition = (displayedProps.imagePosition as ImagePosition) ?? 'top';
   const displayedTabTitle = (displayedProps.tabTitle as string) ?? '';
-
-  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
 
   const setDisplayedTabProp = (key: string, value: unknown, throttleMs?: number) => {
     if (!displayedTabId) return;
@@ -252,171 +245,138 @@ export const TronShowcase = ({
   };
 
   const mediaBlock = mediaType !== 'none' && mediaUrl && (
-    <div style={{ borderRadius: 4, border: `1px solid ${t.border}`, overflow: 'hidden', flexShrink: 0 }}>
-      {mediaType === 'image' && <img src={mediaUrl} alt="" style={{ width: '100%', height: 'auto', display: 'block' }} />}
-      {mediaType === 'video' && <video src={mediaUrl} autoPlay muted loop playsInline style={{ width: '100%', display: 'block' }} />}
+    <div
+      style={{
+        marginTop: 32,
+        border: `1px solid ${t.border}`,
+        borderRadius: 4,
+        overflow: 'hidden',
+        maxHeight: 400,
+        width: '100%',
+        boxShadow: `0 8px 40px rgba(${rgb}, 0.15)`,
+      }}
+    >
+      {mediaType === 'image' && <img src={mediaUrl} alt="" style={{ width: '100%', height: '100%', maxHeight: 400, objectFit: 'cover', display: 'block' }} />}
+      {mediaType === 'video' && <video src={mediaUrl} autoPlay muted loop playsInline style={{ width: '100%', maxHeight: 400, objectFit: 'cover', display: 'block' }} />}
     </div>
   );
 
-  const textBlock = (
-    <>
+  const tabsPanel = (
+    <div
+      className="flex flex-col w-full md:w-[35%] flex-shrink-0 order-1 md:order-none"
+      style={{
+        background: t.bgSecondary,
+        borderLeft: tabsPosition === 'right' ? `1px solid ${t.border}` : 'none',
+        borderRight: tabsPosition === 'left' ? `1px solid ${t.border}` : 'none',
+      }}
+    >
+      <div style={{ padding: '32px 32px 16px', fontSize: 11, letterSpacing: '0.15em', color: accentColor, textTransform: 'uppercase' }}>
+        {sectionLabel}
+      </div>
       <div
-        contentEditable={enabled}
-        suppressContentEditableWarning
-        onBlur={(e) => setDisplayedTabProp('contentTitle', e.currentTarget.textContent ?? '', 1000)}
-        dangerouslySetInnerHTML={{ __html: contentTitle || '' }}
-        style={{
-          fontSize: 'clamp(24px, 3.5vw, 36px)',
-          fontWeight: 700,
-          color: t.text,
-          outline: 'none',
-        }}
-      />
-      <div
-        contentEditable={enabled}
-        suppressContentEditableWarning
-        onBlur={(e) => setDisplayedTabProp('contentText', e.currentTarget.textContent ?? '', 1000)}
-        dangerouslySetInnerHTML={{ __html: contentText || '' }}
-        style={{
-          fontSize: 15,
-          lineHeight: 1.7,
-          color: t.textSecondary,
-          marginTop: 12,
-          outline: 'none',
-        }}
-      />
-    </>
+        className="craft-showcase-tabs-scroll flex flex-row md:flex-col overflow-x-auto md:overflow-visible min-h-0"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        {tabIds.map((tabId) => {
+          const node = getNodeSafe(tabId);
+          const exists = node != null && node.data?.props;
+          const data = tabs?.[tabIds.indexOf(tabId)] ?? DEFAULT_TABS[tabIds.indexOf(tabId)] ?? DEFAULT_TABS[0];
+          const itemProps = exists
+            ? { ...node.data.props, accentColor, colorScheme, isActive: activeTab === tabId, onSelect: () => handleSelectTab(tabId), tabsPosition }
+            : {
+                tabTitle: data.tabTitle,
+                contentTitle: data.contentTitle,
+                contentText: data.contentText,
+                mediaType: data.mediaType ?? 'none',
+                mediaUrl: data.mediaUrl ?? '',
+                accentColor,
+                colorScheme,
+                isActive: activeTab === tabId,
+                onSelect: () => handleSelectTab(tabId),
+                tabsPosition,
+              };
+          return (
+            <Element key={tabId} id={tabId} is={ShowcaseTab} canvas {...itemProps} />
+          );
+        })}
+      </div>
+    </div>
   );
 
-  const contentLayout =
-    imagePosition === 'top' ? (
-      <>
-        {mediaBlock}
-        <div>{textBlock}</div>
-      </>
-    ) : imagePosition === 'bottom' ? (
-      <>
-        <div>{textBlock}</div>
-        {mediaBlock}
-      </>
-    ) : (
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 200px' }}>{textBlock}</div>
-        {mediaBlock && <div style={{ flex: '0 0 240px' }}>{mediaBlock}</div>}
+  const contentPanel = (
+    <div
+      className="flex-1 min-w-0 flex flex-col overflow-hidden px-6 py-7 md:px-14 md:py-12 order-2 md:order-none"
+      style={{
+        background: t.bg,
+        boxShadow: enabled ? `inset 0 0 0 1px rgba(${rgb}, 0.2)` : undefined,
+        transition: 'box-shadow 200ms ease',
+      }}
+    >
+      <div style={{ padding: '3px 10px', border: `1px solid rgba(${rgb}, 0.3)`, background: `rgba(${rgb}, 0.08)`, color: accentColor, fontSize: 11, borderRadius: 2, letterSpacing: '0.08em', marginBottom: 24, alignSelf: 'flex-start' }}>
+        {displayedTabTitle || 'Tab'}
       </div>
-    );
+      <div style={{ transition: leaving ? 'opacity 150ms ease, transform 150ms ease' : 'none', opacity: leaving ? 0 : 1, transform: leaving ? 'translateY(8px)' : 'translateY(0)' }}>
+        <div
+          key={displayedTabId}
+          style={{
+            transition: 'opacity 250ms ease, transform 250ms ease',
+            opacity: contentVisible ? 1 : 0,
+            transform: contentVisible ? 'translateY(0)' : 'translateY(8px)',
+          }}
+        >
+          <div
+            contentEditable={enabled}
+            suppressContentEditableWarning
+            onBlur={(e) => setDisplayedTabProp('contentTitle', e.currentTarget.textContent ?? '', 1000)}
+            dangerouslySetInnerHTML={{ __html: contentTitle || '' }}
+            style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, outline: 'none' }}
+          />
+          <div
+            contentEditable={enabled}
+            suppressContentEditableWarning
+            onBlur={(e) => setDisplayedTabProp('contentText', e.currentTarget.textContent ?? '', 1000)}
+            dangerouslySetInnerHTML={{ __html: contentText || '' }}
+            style={{ fontSize: 15, lineHeight: 1.8, color: t.textSecondary, marginTop: 16, outline: 'none' }}
+          />
+          {mediaBlock}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <section
       id="showcase"
-      key={`${colorScheme}-${showGrid}`}
+      key={`${colorScheme}-${showGrid}-${tabsPosition}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="showcase"
-      className={`w-full max-w-full py-16 px-4 sm:px-8 lg:px-16 ${isSelected ? 'craft-node-selected' : ''}`}
+      className={`w-full max-w-full min-h-[600px] flex flex-col md:flex-row ${isSelected ? 'craft-node-selected' : ''}`}
       style={backgroundStyle}
     >
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 md:gap-12">
-        {/* Left: tabs — horizontal scroll on mobile */}
-        <div className="w-full md:w-[40%] flex flex-col flex-shrink-0">
-          <div
-            style={{
-              fontSize: 11,
-              letterSpacing: '0.15em',
-              color: accentColor,
-              marginBottom: 24,
-              textTransform: 'uppercase',
-            }}
-          >
-            {sectionLabel}
-          </div>
-          <div className="craft-showcase-tabs-scroll flex flex-row md:flex-col overflow-x-auto md:overflow-visible gap-0 md:gap-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-            {tabIds.map((tabId) => {
-              const node = getNodeSafe(tabId);
-              const exists = node != null && node.data?.props;
-              const data = tabs?.[tabIds.indexOf(tabId)] ?? DEFAULT_TABS[tabIds.indexOf(tabId)] ?? DEFAULT_TABS[0];
-              const itemProps = exists
-                ? { ...node.data.props, accentColor, colorScheme, isActive: activeTab === tabId, onSelect: () => handleSelectTab(tabId) }
-                : {
-                    tabTitle: data.tabTitle,
-                    contentTitle: data.contentTitle,
-                    contentText: data.contentText,
-                    mediaType: data.mediaType ?? 'none',
-                    mediaUrl: data.mediaUrl ?? '',
-                    imagePosition: (data.imagePosition as ImagePosition) ?? 'top',
-                    accentColor,
-                    colorScheme,
-                    isActive: activeTab === tabId,
-                    onSelect: () => handleSelectTab(tabId),
-                  };
-              return (
-                <Element key={tabId} id={tabId} is={ShowcaseTab} canvas {...itemProps} />
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right: content panel */}
-        <div className="w-full md:w-[60%] flex-shrink-0 relative">
-          <div
-            style={{
-              border: `1px solid ${t.border}`,
-              borderRadius: 4,
-              background: t.cardBg,
-              padding: '32px 40px',
-              position: 'relative',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                top: 12,
-                right: 12,
-                padding: '4px 10px',
-                fontSize: 11,
-                background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
-                border: `1px solid rgba(${hexToRgb(accentColor)}, 0.3)`,
-                color: accentColor,
-                borderRadius: 2,
-                letterSpacing: '0.08em',
-              }}
-            >
-              {displayedTabTitle || 'Tab'}
-            </div>
-            <div
-              style={{
-                transition: leaving ? 'opacity 150ms ease, transform 150ms ease' : 'none',
-                opacity: leaving ? 0 : 1,
-                transform: leaving ? 'translateY(10px)' : 'translateY(0)',
-              }}
-            >
-              <div
-                key={displayedTabId}
-                style={{
-                  transition: 'opacity 250ms ease, transform 250ms ease',
-                  opacity: contentVisible ? 1 : 0,
-                  transform: contentVisible ? 'translateY(0)' : 'translateY(10px)',
-                }}
-              >
-                {contentLayout}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {tabsPosition === 'left' ? (
+        <>
+          {tabsPanel}
+          {contentPanel}
+        </>
+      ) : (
+        <>
+          {contentPanel}
+          {tabsPanel}
+        </>
+      )}
     </section>
   );
 };
 
 const TronShowcaseSettings = () => {
   const { actions: { setProp } } = useNode();
-  const { sectionLabel, tabs = DEFAULT_TABS, colorScheme, accentColor, showGrid, animationType, animateDelay } = useNode((node) => ({
+  const { sectionLabel, tabsPosition, tabs = DEFAULT_TABS, colorScheme, accentColor, showGrid } = useNode((node) => ({
     sectionLabel: node.data.props.sectionLabel as string | undefined,
+    tabsPosition: node.data.props.tabsPosition as TabsPosition | undefined,
     tabs: node.data.props.tabs as TabData[] | undefined,
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
     showGrid: node.data.props.showGrid as boolean,
-    animationType: node.data.props.animationType as string,
-    animateDelay: node.data.props.animateDelay as string,
   }));
 
   const setT = (key: string, ms: number) => (val: unknown) =>
@@ -434,6 +394,13 @@ const TronShowcaseSettings = () => {
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div><label className={labelCls}>Section label</label><input value={sectionLabel ?? ''} onChange={(e) => setT('sectionLabel', 500)(e.target.value)} className={inputCls} /></div>
+          <div>
+            <label className={labelCls}>Tabs position</label>
+            <select value={tabsPosition ?? 'right'} onChange={(e) => setT('tabsPosition', 300)(e.target.value)} className={inputCls}>
+              <option value="right">Табы справа</option>
+              <option value="left">Табы слева</option>
+            </select>
+          </div>
         </div>
         <div className="flex items-center gap-2 mt-3">
           <button type="button" onClick={() => canAdd && setProp((p: Record<string, unknown>) => { const list = (p.tabs as TabData[]) ?? DEFAULT_TABS; p.tabs = [...list, { tabTitle: 'New tab', contentTitle: '', contentText: '', mediaType: 'none' }]; }, 0)} disabled={!canAdd} className="px-2 py-1.5 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#ff8555] disabled:opacity-50">+ Add tab</button>
@@ -449,13 +416,6 @@ const TronShowcaseSettings = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><label style={{ color: '#a1a1aa', fontSize: 12 }}>Show Grid</label><input type="checkbox" checked={showGrid ?? true} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })} /></div>
         </div>
       </section>
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
-        <div className="space-y-2">
-          <div><label className={labelCls}>Type</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option><option value="scale-in">Scale In</option></select></div>
-          <div><label className={labelCls}>Delay</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option><option value="0.5">0.5s</option></select></div>
-        </div>
-      </section>
     </div>
   );
 };
@@ -467,9 +427,8 @@ TronShowcase.craft = {
     accentColor: '#e11d48',
     showGrid: true,
     sectionLabel: 'ЧТО МЫ ПРЕДЛАГАЕМ',
+    tabsPosition: 'right' as TabsPosition,
     tabs: DEFAULT_TABS,
-    animationType: 'none',
-    animateDelay: '0',
     'data-block-type': 'showcase',
   },
   related: { settings: TronShowcaseSettings },
