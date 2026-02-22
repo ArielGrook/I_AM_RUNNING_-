@@ -897,7 +897,7 @@ export default function EditorPage() {
             previewMode={previewMode}
           >
             {frameReady && (
-              <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
+              <div style={{ width: '100%', minHeight: '100vh', background: '#0a0a0a' }}>
                 <Frame key={activePageId} data={frameData ?? undefined}>
                   <Element is={Container} canvas>
                   </Element>

@@ -99,8 +99,8 @@ export const Container = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...dataAttrs}
       style={{
-        background,
-        padding: `${padding}px`,
+        background: isRoot ? 'transparent' : background,
+        padding: `${isRoot ? 0 : padding}px`,
         margin: `${margin}px`,
         minHeight: isRoot ? '100vh' : '40px',
         display: 'flex',
