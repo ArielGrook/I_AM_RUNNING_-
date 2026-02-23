@@ -26,6 +26,8 @@ export interface TestimonialCardProps {
   colorScheme: 'dark' | 'light';
   animationType: string;
   animateDelay: string;
+  cardWidth?: number;
+  cardMinHeight?: number;
 }
 
 function TestimonialCardContent({ quote, author, role, company, accentColor = '#e11d48', colorScheme }: Pick<TestimonialCardProps, 'quote' | 'author' | 'role' | 'company' | 'accentColor' | 'colorScheme'>) {
@@ -39,7 +41,7 @@ function TestimonialCardContent({ quote, author, role, company, accentColor = '#
   );
 }
 
-export const TestimonialCard = ({ quote, author, role, company, avatarUrl, accentColor, colorScheme, animationType, animateDelay }: TestimonialCardProps) => {
+export const TestimonialCard = ({ quote, author, role, company, avatarUrl, accentColor, colorScheme, animationType, animateDelay, cardWidth = 100, cardMinHeight = 200 }: TestimonialCardProps) => {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((n) => n.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
@@ -54,16 +56,27 @@ export const TestimonialCard = ({ quote, author, role, company, avatarUrl, accen
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       {...animAttrs}
       className=""
-      style={{ width: CARD_WIDTH, flexShrink: 0, border: `1px solid ${t.cardBorder}`, borderRadius: 4, padding: 24, background: t.cardBg }}
+      style={{ width: CARD_WIDTH, flexShrink: 0 }}
     >
-      <TestimonialCardContent quote={quote} author={author} role={role} company={company} accentColor={accentColor} colorScheme={colorScheme} />
+      <div
+        style={{
+          width: `${cardWidth}%`,
+          minHeight: `${cardMinHeight}px`,
+          border: `1px solid ${t.cardBorder}`,
+          borderRadius: 4,
+          padding: 24,
+          background: t.cardBg,
+        }}
+      >
+        <TestimonialCardContent quote={quote} author={author} role={role} company={company} accentColor={accentColor} colorScheme={colorScheme} />
+      </div>
     </div>
   );
 };
 
 const TestimonialCardSettings = () => {
   const { actions: { setProp } } = useNode();
-  const { quote, author, role, company, avatarUrl, animationType, animateDelay } = useNode((n) => n.data.props as TestimonialCardProps) ?? {};
+  const { quote, author, role, company, avatarUrl, animationType, animateDelay, cardWidth = 100, cardMinHeight = 200 } = useNode((n) => n.data.props as TestimonialCardProps) ?? {};
   const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
@@ -74,6 +87,14 @@ const TestimonialCardSettings = () => {
       <div><label className={labelCls}>Role</label><input type="text" value={role ?? ''} onChange={(e) => setT('role', 500)(e.target.value)} className={inputCls} /></div>
       <div><label className={labelCls}>Company</label><input type="text" value={company ?? ''} onChange={(e) => setT('company', 500)(e.target.value)} className={inputCls} /></div>
       <div><label className={labelCls}>Avatar URL</label><input type="text" value={avatarUrl ?? ''} onChange={(e) => setT('avatarUrl', 500)(e.target.value)} className={inputCls} placeholder="https://" /></div>
+      <div>
+        <label style={{ fontSize: 12, color: '#a1a1aa' }}>Ширина: {(cardWidth ?? 100)}%</label>
+        <input type="range" min={60} max={100} step={5} value={cardWidth ?? 100} onChange={(e) => setProp((p: Record<string, unknown>) => { p.cardWidth = Number(e.target.value); }, 300)} style={{ width: '100%' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота (min): {(cardMinHeight ?? 200)}px</label>
+        <input type="range" min={100} max={500} step={20} value={cardMinHeight ?? 200} onChange={(e) => setProp((p: Record<string, unknown>) => { p.cardMinHeight = Number(e.target.value); }, 300)} style={{ width: '100%' }} />
+      </div>
       <div><label className={labelCls}>Animation</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
       <div><label className={labelCls}>Delay (s)</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
     </div>
@@ -82,7 +103,7 @@ const TestimonialCardSettings = () => {
 
 TestimonialCard.craft = {
   displayName: 'Testimonial Card',
-  props: { quote: 'This product changed how we work.', author: 'Jane Doe', role: 'CEO', company: 'Acme Inc', avatarUrl: '', accentColor: '#e11d48', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
+  props: { quote: 'This product changed how we work.', author: 'Jane Doe', role: 'CEO', company: 'Acme Inc', avatarUrl: '', accentColor: '#e11d48', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0', cardWidth: 100, cardMinHeight: 200 },
   related: { settings: TestimonialCardSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
 };
