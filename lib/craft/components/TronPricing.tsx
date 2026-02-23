@@ -47,6 +47,8 @@ export interface PricingCardProps {
   accentColor: string;
   colorScheme: 'dark' | 'light';
   animateFrom: CardAnimFrom;
+  cardWidth?: number;
+  cardMinHeight?: number;
 }
 
 export const PricingCard = ({
@@ -60,6 +62,8 @@ export const PricingCard = ({
   accentColor,
   colorScheme,
   animateFrom,
+  cardWidth = 100,
+  cardMinHeight = 400,
 }: PricingCardProps) => {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
@@ -73,6 +77,8 @@ export const PricingCard = ({
       data-animate-card="pricing"
       className=""
       style={{
+        width: `${cardWidth}%`,
+        minHeight: `${cardMinHeight}px`,
         background: highlighted ? `rgba(${rgb},0.05)` : t.cardBg,
         border: highlighted ? `1px solid ${accentColor}` : `1px solid ${t.cardBorder}`,
         borderRadius: 4,
@@ -118,7 +124,7 @@ export const PricingCard = ({
 };
 
 const PricingCardSettings = () => {
-  const { actions: { setProp }, name, price, period, description, features, highlighted, ctaText, animateFrom } = useNode((node) => ({
+  const { actions: { setProp }, name, price, period, description, features, highlighted, ctaText, animateFrom, cardWidth, cardMinHeight } = useNode((node) => ({
     name: node.data.props.name as string,
     price: node.data.props.price as string,
     period: node.data.props.period as string,
@@ -127,6 +133,8 @@ const PricingCardSettings = () => {
     highlighted: node.data.props.highlighted as boolean,
     ctaText: node.data.props.ctaText as string,
     animateFrom: node.data.props.animateFrom as CardAnimFrom,
+    cardWidth: (node.data.props.cardWidth as number) ?? 100,
+    cardMinHeight: (node.data.props.cardMinHeight as number) ?? 400,
   }));
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
@@ -151,6 +159,14 @@ const PricingCardSettings = () => {
           <div><label className={labelCls}>CTA text</label><input type="text" value={ctaText ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.ctaText = e.target.value; })} className={inputCls} placeholder="Get Started" /></div>
           <label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={highlighted ?? false} onChange={(e) => setProp((p: Record<string, unknown>) => { p.highlighted = e.target.checked; })} className="rounded border-gray-600 bg-gray-700" /> Highlighted</label>
           <div><label className={labelCls}>Animate from</label><select value={animateFrom ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateFrom = e.target.value; })} className={inputCls}><option value="none">None</option><option value="slide-top">Top</option><option value="slide-bottom">Bottom</option></select></div>
+          <div>
+            <label style={{ fontSize: 12, color: '#a1a1aa' }}>Ширина: {cardWidth ?? 100}%</label>
+            <input type="range" min={60} max={100} step={5} value={cardWidth ?? 100} onChange={(e) => setProp((p: Record<string, unknown>) => { p.cardWidth = Number(e.target.value); }, 300)} style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота (min): {cardMinHeight ?? 400}px</label>
+            <input type="range" min={300} max={700} step={50} value={cardMinHeight ?? 400} onChange={(e) => setProp((p: Record<string, unknown>) => { p.cardMinHeight = Number(e.target.value); }, 300)} style={{ width: '100%' }} />
+          </div>
         </div>
       </section>
       <section>
@@ -182,6 +198,8 @@ PricingCard.craft = {
     accentColor: '#e11d48',
     colorScheme: 'dark',
     animateFrom: 'none' as CardAnimFrom,
+    cardWidth: 100,
+    cardMinHeight: 400,
   },
   related: { settings: PricingCardSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
