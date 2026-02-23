@@ -36,8 +36,8 @@ const DEFAULT_TABS: ShowcaseTab[] = [
 
 const tokens = {
   dark: {
-    bg: '#0a0a0a',
-    bgSecondary: '#0a0a0a',
+    bg: '#000000',
+    bgSecondary: '#000000',
     text: '#ffffff',
     textSecondary: '#a1a1aa',
     border: 'rgba(255,255,255,0.08)',
@@ -152,7 +152,7 @@ export const TronShowcase = ({
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
   const backgroundStyle = {
-    background: colorScheme === 'dark' ? '#0a0a0a' : t.bg,
+    background: colorScheme === 'dark' ? '#000000' : t.bg,
     backgroundImage: gridLines,
     backgroundSize: showGrid ? '50px 50px' : 'auto',
   };

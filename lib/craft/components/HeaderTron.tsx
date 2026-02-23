@@ -65,13 +65,13 @@ export const HeaderTron = ({
 
   const tokens = {
     dark: {
-      bg: 'rgba(10,10,10,0.92)',
+      bg: 'rgba(0,0,0,0.92)',
       text: '#ffffff',
       textSecondary: '#a1a1aa',
       accent: accentColor,
       border: 'rgba(255,255,255,0.08)',
       gridColor: 'rgba(255,255,255,0.03)',
-      bgSecondary: '#0a0a0a',
+      bgSecondary: '#000000',
       cardBg: 'rgba(255,255,255,0.02)',
       cardBorder: 'rgba(255,255,255,0.08)',
     },

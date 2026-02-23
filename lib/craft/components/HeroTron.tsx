@@ -11,7 +11,7 @@ function hexToRgb(hex: string): string {
 }
 
 const tokens = {
-  dark: { bg: '#0a0a0a', text: '#ffffff', accent: '#e11d48', gridColor: 'rgba(255,255,255,0.03)' },
+  dark: { bg: '#000000', text: '#ffffff', accent: '#e11d48', gridColor: 'rgba(255,255,255,0.03)' },
   light: { bg: '#ffffff', text: '#0a0a0a', textSecondary: '#52525b', accent: '#e11d48', border: 'rgba(0,0,0,0.08)', gridColor: 'rgba(0,0,0,0.06)' },
 };
 
@@ -364,7 +364,7 @@ export const HeroTron = ({
         justifyContent: 'center',
         overflow: 'hidden',
         position: 'relative',
-        background: colorScheme === 'dark' ? '#0a0a0a' : t.bg,
+        background: colorScheme === 'dark' ? '#000000' : t.bg,
         backgroundImage,
         backgroundSize,
       }}
