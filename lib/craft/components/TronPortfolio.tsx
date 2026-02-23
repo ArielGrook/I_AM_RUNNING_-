@@ -4,12 +4,18 @@ import { useNode, useEditor } from '@craftjs/core';
 import React, { useState, useEffect, useRef } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
-type TronPortfolioItem = { imageUrl: string; title: string; description: string };
+type TronPortfolioItem = {
+  imageUrl: string;
+  title: string;
+  description: string;
+  cardWidth?: number;
+  cardMinHeight?: number;
+};
 
 const DEFAULT_ITEMS: TronPortfolioItem[] = [
-  { imageUrl: '', title: 'Project One', description: 'Short description.' },
-  { imageUrl: '', title: 'Project Two', description: 'Short description.' },
-  { imageUrl: '', title: 'Project Three', description: 'Short description.' },
+  { imageUrl: '', title: 'Project One', description: 'Short description.', cardWidth: 100, cardMinHeight: 300 },
+  { imageUrl: '', title: 'Project Two', description: 'Short description.', cardWidth: 100, cardMinHeight: 300 },
+  { imageUrl: '', title: 'Project Three', description: 'Short description.', cardWidth: 100, cardMinHeight: 300 },
 ];
 
 function hexToRgb(hex: string): string {
@@ -158,28 +164,33 @@ export const TronPortfolio = ({
                     padding: '0 8px',
                     boxSizing: 'border-box',
                     flexShrink: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
                   }}
                 >
-                  <div
-                    style={{
-                      aspectRatio: '16/9',
-                      background: item.imageUrl ? 'transparent' : t.cardBg,
-                      border: `1px solid ${t.cardBorder}`,
-                      borderRadius: 4,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ color: '#52525b', fontSize: 14 }}>Add image</span>
-                    )}
+                  <div style={{ width: `${item.cardWidth ?? 100}%`, flexShrink: 0 }}>
+                    <div
+                      style={{
+                        minHeight: `${item.cardMinHeight ?? 300}px`,
+                        background: item.imageUrl ? 'transparent' : t.cardBg,
+                        border: `1px solid ${t.cardBorder}`,
+                        borderRadius: 4,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ color: '#52525b', fontSize: 14 }}>Add image</span>
+                      )}
+                    </div>
+                    <h3 style={{ fontSize: 17, fontWeight: 600, color: t.text, margin: '12px 0 4px' }}>{item.title}</h3>
+                    <p style={{ fontSize: 14, color: t.muted, margin: 0 }}>{item.description}</p>
                   </div>
-                  <h3 style={{ fontSize: 17, fontWeight: 600, color: t.text, margin: '12px 0 4px' }}>{item.title}</h3>
-                  <p style={{ fontSize: 14, color: t.muted, margin: 0 }}>{item.description}</p>
                 </div>
               ))}
             </div>
@@ -310,10 +321,18 @@ const TronPortfolioSettings = () => {
               </div>
               <input type="text" value={item.title} onChange={(e) => updateItem(i, 'title', e.target.value)} className={inputCls} placeholder="Title" />
               <input type="text" value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} className={inputCls} placeholder="Description" />
+              <div>
+                <label style={{ fontSize: 12, color: '#a1a1aa' }}>Ширина: {item.cardWidth ?? 100}%</label>
+                <input type="range" min={60} max={100} step={5} value={item.cardWidth ?? 100} onChange={(e) => setProp((p: Record<string, unknown>) => { const arr = [...(p.items as TronPortfolioItem[])]; arr[i] = { ...arr[i], cardWidth: Number(e.target.value) }; p.items = arr; }, 300)} style={{ width: '100%' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота изображения (min): {item.cardMinHeight ?? 300}px</label>
+                <input type="range" min={200} max={800} step={50} value={item.cardMinHeight ?? 300} onChange={(e) => setProp((p: Record<string, unknown>) => { const arr = [...(p.items as TronPortfolioItem[])]; arr[i] = { ...arr[i], cardMinHeight: Number(e.target.value) }; p.items = arr; }, 300)} style={{ width: '100%' }} />
+              </div>
               <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.items = (p.items as TronPortfolioItem[]).filter((_, j) => j !== i); })} className="text-xs text-red-400">Remove</button>
             </div>
           ))}
-          <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.items = [...(p.items as TronPortfolioItem[] || []), { imageUrl: '', title: 'Project', description: 'Description.' }]; })} className="w-full py-1.5 text-xs border border-dashed border-gray-600 text-gray-400 rounded">+ Add item</button>
+          <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.items = [...(p.items as TronPortfolioItem[] || []), { imageUrl: '', title: 'Project', description: 'Description.', cardWidth: 100, cardMinHeight: 300 }]; })} className="w-full py-1.5 text-xs border border-dashed border-gray-600 text-gray-400 rounded">+ Add item</button>
         </div>
       </section>
       <section>
