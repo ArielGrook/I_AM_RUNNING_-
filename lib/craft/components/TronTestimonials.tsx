@@ -158,6 +158,7 @@ export const TronTestimonials = ({
     background: t.bg,
     backgroundImage: gridLines,
     backgroundSize: showGrid ? '50px 50px' : 'auto',
+    backgroundPosition: '0 0',
   };
 
   const getCardProps = (cardIndex: number): TestimonialCardProps => {
@@ -214,9 +215,10 @@ export const TronTestimonials = ({
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="testimonials"
-      className={`w-full max-w-full py-12 md:py-20 `}
-      style={backgroundStyle}
+      className="w-full max-w-full px-4 md:px-8"
+      style={{ ...backgroundStyle, minHeight: '100vh', paddingTop: '100px', paddingBottom: '100px' }}
     >
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}>
       <div className="px-4 md:px-8">
         <div className="text-center mb-12 md:mb-16 max-w-6xl mx-auto">
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
@@ -230,6 +232,7 @@ export const TronTestimonials = ({
       >
         <div>{renderRow(offsets.offset1)}</div>
         {doubleRow && <div style={{ marginTop: 24 }}>{renderRow(offsets.offset2)}</div>}
+      </div>
       </div>
     </section>
   );

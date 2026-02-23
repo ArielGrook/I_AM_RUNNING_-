@@ -148,6 +148,7 @@ export const TronFeatures = ({
     background: t.bg,
     backgroundImage: gridLines,
     backgroundSize: showGrid ? '50px 50px' : 'auto',
+    backgroundPosition: '0 0',
   };
 
   const cardIds = [`${sectionId}-card-0`, `${sectionId}-card-1`, `${sectionId}-card-2`];
@@ -159,9 +160,10 @@ export const TronFeatures = ({
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="features"
-      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
-      style={backgroundStyle}
+      className="w-full max-w-full px-4 md:px-8"
+      style={{ ...backgroundStyle, minHeight: '100vh', paddingTop: '100px', paddingBottom: '100px' }}
     >
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12 md:mb-16">
           <h2
@@ -194,6 +196,7 @@ export const TronFeatures = ({
             );
           })}
         </div>
+      </div>
       </div>
     </section>
   );

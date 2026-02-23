@@ -133,6 +133,7 @@ export const TronFAQ = ({
     background: t.bg,
     backgroundImage: gridLines,
     backgroundSize: showGrid ? '50px 50px' : 'auto',
+    backgroundPosition: '0 0',
   };
   const getNodeSafe = typeof query?.getNode === 'function' ? query.getNode.bind(query) : () => null;
   const faqIds = Array.from({ length: NUM_FAQ }, (_, i) => `${sectionId}-faq-${i}`);
@@ -143,9 +144,10 @@ export const TronFAQ = ({
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="faq"
-      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
-      style={backgroundStyle}
+      className="w-full max-w-full px-4 md:px-8"
+      style={{ ...backgroundStyle, minHeight: '100vh', paddingTop: '100px', paddingBottom: '100px' }}
     >
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12 md:mb-16">
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
@@ -166,6 +168,7 @@ export const TronFAQ = ({
             return <Element key={faqId} id={faqId} is={FAQItem} canvas {...(props as FAQItemProps)} />;
           })}
         </div>
+      </div>
       </div>
     </section>
   );
