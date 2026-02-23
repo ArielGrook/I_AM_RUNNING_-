@@ -289,17 +289,6 @@ export const TronShowcase = ({
           padding: isMobile ? '32px 24px' : 'clamp(40px, 6vw, 80px)',
         }}
       >
-        {/* Accent dot — top right */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 24,
-            right: 32,
-            width: 8,
-            height: 8,
-            background: accentColor,
-          }}
-        />
         <span
           style={{
             fontSize: 11,
