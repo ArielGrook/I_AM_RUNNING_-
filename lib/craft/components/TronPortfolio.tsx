@@ -323,7 +323,7 @@ const TronPortfolioSettings = () => {
               <input type="text" value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} className={inputCls} placeholder="Description" />
               <div>
                 <label style={{ fontSize: 12, color: '#a1a1aa' }}>Ширина: {item.cardWidth ?? 100}%</label>
-                <input type="range" min={60} max={100} step={5} value={item.cardWidth ?? 100} onChange={(e) => setProp((p: Record<string, unknown>) => { const arr = [...(p.items as TronPortfolioItem[])]; arr[i] = { ...arr[i], cardWidth: Number(e.target.value) }; p.items = arr; }, 300)} style={{ width: '100%' }} />
+                <input type="range" min={60} max={150} step={5} value={item.cardWidth ?? 100} onChange={(e) => setProp((p: Record<string, unknown>) => { const arr = [...(p.items as TronPortfolioItem[])]; arr[i] = { ...arr[i], cardWidth: Number(e.target.value) }; p.items = arr; }, 300)} style={{ width: '100%' }} />
               </div>
               <div>
                 <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота изображения (min): {item.cardMinHeight ?? 300}px</label>
