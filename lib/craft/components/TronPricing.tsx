@@ -161,7 +161,7 @@ const PricingCardSettings = () => {
           <div><label className={labelCls}>Animate from</label><select value={animateFrom ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateFrom = e.target.value; })} className={inputCls}><option value="none">None</option><option value="slide-top">Top</option><option value="slide-bottom">Bottom</option></select></div>
           <div>
             <label style={{ fontSize: 12, color: '#a1a1aa' }}>Ширина: {cardWidth ?? 100}%</label>
-            <input type="range" min={60} max={100} step={5} value={cardWidth ?? 100} onChange={(e) => setProp((p: Record<string, unknown>) => { p.cardWidth = Number(e.target.value); }, 300)} style={{ width: '100%' }} />
+            <input type="range" min={60} max={150} step={5} value={cardWidth ?? 100} onChange={(e) => setProp((p: Record<string, unknown>) => { p.cardWidth = Number(e.target.value); }, 300)} style={{ width: '100%' }} />
           </div>
           <div>
             <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота (min): {cardMinHeight ?? 400}px</label>
