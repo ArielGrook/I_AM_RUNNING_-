@@ -165,7 +165,7 @@ export const TronShowcase = ({
       data-block-category="content"
       className={`w-full ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
-        minHeight: '60vh',
+        minHeight: '75vh',
         width: '100%',
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
@@ -179,7 +179,7 @@ export const TronShowcase = ({
           flexShrink: 0,
           display: 'flex',
           flexDirection: isMobile ? 'row' : 'column',
-          minHeight: isMobile ? 'auto' : '60vh',
+          minHeight: isMobile ? 'auto' : '75vh',
           borderRight: isMobile ? 'none' : `1px solid ${t.border}`,
           borderBottom: isMobile ? `1px solid ${t.border}` : 'none',
           overflowX: isMobile ? 'auto' : 'visible',
@@ -285,7 +285,7 @@ export const TronShowcase = ({
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          minHeight: isMobile ? '50vh' : '60vh',
+          minHeight: isMobile ? '50vh' : '75vh',
           padding: isMobile ? '32px 24px' : 'clamp(40px, 6vw, 80px)',
         }}
       >

@@ -216,9 +216,9 @@ export const TronTestimonials = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="testimonials"
       className="w-full max-w-full px-4 md:px-8"
-      style={{ ...backgroundStyle, minHeight: '100vh', paddingTop: '100px', paddingBottom: '100px' }}
+      style={{ ...backgroundStyle, minHeight: '75vh', paddingTop: '100px', paddingBottom: '100px' }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '75vh' }}>
       <div className="px-4 md:px-8">
         <div className="text-center mb-12 md:mb-16 max-w-6xl mx-auto">
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>

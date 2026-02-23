@@ -297,8 +297,9 @@ export const TronStats = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="stats"
       className={`w-full max-w-full py-20 px-4 sm:px-8 lg:px-16 ${isSelected ? 'craft-node-selected' : ''}`}
-      style={backgroundStyle}
+      style={{ ...backgroundStyle, minHeight: '75vh' }}
     >
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '75vh' }}>
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {Array.from({ length: itemCount }, (_, i) => {
@@ -330,6 +331,7 @@ export const TronStats = ({
             );
           })}
         </div>
+      </div>
       </div>
     </section>
   );

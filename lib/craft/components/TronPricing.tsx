@@ -269,9 +269,10 @@ export const TronPricing = ({
       key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="pricing"
-      className={`w-full max-w-full px-4 md:px-8 py-12 md:py-20 `}
-      style={backgroundStyle}
+      className="w-full max-w-full px-4 md:px-8 py-12 md:py-20"
+      style={{ ...backgroundStyle, minHeight: '75vh' }}
     >
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '75vh' }}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12 md:mb-16">
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
@@ -295,6 +296,7 @@ export const TronPricing = ({
             );
           })}
         </div>
+      </div>
       </div>
     </section>
   );
