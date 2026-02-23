@@ -100,6 +100,7 @@ export const TronTestimonials = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
   showGrid = true,
+  sectionHeight = 75,
   title = 'What people say',
   subtitle = 'Trusted by teams worldwide',
   items = DEFAULT_ITEMS,
@@ -112,6 +113,7 @@ export const TronTestimonials = ({
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
   showGrid?: boolean;
+  sectionHeight?: number;
   title?: string;
   subtitle?: string;
   items?: TestimonialItem[];
@@ -216,9 +218,9 @@ export const TronTestimonials = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="testimonials"
       className="w-full max-w-full px-4 md:px-8"
-      style={{ ...backgroundStyle, minHeight: '75vh', paddingTop: '100px', paddingBottom: '100px' }}
+      style={{ ...backgroundStyle, minHeight: `${sectionHeight}vh`, paddingTop: '100px', paddingBottom: '100px' }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '75vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: `${sectionHeight}vh` }}>
       <div className="px-4 md:px-8">
         <div className="text-center mb-12 md:mb-16 max-w-6xl mx-auto">
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
@@ -239,11 +241,12 @@ export const TronTestimonials = ({
 };
 
 const TronTestimonialsSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, showGrid, title, subtitle, items, doubleRow, row1Direction, row2Direction, autoplay, speed } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, showGrid, sectionHeight, title, subtitle, items, doubleRow, row1Direction, row2Direction, autoplay, speed } = useNode((node) => ({
     ...node,
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
     showGrid: node.data.props.showGrid as boolean,
+    sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
     items: (node.data.props.items as TestimonialItem[]) ?? DEFAULT_ITEMS,
@@ -330,6 +333,10 @@ const TronTestimonialsSettings = () => {
             <label style={{ color: '#a1a1aa', fontSize: 12 }}>Show Grid</label>
             <input type="checkbox" checked={showGrid ?? true} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })} />
           </div>
+          <div>
+            <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота секции: {sectionHeight ?? 75}vh</label>
+            <input type="range" min={50} max={100} step={5} value={sectionHeight ?? 75} onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)} style={{ width: '100%' }} />
+          </div>
         </div>
       </section>
       <section>
@@ -359,6 +366,7 @@ TronTestimonials.craft = {
     colorScheme: 'dark',
     accentColor: '#e11d48',
     showGrid: true,
+    sectionHeight: 75,
     title: 'What people say',
     subtitle: 'Trusted by teams worldwide',
     items: DEFAULT_ITEMS,

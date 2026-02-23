@@ -121,6 +121,7 @@ export const TronFeatures = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
   showGrid = true,
+  sectionHeight = 75,
   title = 'Everything you need',
   subtitle = 'Powerful tools built for modern businesses',
   animationType = 'none',
@@ -129,6 +130,7 @@ export const TronFeatures = ({
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
   showGrid?: boolean;
+  sectionHeight?: number;
   title?: string;
   subtitle?: string;
   animationType?: string;
@@ -161,9 +163,9 @@ export const TronFeatures = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="features"
       className="w-full max-w-full px-4 md:px-8"
-      style={{ ...backgroundStyle, minHeight: '75vh', paddingTop: '100px', paddingBottom: '100px' }}
+      style={{ ...backgroundStyle, minHeight: `${sectionHeight}vh`, paddingTop: '100px', paddingBottom: '100px' }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '75vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: `${sectionHeight}vh` }}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12 md:mb-16">
           <h2
@@ -208,6 +210,7 @@ const TronFeaturesSettings = () => {
     colorScheme,
     accentColor,
     showGrid,
+    sectionHeight,
     title,
     subtitle,
     animationType,
@@ -216,6 +219,7 @@ const TronFeaturesSettings = () => {
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
     showGrid: node.data.props.showGrid as boolean,
+    sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
     animationType: node.data.props.animationType as string,
@@ -252,6 +256,18 @@ const TronFeaturesSettings = () => {
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
             />
           </div>
+          <div>
+            <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота секции: {sectionHeight ?? 75}vh</label>
+            <input
+              type="range"
+              min={50}
+              max={100}
+              step={5}
+              value={sectionHeight ?? 75}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)}
+              style={{ width: '100%' }}
+            />
+          </div>
         </div>
       </section>
       <section>
@@ -278,6 +294,7 @@ TronFeatures.craft = {
     colorScheme: 'dark',
     accentColor: '#e11d48',
     showGrid: true,
+    sectionHeight: 75,
     title: 'Everything you need',
     subtitle: 'Powerful tools built for modern businesses',
     animationType: 'none',

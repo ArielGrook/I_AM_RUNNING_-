@@ -266,11 +266,13 @@ export const TronStats = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
   showGrid = true,
+  sectionHeight = 75,
   items = DEFAULT_ITEMS,
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
   showGrid?: boolean;
+  sectionHeight?: number;
   items?: StatItemData[];
 }) => {
   const { id: sectionId, connectors: { connect, drag } } = useNode();
@@ -297,9 +299,9 @@ export const TronStats = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type="stats"
       className={`w-full max-w-full py-20 px-4 sm:px-8 lg:px-16 ${isSelected ? 'craft-node-selected' : ''}`}
-      style={{ ...backgroundStyle, minHeight: '75vh' }}
+      style={{ ...backgroundStyle, minHeight: `${sectionHeight}vh` }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '75vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: `${sectionHeight}vh` }}>
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {Array.from({ length: itemCount }, (_, i) => {
@@ -339,11 +341,12 @@ export const TronStats = ({
 
 const TronStatsSettings = () => {
   const { actions: { setProp } } = useNode();
-  const { items = DEFAULT_ITEMS, colorScheme, accentColor, showGrid } = useNode((node) => ({
+  const { items = DEFAULT_ITEMS, colorScheme, accentColor, showGrid, sectionHeight } = useNode((node) => ({
     items: node.data.props.items as StatItemData[] | undefined,
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
     showGrid: node.data.props.showGrid as boolean,
+    sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
   }));
 
   const setT = (key: string, ms: number) => (val: unknown) =>
@@ -411,6 +414,10 @@ const TronStatsSettings = () => {
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
             />
           </div>
+          <div>
+            <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота секции: {sectionHeight ?? 75}vh</label>
+            <input type="range" min={50} max={100} step={5} value={sectionHeight ?? 75} onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)} style={{ width: '100%' }} />
+          </div>
         </div>
       </section>
       <section>
@@ -445,6 +452,7 @@ TronStats.craft = {
     colorScheme: 'dark',
     accentColor: '#e11d48',
     showGrid: true,
+    sectionHeight: 75,
     items: DEFAULT_ITEMS,
     'data-block-type': 'stats',
   },

@@ -67,12 +67,14 @@ export const TronShowcase = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
   showGrid = true,
+  sectionHeight = 75,
 }: {
   tabs?: ShowcaseTab[];
   sectionLabel?: string;
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
   showGrid?: boolean;
+  sectionHeight?: number;
 }) => {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
@@ -165,7 +167,7 @@ export const TronShowcase = ({
       data-block-category="content"
       className={`w-full ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
-        minHeight: '75vh',
+        minHeight: `${sectionHeight}vh`,
         width: '100%',
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
@@ -179,7 +181,7 @@ export const TronShowcase = ({
           flexShrink: 0,
           display: 'flex',
           flexDirection: isMobile ? 'row' : 'column',
-          minHeight: isMobile ? 'auto' : '75vh',
+          minHeight: isMobile ? 'auto' : `${sectionHeight}vh`,
           borderRight: isMobile ? 'none' : `1px solid ${t.border}`,
           borderBottom: isMobile ? `1px solid ${t.border}` : 'none',
           overflowX: isMobile ? 'auto' : 'visible',
@@ -285,7 +287,7 @@ export const TronShowcase = ({
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          minHeight: isMobile ? '50vh' : '75vh',
+          minHeight: isMobile ? '50vh' : `${sectionHeight}vh`,
           padding: isMobile ? '32px 24px' : 'clamp(40px, 6vw, 80px)',
         }}
       >
@@ -356,12 +358,14 @@ const TronShowcaseSettings = () => {
     colorScheme,
     accentColor,
     showGrid,
+    sectionHeight,
     tabs,
   } = useNode((node) => ({
     sectionLabel: (node.data.props.sectionLabel as string) ?? 'ЧТО МЫ ПРЕДЛАГАЕМ',
     colorScheme: (node.data.props.colorScheme as 'dark' | 'light') ?? 'dark',
     accentColor: (node.data.props.accentColor as string) ?? '#e11d48',
     showGrid: (node.data.props.showGrid as boolean) ?? true,
+    sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
     tabs: (node.data.props.tabs as ShowcaseTab[]) ?? DEFAULT_TABS,
   }));
 
@@ -449,6 +453,10 @@ const TronShowcaseSettings = () => {
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
             />
           </div>
+          <div>
+            <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота секции: {sectionHeight ?? 75}vh</label>
+            <input type="range" min={50} max={100} step={5} value={sectionHeight ?? 75} onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)} style={{ width: '100%' }} />
+          </div>
         </div>
       </section>
       <section>
@@ -496,6 +504,7 @@ TronShowcase.craft = {
     colorScheme: 'dark',
     accentColor: '#e11d48',
     showGrid: true,
+    sectionHeight: 75,
   },
   related: { settings: TronShowcaseSettings },
   custom: {
