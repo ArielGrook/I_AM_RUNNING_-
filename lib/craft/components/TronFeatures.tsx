@@ -42,6 +42,8 @@ export interface FeatureCardProps {
   description: string;
   accentColor: string;
   colorScheme: 'dark' | 'light';
+  cardWidth?: number;
+  cardMinHeight?: number;
 }
 
 export const FeatureCard = ({
@@ -49,6 +51,8 @@ export const FeatureCard = ({
   description,
   accentColor,
   colorScheme,
+  cardWidth = 100,
+  cardMinHeight = 180,
 }: FeatureCardProps) => {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((n) => n.events.selected);
@@ -59,6 +63,8 @@ export const FeatureCard = ({
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       className=""
       style={{
+        width: `${cardWidth}%`,
+        minHeight: `${cardMinHeight}px`,
         background: t.cardBg,
         border: `1px solid ${t.cardBorder}`,
         borderRadius: 4,
@@ -84,14 +90,22 @@ export const FeatureCard = ({
 
 const FeatureCardSettings = () => {
   const { actions: { setProp } } = useNode();
-  const { title = '', description = '' } = useNode((node) => node.data.props) ?? {};
+  const { title = '', description = '', cardWidth = 100, cardMinHeight = 180 } = useNode((node) => node.data.props as Record<string, unknown>) ?? {};
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
 
   return (
     <div className="p-4 space-y-3 text-white">
-      <div><label className={labelCls}>Title</label><input value={title ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.title = e.target.value; }, 500)} className={inputCls} /></div>
-      <div><label className={labelCls}>Description</label><textarea value={description ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.description = e.target.value; }, 500)} className={inputCls} rows={3} /></div>
+      <div><label className={labelCls}>Title</label><input value={(title as string) ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.title = e.target.value; }, 500)} className={inputCls} /></div>
+      <div><label className={labelCls}>Description</label><textarea value={(description as string) ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.description = e.target.value; }, 500)} className={inputCls} rows={3} /></div>
+      <div>
+        <label style={{ fontSize: 12, color: '#a1a1aa' }}>Ширина: {(cardWidth as number) ?? 100}%</label>
+        <input type="range" min={60} max={100} step={5} value={(cardWidth as number) ?? 100} onChange={(e) => setProp((p: Record<string, unknown>) => { p.cardWidth = Number(e.target.value); }, 300)} style={{ width: '100%' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота (min): {(cardMinHeight as number) ?? 180}px</label>
+        <input type="range" min={100} max={400} step={20} value={(cardMinHeight as number) ?? 180} onChange={(e) => setProp((p: Record<string, unknown>) => { p.cardMinHeight = Number(e.target.value); }, 300)} style={{ width: '100%' }} />
+      </div>
     </div>
   );
 };
@@ -103,25 +117,32 @@ FeatureCard.craft = {
     description: 'Feature description here.',
     accentColor: '#e11d48',
     colorScheme: 'dark',
+    cardWidth: 100,
+    cardMinHeight: 180,
   },
   related: { settings: FeatureCardSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
 };
 
-// --- Default content for the 3 card slots ---
+// --- Default content for card slots ---
 
 const DEFAULT_CARD_0: Omit<FeatureCardProps, 'accentColor' | 'colorScheme'> = { title: 'Lightning Fast', description: 'Under 1s load time.' };
 const DEFAULT_CARD_1: Omit<FeatureCardProps, 'accentColor' | 'colorScheme'> = { title: 'Secure by Default', description: 'Enterprise-grade security.' };
 const DEFAULT_CARD_2: Omit<FeatureCardProps, 'accentColor' | 'colorScheme'> = { title: 'Easy to Use', description: 'No learning curve.' };
 const CARD_DEFAULTS = [DEFAULT_CARD_0, DEFAULT_CARD_1, DEFAULT_CARD_2];
+const getCardDefault = (i: number) => CARD_DEFAULTS[i] ?? { title: `Feature ${i + 1}`, description: 'Description.' };
 
-// --- TronFeatures (section with 3 card nodes) ---
+const MIN_CARDS = 1;
+const MAX_CARDS = 9;
+
+// --- TronFeatures (section with dynamic card nodes) ---
 
 export const TronFeatures = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
   showGrid = true,
   sectionHeight = 75,
+  cardCount = 3,
   title = 'Everything you need',
   subtitle = 'Powerful tools built for modern businesses',
   animationType = 'none',
@@ -131,6 +152,7 @@ export const TronFeatures = ({
   accentColor?: string;
   showGrid?: boolean;
   sectionHeight?: number;
+  cardCount?: number;
   title?: string;
   subtitle?: string;
   animationType?: string;
@@ -153,7 +175,8 @@ export const TronFeatures = ({
     backgroundPosition: '0 0',
   };
 
-  const cardIds = [`${sectionId}-card-0`, `${sectionId}-card-1`, `${sectionId}-card-2`];
+  const count = Math.max(MIN_CARDS, Math.min(MAX_CARDS, cardCount ?? 3));
+  const cardIds = Array.from({ length: count }, (_, i) => `${sectionId}-card-${i}`);
   const getNodeSafe = typeof query?.getNode === 'function' ? query.getNode.bind(query) : () => null;
 
   return (
@@ -186,7 +209,7 @@ export const TronFeatures = ({
             const exists = node != null && node.data?.props;
             const cardProps = exists
               ? { ...node.data.props, accentColor, colorScheme }
-              : { ...CARD_DEFAULTS[i], accentColor, colorScheme };
+              : { ...getCardDefault(i), accentColor, colorScheme };
             return (
               <Element
                 key={cardId}
@@ -211,6 +234,7 @@ const TronFeaturesSettings = () => {
     accentColor,
     showGrid,
     sectionHeight,
+    cardCount,
     title,
     subtitle,
     animationType,
@@ -220,6 +244,7 @@ const TronFeaturesSettings = () => {
     accentColor: node.data.props.accentColor as string,
     showGrid: node.data.props.showGrid as boolean,
     sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
+    cardCount: (node.data.props.cardCount as number) ?? 3,
     title: node.data.props.title as string,
     subtitle: node.data.props.subtitle as string,
     animationType: node.data.props.animationType as string,
@@ -271,6 +296,28 @@ const TronFeaturesSettings = () => {
         </div>
       </section>
       <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Карточки</h3>
+        <div className="space-y-2 flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            disabled={(cardCount ?? 3) >= MAX_CARDS}
+            onClick={() => setProp((p: Record<string, unknown>) => { p.cardCount = Math.min(MAX_CARDS, ((p.cardCount as number) ?? 3) + 1); })}
+            className="text-xs px-3 py-2 rounded bg-gray-700 border border-gray-600 text-gray-200 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            + Добавить карточку
+          </button>
+          <button
+            type="button"
+            disabled={(cardCount ?? 3) <= MIN_CARDS}
+            onClick={() => setProp((p: Record<string, unknown>) => { p.cardCount = Math.max(MIN_CARDS, ((p.cardCount as number) ?? 3) - 1); })}
+            className="text-xs px-3 py-2 rounded bg-red-900/50 text-red-200 hover:bg-red-800/50 border border-red-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            × Удалить
+          </button>
+          <span className="text-[11px] text-gray-500">{(cardCount ?? 3)} / {MAX_CARDS}</span>
+        </div>
+      </section>
+      <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div><label className={labelCls}>Title</label><input type="text" value={title ?? ''} onChange={(e) => setT('title', 500)(e.target.value)} className={inputCls} /></div>
@@ -295,6 +342,7 @@ TronFeatures.craft = {
     accentColor: '#e11d48',
     showGrid: true,
     sectionHeight: 75,
+    cardCount: 3,
     title: 'Everything you need',
     subtitle: 'Powerful tools built for modern businesses',
     animationType: 'none',
