@@ -4,6 +4,114 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 
+function useCountUp(target: string, duration: number = 2000, isVisible: boolean = true) {
+  const [display, setDisplay] = React.useState('0');
+
+  React.useEffect(() => {
+    if (!isVisible) return;
+
+    const match = target.match(/(\d+)/);
+    if (!match) {
+      setDisplay(target);
+      return;
+    }
+
+    const end = parseInt(match[1], 10);
+    const numStr = match[0];
+    const idx = target.indexOf(numStr);
+    const prefix = target.slice(0, idx);
+    const suffix = target.slice(idx + numStr.length);
+
+    if (end === 0) {
+      setDisplay(target);
+      return;
+    }
+
+    let startTime: number | null = null;
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * end);
+      setDisplay(`${prefix}${current}${suffix}`);
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [target, duration, isVisible]);
+
+  return display;
+}
+
+function useInView(threshold: number = 0.3) {
+  const [inView, setInView] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry?.isIntersecting) setInView(true); },
+      { threshold }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, inView };
+}
+
+interface StatItemDisplayProps {
+  value: string;
+  label: string;
+  prefix?: string;
+  accentColor: string;
+  textSecondary: string;
+  delay?: number;
+  enabled: boolean;
+}
+
+function StatItemDisplay({ value, label, prefix, accentColor, textSecondary, delay = 0, enabled }: StatItemDisplayProps) {
+  const { ref, inView } = useInView();
+  const shouldAnimate = !enabled && inView;
+  const fullValue = (prefix && prefix !== '' ? prefix : '') + value;
+  const displayValue = useCountUp(fullValue, 2000, shouldAnimate);
+
+  return (
+    <div
+      ref={ref}
+      className="flex flex-col items-center justify-center text-center px-4 py-6"
+      style={{
+        opacity: enabled ? 1 : (inView ? 1 : 0),
+        transform: enabled ? 'none' : (inView ? 'translateY(0)' : 'translateY(20px)'),
+        transition: enabled ? 'none' : `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 'clamp(36px, 5vw, 64px)',
+          fontWeight: 700,
+          lineHeight: 1,
+          color: accentColor,
+          marginBottom: 8,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {enabled ? fullValue : displayValue}
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          color: textSecondary,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
 const tokens = {
   dark: {
     bg: '#0a0a0a',
@@ -80,14 +188,15 @@ export const TronStats = React.memo(function TronStats() {
     : 'none';
 
   const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
+  const animAttrs = !enabled && animationType !== 'none'
+    ? { 'data-animate': animationType, 'data-animate-delay': animateDelay }
+    : {};
 
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       key={`${scheme}-${showGrid}`}
       data-block-type="stats"
-      data-animate={!enabled && animationType !== 'none' ? animationType : undefined}
-      data-animate-delay={!enabled && animationType !== 'none' ? animateDelay : undefined}
       className={`w-full max-w-full py-20 px-4 sm:px-8 lg:px-16 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
@@ -96,50 +205,22 @@ export const TronStats = React.memo(function TronStats() {
         minHeight: `${sectionHeight}vh`,
       }}
     >
-      <div className="max-w-6xl mx-auto w-full">
+      <div
+        className="max-w-6xl mx-auto w-full"
+        {...animAttrs}
+      >
         <div className={COLUMNS_CLASS[columns] ?? COLUMNS_CLASS[4]}>
           {list.map((item, i) => (
-            <div
+            <StatItemDisplay
               key={i}
-              className="flex flex-col items-center text-center w-full max-sm:!border-r-0"
-              style={{
-                borderRight: i < list.length - 1 ? `1px solid ${t.border}` : undefined,
-                padding: '16px 24px',
-                cursor: 'default',
-                minWidth: 0,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 2,
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                  fontSize: 'clamp(36px, 5vw, 64px)',
-                  fontWeight: 700,
-                  color: accentColor,
-                  lineHeight: 1,
-                }}
-              >
-                {item.prefix != null && item.prefix !== '' && (
-                  <span style={{ fontSize: '0.6em' }}>{item.prefix}</span>
-                )}
-                <span>{item.value}</span>
-              </div>
-              <div
-                style={{
-                  color: t.textSecondary,
-                  fontSize: 14,
-                  marginTop: 8,
-                  minWidth: 0,
-                  width: '100%',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {item.label}
-              </div>
-            </div>
+              value={item.value}
+              label={item.label}
+              prefix={item.prefix}
+              accentColor={t.accent}
+              textSecondary={t.textSecondary}
+              delay={i * 150}
+              enabled={enabled}
+            />
           ))}
         </div>
       </div>
@@ -392,12 +473,11 @@ export const StatItem = React.memo(function StatItem(props: { value?: number; su
   return (
     <div
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      className={`flex flex-col items-center text-center w-full max-sm:!border-r-0 ${isSelected ? 'craft-node-selected' : ''}`}
+      className={`flex flex-col items-center text-center w-full ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         padding: '16px 24px',
         cursor: 'default',
         minWidth: 0,
-        borderRight: `1px solid ${t.border}`,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
@@ -408,7 +488,7 @@ export const StatItem = React.memo(function StatItem(props: { value?: number; su
     </div>
   );
 });
-StatItem.craft = {
+(StatItem as unknown as { craft: { displayName: string; props: Record<string, unknown>; rules: Record<string, () => boolean> } }).craft = {
   displayName: 'Stat Item',
   props: { value: 0, suffix: '', label: 'Label', accentColor: '#FF6B35', colorScheme: 'dark' as const },
   rules: { canDrag: () => true, canMoveIn: () => false },
