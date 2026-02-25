@@ -46,7 +46,10 @@ export const CardBlock = React.memo(function CardBlock() {
       minWidth={200}
       maxWidth={800}
       minHeight={150}
-      enable={enabled && isSelected ? { right: true, bottom: true, bottomRight: true } : {}}
+      enable={enabled && isSelected ? {
+        right: true, bottom: true, bottomRight: true,
+        left: true, top: true, topLeft: true, topRight: true, bottomLeft: true,
+      } : {}}
       onResizeStop={(_e, _dir, ref) => {
         const newW = ref ? parseFloat((ref as HTMLElement).style.width) : NaN;
         const newH = ref ? parseFloat((ref as HTMLElement).style.height) : NaN;
@@ -55,34 +58,18 @@ export const CardBlock = React.memo(function CardBlock() {
           if (!isNaN(newH)) p.height = Math.round(newH);
         }, 300);
       }}
-      handleStyles={{
-        right: {
-          width: 3,
-          background: accentColor,
-          opacity: 0.25,
-          cursor: 'col-resize',
-          zIndex: 10,
-          borderRadius: 0,
-        },
-        bottom: {
-          height: 3,
-          background: accentColor,
-          opacity: 0.25,
-          cursor: 'row-resize',
-          zIndex: 10,
-          borderRadius: 0,
-        },
-        bottomRight: {
-          width: 10,
-          height: 10,
-          background: accentColor,
-          opacity: 1,
-          borderRadius: 3,
-          cursor: 'nwse-resize',
-          zIndex: 20,
-          bottom: 2,
-          right: 2,
-        },
+      handleStyles={enabled && isSelected ? {
+        right: { width: 3, background: 'rgba(255,255,255,0.3)', cursor: 'col-resize', zIndex: 10 },
+        left: { width: 3, background: 'rgba(255,255,255,0.3)', cursor: 'col-resize', zIndex: 10 },
+        bottom: { height: 3, background: 'rgba(255,255,255,0.3)', cursor: 'row-resize', zIndex: 10 },
+        top: { height: 3, background: 'rgba(255,255,255,0.3)', cursor: 'row-resize', zIndex: 10 },
+        bottomRight: { width: 8, height: 8, background: 'rgba(255,255,255,0.6)', borderRadius: 2, cursor: 'nwse-resize', zIndex: 20, bottom: 2, right: 2 },
+        bottomLeft: { width: 8, height: 8, background: 'rgba(255,255,255,0.6)', borderRadius: 2, cursor: 'nesw-resize', zIndex: 20, bottom: 2, left: 2 },
+        topRight: { width: 8, height: 8, background: 'rgba(255,255,255,0.6)', borderRadius: 2, cursor: 'nesw-resize', zIndex: 20, top: 2, right: 2 },
+        topLeft: { width: 8, height: 8, background: 'rgba(255,255,255,0.6)', borderRadius: 2, cursor: 'nwse-resize', zIndex: 20, top: 2, left: 2 },
+      } : {
+        right: {}, left: {}, bottom: {}, top: {},
+        bottomRight: {}, bottomLeft: {}, topRight: {}, topLeft: {},
       }}
       style={{ display: 'inline-flex', minWidth: 200 }}
     >
@@ -98,7 +85,7 @@ export const CardBlock = React.memo(function CardBlock() {
           borderRadius: 8,
           padding: 24,
           cursor: 'default',
-          outline: isSelected ? `2px solid ${accentColor}` : 'none',
+          outline: isSelected ? '1px solid rgba(255,255,255,0.4)' : 'none',
           outlineOffset: '-1px',
         }}
       >
