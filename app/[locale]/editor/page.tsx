@@ -51,8 +51,13 @@ import {
   Divider,
   Video,
   HtmlBlock,
+  SectionBlock,
+  LayoutBlock,
+  CardBlock,
+  PricingCardBlock,
 } from '@/lib/craft/components';
 import { PagesProvider } from '@/lib/craft/context/PagesContext';
+import { ThemeProvider } from '@/lib/craft/context/ThemeContext';
 import { Toolbox } from '@/components/craft/Toolbox';
 import { SettingsPanel } from '@/components/craft/SettingsPanel';
 import { Viewport } from '@/components/craft/Viewport';
@@ -856,6 +861,10 @@ export default function EditorPage() {
           Divider,
           Video,
           HtmlBlock,
+          SectionBlock,
+          LayoutBlock,
+          CardBlock,
+          PricingCardBlock,
         }}
         onRender={RenderNode}
         indicator={{
@@ -865,6 +874,7 @@ export default function EditorPage() {
           thickness: 3,
         }}
       >
+        <ThemeProvider>
         <PagesProvider
           pages={pages}
           activePageId={activePageId}
@@ -948,6 +958,7 @@ export default function EditorPage() {
           data={previewHTML}
         />
         </PagesProvider>
+        </ThemeProvider>
       </Editor>
       </EditorRoot>
     </EditorThemeProvider>

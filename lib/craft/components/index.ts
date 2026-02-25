@@ -24,3 +24,4 @@ export { FAQ } from './FAQ';
 export { Divider } from './Divider';
 export { Video } from './Video';
 export { HtmlBlock } from './HtmlBlock';
+export { SectionBlock, LayoutBlock, CardBlock, PricingCardBlock } from './blocks';

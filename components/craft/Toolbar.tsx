@@ -5,6 +5,7 @@ import React, { useState, useContext } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useEditorTheme } from './EditorThemeContext';
 import { PagesContext } from '@/lib/craft/context/PagesContext';
+import { useTheme } from '@/lib/craft/context/ThemeContext';
 
 type PageItem = { id: string; name: string };
 
@@ -59,6 +60,7 @@ export const Toolbar = ({
   const canUndo = query.history.canUndo();
   const canRedo = query.history.canRedo();
   const { theme, toggle, t } = useEditorTheme();
+  const { setColorScheme: setCanvasColorScheme } = useTheme();
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingPageName, setEditingPageName] = useState('');
   const [editingProject, setEditingProject] = useState(false);
@@ -146,6 +148,7 @@ export const Toolbar = ({
   };
 
   const handleExitPreview = () => {
+    setCanvasColorScheme('dark');
     applySchemeToTronNodes('dark');
     setPreviewScheme?.('dark');
     onTogglePreview();
@@ -168,6 +171,7 @@ export const Toolbar = ({
               onClick={() => {
                 const newScheme = previewScheme === 'dark' ? 'light' : 'dark';
                 setPreviewScheme(newScheme);
+                setCanvasColorScheme(newScheme);
                 applySchemeToTronNodes(newScheme);
               }}
               style={{

@@ -30,6 +30,10 @@ import {
   Divider,
   Video,
   HtmlBlock,
+  SectionBlock,
+  LayoutBlock,
+  CardBlock,
+  PricingCardBlock,
 } from '@/lib/craft/components';
 import { PRESETS } from '@/lib/craft/presets';
 import { Icons } from '@/lib/craft/icons';
@@ -43,7 +47,7 @@ const tabs: { id: TabId; label: string }[] = [
   { id: 'presets', label: '⚡ Presets' },
 ];
 
-const categories: { key: 'basic' | 'sections' | 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
+const categories: { key: 'basic' | 'cicBlocks' | 'sections' | 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
   {
     key: 'basic',
     title: 'Basic',
@@ -54,6 +58,16 @@ const categories: { key: 'basic' | 'sections' | 'tronSections'; title: string; i
       { name: 'Image', label: 'Image', icon: '🖼', component: Image, canvas: false },
       { name: 'Divider', label: 'Divider', icon: '—', component: Divider, canvas: false },
       { name: 'Video', label: 'Video', icon: '▶️', component: Video, canvas: false },
+    ],
+  },
+  {
+    key: 'cicBlocks',
+    title: 'Sections (CiC)',
+    items: [
+      { name: 'SectionBlock', label: 'Section', icon: '▣', component: SectionBlock, canvas: true },
+      { name: 'LayoutBlock', label: 'Layout', icon: '▦', component: LayoutBlock, canvas: true },
+      { name: 'CardBlock', label: 'Card', icon: '▢', component: CardBlock, canvas: false },
+      { name: 'PricingCardBlock', label: 'Pricing Card', icon: '💰', component: PricingCardBlock, canvas: false },
     ],
   },
   {
@@ -72,7 +86,7 @@ const categories: { key: 'basic' | 'sections' | 'tronSections'; title: string; i
   },
   {
     key: 'tronSections',
-    title: 'TRON',
+    title: 'Legacy (Tron)',
     items: [
       { name: 'HeaderTron', label: 'Header Tron', icon: '▣', component: HeaderTron, canvas: true },
       { name: 'HeroTron', label: 'Hero Tron', icon: '◎', component: HeroTron, canvas: true },
@@ -94,8 +108,8 @@ export const Toolbox = () => {
   const { t } = useEditorTheme();
   const [activeTab, setActiveTab] = useState<TabId>('components');
   const [importing, setImporting] = useState(false);
-  const [openGroups, setOpenGroups] = useState({ basic: true, sections: true, tronSections: true });
-  const toggleGroup = (key: 'basic' | 'sections' | 'tronSections') =>
+  const [openGroups, setOpenGroups] = useState({ basic: true, cicBlocks: true, sections: true, tronSections: false });
+  const toggleGroup = (key: 'basic' | 'cicBlocks' | 'sections' | 'tronSections') =>
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleZipImport = useCallback(
