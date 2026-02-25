@@ -60,7 +60,7 @@ export const SectionBlock = React.memo(function SectionBlock({
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       data-block-type={blockType}
-      className={`w-full max-w-full ${padding} ${isSelected ? 'outline outline-2 outline-[#FF6B35] outline-offset-0' : ''}`}
+      className={`w-full max-w-full ${padding} ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: sectionBg,
         backgroundImage: gridLines,

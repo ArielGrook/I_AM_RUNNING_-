@@ -33,7 +33,7 @@ export const LayoutBlock = React.memo(function LayoutBlock({
   return (
     <div
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      className={`w-full ${layout === 'grid' ? `grid ${colClasses[columns] ?? colClasses[3]}` : 'flex flex-wrap'} ${alignClass} ${isSelected ? 'outline outline-2 outline-[#FF6B35] outline-offset-0' : ''}`}
+      className={`w-full ${layout === 'grid' ? `grid ${colClasses[columns] ?? colClasses[3]}` : 'flex flex-wrap'} ${alignClass} ${isSelected ? 'craft-node-selected' : ''}`}
       style={{ gap: `${gap}px` }}
     >
       {children}

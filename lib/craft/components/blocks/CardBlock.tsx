@@ -1,6 +1,6 @@
 'use client';
 
-import { useNode } from '@craftjs/core';
+import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { Resizable } from 're-resizable';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
@@ -32,29 +32,37 @@ export interface CardBlockProps {
 export const CardBlock = React.memo(function CardBlock() {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
+  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { width = 300, minHeight = 200, minWidth = 200, maxWidth = 600, title = 'Card title', description = 'Card description' } = useNode((node) => node.data.props as CardBlockProps) ?? {};
   const { theme } = useTheme();
 
   const t = tokens[theme.colorScheme];
+  const accentColor = theme.accentColor ?? '#FF6B35';
 
   return (
     <Resizable
-      size={{ width: width ?? 300, height: 'auto' }}
-      minWidth={minWidth}
-      maxWidth={maxWidth}
-      minHeight={minHeight}
-      enable={isSelected ? { right: true, left: true, bottom: true } : false}
-      onResizeStop={(_e, _dir, _ref, d) => {
-        setProp((p: Record<string, unknown>) => {
-          p.width = Math.round((p.width as number ?? 300) + d.width);
-        }, 300);
+      size={{ width: width ?? '100%', height: 'auto' }}
+      minWidth={200}
+      maxWidth={800}
+      minHeight={minHeight ?? 200}
+      enable={enabled && isSelected ? { right: true, left: true, bottom: true } : {}}
+      onResizeStop={(_e, _dir, ref) => {
+        const w = ref ? parseFloat((ref as HTMLElement).style.width) : NaN;
+        if (!isNaN(w)) setProp((p: Record<string, unknown>) => { p.width = Math.round(w); }, 300);
+      }}
+      handleStyles={{
+        right: { width: 4, background: accentColor, opacity: 0.6, cursor: 'col-resize', zIndex: 10 },
+        left: { width: 4, background: accentColor, opacity: 0.6, cursor: 'col-resize', zIndex: 10 },
+        bottom: { height: 4, background: accentColor, opacity: 0.6, cursor: 'row-resize', zIndex: 10 },
       }}
       style={{ flexShrink: 0 }}
     >
       <div
-        ref={(ref) => { if (ref) connect(drag(ref)); }}
-        className={isSelected ? 'outline outline-2 outline-[#FF6B35] outline-offset-0' : ''}
+        ref={(ref) => { if (ref) connect(ref); }}
+        className={isSelected ? 'craft-node-selected' : ''}
         style={{
+          position: 'relative',
+          height: '100%',
           minHeight: `${minHeight ?? 200}px`,
           background: t.cardBg,
           border: `1px solid ${t.cardBorder}`,
@@ -63,6 +71,23 @@ export const CardBlock = React.memo(function CardBlock() {
           cursor: 'default',
         }}
       >
+        {enabled && (
+          <div
+            ref={(ref) => { if (ref) drag(ref); }}
+            style={{
+              position: 'absolute',
+              top: 8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 32,
+              height: 4,
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: 2,
+              cursor: 'grab',
+              zIndex: 20,
+            }}
+          />
+        )}
         <h3 style={{ color: t.text, fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{title}</h3>
         <p style={{ color: t.textSecondary, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{description}</p>
       </div>
