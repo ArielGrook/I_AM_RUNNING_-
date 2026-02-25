@@ -56,25 +56,41 @@ export const CardBlock = React.memo(function CardBlock() {
         }, 300);
       }}
       handleStyles={{
-        right: { width: 4, background: accentColor, opacity: 0.6, cursor: 'col-resize', zIndex: 10 },
-        bottom: { height: 4, background: accentColor, opacity: 0.6, cursor: 'row-resize', zIndex: 10 },
-        bottomRight: {
-          width: 12,
-          height: 12,
+        right: {
+          width: 3,
           background: accentColor,
-          opacity: 0.8,
-          borderRadius: '0 0 8px 0',
-          cursor: 'nwse-resize',
+          opacity: 0.25,
+          cursor: 'col-resize',
           zIndex: 10,
+          borderRadius: 0,
+        },
+        bottom: {
+          height: 3,
+          background: accentColor,
+          opacity: 0.25,
+          cursor: 'row-resize',
+          zIndex: 10,
+          borderRadius: 0,
+        },
+        bottomRight: {
+          width: 10,
+          height: 10,
+          background: accentColor,
+          opacity: 1,
+          borderRadius: 3,
+          cursor: 'nwse-resize',
+          zIndex: 20,
+          bottom: 2,
+          right: 2,
         },
       }}
       style={{ display: 'inline-flex', minWidth: 200 }}
     >
       <div
         ref={(ref) => { if (ref) connect(ref); }}
-        className={isSelected ? 'craft-node-selected' : ''}
         style={{
           position: 'relative',
+          width: '100%',
           height: '100%',
           minHeight: `${height ?? 240}px`,
           background: t.cardBg,
@@ -82,6 +98,8 @@ export const CardBlock = React.memo(function CardBlock() {
           borderRadius: 8,
           padding: 24,
           cursor: 'default',
+          outline: isSelected ? `2px solid ${accentColor}` : 'none',
+          outlineOffset: '-1px',
         }}
       >
         {enabled && (
