@@ -50,6 +50,10 @@ export const CardBlock = React.memo(function CardBlock() {
         right: true, bottom: true, bottomRight: true,
         left: true, top: true, topLeft: true, topRight: true, bottomLeft: true,
       } : {}}
+      onResizeStart={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      }}
       onResizeStop={(_e, _dir, ref) => {
         const newW = ref ? parseFloat((ref as HTMLElement).style.width) : NaN;
         const newH = ref ? parseFloat((ref as HTMLElement).style.height) : NaN;
@@ -79,7 +83,6 @@ export const CardBlock = React.memo(function CardBlock() {
           position: 'relative',
           width: '100%',
           height: '100%',
-          minHeight: `${height ?? 240}px`,
           background: t.cardBg,
           border: `1px solid ${t.cardBorder}`,
           borderRadius: 8,

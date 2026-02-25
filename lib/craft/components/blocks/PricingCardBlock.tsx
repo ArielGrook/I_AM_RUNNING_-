@@ -78,6 +78,10 @@ export const PricingCardBlock = React.memo(function PricingCardBlock() {
         right: true, bottom: true, bottomRight: true,
         left: true, top: true, topLeft: true, topRight: true, bottomLeft: true,
       } : {}}
+      onResizeStart={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+      }}
       onResizeStop={(_e, _dir, ref) => {
         const newW = ref ? parseFloat((ref as HTMLElement).style.width) : NaN;
         const newH = ref ? parseFloat((ref as HTMLElement).style.height) : NaN;
@@ -107,7 +111,6 @@ export const PricingCardBlock = React.memo(function PricingCardBlock() {
           position: 'relative',
           width: '100%',
           height: '100%',
-          minHeight: `${height ?? 440}px`,
           background: highlighted ? `rgba(${rgb},0.05)` : t.cardBg,
           border: highlighted ? `1px solid ${accentColor}` : `1px solid ${t.cardBorder}`,
           borderRadius: 8,
