@@ -22,6 +22,7 @@ const tokens = {
 
 export interface CardBlockProps {
   width?: number;
+  height?: number;
   minHeight?: number;
   minWidth?: number;
   maxWidth?: number;
@@ -33,7 +34,7 @@ export const CardBlock = React.memo(function CardBlock() {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
-  const { width = 300, minHeight = 200, minWidth = 200, maxWidth = 600, title = 'Card title', description = 'Card description' } = useNode((node) => node.data.props as CardBlockProps) ?? {};
+  const { width = 300, height = 240, minHeight = 200, minWidth = 200, maxWidth = 600, title = 'Card title', description = 'Card description' } = useNode((node) => node.data.props as CardBlockProps) ?? {};
   const { theme } = useTheme();
 
   const t = tokens[theme.colorScheme];
@@ -41,21 +42,33 @@ export const CardBlock = React.memo(function CardBlock() {
 
   return (
     <Resizable
-      size={{ width: width ?? '100%', height: 'auto' }}
+      size={{ width: width ?? 300, height: height ?? 240 }}
       minWidth={200}
       maxWidth={800}
-      minHeight={minHeight ?? 200}
-      enable={enabled && isSelected ? { right: true, left: true, bottom: true } : {}}
+      minHeight={150}
+      enable={enabled && isSelected ? { right: true, bottom: true, bottomRight: true } : {}}
       onResizeStop={(_e, _dir, ref) => {
-        const w = ref ? parseFloat((ref as HTMLElement).style.width) : NaN;
-        if (!isNaN(w)) setProp((p: Record<string, unknown>) => { p.width = Math.round(w); }, 300);
+        const newW = ref ? parseFloat((ref as HTMLElement).style.width) : NaN;
+        const newH = ref ? parseFloat((ref as HTMLElement).style.height) : NaN;
+        setProp((p: Record<string, unknown>) => {
+          if (!isNaN(newW)) p.width = Math.round(newW);
+          if (!isNaN(newH)) p.height = Math.round(newH);
+        }, 300);
       }}
       handleStyles={{
         right: { width: 4, background: accentColor, opacity: 0.6, cursor: 'col-resize', zIndex: 10 },
-        left: { width: 4, background: accentColor, opacity: 0.6, cursor: 'col-resize', zIndex: 10 },
         bottom: { height: 4, background: accentColor, opacity: 0.6, cursor: 'row-resize', zIndex: 10 },
+        bottomRight: {
+          width: 12,
+          height: 12,
+          background: accentColor,
+          opacity: 0.8,
+          borderRadius: '0 0 8px 0',
+          cursor: 'nwse-resize',
+          zIndex: 10,
+        },
       }}
-      style={{ flexShrink: 0 }}
+      style={{ display: 'inline-flex', minWidth: 200 }}
     >
       <div
         ref={(ref) => { if (ref) connect(ref); }}
@@ -63,7 +76,7 @@ export const CardBlock = React.memo(function CardBlock() {
         style={{
           position: 'relative',
           height: '100%',
-          minHeight: `${minHeight ?? 200}px`,
+          minHeight: `${height ?? 240}px`,
           background: t.cardBg,
           border: `1px solid ${t.cardBorder}`,
           borderRadius: 8,
@@ -99,6 +112,7 @@ const cardBlockCraft = {
   displayName: 'Card',
   props: {
     width: 300,
+    height: 240,
     minHeight: 200,
     minWidth: 200,
     maxWidth: 600,
@@ -112,9 +126,9 @@ const cardBlockCraft = {
 
 function CardBlockSettings() {
   const { actions: { setProp } } = useNode();
-  const { width, minHeight, title, description } = useNode((node) => ({
+  const { width, height, title, description } = useNode((node) => ({
     width: (node.data.props.width as number) ?? 300,
-    minHeight: (node.data.props.minHeight as number) ?? 200,
+    height: (node.data.props.height as number) ?? 240,
     title: (node.data.props.title as string) ?? '',
     description: (node.data.props.description as string) ?? '',
   }));
@@ -124,8 +138,8 @@ function CardBlockSettings() {
     <div className="p-3 space-y-4 text-white">
       <div><label className={labelCls}>Title</label><input value={title} onChange={(e) => setProp((p: Record<string, unknown>) => { p.title = e.target.value; }, 1000)} className={inputCls} /></div>
       <div><label className={labelCls}>Description</label><textarea value={description} onChange={(e) => setProp((p: Record<string, unknown>) => { p.description = e.target.value; }, 1000)} className={inputCls} rows={3} /></div>
-      <div><label className={labelCls}>Width: {width}px</label><input type="number" min={200} max={600} value={width} onChange={(e) => setProp((p: Record<string, unknown>) => { p.width = Number(e.target.value); }, 500)} className={inputCls} /></div>
-      <div><label className={labelCls}>Min height: {minHeight}px</label><input type="range" min={100} max={500} step={20} value={minHeight} onChange={(e) => setProp((p: Record<string, unknown>) => { p.minHeight = Number(e.target.value); }, 500)} className="w-full" /></div>
+      <div><label className={labelCls}>Width: {width}px</label><input type="range" min={200} max={800} step={10} value={width} onChange={(e) => setProp((p: Record<string, unknown>) => { p.width = Number(e.target.value); }, 300)} className="w-full" /></div>
+      <div><label className={labelCls}>Height: {height}px</label><input type="range" min={150} max={600} step={10} value={height} onChange={(e) => setProp((p: Record<string, unknown>) => { p.height = Number(e.target.value); }, 300)} className="w-full" /></div>
     </div>
   );
 }

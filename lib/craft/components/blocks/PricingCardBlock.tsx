@@ -1,6 +1,6 @@
 'use client';
 
-import { useNode } from '@craftjs/core';
+import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { Resizable } from 're-resizable';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
@@ -35,6 +35,7 @@ export interface PricingCardBlockProps {
   highlighted: boolean;
   ctaText: string;
   width?: number;
+  height?: number;
   minHeight?: number;
   minWidth?: number;
   maxWidth?: number;
@@ -45,6 +46,7 @@ const DEFAULT_FEATURES = ['Feature 1', 'Feature 2'];
 export const PricingCardBlock = React.memo(function PricingCardBlock() {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
+  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const props = useNode((node) => node.data.props as Partial<PricingCardBlockProps>) ?? {};
   const {
     name = 'Pro',
@@ -55,6 +57,7 @@ export const PricingCardBlock = React.memo(function PricingCardBlock() {
     highlighted = false,
     ctaText = 'Get Started',
     width = 300,
+    height = 440,
     minHeight = 400,
     minWidth = 200,
     maxWidth = 600,
@@ -67,23 +70,41 @@ export const PricingCardBlock = React.memo(function PricingCardBlock() {
 
   return (
     <Resizable
-      size={{ width: width ?? 300, height: 'auto' }}
+      size={{ width: width ?? 300, height: height ?? 440 }}
       minWidth={minWidth ?? 200}
       maxWidth={maxWidth ?? 600}
-      minHeight={minHeight ?? 400}
-      enable={isSelected ? { right: true, left: true, bottom: true } : false}
-      onResizeStop={(_e, _dir, _ref, d) => {
+      minHeight={150}
+      enable={enabled && isSelected ? { right: true, bottom: true, bottomRight: true } : {}}
+      onResizeStop={(_e, _dir, ref) => {
+        const newW = ref ? parseFloat((ref as HTMLElement).style.width) : NaN;
+        const newH = ref ? parseFloat((ref as HTMLElement).style.height) : NaN;
         setProp((p: Record<string, unknown>) => {
-          p.width = Math.round((p.width as number ?? 300) + d.width);
+          if (!isNaN(newW)) p.width = Math.round(newW);
+          if (!isNaN(newH)) p.height = Math.round(newH);
         }, 300);
       }}
-      style={{ flexShrink: 0 }}
+      handleStyles={{
+        right: { width: 4, background: accentColor, opacity: 0.6, cursor: 'col-resize', zIndex: 10 },
+        bottom: { height: 4, background: accentColor, opacity: 0.6, cursor: 'row-resize', zIndex: 10 },
+        bottomRight: {
+          width: 12,
+          height: 12,
+          background: accentColor,
+          opacity: 0.8,
+          borderRadius: '0 0 8px 0',
+          cursor: 'nwse-resize',
+          zIndex: 10,
+        },
+      }}
+      style={{ display: 'inline-flex', minWidth: 200 }}
     >
       <div
-        ref={(ref) => { if (ref) connect(drag(ref)); }}
-        className={isSelected ? 'outline outline-2 outline-[#FF6B35] outline-offset-0' : ''}
+        ref={(ref) => { if (ref) connect(ref); }}
+        className={isSelected ? 'craft-node-selected' : ''}
         style={{
-          minHeight: `${minHeight ?? 400}px`,
+          position: 'relative',
+          height: '100%',
+          minHeight: `${height ?? 440}px`,
           background: highlighted ? `rgba(${rgb},0.05)` : t.cardBg,
           border: highlighted ? `1px solid ${accentColor}` : `1px solid ${t.cardBorder}`,
           borderRadius: 8,
@@ -94,6 +115,23 @@ export const PricingCardBlock = React.memo(function PricingCardBlock() {
           cursor: 'default',
         }}
       >
+        {enabled && (
+          <div
+            ref={(ref) => { if (ref) drag(ref); }}
+            style={{
+              position: 'absolute',
+              top: 8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 32,
+              height: 4,
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: 2,
+              cursor: 'grab',
+              zIndex: 20,
+            }}
+          />
+        )}
         <p style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentColor, margin: '0 0 16px' }}>{name}</p>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 16 }}>
           <span style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: t.text }}>{price}</span>
@@ -132,7 +170,7 @@ export const PricingCardBlock = React.memo(function PricingCardBlock() {
 
 const PricingCardBlockSettings = () => {
   const { actions: { setProp } } = useNode();
-  const { name, price, period, description, features, highlighted, ctaText, width, minHeight } = useNode((node) => ({
+  const { name, price, period, description, features, highlighted, ctaText, width, height, minHeight } = useNode((node) => ({
     name: (node.data.props.name as string) ?? 'Pro',
     price: (node.data.props.price as string) ?? '79',
     period: (node.data.props.period as string) ?? '/mo',
@@ -141,6 +179,7 @@ const PricingCardBlockSettings = () => {
     highlighted: (node.data.props.highlighted as boolean) ?? false,
     ctaText: (node.data.props.ctaText as string) ?? 'Get Started',
     width: (node.data.props.width as number) ?? 300,
+    height: (node.data.props.height as number) ?? 440,
     minHeight: (node.data.props.minHeight as number) ?? 400,
   }));
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
@@ -162,8 +201,8 @@ const PricingCardBlockSettings = () => {
       <div><label className={labelCls}>Description</label><input type="text" value={description} onChange={(e) => setProp((p: Record<string, unknown>) => { p.description = e.target.value; }, 1000)} className={inputCls} /></div>
       <div><label className={labelCls}>CTA text</label><input type="text" value={ctaText} onChange={(e) => setProp((p: Record<string, unknown>) => { p.ctaText = e.target.value; }, 500)} className={inputCls} /></div>
       <label className="flex items-center gap-2 text-xs text-gray-400"><input type="checkbox" checked={highlighted} onChange={(e) => setProp((p: Record<string, unknown>) => { p.highlighted = e.target.checked; })} className="rounded border-gray-600 bg-gray-700" /> Highlighted</label>
-      <div><label className={labelCls}>Width: {width}px</label><input type="number" min={200} max={600} value={width} onChange={(e) => setProp((p: Record<string, unknown>) => { p.width = Number(e.target.value); }, 500)} className={inputCls} /></div>
-      <div><label className={labelCls}>Min height: {minHeight}px</label><input type="range" min={300} max={700} step={50} value={minHeight} onChange={(e) => setProp((p: Record<string, unknown>) => { p.minHeight = Number(e.target.value); }, 500)} className="w-full" /></div>
+      <div><label className={labelCls}>Width: {width}px</label><input type="range" min={200} max={800} step={10} value={width} onChange={(e) => setProp((p: Record<string, unknown>) => { p.width = Number(e.target.value); }, 300)} className="w-full" /></div>
+      <div><label className={labelCls}>Height: {height}px</label><input type="range" min={150} max={700} step={10} value={height} onChange={(e) => setProp((p: Record<string, unknown>) => { p.height = Number(e.target.value); }, 300)} className="w-full" /></div>
       <div>
         <label className={labelCls}>Features</label>
         {(features ?? []).map((f, j) => (
@@ -189,6 +228,7 @@ const pricingCardBlockCraft = {
     highlighted: false,
     ctaText: 'Get Started',
     width: 300,
+    height: 440,
     minHeight: 400,
     minWidth: 200,
     maxWidth: 600,
