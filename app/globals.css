@@ -1483,11 +1483,7 @@ html body .craftjs-renderer [data-id].craft-node-selected {
   outline: 2px solid #FF6B35 !important;
 }
 
-/* CiC resize handles — невидимы по умолчанию, появляются при hover */
+/* CiC resize handles — всегда прозрачные, resize работает */
 .cic-resizable > div:last-child > div {
   opacity: 0 !important;
-  transition: opacity 0.15s ease;
-}
-.cic-resizable:hover > div:last-child > div {
-  opacity: 1 !important;
 }
