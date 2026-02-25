@@ -71,6 +71,7 @@ export const PricingCardBlock = React.memo(function PricingCardBlock() {
   return (
     <Resizable
       size={{ width: width ?? 300, height: height ?? 440 }}
+      className="cic-resizable"
       minWidth={minWidth ?? 200}
       maxWidth={maxWidth ?? 600}
       minHeight={150}
@@ -91,14 +92,14 @@ export const PricingCardBlock = React.memo(function PricingCardBlock() {
         }, 300);
       }}
       handleStyles={enabled && isSelected ? {
-        right: { width: 3, background: 'rgba(255,255,255,0.3)', cursor: 'col-resize', zIndex: 10 },
-        left: { width: 3, background: 'rgba(255,255,255,0.3)', cursor: 'col-resize', zIndex: 10 },
-        bottom: { height: 3, background: 'rgba(255,255,255,0.3)', cursor: 'row-resize', zIndex: 10 },
-        top: { height: 3, background: 'rgba(255,255,255,0.3)', cursor: 'row-resize', zIndex: 10 },
-        bottomRight: { width: 8, height: 8, background: 'rgba(255,255,255,0.6)', borderRadius: 2, cursor: 'nwse-resize', zIndex: 20, bottom: 2, right: 2 },
-        bottomLeft: { width: 8, height: 8, background: 'rgba(255,255,255,0.6)', borderRadius: 2, cursor: 'nesw-resize', zIndex: 20, bottom: 2, left: 2 },
-        topRight: { width: 8, height: 8, background: 'rgba(255,255,255,0.6)', borderRadius: 2, cursor: 'nesw-resize', zIndex: 20, top: 2, right: 2 },
-        topLeft: { width: 8, height: 8, background: 'rgba(255,255,255,0.6)', borderRadius: 2, cursor: 'nwse-resize', zIndex: 20, top: 2, left: 2 },
+        right: { width: 2, background: 'rgba(255,255,255,0.2)', cursor: 'col-resize', zIndex: 10 },
+        left: { width: 2, background: 'rgba(255,255,255,0.2)', cursor: 'col-resize', zIndex: 10 },
+        bottom: { height: 2, background: 'rgba(255,255,255,0.2)', cursor: 'row-resize', zIndex: 10 },
+        top: { height: 2, background: 'rgba(255,255,255,0.2)', cursor: 'row-resize', zIndex: 10 },
+        bottomRight: { width: 5, height: 5, background: 'rgba(255,255,255,0.5)', borderRadius: 1, cursor: 'nwse-resize', zIndex: 20, bottom: 1, right: 1 },
+        bottomLeft: { width: 5, height: 5, background: 'rgba(255,255,255,0.5)', borderRadius: 1, cursor: 'nesw-resize', zIndex: 20, bottom: 1, left: 1 },
+        topRight: { width: 5, height: 5, background: 'rgba(255,255,255,0.5)', borderRadius: 1, cursor: 'nesw-resize', zIndex: 20, top: 1, right: 1 },
+        topLeft: { width: 5, height: 5, background: 'rgba(255,255,255,0.5)', borderRadius: 1, cursor: 'nwse-resize', zIndex: 20, top: 1, left: 1 },
       } : {
         right: {}, left: {}, bottom: {}, top: {},
         bottomRight: {}, bottomLeft: {}, topRight: {}, topLeft: {},
