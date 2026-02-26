@@ -147,10 +147,6 @@ export const TronContact = React.memo(function TronContact() {
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
 
-  const gridLines = showGrid
-    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
-    : 'none';
-
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType !== 'none') {
     animAttrs['data-animate'] = animationType;
@@ -187,13 +183,29 @@ export const TronContact = React.memo(function TronContact() {
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
-        backgroundImage: gridLines,
-        backgroundSize: showGrid ? '50px 50px' : 'auto',
         minHeight: `${sectionHeight}vh`,
+        position: 'relative',
       }}
     >
+      {/* Grid overlay — key заставляет перемонтировать при смене темы */}
+      <div
+        key={scheme}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: showGrid
+            ? `linear-gradient(${t.gridColor} 1px, transparent 1px),
+               linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+            : 'none',
+          backgroundSize: showGrid ? '50px 50px' : 'auto',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
       <div
         style={{
+          position: 'relative',
+          zIndex: 1,
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
           gap: isMobile ? 32 : 64,

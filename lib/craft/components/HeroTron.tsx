@@ -119,10 +119,6 @@ export const HeroTron = React.memo(function HeroTron() {
         }
       : {};
 
-  const gridLines = showGrid
-    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
-    : 'none';
-
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType !== 'none') {
     animAttrs['data-animate'] = animationType;
@@ -146,11 +142,25 @@ export const HeroTron = React.memo(function HeroTron() {
       className={`w-full relative overflow-hidden flex flex-col items-center justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
-        backgroundImage: gridLines,
-        backgroundSize: showGrid ? '50px 50px' : 'auto',
         minHeight: `${sectionHeight}vh`,
+        position: 'relative',
       }}
     >
+      {/* Grid overlay — key заставляет перемонтировать при смене темы */}
+      <div
+        key={scheme}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: showGrid
+            ? `linear-gradient(${t.gridColor} 1px, transparent 1px),
+               linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+            : 'none',
+          backgroundSize: showGrid ? '50px 50px' : 'auto',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
       {/* Spotlight overlay */}
       {spotlightIntensity != null && spotlightIntensity > 0 && (
         <div
@@ -165,7 +175,8 @@ export const HeroTron = React.memo(function HeroTron() {
 
       {/* Content */}
       <div
-        className="max-w-3xl mx-auto w-full px-4 sm:px-6 text-center relative z-10"
+        className="max-w-3xl mx-auto w-full px-4 sm:px-6 text-center"
+        style={{ position: 'relative', zIndex: 1 }}
         {...animAttrs}
       >
         {showBadge && badge && (

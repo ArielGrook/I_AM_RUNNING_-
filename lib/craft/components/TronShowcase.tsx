@@ -323,10 +323,6 @@ export const TronShowcase = React.memo(function TronShowcase() {
     bg: scheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
   };
 
-  const gridLines = showGrid
-    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
-    : 'none';
-
   const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
 
   React.useEffect(() => {
@@ -375,13 +371,29 @@ export const TronShowcase = React.memo(function TronShowcase() {
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
-        backgroundImage: gridLines,
-        backgroundSize: showGrid ? '50px 50px' : 'auto',
         minHeight: `${sectionHeight}vh`,
+        position: 'relative',
       }}
     >
+      {/* Grid overlay — key заставляет перемонтировать при смене темы */}
+      <div
+        key={scheme}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: showGrid
+            ? `linear-gradient(${t.gridColor} 1px, transparent 1px),
+               linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+            : 'none',
+          backgroundSize: showGrid ? '50px 50px' : 'auto',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
       <div
         style={{
+          position: 'relative',
+          zIndex: 1,
           maxWidth: 1200,
           margin: '0 auto',
           width: '100%',
