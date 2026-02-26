@@ -11,6 +11,17 @@ function hexToRgb(hex: string): string {
   return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
 }
 
+function getEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  const ytMatch = url.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
+  );
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=0&rel=0`;
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  return null;
+}
+
 // ── Tokens (copy from TronStats, bg from darkBg/lightBg) ───────────────────
 const tokens = {
   dark: {
@@ -43,6 +54,8 @@ interface ShowcaseTab {
   body: string;
   bullets?: ShowcaseBullet[];
   imageBase64?: string;
+  videoUrl?: string;
+  mediaType?: 'image' | 'video';
   ctaText?: string;
   ctaShow?: boolean;
 }
@@ -107,15 +120,6 @@ const DEFAULT_ITEMS: ShowcaseTab[] = [
   },
 ];
 
-// ── Image placeholder SVG ──────────────────────────────────────────────
-const ImagePlaceholder = ({ color }: { color: string }) => (
-  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1" opacity="0.3">
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <circle cx="8.5" cy="8.5" r="1.5" />
-    <polyline points="21 15 16 10 5 21" />
-  </svg>
-);
-
 // ── Tab content panel (shared by tabs-left, tabs-top, accordion) ───────────
 function TabContentPanel({
   item,
@@ -137,10 +141,38 @@ function TabContentPanel({
           border: `1px solid ${t.border}`,
           marginBottom: 28,
           aspectRatio: '16/9',
+          maxHeight: 340,
           background: `rgba(${hexToRgb(accentColor)}, 0.03)`,
+          position: 'relative',
         }}
       >
-        {item.imageBase64 ? (
+        {item.mediaType === 'video' && item.videoUrl ? (
+          (() => {
+            const embedUrl = getEmbedUrl(item.videoUrl);
+            return embedUrl ? (
+              <iframe
+                src={embedUrl}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+                allowFullScreen
+              />
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: t.textSecondary,
+                  fontSize: 13,
+                }}
+              >
+                Invalid video URL
+              </div>
+            );
+          })()
+        ) : item.imageBase64 ? (
           <img
             src={item.imageBase64}
             alt=""
@@ -154,9 +186,18 @@ function TabContentPanel({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 8,
             }}
           >
-            <ImagePlaceholder color={accentColor} />
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1" opacity="0.3">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            <span style={{ color: t.textSecondary, fontSize: 12, opacity: 0.5 }}>
+              Add image or video
+            </span>
           </div>
         )}
       </div>
@@ -628,6 +669,8 @@ function TronShowcaseSettings() {
           body: 'Body text here.',
           bullets: [],
           imageBase64: undefined,
+          mediaType: 'image' as const,
+          videoUrl: undefined,
           ctaText: 'Learn more',
           ctaShow: false,
         },
@@ -788,67 +831,101 @@ function TronShowcaseSettings() {
                   />
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {item.imageBase64 && (
-                  <img
-                    src={item.imageBase64}
-                    alt=""
-                    style={{ width: 48, height: 32, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
-                  />
+              <div>
+                <label className={labelCls}>Media</label>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                  {(['image', 'video'] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                        if (items[i]) items[i] = { ...items[i], mediaType: type };
+                        p.items = items;
+                      }, 0)}
+                      style={{
+                        padding: '4px 12px',
+                        borderRadius: 6,
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: 11,
+                        fontWeight: 500,
+                        background: (item.mediaType ?? 'image') === type ? 'rgba(255,107,53,0.15)' : 'rgba(255,255,255,0.05)',
+                        color: (item.mediaType ?? 'image') === type ? '#FF6B35' : '#a1a1aa',
+                      }}
+                    >
+                      {type === 'image' ? '🖼 Image' : '▶ Video'}
+                    </button>
+                  ))}
+                </div>
+                {(item.mediaType ?? 'image') === 'image' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {item.imageBase64 && (
+                      <img
+                        src={item.imageBase64}
+                        alt=""
+                        style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
+                      />
+                    )}
+                    <label
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '5px 10px',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        background: 'rgba(255,107,53,0.1)',
+                        border: '1px solid rgba(255,107,53,0.3)',
+                        color: '#FF6B35',
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {item.imageBase64 ? '↺ Change' : '+ Upload image'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const base64 = ev.target?.result as string;
+                            setProp((p: Record<string, unknown>) => {
+                              const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                              if (items[i]) items[i] = { ...items[i], imageBase64: base64 };
+                              p.items = items;
+                            }, 0);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                    {item.imageBase64 && (
+                      <button
+                        type="button"
+                        onClick={() => updateItem(i, 'imageBase64', undefined)}
+                        style={{ background: 'none', border: 'none', color: '#71717a', cursor: 'pointer' }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 )}
-                <label
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '5px 10px',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                    background: 'rgba(255,107,53,0.1)',
-                    border: '1px solid rgba(255,107,53,0.3)',
-                    color: '#FF6B35',
-                    fontSize: 11,
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {item.imageBase64 ? '↺ Change' : '+ Upload image'}
+                {item.mediaType === 'video' && (
                   <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = (ev) => {
-                        const base64 = ev.target?.result as string;
-                        setProp((p: Record<string, unknown>) => {
-                          const items = [...((p.items as ShowcaseTab[]) ?? [])];
-                          if (items[i]) items[i] = { ...items[i], imageBase64: base64 };
-                          p.items = items;
-                        }, 0);
-                      };
-                      reader.readAsDataURL(file);
-                    }}
+                    type="text"
+                    placeholder="YouTube or Vimeo URL"
+                    value={item.videoUrl ?? ''}
+                    onChange={(e) => setProp((p: Record<string, unknown>) => {
+                      const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                      if (items[i]) items[i] = { ...items[i], videoUrl: e.target.value };
+                      p.items = items;
+                    }, 500)}
+                    className={inputCls}
                   />
-                </label>
-                {item.imageBase64 && (
-                  <button
-                    type="button"
-                    onClick={() => updateItem(i, 'imageBase64', undefined)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#71717a',
-                      cursor: 'pointer',
-                      fontSize: 16,
-                      padding: 0,
-                    }}
-                    title="Remove image"
-                  >
-                    ×
-                  </button>
                 )}
               </div>
             </div>
