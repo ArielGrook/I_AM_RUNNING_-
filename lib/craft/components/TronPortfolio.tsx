@@ -817,7 +817,7 @@ function TronPortfolioSettings() {
       </div>
     </div>
   );
-});
+}
 
 // ── Craft config ──────────────────────────────────────────────────────────
 const tronPortfolioCraft = {
