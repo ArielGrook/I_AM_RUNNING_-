@@ -6,14 +6,10 @@ import { Upload, ChevronDown } from 'lucide-react';
 import {
   Container,
   Text,
-  Hero,
   HeroTron,
   Button,
   Image,
-  Header,
   HeaderTron,
-  CTA,
-  Features,
   TronFeatures,
   TronStats,
   TronPortfolio,
@@ -23,10 +19,6 @@ import {
   TronFooter,
   TronContact,
   TronShowcase,
-  Footer,
-  Testimonials,
-  Pricing,
-  FAQ,
   Divider,
   Video,
   HtmlBlock,
@@ -47,7 +39,7 @@ const tabs: { id: TabId; label: string }[] = [
   { id: 'presets', label: '⚡ Presets' },
 ];
 
-const categories: { key: 'basic' | 'cicBlocks' | 'sections' | 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
+const categories: { key: 'basic' | 'cicBlocks' | 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
   {
     key: 'basic',
     title: 'Basic',
@@ -68,20 +60,6 @@ const categories: { key: 'basic' | 'cicBlocks' | 'sections' | 'tronSections'; ti
       { name: 'LayoutBlock', label: 'Layout', icon: '▦', component: LayoutBlock, canvas: true },
       { name: 'CardBlock', label: 'Card', icon: '▢', component: CardBlock, canvas: false },
       { name: 'PricingCardBlock', label: 'Pricing Card', icon: '💰', component: PricingCardBlock, canvas: false },
-    ],
-  },
-  {
-    key: 'sections',
-    title: 'CLASSIC',
-    items: [
-      { name: 'Hero', label: 'Hero', icon: '◉', component: Hero, canvas: true },
-      { name: 'Header', label: 'Header', icon: '☰', component: Header, canvas: true },
-      { name: 'Features', label: 'Features', icon: '✦', component: Features, canvas: true },
-      { name: 'CTA', label: 'CTA', icon: '▶', component: CTA, canvas: true },
-      { name: 'Testimonials', label: 'Testimonials', icon: '💬', component: Testimonials, canvas: true },
-      { name: 'Pricing', label: 'Pricing', icon: '💰', component: Pricing, canvas: true },
-      { name: 'FAQ', label: 'FAQ', icon: '❓', component: FAQ, canvas: true },
-      { name: 'Footer', label: 'Footer', icon: '▬', component: Footer, canvas: true },
     ],
   },
   {
@@ -108,8 +86,8 @@ export const Toolbox = () => {
   const { t } = useEditorTheme();
   const [activeTab, setActiveTab] = useState<TabId>('components');
   const [importing, setImporting] = useState(false);
-  const [openGroups, setOpenGroups] = useState({ basic: true, cicBlocks: true, sections: true, tronSections: false });
-  const toggleGroup = (key: 'basic' | 'cicBlocks' | 'sections' | 'tronSections') =>
+  const [openGroups, setOpenGroups] = useState({ basic: true, cicBlocks: true, tronSections: false });
+  const toggleGroup = (key: 'basic' | 'cicBlocks' | 'tronSections') =>
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleZipImport = useCallback(
