@@ -45,7 +45,7 @@ export interface TestimonialItem {
   company: string;
   text: string;
   rating: number;
-  avatarUrl?: string;
+  avatarBase64?: string;
 }
 
 interface TronTestimonialsProps {
@@ -73,8 +73,8 @@ function normalizeTestimonialItem(raw: unknown): TestimonialItem {
     const role = (o.role ?? '') as string;
     const company = (o.company ?? '') as string;
     const rating = typeof o.rating === 'number' ? o.rating : 5;
-    const avatarUrl = (o.avatarUrl ?? '') as string;
-    return { name: String(name ?? ''), role: String(role ?? ''), company: String(company ?? ''), text: String(text ?? ''), rating, avatarUrl: avatarUrl || undefined };
+    const avatarBase64 = (o.avatarBase64 ?? o.avatarUrl ?? '') as string;
+    return { name: String(name ?? ''), role: String(role ?? ''), company: String(company ?? ''), text: String(text ?? ''), rating, avatarBase64: avatarBase64 || undefined };
   }
   return { name: '', role: '', company: '', text: '', rating: 5 };
 }
@@ -125,7 +125,7 @@ interface TestimonialCardDisplayProps {
 function TestimonialCardDisplay({ item, t, accentColor, enabled }: TestimonialCardDisplayProps) {
   const [hovered, setHovered] = React.useState(false);
   const [imgError, setImgError] = React.useState(false);
-  const showAvatar = item.avatarUrl && !imgError;
+  const showAvatar = item.avatarBase64 && !imgError;
   const initial = (item.name ?? '').charAt(0) || '?';
 
   return (
@@ -182,7 +182,7 @@ function TestimonialCardDisplay({ item, t, accentColor, enabled }: TestimonialCa
         >
           {showAvatar ? (
             <img
-              src={item.avatarUrl!}
+              src={item.avatarBase64!}
               alt={item.name ?? ''}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={() => setImgError(true)}
@@ -659,13 +659,75 @@ function TronTestimonialsSettings() {
                 className={inputCls}
                 placeholder="Testimonial text"
               />
-              <input
-                type="text"
-                placeholder="https://... (optional photo URL)"
-                value={item.avatarUrl ?? ''}
-                onChange={(e) => updateItem(i, 'avatarUrl', e.target.value)}
-                className={inputCls}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                {item.avatarBase64 && (
+                  <img
+                    src={item.avatarBase64}
+                    alt=""
+                    style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                  />
+                )}
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 10px',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    background: 'rgba(255,107,53,0.1)',
+                    border: '1px solid rgba(255,107,53,0.3)',
+                    color: '#FF6B35',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {item.avatarBase64 ? '↺ Change photo' : '+ Upload photo'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const base64 = ev.target?.result as string;
+                        setProp((p: Record<string, unknown>) => {
+                          const items = [...((p.items as TestimonialItem[]) ?? [])];
+                          if (items[i]) items[i] = { ...items[i], avatarBase64: base64 };
+                          p.items = items;
+                        }, 0);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                {item.avatarBase64 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as TestimonialItem[]) ?? [])];
+                        if (items[i]) items[i] = { ...items[i], avatarBase64: undefined };
+                        p.items = items;
+                      }, 0)
+                    }
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#71717a',
+                      cursor: 'pointer',
+                      fontSize: 16,
+                      padding: 0,
+                    }}
+                    title="Remove photo"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
           ))}
           <button
