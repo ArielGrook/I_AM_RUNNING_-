@@ -86,6 +86,7 @@ interface FeatureItem {
 }
 
 interface TronFeaturesProps {
+  colorScheme?: 'dark' | 'light';
   accentColor?: string;
   darkBg?: string;
   lightBg?: string;
@@ -98,6 +99,58 @@ interface TronFeaturesProps {
   cardStyle?: 'border' | 'filled' | 'minimal';
   animationType?: string;
   animateDelay?: string;
+}
+
+// ── FeatureCardDisplay (internal, with hover) ──────────────────────────────
+interface FeatureCardDisplayProps {
+  item: FeatureItem;
+  cardStyle: 'border' | 'filled' | 'minimal';
+  cardStyles: Record<string, React.CSSProperties>;
+  accentColor: string;
+  t: { text: string; textSecondary: string };
+  hexToRgb: (hex: string) => string;
+  enabled: boolean;
+}
+
+function FeatureCardDisplay({ item, cardStyle, cardStyles, accentColor, t, hexToRgb, enabled }: FeatureCardDisplayProps) {
+  const [hovered, setHovered] = React.useState(false);
+  const baseStyle = cardStyles[cardStyle ?? 'border'] ?? cardStyles.border;
+
+  return (
+    <div
+      onMouseEnter={() => !enabled && setHovered(true)}
+      onMouseLeave={() => !enabled && setHovered(false)}
+      style={{
+        ...baseStyle,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        boxShadow: hovered ? `0 12px 40px rgba(${hexToRgb(accentColor)}, 0.15)` : '0 0 0 rgba(0,0,0,0)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+        ...(hovered && { borderColor: `rgba(${hexToRgb(accentColor)}, 0.4)` }),
+        cursor: 'default',
+      }}
+    >
+      <div
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: 10,
+          background: `rgba(${hexToRgb(accentColor)}, 0.12)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: accentColor,
+          marginBottom: 16,
+        }}
+      >
+        {FEATURE_ICONS[item.iconKey] ?? FEATURE_ICONS.zap}
+      </div>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: t.text, margin: 0, marginBottom: 8 }}>{item.title}</h3>
+      <p style={{ fontSize: 14, color: t.textSecondary, lineHeight: 1.6, margin: 0 }}>{item.description}</p>
+    </div>
+  );
 }
 
 const DEFAULT_ITEMS: FeatureItem[] = [
@@ -131,6 +184,7 @@ export const TronFeatures = React.memo(function TronFeatures() {
 
   const props = useNode((node) => node.data.props as Partial<TronFeaturesProps>) ?? {};
   const {
+    colorScheme = 'dark',
     accentColor: propAccent,
     darkBg = '#0a0a0a',
     lightBg = '#ffffff',
@@ -146,15 +200,18 @@ export const TronFeatures = React.memo(function TronFeatures() {
   } = props;
 
   const accentColor = propAccent ?? theme?.accentColor ?? '#FF6B35';
-  const colorScheme = theme?.colorScheme ?? 'dark';
-  const tokensBuilt = buildTokens(darkBg, lightBg);
-  const t = { ...tokensBuilt[colorScheme], accent: accentColor };
+  const scheme = colorScheme ?? theme?.colorScheme ?? 'dark';
+  const t = {
+    ...tokens[scheme],
+    accent: accentColor,
+    bg: scheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
+  };
 
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
 
-  const cardStyles = {
+  const cardStyles: Record<string, React.CSSProperties> = {
     border: {
       background: t.cardBg,
       border: `1px solid ${t.border}`,
@@ -176,8 +233,6 @@ export const TronFeatures = React.memo(function TronFeatures() {
     },
   };
 
-  const cardStyleObj = cardStyles[cardStyle] ?? cardStyles.border;
-
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType !== 'none') {
     animAttrs['data-animate'] = animationType;
@@ -191,6 +246,7 @@ export const TronFeatures = React.memo(function TronFeatures() {
 
   return (
     <section
+      key={`${scheme}-${showGrid}-${cardStyle}`}
       ref={(el) => {
         if (el) {
           connect(drag(el));
@@ -240,52 +296,16 @@ export const TronFeatures = React.memo(function TronFeatures() {
           }}
         >
           {list.map((item, i) => (
-            <div
+            <FeatureCardDisplay
               key={i}
-              style={{
-                ...cardStyleObj,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-              }}
-            >
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 10,
-                  background: `rgba(${hexToRgb(accentColor)}, 0.12)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: accentColor,
-                  marginBottom: 16,
-                }}
-              >
-                {FEATURE_ICONS[item.iconKey] ?? FEATURE_ICONS.zap}
-              </div>
-              <h3
-                style={{
-                  fontSize: 18,
-                  fontWeight: 600,
-                  color: t.text,
-                  margin: 0,
-                  marginBottom: 8,
-                }}
-              >
-                {item.title}
-              </h3>
-              <p
-                style={{
-                  fontSize: 14,
-                  color: t.textSecondary,
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}
-              >
-                {item.description}
-              </p>
-            </div>
+              item={item}
+              cardStyle={cardStyle}
+              cardStyles={cardStyles}
+              accentColor={accentColor}
+              t={t}
+              hexToRgb={hexToRgb}
+              enabled={enabled}
+            />
           ))}
         </div>
       </div>
@@ -638,6 +658,7 @@ function TronFeaturesSettings() {
 const tronFeaturesCraft = {
   displayName: 'Tron Features',
   props: {
+    colorScheme: 'dark',
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',
