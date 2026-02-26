@@ -60,7 +60,7 @@ export const Viewport = ({
   const { connectors, isDragging, actions, query } = useEditor((state) => ({
     isDragging: state.events.dragged.size > 0,
   }));
-  const { spotlightIntensity } = useEditor((state) => {
+  const { spotlightIntensity: previewSpotlightIntensity } = useEditor((state) => {
     let intensity = 0.12;
     const nodes = state.nodes || {};
     for (const id of Object.keys(nodes)) {
@@ -80,6 +80,12 @@ export const Viewport = ({
   const [accentColor, setAccentColor] = useState('#e11d48');
   const [spotlight, setSpotlight] = useState({ x: 0, y: 0, visible: false });
   const [canvasScheme, setCanvasScheme] = useState<'dark' | 'light'>('dark');
+
+  // Global cursor spotlight (editor mode)
+  const [spotlightEnabled, setSpotlightEnabled] = useState(false);
+  const [spotlightIntensity, setSpotlightIntensity] = useState(15);
+  const [showSpotlightMenu, setShowSpotlightMenu] = useState(false);
+  const [spotlightPos, setSpotlightPos] = useState({ x: 0, y: 0 });
   const { t } = useEditorTheme();
 
   const applySchemeToTronNodes = useCallback(
@@ -138,6 +144,31 @@ export const Viewport = ({
 
   const activeDevice = DEVICES.find((d) => d.key === viewport)!;
 
+  // Global spotlight: track cursor on document (not canvas) so it doesn't lag on scroll
+  React.useEffect(() => {
+    if (!spotlightEnabled) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setSpotlightPos({ x: e.clientX, y: e.clientY });
+    };
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, [spotlightEnabled]);
+
+  const spotlightButtonRef = React.useRef<HTMLDivElement>(null);
+
+  // Close spotlight dropdown on click outside
+  React.useEffect(() => {
+    if (!showSpotlightMenu) return;
+    const handler = (e: MouseEvent) => {
+      const el = spotlightButtonRef.current;
+      if (el && !el.contains(e.target as Node)) {
+        setShowSpotlightMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showSpotlightMenu]);
+
   const applyColorPreset = useCallback(
     (preset: { id: string; label: string; accent: string; bg: string }) => {
       try {
@@ -164,7 +195,23 @@ export const Viewport = ({
   );
 
   return (
-    <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${t('bg-[#e2e8f0]', 'bg-[#1f1f1f]')}`}>
+    <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative ${t('bg-[#e2e8f0]', 'bg-[#1f1f1f]')}`}>
+      {/* Global spotlight overlay (fixed, follows cursor) */}
+      {spotlightEnabled && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            pointerEvents: 'none',
+            zIndex: 9999,
+            background: `radial-gradient(circle 400px at ${spotlightPos.x}px ${spotlightPos.y}px,
+              rgba(255, 107, 53, ${spotlightIntensity / 100}) 0%,
+              transparent 70%
+            )`,
+          }}
+        />
+      )}
+
       {/* Secondary toolbar — viewport, accent presets, zoom (editor always dark) */}
       <div
         className="craft-canvas-toolbar flex items-center justify-between gap-3 shrink-0 px-4 h-11 border-b"
@@ -281,6 +328,112 @@ export const Viewport = ({
           {canvasScheme === 'dark' ? '☀' : '☾'}
         </button>
 
+        {/* Spotlight cursor */}
+        <div ref={spotlightButtonRef} style={{ position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => setShowSpotlightMenu(!showSpotlightMenu)}
+            title="Spotlight"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 28,
+              height: 28,
+              borderRadius: 6,
+              background: spotlightEnabled ? 'rgba(255,107,53,0.15)' : 'transparent',
+              border: spotlightEnabled ? '1px solid rgba(255,107,53,0.4)' : '1px solid transparent',
+              cursor: 'pointer',
+              color: spotlightEnabled ? '#FF6B35' : '#a1a1aa',
+              transition: 'all 0.15s',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4 0l16 12.279-6.951 1.17 4.325 8.817-2.474 1.234-4.369-8.91-6.531 5.677z" />
+            </svg>
+          </button>
+
+          {showSpotlightMenu && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                marginTop: 8,
+                zIndex: 100,
+                background: '#1a1a1a',
+                border: '1px solid rgba(255,107,53,0.3)',
+                borderRadius: 10,
+                padding: 16,
+                minWidth: 200,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 14,
+                }}
+              >
+                <span style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>Spotlight cursor</span>
+                <button
+                  type="button"
+                  onClick={() => setSpotlightEnabled(!spotlightEnabled)}
+                  style={{
+                    width: 36,
+                    height: 20,
+                    borderRadius: 10,
+                    background: spotlightEnabled ? '#FF6B35' : '#333',
+                    border: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'background 0.2s',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 2,
+                      left: spotlightEnabled ? 18 : 2,
+                      width: 16,
+                      height: 16,
+                      borderRadius: '50%',
+                      background: '#fff',
+                      transition: 'left 0.2s',
+                    }}
+                  />
+                </button>
+              </div>
+
+              <div style={{ opacity: spotlightEnabled ? 1 : 0.4 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginBottom: 6,
+                  }}
+                >
+                  <span style={{ fontSize: 11, color: '#a1a1aa' }}>Intensity</span>
+                  <span style={{ fontSize: 11, color: '#FF6B35' }}>{spotlightIntensity}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={40}
+                  step={1}
+                  value={spotlightIntensity}
+                  disabled={!spotlightEnabled}
+                  onChange={(e) => setSpotlightIntensity(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: '#FF6B35' }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Center: color presets */}
         <div
           className="flex items-center gap-1.5 px-3"
@@ -382,7 +535,7 @@ export const Viewport = ({
                     transition: 'opacity 300ms ease',
                     opacity: spotlight.visible ? 1 : 0,
                     background: spotlight.visible
-                      ? `radial-gradient(600px at ${spotlight.x}px ${spotlight.y}px, rgba(${hexToRgb(accentColor)},${spotlightIntensity}) 0%, transparent 60%)`
+                      ? `radial-gradient(600px at ${spotlight.x}px ${spotlight.y}px, rgba(${hexToRgb(accentColor)},${previewSpotlightIntensity > 1 ? previewSpotlightIntensity / 100 : previewSpotlightIntensity}) 0%, transparent 60%)`
                       : 'none',
                   }}
                 />
