@@ -126,9 +126,8 @@ function FeatureCardDisplay({ item, cardStyle, cardStyles, accentColor, t, hexTo
         flexDirection: 'column',
         alignItems: 'flex-start',
         transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-        boxShadow: hovered ? `0 12px 40px rgba(${hexToRgb(accentColor)}, 0.15)` : '0 0 0 rgba(0,0,0,0)',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-        ...(hovered && cardStyle === 'border' && { borderColor: `rgba(${hexToRgb(accentColor)}, 0.4)` }),
+        boxShadow: hovered ? `0 12px 40px rgba(${hexToRgb(accentColor)}, 0.15)` : 'none',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         cursor: 'default',
       }}
     >
@@ -172,16 +171,6 @@ export const TronFeatures = React.memo(function TronFeatures() {
   const containerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
 
-  React.useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setIsMobile((entry?.contentRect?.width ?? 0) < 520);
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   const props = useNode((node) => node.data.props as Partial<TronFeaturesProps>) ?? {};
   const {
     colorScheme = 'dark',
@@ -198,6 +187,20 @@ export const TronFeatures = React.memo(function TronFeatures() {
     animationType = 'none',
     animateDelay = '0',
   } = props;
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const checkWidth = () => {
+      setIsMobile(el.getBoundingClientRect().width < 520);
+    };
+    checkWidth();
+    const observer = new ResizeObserver(([entry]) => {
+      setIsMobile((entry?.contentRect?.width ?? 0) < 520);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [colorScheme, cardStyle]);
 
   const accentColor = propAccent ?? theme?.accentColor ?? '#FF6B35';
   const scheme = colorScheme ?? theme?.colorScheme ?? 'dark';
@@ -248,7 +251,7 @@ export const TronFeatures = React.memo(function TronFeatures() {
 
   return (
     <section
-      key={`${scheme}-${showGrid}-${cardStyle}`}
+      key={`${scheme}-${cardStyle}`}
       ref={(el) => {
         if (el) {
           connect(drag(el));
@@ -296,6 +299,7 @@ export const TronFeatures = React.memo(function TronFeatures() {
             gridTemplateColumns: isMobile ? '1fr' : `repeat(${columns ?? 3}, 1fr)`,
             gap: isMobile ? 16 : 24,
             alignItems: 'start',
+            width: '100%',
           }}
         >
           {list.map((item, i) => (
