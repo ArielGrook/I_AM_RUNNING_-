@@ -41,10 +41,9 @@ function buildTokens(darkBg: string, lightBg: string) {
 // ── Interfaces ───────────────────────────────────────────────────────────
 export interface PortfolioItem {
   title: string;
+  description: string;
   category: string;
   imageBase64?: string;
-  imageUrl?: string; // legacy, used if imageBase64 not set
-  link?: string;
 }
 
 interface TronPortfolioProps {
@@ -56,10 +55,10 @@ interface TronPortfolioProps {
   showGrid?: boolean;
   title?: string;
   subtitle?: string;
-  columns?: 2 | 3 | 4;
+  visibleCards?: 2 | 3;
   items?: PortfolioItem[];
-  showLoadMore?: boolean;
-  loadMoreText?: string;
+  autoplay?: boolean;
+  autoplaySpeed?: number;
   animationType?: string;
   animateDelay?: string;
 }
@@ -67,25 +66,24 @@ interface TronPortfolioProps {
 function normalizePortfolioItem(raw: unknown): PortfolioItem {
   if (raw && typeof raw === 'object') {
     const o = raw as Record<string, unknown>;
-    const category = String(o.category ?? o.description ?? '');
+    const img = (o.imageBase64 as string) || (o.imageUrl as string) || undefined;
     return {
       title: String(o.title ?? ''),
-      category,
-      imageBase64: (o.imageBase64 as string) || undefined,
-      imageUrl: (o.imageUrl as string) || undefined,
-      link: (o.link as string) || undefined,
+      description: String(o.description ?? ''),
+      category: String(o.category ?? ''),
+      imageBase64: img || undefined,
     };
   }
-  return { title: '', category: '' };
+  return { title: '', description: '', category: '' };
 }
 
 const DEFAULT_ITEMS: PortfolioItem[] = [
-  { title: 'E-commerce Platform', category: 'Web Design', imageBase64: undefined, link: '#' },
-  { title: 'SaaS Dashboard', category: 'UI/UX', imageBase64: undefined, link: '#' },
-  { title: 'Mobile Banking App', category: 'Mobile', imageBase64: undefined, link: '#' },
-  { title: 'Brand Identity', category: 'Branding', imageBase64: undefined, link: '#' },
-  { title: 'Marketing Site', category: 'Web Design', imageBase64: undefined, link: '#' },
-  { title: 'Analytics Tool', category: 'SaaS', imageBase64: undefined, link: '#' },
+  { title: 'E-commerce Platform', category: 'Web Design', description: 'Full stack e-commerce solution built for scale.', imageBase64: undefined },
+  { title: 'SaaS Dashboard', category: 'UI/UX', description: 'Analytics dashboard with real-time data visualization.', imageBase64: undefined },
+  { title: 'Mobile Banking App', category: 'Mobile', description: 'Secure banking experience for modern users.', imageBase64: undefined },
+  { title: 'Brand Identity', category: 'Branding', description: 'Complete visual identity system for a tech startup.', imageBase64: undefined },
+  { title: 'Marketing Site', category: 'Web Design', description: 'High-converting landing page with A/B testing.', imageBase64: undefined },
+  { title: 'Analytics Tool', category: 'SaaS', description: 'Data analytics platform for enterprise clients.', imageBase64: undefined },
 ];
 
 // ── PortfolioCard (internal display) ───────────────────────────────────────
@@ -108,21 +106,21 @@ function PortfolioCard({ item, accentColor, t, hexToRgb, enabled }: PortfolioCar
         borderRadius: 12,
         overflow: 'hidden',
         background: t.cardBg,
-        border: `1px solid ${hovered ? `rgba(${hexToRgb(accentColor)}, 0.3)` : t.border}`,
-        transition: 'border-color 0.2s',
-        cursor: 'pointer',
+        border: `1px solid ${hovered ? `rgba(${hexToRgb(accentColor)},0.3)` : t.border}`,
+        transition: 'border-color 0.2s, transform 0.2s',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
       }}
     >
       <div style={{ position: 'relative', aspectRatio: '16/10', overflow: 'hidden' }}>
-        {(item.imageBase64 || item.imageUrl) ? (
+        {item.imageBase64 ? (
           <img
-            src={item.imageBase64 || item.imageUrl}
+            src={item.imageBase64}
             alt={item.title}
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              transform: hovered ? 'scale(1.05)' : 'scale(1)',
+              transform: hovered ? 'scale(1.04)' : 'scale(1)',
               transition: 'transform 0.4s ease',
             }}
           />
@@ -144,7 +142,7 @@ function PortfolioCard({ item, accentColor, t, hexToRgb, enabled }: PortfolioCar
               fill="none"
               stroke={accentColor}
               strokeWidth="1.5"
-              opacity={0.4}
+              opacity={0.3}
             >
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <circle cx="8.5" cy="8.5" r="1.5" />
@@ -152,45 +150,6 @@ function PortfolioCard({ item, accentColor, t, hexToRgb, enabled }: PortfolioCar
             </svg>
           </div>
         )}
-
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: `rgba(${hexToRgb(accentColor)}, 0.7)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: hovered ? 1 : 0,
-            transition: 'opacity 0.3s ease',
-          }}
-        >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transform: hovered ? 'scale(1)' : 'scale(0.7)',
-              transition: 'transform 0.3s ease',
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
-              <path d="M7 17L17 7M17 7H7M17 7v10" />
-            </svg>
-          </div>
-        </div>
       </div>
 
       <div style={{ padding: '16px 20px 20px' }}>
@@ -206,27 +165,9 @@ function PortfolioCard({ item, accentColor, t, hexToRgb, enabled }: PortfolioCar
         >
           {item.category}
         </div>
-        <div style={{ color: t.text, fontSize: 16, fontWeight: 600 }}>{item.title}</div>
-        {item.link && (
-          <a
-            href={item.link}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              marginTop: 10,
-              color: accentColor,
-              fontSize: 13,
-              fontWeight: 500,
-              textDecoration: 'none',
-            }}
-            onClick={(e) => enabled && e.preventDefault()}
-          >
-            View
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M7 17L17 7M17 7H7M17 7v10" />
-            </svg>
-          </a>
+        <div style={{ color: t.text, fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{item.title}</div>
+        {item.description && (
+          <div style={{ color: t.textSecondary, fontSize: 14, lineHeight: 1.6 }}>{item.description}</div>
         )}
       </div>
     </div>
@@ -241,7 +182,12 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
   const { theme } = useTheme();
 
   const containerRef = React.useRef<HTMLElement | null>(null);
+  const carouselViewportRef = React.useRef<HTMLDivElement | null>(null);
+  const [carouselWidth, setCarouselWidth] = React.useState(0);
   const [isMobile, setIsMobile] = React.useState(false);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const dragStartXRef = React.useRef(0);
+  const autoplayRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   const props = useNode((node) => node.data.props as Partial<TronPortfolioProps>) ?? {};
   const {
@@ -253,10 +199,10 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
     showGrid = true,
     title = 'Our work',
     subtitle = 'A selection of projects we are proud of.',
-    columns = 3,
+    visibleCards = 3,
     items = DEFAULT_ITEMS,
-    showLoadMore = false,
-    loadMoreText = 'Load more',
+    autoplay = true,
+    autoplaySpeed = 5,
     animationType = 'none',
     animateDelay = '0',
   } = props;
@@ -275,6 +221,16 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
     return () => observer.disconnect();
   }, [colorScheme]);
 
+  React.useEffect(() => {
+    const el = carouselViewportRef.current;
+    if (!el) return;
+    const update = () => setCarouselWidth(el.getBoundingClientRect().width);
+    update();
+    const observer = new ResizeObserver(([entry]) => setCarouselWidth(entry?.contentRect?.width ?? 0));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const accentColor = propAccent ?? theme?.accentColor ?? '#FF6B35';
   const scheme = colorScheme ?? theme?.colorScheme ?? 'dark';
   const tokensBuilt = buildTokens(darkBg, lightBg);
@@ -282,6 +238,63 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
     ...tokensBuilt[scheme],
     accent: accentColor,
     bg: scheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
+  };
+
+  const rawList = (Array.isArray(items) ? items : DEFAULT_ITEMS).map(normalizePortfolioItem);
+  const totalItems = rawList.length;
+  const visible = isMobile ? 1 : (visibleCards ?? 3);
+  const maxIndex = Math.max(0, totalItems - visible);
+
+  const goTo = React.useCallback(
+    (index: number) => {
+      setCurrentIndex(Math.max(0, Math.min(index, maxIndex)));
+    },
+    [maxIndex]
+  );
+
+  const goNext = React.useCallback(() => {
+    setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
+  }, [maxIndex]);
+
+  const goPrev = React.useCallback(() => {
+    setCurrentIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
+  }, [maxIndex]);
+
+  const handleManualNav = React.useCallback(
+    (fn: () => void) => {
+      if (autoplayRef.current) {
+        clearInterval(autoplayRef.current);
+        autoplayRef.current = null;
+      }
+      fn();
+      if (autoplay && !enabled) {
+        autoplayRef.current = setInterval(goNext, (autoplaySpeed ?? 5) * 1000);
+      }
+    },
+    [autoplay, autoplaySpeed, enabled, goNext]
+  );
+
+  React.useEffect(() => {
+    if (!autoplay || enabled) return;
+    autoplayRef.current = setInterval(goNext, (autoplaySpeed ?? 5) * 1000);
+    return () => {
+      if (autoplayRef.current) {
+        clearInterval(autoplayRef.current);
+        autoplayRef.current = null;
+      }
+    };
+  }, [autoplay, autoplaySpeed, enabled, goNext]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    dragStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = dragStartXRef.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) handleManualNav(goNext);
+      else handleManualNav(goPrev);
+    }
   };
 
   const gridLines = showGrid
@@ -294,11 +307,12 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
     if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
   }
 
-  const rawList = (Array.isArray(items) ? items : DEFAULT_ITEMS).map(normalizePortfolioItem);
   const titleWords = (title ?? '').split(' ');
   const firstWord = titleWords[0] ?? '';
   const restWords = titleWords.slice(1).join(' ');
-  const gridCols = isMobile ? 1 : (columns ?? 3);
+  const gap = 20;
+  const slideWidth = carouselWidth > 0 ? (carouselWidth - gap * (visible - 1)) / visible : 0;
+  const translateX = -currentIndex * (slideWidth + gap);
 
   return (
     <section
@@ -344,44 +358,105 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
           </p>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : `repeat(${gridCols}, 1fr)`,
-            gap: isMobile ? 16 : 24,
-            alignItems: 'start',
-            width: '100%',
-          }}
-        >
-          {rawList.map((item, i) => (
-            <PortfolioCard
-              key={i}
-              item={item}
-              accentColor={accentColor}
-              t={t}
-              hexToRgb={hexToRgb}
-              enabled={enabled}
-            />
-          ))}
-        </div>
+        <div style={{ position: 'relative', width: '100%' }}>
+          <div ref={carouselViewportRef} style={{ overflow: 'hidden', width: '100%' }}>
+            <div
+              style={{
+                display: 'flex',
+                gap,
+                transform: `translateX(${translateX}px)`,
+                transition: 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+              }}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              {rawList.map((item, i) => (
+                <div
+                  key={i}
+                  style={{
+                    flexShrink: 0,
+                    width: carouselWidth > 0 ? slideWidth : `calc((100% - ${gap * (visible - 1)}px) / ${visible})`,
+                  }}
+                >
+                  <PortfolioCard item={item} accentColor={accentColor} t={t} hexToRgb={hexToRgb} enabled={enabled} />
+                </div>
+              ))}
+            </div>
+          </div>
 
-        {showLoadMore && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 48 }}>
+          {currentIndex > 0 && (
             <button
               type="button"
+              onClick={() => handleManualNav(goPrev)}
               style={{
-                padding: '12px 32px',
-                background: 'transparent',
+                position: 'absolute',
+                left: 8,
+                top: '40%',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: t.cardBg,
                 border: `1px solid ${t.border}`,
-                borderRadius: 8,
                 color: t.text,
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: 'default',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2,
               }}
             >
-              {loadMoreText ?? 'Load more'}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
             </button>
+          )}
+          {currentIndex < maxIndex && (
+            <button
+              type="button"
+              onClick={() => handleManualNav(goNext)}
+              style={{
+                position: 'absolute',
+                right: 8,
+                top: '40%',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: t.cardBg,
+                border: `1px solid ${t.border}`,
+                color: t.text,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2,
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {maxIndex >= 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 32 }}>
+            {Array.from({ length: maxIndex + 1 }).map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleManualNav(() => goTo(i))}
+                style={{
+                  width: i === currentIndex ? 24 : 8,
+                  height: 8,
+                  borderRadius: 4,
+                  background: i === currentIndex ? accentColor : t.border,
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'width 0.3s ease, background 0.2s',
+                }}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -397,9 +472,9 @@ function TronPortfolioSettings() {
     title = 'Our work',
     subtitle = 'A selection of projects we are proud of.',
     items = DEFAULT_ITEMS,
-    columns = 3,
-    showLoadMore = false,
-    loadMoreText = 'Load more',
+    visibleCards = 3,
+    autoplay = true,
+    autoplaySpeed = 5,
     darkBg = '#0a0a0a',
     lightBg = '#ffffff',
     sectionHeight = 80,
@@ -423,7 +498,10 @@ function TronPortfolioSettings() {
 
   const addItem = () => {
     setProp((p: Record<string, unknown>) => {
-      const arr = [...((p.items as PortfolioItem[]) ?? []), { title: 'New Project', category: 'Category', link: '#' }];
+      const arr = [
+        ...((p.items as PortfolioItem[]) ?? []),
+        { title: 'New Project', category: 'Category', description: '', imageBase64: undefined },
+      ];
       p.items = arr;
     }, 0);
   };
@@ -465,7 +543,7 @@ function TronPortfolioSettings() {
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Items</h3>
         <div className="space-y-4">
-          {list.map((item, i) => (
+          {list.slice(0, 12).map((item, i) => (
             <div key={i} className="p-3 rounded bg-gray-800/50 space-y-3">
               <div className="flex gap-2 items-center">
                 <input
@@ -482,15 +560,7 @@ function TronPortfolioSettings() {
                   onChange={(e) => updateItem(i, 'category', e.target.value)}
                   className={inputCls}
                   placeholder="Category"
-                  style={{ width: 100 }}
-                />
-                <input
-                  type="text"
-                  value={item.link ?? ''}
-                  onChange={(e) => updateItem(i, 'link', e.target.value || undefined)}
-                  className={inputCls}
-                  placeholder="Link"
-                  style={{ width: 100 }}
+                  style={{ width: 90 }}
                 />
                 <button
                   type="button"
@@ -500,6 +570,16 @@ function TronPortfolioSettings() {
                 >
                   ×
                 </button>
+              </div>
+              <div>
+                <label className={labelCls}>Description</label>
+                <input
+                  type="text"
+                  value={item.description ?? ''}
+                  onChange={(e) => updateItem(i, 'description', e.target.value)}
+                  className={inputCls}
+                  placeholder="Description"
+                />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {item.imageBase64 && (
@@ -566,13 +646,15 @@ function TronPortfolioSettings() {
               </div>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={addItem}
-            className="px-2 py-1.5 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#ff8555]"
-          >
-            + Add project
-          </button>
+          {list.length < 12 && (
+            <button
+              type="button"
+              onClick={addItem}
+              className="px-2 py-1.5 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#ff8555]"
+            >
+              + Add project
+            </button>
+          )}
         </div>
       </div>
 
@@ -580,22 +662,22 @@ function TronPortfolioSettings() {
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Layout</h3>
         <div>
-          <label className={labelCls}>Columns</label>
+          <label className={labelCls}>Visible cards</label>
           <div style={{ display: 'flex', gap: 4 }}>
-            {([2, 3, 4] as const).map((n) => (
+            {([2, 3] as const).map((n) => (
               <button
                 key={n}
                 type="button"
-                onClick={() => setProp((p: Record<string, unknown>) => { p.columns = n; })}
+                onClick={() => setProp((p: Record<string, unknown>) => { p.visibleCards = n; })}
                 style={{
                   flex: 1,
                   padding: '4px 0',
                   fontSize: 12,
                   borderRadius: 6,
                   border: '1px solid',
-                  borderColor: columns === n ? '#FF6B35' : 'rgba(255,255,255,0.15)',
-                  background: columns === n ? 'rgba(255,107,53,0.15)' : 'transparent',
-                  color: columns === n ? '#FF6B35' : '#a1a1aa',
+                  borderColor: visibleCards === n ? '#FF6B35' : 'rgba(255,255,255,0.15)',
+                  background: visibleCards === n ? 'rgba(255,107,53,0.15)' : 'transparent',
+                  color: visibleCards === n ? '#FF6B35' : '#a1a1aa',
                   cursor: 'pointer',
                 }}
               >
@@ -606,40 +688,33 @@ function TronPortfolioSettings() {
         </div>
       </div>
 
-      {/* DISPLAY */}
+      {/* AUTOPLAY */}
       <div className="border-t border-gray-700 pt-4 mt-4">
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Autoplay</h3>
         <div className="space-y-3">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: '#d4d4d8' }}>Show Load more</span>
+            <span style={{ fontSize: 12, color: '#d4d4d8' }}>Autoplay</span>
             <input
               type="checkbox"
-              checked={showLoadMore ?? false}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showLoadMore = e.target.checked; })}
+              checked={autoplay ?? true}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.autoplay = e.target.checked; })}
               className="rounded border-gray-600 bg-gray-700"
             />
           </div>
-          {showLoadMore && (
+          {autoplay && (
             <div>
-              <label className={labelCls}>Load more text</label>
+              <label className={labelCls}>Speed: {autoplaySpeed ?? 5}s</label>
               <input
-                type="text"
-                value={loadMoreText ?? 'Load more'}
-                onChange={(e) => setProp((p: Record<string, unknown>) => { p.loadMoreText = e.target.value; }, 500)}
-                className={inputCls}
-                placeholder="Load more"
+                type="range"
+                min={2}
+                max={10}
+                step={1}
+                value={autoplaySpeed ?? 5}
+                onChange={(e) => setProp((p: Record<string, unknown>) => { p.autoplaySpeed = Number(e.target.value); }, 300)}
+                className="w-full"
               />
             </div>
           )}
-          <label className="flex items-center gap-2 text-xs text-gray-400">
-            <input
-              type="checkbox"
-              checked={showGrid}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
-              className="rounded border-gray-600 bg-gray-700"
-            />
-            Show grid
-          </label>
         </div>
       </div>
 
@@ -689,6 +764,20 @@ function TronPortfolioSettings() {
         </div>
       </div>
 
+      {/* DISPLAY */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
+        <label className="flex items-center gap-2 text-xs text-gray-400">
+          <input
+            type="checkbox"
+            checked={showGrid}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
+            className="rounded border-gray-600 bg-gray-700"
+          />
+          Show grid
+        </label>
+      </div>
+
       {/* ANIMATION */}
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
@@ -728,7 +817,7 @@ function TronPortfolioSettings() {
       </div>
     </div>
   );
-}
+});
 
 // ── Craft config ──────────────────────────────────────────────────────────
 const tronPortfolioCraft = {
@@ -742,9 +831,9 @@ const tronPortfolioCraft = {
     showGrid: true,
     title: 'Our work',
     subtitle: 'A selection of projects we are proud of.',
-    columns: 3 as const,
-    showLoadMore: false,
-    loadMoreText: 'Load more',
+    visibleCards: 3 as const,
+    autoplay: true,
+    autoplaySpeed: 5,
     items: DEFAULT_ITEMS,
     animationType: 'none',
     animateDelay: '0',
@@ -754,7 +843,7 @@ const tronPortfolioCraft = {
   custom: {
     styleTags: ['dark', 'minimal'],
     businessTags: ['agency', 'freelance', 'studio'],
-    featureTags: ['portfolio', 'gallery'],
+    featureTags: ['portfolio', 'carousel'],
     supportsTheme: true,
     supportsColorPreset: true,
     supportsGradient: false,
