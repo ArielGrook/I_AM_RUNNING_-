@@ -46,7 +46,7 @@ function DeleteNodeButton() {
     <button
       onClick={() => actions.delete(id)}
       title="Delete component"
-      className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:bg-red-100 hover:text-red-500 transition-colors text-sm"
+      className="w-7 h-7 flex items-center justify-center rounded text-gray-500 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-500/20 hover:text-red-500 dark:hover:text-red-400 transition-colors text-sm"
     >
       ✕
     </button>
@@ -102,7 +102,7 @@ export const SettingsPanel = () => {
       {/* Body — scrollable */}
       <div className={`flex-1 min-h-0 overflow-y-auto craft-editor-right ${t('text-gray-900', 'text-white')}`}>
         {!selected ? (
-          <div className="text-sm text-gray-500 p-4">
+          <div className={`text-sm p-4 ${t('text-gray-500', 'text-gray-400')}`}>
             Select a component to edit its properties
           </div>
         ) : selected.settings ? (
@@ -110,7 +110,7 @@ export const SettingsPanel = () => {
             {React.createElement(selected.settings)}
           </NodeProvider>
         ) : (
-          <div className="text-sm text-gray-500 p-4">
+          <div className={`text-sm p-4 ${t('text-gray-500', 'text-gray-400')}`}>
             Select a component to edit its properties
           </div>
         )}
@@ -118,7 +118,7 @@ export const SettingsPanel = () => {
 
       {/* Delete button — always visible when a non-ROOT node is selected */}
       {selected?.id && selected.id !== 'ROOT' && (
-        <div className="p-4 border-t border-[#2a2a2a] mt-auto shrink-0">
+        <div className={`p-4 border-t mt-auto shrink-0 ${t('border-gray-200', 'border-[#2a2a2a]')}`}>
           <button
             type="button"
             onClick={() => {

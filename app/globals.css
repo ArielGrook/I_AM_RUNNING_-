@@ -1388,6 +1388,15 @@ footer[data-cy="craft-canvas"]:empty::after {
 
 /* ─── Settings Panel & Mini toolbar: theme-aware (root .dark from editor toggle) ─── */
 
+:root {
+  --settings-card-bg: rgba(0,0,0,0.03);
+  --settings-border: rgba(0,0,0,0.08);
+}
+.dark {
+  --settings-card-bg: rgba(255,255,255,0.04);
+  --settings-border: rgba(255,255,255,0.08);
+}
+
 /* Светлая тема (default) */
 .craft-settings-panel,
 .craft-canvas-toolbar {
