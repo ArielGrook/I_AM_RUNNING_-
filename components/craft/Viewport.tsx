@@ -59,29 +59,14 @@ export const Viewport = ({
   const { connectors, isDragging, actions, query } = useEditor((state) => ({
     isDragging: state.events.dragged.size > 0,
   }));
-  const { spotlightIntensity: previewSpotlightIntensity } = useEditor((state) => {
-    let intensity = 0.12;
-    const nodes = state.nodes || {};
-    for (const id of Object.keys(nodes)) {
-      if (id === 'ROOT') continue;
-      const node = nodes[id];
-      const v = node?.data?.props?.spotlightIntensity;
-      if (v != null && typeof v === 'number') {
-        intensity = v;
-        break;
-      }
-    }
-    return { spotlightIntensity: intensity };
-  });
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [accentColor, setAccentColor] = useState('#e11d48');
-  const [spotlight, setSpotlight] = useState({ x: 0, y: 0, visible: false });
   const [canvasScheme, setCanvasScheme] = useState<'dark' | 'light'>('dark');
 
-  // Global cursor spotlight (editor mode)
-  const [spotlightEnabled, setSpotlightEnabled] = useState(false);
+  // Global cursor spotlight (preview mode, controlled by cursor button)
+  const [spotlightEnabled, setSpotlightEnabled] = useState(true);
   const [spotlightIntensity, setSpotlightIntensity] = useState(15);
   const [showSpotlightMenu, setShowSpotlightMenu] = useState(false);
   const [spotlightPos, setSpotlightPos] = useState({ x: -9999, y: -9999 });
@@ -531,34 +516,7 @@ export const Viewport = ({
                   : t('shadow-[0_0_40px_rgba(0,0,0,0.1)]', 'shadow-[0_0_60px_rgba(0,0,0,0.4)]')
               }`}
               style={{ borderRadius: viewport !== 'desktop' ? 12 : 0 }}
-              onMouseMove={(e) => {
-                if (previewMode) {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setSpotlight({
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top,
-                    visible: true,
-                  });
-                }
-              }}
-              onMouseLeave={() => previewMode && setSpotlight((s) => ({ ...s, visible: false }))}
             >
-              {/* Global cursor spotlight (preview only) */}
-              {previewMode && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    pointerEvents: 'none',
-                    zIndex: 10,
-                    transition: 'opacity 300ms ease',
-                    opacity: spotlight.visible ? 1 : 0,
-                    background: spotlight.visible
-                      ? `radial-gradient(600px at ${spotlight.x}px ${spotlight.y}px, rgba(${hexToRgb(accentColor)},${previewSpotlightIntensity > 1 ? previewSpotlightIntensity / 100 : previewSpotlightIntensity}) 0%, transparent 60%)`
-                      : 'none',
-                  }}
-                />
-              )}
               {/* Alignment grid overlay */}
               {showGrid && (
                 <div
