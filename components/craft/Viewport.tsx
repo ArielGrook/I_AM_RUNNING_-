@@ -159,7 +159,10 @@ export const Viewport = ({
     const updateHeaderHeight = () => {
       const header = document.querySelector('[data-block-type="header"]') as HTMLElement;
       if (header) {
-        setHeaderHeight(header.offsetHeight);
+        // Берём getBoundingClientRect().bottom — это правильная позиция от верха viewport
+        // Но вызываем ОДИН РАЗ, без scroll listener
+        const rect = header.getBoundingClientRect();
+        setHeaderHeight(rect.bottom);
       } else {
         setHeaderHeight(0);
       }
