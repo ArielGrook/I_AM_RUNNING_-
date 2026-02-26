@@ -69,6 +69,13 @@ export const HeroTron = React.memo(function HeroTron() {
   React.useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+
+    const checkWidth = () => {
+      setIsMobile(el.getBoundingClientRect().width < 520);
+    };
+
+    checkWidth();
+
     const observer = new ResizeObserver(([entry]) => {
       setIsMobile((entry?.contentRect?.width ?? 0) < 520);
     });
@@ -128,7 +135,6 @@ export const HeroTron = React.memo(function HeroTron() {
 
   return (
     <section
-      key={`${scheme}-${showGrid}`}
       ref={(el) => {
         if (el) {
           connect(drag(el));
