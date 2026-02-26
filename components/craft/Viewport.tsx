@@ -152,23 +152,18 @@ export const Viewport = ({
     };
   }, [spotlightEnabled, previewMode]);
 
-  // Header height for spotlight clip (starts below header)
+  // Spotlight clip: use canvas container top (fixed on screen), not header (changes on scroll)
   React.useEffect(() => {
     if (!previewMode || !spotlightEnabled) return;
 
-    const updateHeaderHeight = () => {
+    const canvasContainer = canvasRef.current;
+    if (canvasContainer) {
+      const rect = canvasContainer.getBoundingClientRect();
+      setHeaderHeight(rect.top); // top канвы = фиксированная позиция от верха viewport
+    } else {
       const header = document.querySelector('[data-block-type="header"]') as HTMLElement;
-      if (header) {
-        // Берём getBoundingClientRect().bottom — это правильная позиция от верха viewport
-        // Но вызываем ОДИН РАЗ, без scroll listener
-        const rect = header.getBoundingClientRect();
-        setHeaderHeight(rect.bottom);
-      } else {
-        setHeaderHeight(0);
-      }
-    };
-
-    updateHeaderHeight();
+      setHeaderHeight(header ? header.offsetHeight + 90 : 90); // 90 = высота тулбаров
+    }
   }, [previewMode, spotlightEnabled]);
 
   const spotlightButtonRef = React.useRef<HTMLDivElement>(null);
