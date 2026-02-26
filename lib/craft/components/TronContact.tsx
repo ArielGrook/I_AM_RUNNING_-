@@ -168,11 +168,11 @@ export const TronContact = React.memo(function TronContact() {
       }}
     >
       <div
-        className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 max-w-6xl mx-auto w-full"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 max-w-6xl mx-auto w-full min-w-0"
         {...animAttrs}
       >
         {/* Left column — info */}
-        <div className="flex flex-col justify-center w-full">
+        <div className="flex flex-col justify-center w-full min-w-0">
           <h2
             style={{
               fontSize: 'clamp(28px, 4vw, 48px)',
@@ -230,12 +230,13 @@ export const TronContact = React.memo(function TronContact() {
 
         {/* Right column — form card */}
         <div
-          className="w-full"
+          className="w-full min-w-0"
           style={{
             background: t.cardBg,
             border: `1px solid ${t.border}`,
             borderRadius: 16,
             padding: 40,
+            boxSizing: 'border-box',
           }}
         >
           <form onSubmit={(e) => e.preventDefault()} className="flex flex-col w-full">
