@@ -159,16 +159,13 @@ export const Viewport = ({
     const updateHeaderHeight = () => {
       const header = document.querySelector('[data-block-type="header"]') as HTMLElement;
       if (header) {
-        const rect = header.getBoundingClientRect();
-        setHeaderHeight(rect.bottom);
+        setHeaderHeight(header.offsetHeight);
       } else {
         setHeaderHeight(0);
       }
     };
 
     updateHeaderHeight();
-    document.addEventListener('scroll', updateHeaderHeight, { passive: true });
-    return () => document.removeEventListener('scroll', updateHeaderHeight);
   }, [previewMode, spotlightEnabled]);
 
   const spotlightButtonRef = React.useRef<HTMLDivElement>(null);
