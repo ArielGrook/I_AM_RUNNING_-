@@ -126,81 +126,16 @@ function TabContentPanel({
   t,
   accentColor,
   enabled,
+  constrainTextWidth,
 }: {
   item: ShowcaseTab;
   t: Record<string, string>;
   accentColor: string;
   enabled: boolean;
+  constrainTextWidth?: boolean;
 }) {
-  return (
+  const textContent = (
     <>
-      <div
-        style={{
-          borderRadius: 12,
-          overflow: 'hidden',
-          border: `1px solid ${t.border}`,
-          marginBottom: 28,
-          aspectRatio: '16/9',
-          maxHeight: 340,
-          background: `rgba(${hexToRgb(accentColor)}, 0.03)`,
-          position: 'relative',
-        }}
-      >
-        {item.mediaType === 'video' && item.videoUrl ? (
-          (() => {
-            const embedUrl = getEmbedUrl(item.videoUrl);
-            return embedUrl ? (
-              <iframe
-                src={embedUrl}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
-                allowFullScreen
-              />
-            ) : (
-              <div
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: t.textSecondary,
-                  fontSize: 13,
-                }}
-              >
-                Invalid video URL
-              </div>
-            );
-          })()
-        ) : item.imageBase64 ? (
-          <img
-            src={item.imageBase64}
-            alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
-              gap: 8,
-            }}
-          >
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1" opacity="0.3">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
-            <span style={{ color: t.textSecondary, fontSize: 12, opacity: 0.5 }}>
-              Add image or video
-            </span>
-          </div>
-        )}
-      </div>
       <h3
         style={{
           fontSize: 'clamp(20px, 3vw, 32px)',
@@ -272,6 +207,85 @@ function TabContentPanel({
       )}
     </>
   );
+
+  return (
+    <>
+      <div
+        style={{
+          borderRadius: 12,
+          overflow: 'hidden',
+          border: `1px solid ${t.border}`,
+          marginBottom: 28,
+          aspectRatio: '16/9',
+          maxHeight: 340,
+          background: `rgba(${hexToRgb(accentColor)}, 0.03)`,
+          position: 'relative',
+        }}
+      >
+        {item.mediaType === 'video' && item.videoUrl ? (
+          (() => {
+            const embedUrl = getEmbedUrl(item.videoUrl);
+            return embedUrl ? (
+              <iframe
+                src={embedUrl}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+                allowFullScreen
+              />
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: t.textSecondary,
+                  fontSize: 13,
+                }}
+              >
+                Invalid video URL
+              </div>
+            );
+          })()
+        ) : item.imageBase64 ? (
+          <img
+            src={item.imageBase64}
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="1" opacity="0.3">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            <span style={{ color: t.textSecondary, fontSize: 12, opacity: 0.5 }}>
+              Add image or video
+            </span>
+          </div>
+        )}
+      </div>
+      {constrainTextWidth ? (
+        <div style={{ maxWidth: '100%', paddingLeft: 4, paddingRight: 4 }}>
+          {textContent}
+        </div>
+      ) : (
+        textContent
+      )}
+    </>
+  );
 }
 
 // ── Main component ────────────────────────────────────────────────────────
@@ -294,6 +308,12 @@ export const TronShowcase = React.memo(function TronShowcase() {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    setIsMobile(el.getBoundingClientRect().width < 520);
+  }, [layoutStyle]);
 
   const props = useNode((node) => node.data.props as Partial<TronShowcaseProps>) ?? {};
   const {
@@ -350,7 +370,7 @@ export const TronShowcase = React.memo(function TronShowcase() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
-      key={`${scheme}-${layoutStyle}`}
+      key={layoutStyle}
       data-block-type="showcase"
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
@@ -465,9 +485,11 @@ export const TronShowcase = React.memo(function TronShowcase() {
           <div
             style={{
               display: 'flex',
-              gap: 40,
+              gap: isMobile ? 0 : 48,
               alignItems: 'flex-start',
-              flexWrap: 'nowrap',
+              maxWidth: 1100,
+              margin: '0 auto',
+              width: '100%',
             }}
           >
             <div
@@ -528,6 +550,7 @@ export const TronShowcase = React.memo(function TronShowcase() {
                   t={t}
                   accentColor={accentColor}
                   enabled={enabled}
+                  constrainTextWidth
                 />
               )}
             </div>
