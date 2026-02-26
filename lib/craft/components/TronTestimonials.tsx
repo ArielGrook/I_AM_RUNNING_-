@@ -45,6 +45,7 @@ export interface TestimonialItem {
   company: string;
   text: string;
   rating: number;
+  avatarUrl?: string;
 }
 
 interface TronTestimonialsProps {
@@ -54,6 +55,7 @@ interface TronTestimonialsProps {
   lightBg?: string;
   sectionHeight?: number;
   showGrid?: boolean;
+  showSecondRowMobile?: boolean;
   title?: string;
   subtitle?: string;
   speed?: number;
@@ -71,7 +73,8 @@ function normalizeTestimonialItem(raw: unknown): TestimonialItem {
     const role = (o.role ?? '') as string;
     const company = (o.company ?? '') as string;
     const rating = typeof o.rating === 'number' ? o.rating : 5;
-    return { name: String(name ?? ''), role: String(role ?? ''), company: String(company ?? ''), text: String(text ?? ''), rating };
+    const avatarUrl = (o.avatarUrl ?? '') as string;
+    return { name: String(name ?? ''), role: String(role ?? ''), company: String(company ?? ''), text: String(text ?? ''), rating, avatarUrl: avatarUrl || undefined };
   }
   return { name: '', role: '', company: '', text: '', rating: 5 };
 }
@@ -121,6 +124,9 @@ interface TestimonialCardDisplayProps {
 
 function TestimonialCardDisplay({ item, t, accentColor, enabled }: TestimonialCardDisplayProps) {
   const [hovered, setHovered] = React.useState(false);
+  const [imgError, setImgError] = React.useState(false);
+  const showAvatar = item.avatarUrl && !imgError;
+  const initial = (item.name ?? '').charAt(0) || '?';
 
   return (
     <div
@@ -169,17 +175,34 @@ function TestimonialCardDisplay({ item, t, accentColor, enabled }: TestimonialCa
             width: 36,
             height: 36,
             borderRadius: '50%',
-            background: `rgba(${hexToRgb(accentColor)}, 0.15)`,
-            color: accentColor,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 13,
-            fontWeight: 600,
+            overflow: 'hidden',
             flexShrink: 0,
+            background: `rgba(${hexToRgb(accentColor)}, 0.15)`,
           }}
         >
-          {(item.name ?? '').charAt(0) || '?'}
+          {showAvatar ? (
+            <img
+              src={item.avatarUrl!}
+              alt={item.name ?? ''}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: accentColor,
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              {initial}
+            </div>
+          )}
         </div>
         <div>
           <div style={{ color: t.text, fontSize: 13, fontWeight: 600 }}>{item.name ?? ''}</div>
@@ -258,6 +281,7 @@ export const TronTestimonials = React.memo(function TronTestimonials() {
     lightBg = '#ffffff',
     sectionHeight = 70,
     showGrid = false,
+    showSecondRowMobile = false,
     title = 'Loved by teams worldwide',
     subtitle = 'Join thousands of companies building with our platform.',
     speed = 40,
@@ -380,8 +404,8 @@ export const TronTestimonials = React.memo(function TronTestimonials() {
             </div>
           </div>
 
-          {/* Row 2 — right (desktop only) */}
-          {!isMobile && (
+          {/* Row 2 — right (desktop or mobile if enabled) */}
+          {(!isMobile || showSecondRowMobile) && (
             <div
               style={
                 {
@@ -510,6 +534,7 @@ function TronTestimonialsSettings() {
     lightBg = '#ffffff',
     sectionHeight = 70,
     showGrid = false,
+    showSecondRowMobile = false,
     animationType = 'none',
     animateDelay = '0',
   } = props;
@@ -634,6 +659,13 @@ function TronTestimonialsSettings() {
                 className={inputCls}
                 placeholder="Testimonial text"
               />
+              <input
+                type="text"
+                placeholder="https://... (optional photo URL)"
+                value={item.avatarUrl ?? ''}
+                onChange={(e) => updateItem(i, 'avatarUrl', e.target.value)}
+                className={inputCls}
+              />
             </div>
           ))}
           <button
@@ -712,15 +744,30 @@ function TronTestimonialsSettings() {
       {/* DISPLAY */}
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
-        <label className="flex items-center gap-2 text-xs text-gray-400">
-          <input
-            type="checkbox"
-            checked={showGrid}
-            onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
-            className="rounded border-gray-600 bg-gray-700"
-          />
-          Show grid
-        </label>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs text-gray-400">
+            <input
+              type="checkbox"
+              checked={showGrid}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
+              className="rounded border-gray-600 bg-gray-700"
+            />
+            Show grid
+          </label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: '#d4d4d8' }}>Show 2nd row on mobile</span>
+            <input
+              type="checkbox"
+              checked={showSecondRowMobile ?? false}
+              onChange={(e) =>
+                setProp((p: Record<string, unknown>) => {
+                  p.showSecondRowMobile = e.target.checked;
+                })
+              }
+              className="rounded border-gray-600 bg-gray-700"
+            />
+          </div>
+        </div>
       </div>
 
       {/* ANIMATION */}
@@ -774,6 +821,7 @@ const tronTestimonialsCraft = {
     lightBg: '#ffffff',
     sectionHeight: 70,
     showGrid: false,
+    showSecondRowMobile: false,
     title: 'Loved by teams worldwide',
     subtitle: 'Join thousands of companies building with our platform.',
     speed: 40,
