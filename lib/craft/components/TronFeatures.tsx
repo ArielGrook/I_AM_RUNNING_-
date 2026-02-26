@@ -128,7 +128,7 @@ function FeatureCardDisplay({ item, cardStyle, cardStyles, accentColor, t, hexTo
         transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
         boxShadow: hovered ? `0 12px 40px rgba(${hexToRgb(accentColor)}, 0.15)` : '0 0 0 rgba(0,0,0,0)',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-        ...(hovered && { borderColor: `rgba(${hexToRgb(accentColor)}, 0.4)` }),
+        ...(hovered && cardStyle === 'border' && { borderColor: `rgba(${hexToRgb(accentColor)}, 0.4)` }),
         cursor: 'default',
       }}
     >
@@ -213,14 +213,16 @@ export const TronFeatures = React.memo(function TronFeatures() {
 
   const cardStyles: Record<string, React.CSSProperties> = {
     border: {
-      background: t.cardBg,
+      background: scheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
       border: `1px solid ${t.border}`,
       borderRadius: 12,
       padding: 28,
     },
     filled: {
-      background: `rgba(${hexToRgb(accentColor)}, 0.05)`,
-      border: `1px solid rgba(${hexToRgb(accentColor)}, 0.15)`,
+      background: scheme === 'dark'
+        ? `rgba(${hexToRgb(accentColor)}, 0.1)`
+        : `rgba(${hexToRgb(accentColor)}, 0.08)`,
+      border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
       borderRadius: 12,
       padding: 28,
     },
@@ -293,6 +295,7 @@ export const TronFeatures = React.memo(function TronFeatures() {
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr' : `repeat(${columns ?? 3}, 1fr)`,
             gap: isMobile ? 16 : 24,
+            alignItems: 'start',
           }}
         >
           {list.map((item, i) => (
