@@ -103,6 +103,19 @@ export const TronContact = React.memo(function TronContact() {
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
 
+  const containerRef = React.useRef<HTMLElement | null>(null);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setIsMobile((entry?.contentRect?.width ?? 0) < 768);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const props = useNode((node) => node.data.props as Partial<TronContactProps>) ?? {};
   const {
     colorScheme = 'dark',
@@ -157,7 +170,12 @@ export const TronContact = React.memo(function TronContact() {
 
   return (
     <section
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      ref={(el) => {
+        if (el) {
+          connect(drag(el));
+          (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
+        }
+      }}
       key={`${scheme}-${showGrid}`}
       data-block-type="contact"
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
@@ -169,11 +187,18 @@ export const TronContact = React.memo(function TronContact() {
       }}
     >
       <div
-        className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 max-w-6xl mx-auto w-full"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: isMobile ? 32 : 64,
+          maxWidth: 1200,
+          margin: '0 auto',
+          width: '100%',
+        }}
         {...animAttrs}
       >
         {/* Left column — info */}
-        <div className="w-full flex flex-col">
+        <div style={{ width: '100%' }}>
           <h2
             style={{
               fontSize: 'clamp(28px, 4vw, 48px)',
@@ -199,8 +224,7 @@ export const TronContact = React.memo(function TronContact() {
           {list.map((item, i) => (
             <div
               key={i}
-              className="flex items-center gap-4 w-full"
-              style={{ marginTop: i === 0 ? 32 : 20 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: i === 0 ? 32 : 20, width: '100%' }}
             >
               <div
                 style={{
@@ -231,15 +255,15 @@ export const TronContact = React.memo(function TronContact() {
 
         {/* Right column — form card */}
         <div
-          className="w-full"
           style={{
+            width: '100%',
             background: t.cardBg,
             border: `1px solid ${t.border}`,
             borderRadius: 16,
             padding: '32px 24px',
           }}
         >
-          <form onSubmit={(e) => e.preventDefault()} className="flex flex-col w-full">
+          <form onSubmit={(e) => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
             <input
               type="text"
               placeholder={namePlaceholder}
