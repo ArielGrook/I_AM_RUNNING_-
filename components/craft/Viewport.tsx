@@ -29,12 +29,11 @@ const orangeButtonStyle = {
   fontWeight: 600,
 };
 
-const hexToRgb = (hex: string) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `${r},${g},${b}`;
-};
+function hexToRgb(hex: string): string {
+  const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
+  if (!m) return '255,107,53';
+  return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
+}
 
 type ViewportProps = {
   children: React.ReactNode;
@@ -85,7 +84,7 @@ export const Viewport = ({
   const [spotlightEnabled, setSpotlightEnabled] = useState(false);
   const [spotlightIntensity, setSpotlightIntensity] = useState(15);
   const [showSpotlightMenu, setShowSpotlightMenu] = useState(false);
-  const [spotlightPos, setSpotlightPos] = useState({ x: 0, y: 0 });
+  const [spotlightPos, setSpotlightPos] = useState({ x: -9999, y: -9999 });
   const { t } = useEditorTheme();
 
   const applySchemeToTronNodes = useCallback(
@@ -144,15 +143,28 @@ export const Viewport = ({
 
   const activeDevice = DEVICES.find((d) => d.key === viewport)!;
 
-  // Global spotlight: track cursor on document (not canvas) so it doesn't lag on scroll
+  const canvasRef = React.useRef<HTMLDivElement>(null);
+
+  // Spotlight: track cursor only on canvas (preview mode), hide when cursor leaves
   React.useEffect(() => {
-    if (!spotlightEnabled) return;
+    if (!spotlightEnabled || !previewMode) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       setSpotlightPos({ x: e.clientX, y: e.clientY });
     };
-    document.addEventListener('mousemove', handleMouseMove, { passive: true });
-    return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, [spotlightEnabled]);
+    const handleMouseLeave = () => {
+      setSpotlightPos({ x: -9999, y: -9999 });
+    };
+
+    canvas.addEventListener('mousemove', handleMouseMove, { passive: true });
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+    return () => {
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [spotlightEnabled, previewMode]);
 
   const spotlightButtonRef = React.useRef<HTMLDivElement>(null);
 
@@ -196,8 +208,8 @@ export const Viewport = ({
 
   return (
     <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative ${t('bg-[#e2e8f0]', 'bg-[#1f1f1f]')}`}>
-      {/* Global spotlight overlay (fixed, follows cursor) */}
-      {spotlightEnabled && (
+      {/* Global spotlight overlay (fixed, preview only, follows cursor on canvas) */}
+      {spotlightEnabled && previewMode && spotlightPos.x >= 0 && spotlightPos.y >= 0 && (
         <div
           style={{
             position: 'fixed',
@@ -205,7 +217,7 @@ export const Viewport = ({
             pointerEvents: 'none',
             zIndex: 9999,
             background: `radial-gradient(circle 400px at ${spotlightPos.x}px ${spotlightPos.y}px,
-              rgba(255, 107, 53, ${spotlightIntensity / 100}) 0%,
+              rgba(${hexToRgb(accentColor)}, ${spotlightIntensity / 100}) 0%,
               transparent 70%
             )`,
           }}
@@ -422,12 +434,18 @@ export const Viewport = ({
                 <input
                   type="range"
                   min={5}
-                  max={40}
+                  max={60}
                   step={1}
                   value={spotlightIntensity}
                   disabled={!spotlightEnabled}
                   onChange={(e) => setSpotlightIntensity(Number(e.target.value))}
-                  style={{ width: '100%', accentColor: '#FF6B35' }}
+                  style={{
+                    width: '100%',
+                    height: 4,
+                    borderRadius: 2,
+                    accentColor: '#FF6B35',
+                    cursor: 'pointer',
+                  }}
                 />
               </div>
             </div>
@@ -478,6 +496,7 @@ export const Viewport = ({
 
       {/* Canvas area */}
       <div
+        ref={canvasRef}
         className="flex-1 overflow-y-auto craft-viewport-scroll craft-canvas-wrapper"
         style={{
           background: t('#e2e8f0', '#1f1f1f'),
