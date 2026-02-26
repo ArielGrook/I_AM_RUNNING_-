@@ -193,7 +193,7 @@ function EditorLayout({
         <div
           className="flex transition-all duration-200 shrink-0 overflow-visible relative"
           style={{
-            width: rightPanelOpen ? '23rem' : 0,
+            width: rightPanelOpen ? '21rem' : 0,
             minWidth: rightPanelOpen ? undefined : 0,
           }}
         >
