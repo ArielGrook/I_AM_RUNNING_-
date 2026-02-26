@@ -4,6 +4,33 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 
+// ── Helpers ───────────────────────────────────────────────────────────────
+function hexToRgb(hex: string): string {
+  const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
+  if (!m) return '255,107,53';
+  return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
+}
+
+// ── Tokens (copy from TronStats, bg from darkBg/lightBg) ───────────────────
+const tokens = {
+  dark: {
+    bg: '#0a0a0a',
+    text: '#ffffff',
+    textSecondary: '#a1a1aa',
+    border: 'rgba(255,255,255,0.08)',
+    cardBg: 'rgba(255,255,255,0.03)',
+    gridColor: 'rgba(255,255,255,0.03)',
+  },
+  light: {
+    bg: '#ffffff',
+    text: '#0a0a0a',
+    textSecondary: '#52525b',
+    border: 'rgba(0,0,0,0.08)',
+    cardBg: 'rgba(0,0,0,0.02)',
+    gridColor: 'rgba(0,0,0,0.06)',
+  },
+};
+
 // ── Interfaces ───────────────────────────────────────────────────────────
 interface FAQItem {
   question: string;
@@ -19,16 +46,20 @@ interface TronFAQProps {
   showGrid?: boolean;
   title?: string;
   subtitle?: string;
+  layoutStyle?: 'centered' | 'split';
+  showCta?: boolean;
+  ctaText?: string;
   items?: FAQItem[];
   animationType?: string;
   animateDelay?: string;
 }
 
 const DEFAULT_ITEMS: FAQItem[] = [
-  { question: 'How does it work?', answer: 'Our platform allows you to build professional websites in minutes using pre-built components.' },
-  { question: 'Can I customize the design?', answer: 'Yes, every component is fully customizable — colors, fonts, layouts and more.' },
-  { question: 'What is included in the price?', answer: 'All plans include hosting, SSL certificate, and 24/7 support.' },
-  { question: 'Can I cancel anytime?', answer: 'Yes, you can cancel your subscription at any time with no hidden fees.' },
+  { question: 'How does it work?', answer: 'Our platform allows you to build professional websites in minutes using pre-built components. Simply drag, drop, and customize.' },
+  { question: 'Can I customize the design?', answer: 'Yes, every component is fully customizable — colors, fonts, layouts and more. Changes are reflected instantly.' },
+  { question: 'What is included in the price?', answer: 'All plans include hosting, SSL certificate, and 24/7 support. No hidden fees.' },
+  { question: 'Can I cancel anytime?', answer: 'Yes, you can cancel your subscription at any time with no hidden fees or penalties.' },
+  { question: 'Do you offer refunds?', answer: 'We offer a 14-day money-back guarantee on all plans, no questions asked.' },
 ];
 
 // ── Main component ────────────────────────────────────────────────────────
@@ -58,10 +89,13 @@ export const TronFAQ = React.memo(function TronFAQ() {
     accentColor: propAccent,
     darkBg = '#0a0a0a',
     lightBg = '#ffffff',
-    sectionHeight = 70,
+    sectionHeight = 80,
     showGrid = true,
     title = 'Frequently asked questions',
-    subtitle = 'Everything you need to know about our product.',
+    subtitle = "Everything you need to know. Can't find the answer? Contact us.",
+    layoutStyle = 'centered',
+    showCta = true,
+    ctaText = 'Contact support',
     items = DEFAULT_ITEMS,
     animationType = 'none',
     animateDelay = '0',
@@ -69,28 +103,11 @@ export const TronFAQ = React.memo(function TronFAQ() {
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
   const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
-
-  const tokens = {
-    dark: {
-      bg: darkBg ?? '#0a0a0a',
-      text: '#ffffff',
-      textSecondary: '#a1a1aa',
-      accent: accentColor,
-      border: 'rgba(255,255,255,0.08)',
-      cardBg: 'rgba(255,255,255,0.03)',
-      gridColor: 'rgba(255,255,255,0.03)',
-    },
-    light: {
-      bg: lightBg ?? '#ffffff',
-      text: '#0a0a0a',
-      textSecondary: '#52525b',
-      accent: accentColor,
-      border: 'rgba(0,0,0,0.08)',
-      cardBg: 'rgba(0,0,0,0.02)',
-      gridColor: 'rgba(0,0,0,0.06)',
-    },
+  const t = {
+    ...tokens[scheme],
+    accent: accentColor,
+    bg: scheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
   };
-  const t = tokens[scheme];
 
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
@@ -103,9 +120,113 @@ export const TronFAQ = React.memo(function TronFAQ() {
   }
 
   const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
-  const titleWords = (title ?? '').split(' ');
-  const firstWord = titleWords[0] ?? '';
-  const restWords = titleWords.slice(1).join(' ');
+  const displayOpenIndex = enabled ? 0 : openIndex;
+
+  const accordionItems = list.map((item, i) => (
+    <div
+      key={i}
+      style={{
+        borderRadius: 12,
+        border: `1px solid ${displayOpenIndex === i
+          ? `rgba(${hexToRgb(accentColor)}, 0.3)`
+          : t.border}`,
+        background: displayOpenIndex === i
+          ? `rgba(${hexToRgb(accentColor)}, 0.03)`
+          : t.cardBg,
+        marginBottom: 10,
+        overflow: 'hidden',
+        transition: 'border-color 0.2s, background 0.2s',
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => !enabled && setOpenIndex(displayOpenIndex === i ? null : i)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '20px 24px',
+          background: 'none',
+          border: 'none',
+          cursor: enabled ? 'default' : 'pointer',
+          textAlign: 'left',
+          gap: 16,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+          <span
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              flexShrink: 0,
+              background: displayOpenIndex === i
+                ? accentColor
+                : `rgba(${hexToRgb(accentColor)}, 0.1)`,
+              color: displayOpenIndex === i ? '#fff' : accentColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 12,
+              fontWeight: 700,
+              transition: 'background 0.2s, color 0.2s',
+            }}
+          >
+            {String(i + 1).padStart(2, '0')}
+          </span>
+          <span
+            style={{
+              color: t.text,
+              fontSize: 16,
+              fontWeight: 500,
+              lineHeight: 1.4,
+            }}
+          >
+            {item.question || 'Question'}
+          </span>
+        </div>
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            flexShrink: 0,
+            border: `1px solid ${t.border}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: accentColor,
+            transform: displayOpenIndex === i ? 'rotate(45deg)' : 'rotate(0deg)',
+            transition: 'transform 0.3s ease',
+            fontSize: 18,
+            lineHeight: 1,
+          }}
+        >
+          +
+        </div>
+      </button>
+      <div
+        style={{
+          maxHeight: displayOpenIndex === i ? 400 : 0,
+          overflow: 'hidden',
+          transition: 'max-height 0.35s ease',
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            padding: '0 24px 24px 68px',
+            color: t.textSecondary,
+            fontSize: 15,
+            lineHeight: 1.75,
+          }}
+        >
+          {item.answer || 'Answer'}
+        </p>
+      </div>
+    </div>
+  ));
 
   return (
     <section
@@ -115,7 +236,7 @@ export const TronFAQ = React.memo(function TronFAQ() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
-      key={`${scheme}-${showGrid}`}
+      key={`${scheme}-${layoutStyle}`}
       data-block-type="faq"
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
@@ -127,96 +248,92 @@ export const TronFAQ = React.memo(function TronFAQ() {
     >
       <div
         style={{
-          maxWidth: isMobile ? '100%' : 800,
+          maxWidth: 1200,
           margin: '0 auto',
           width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          minHeight: `${sectionHeight}vh`,
         }}
         {...animAttrs}
       >
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h2
+        {layoutStyle === 'split' ? (
+          <div
             style={{
-              fontSize: 'clamp(28px, 4vw, 48px)',
-              fontWeight: 800,
-              color: t.text,
-              margin: 0,
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1.4fr',
+              gap: isMobile ? 40 : 80,
+              alignItems: 'start',
             }}
           >
-            <span style={{ color: t.accent }}>{firstWord}</span>
-            {restWords ? ` ${restWords}` : ''}
-          </h2>
-          <p style={{ fontSize: 16, color: t.textSecondary, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-          {list.map((item, i) => (
-            <div
-              key={i}
-              style={{
-                borderBottom: `1px solid ${t.border}`,
-                overflow: 'hidden',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => !enabled && setOpenIndex(openIndex === i ? null : i)}
+            <div style={{ position: isMobile ? 'relative' : 'sticky', top: 40 }}>
+              <h2
                 style={{
-                  width: '100%',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '20px 0',
-                  background: 'none',
-                  border: 'none',
-                  cursor: enabled ? 'default' : 'pointer',
-                  textAlign: 'left',
+                  fontSize: 'clamp(28px, 4vw, 48px)',
+                  fontWeight: 700,
                   color: t.text,
-                  fontSize: 16,
-                  fontWeight: 500,
+                  margin: 0,
+                  marginBottom: 16,
                 }}
               >
-                <span>{item.question || 'Question'}</span>
-                <span
-                  style={{
-                    color: accentColor,
-                    fontSize: 22,
-                    fontWeight: 300,
-                    flexShrink: 0,
-                    marginLeft: 16,
-                    transition: 'transform 0.3s ease',
-                    transform: (enabled ? 0 === i : openIndex === i) ? 'rotate(45deg)' : 'rotate(0deg)',
-                  }}
-                >
-                  +
-                </span>
-              </button>
-
-              <div
+                {title}
+              </h2>
+              <p
                 style={{
-                  maxHeight: (enabled ? 0 === i : openIndex === i) ? 500 : 0,
-                  overflow: 'hidden',
-                  transition: 'max-height 0.35s ease',
+                  fontSize: 16,
+                  color: t.textSecondary,
+                  lineHeight: 1.6,
+                  margin: 0,
                 }}
               >
-                <p
+                {subtitle}
+              </p>
+              {showCta && layoutStyle === 'split' && (
+                <button
+                  type="button"
                   style={{
-                    paddingBottom: 20,
-                    color: t.textSecondary,
-                    fontSize: 15,
-                    lineHeight: 1.7,
-                    margin: 0,
+                    marginTop: 32,
+                    padding: '12px 28px',
+                    background: accentColor,
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: enabled ? 'default' : 'pointer',
                   }}
                 >
-                  {item.answer || 'Answer'}
-                </p>
-              </div>
+                  {ctaText}
+                </button>
+              )}
             </div>
-          ))}
-        </div>
+            <div>{accordionItems}</div>
+          </div>
+        ) : (
+          <div style={{ maxWidth: 720, margin: '0 auto', width: '100%' }}>
+            <div style={{ textAlign: 'center', marginBottom: 48 }}>
+              <h2
+                style={{
+                  fontSize: 'clamp(28px, 4vw, 48px)',
+                  fontWeight: 700,
+                  color: t.text,
+                  margin: 0,
+                  marginBottom: 16,
+                }}
+              >
+                {title}
+              </h2>
+              <p
+                style={{
+                  fontSize: 16,
+                  color: t.textSecondary,
+                  lineHeight: 1.6,
+                  margin: 0,
+                }}
+              >
+                {subtitle}
+              </p>
+            </div>
+            <div>{accordionItems}</div>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -228,11 +345,14 @@ function TronFAQSettings() {
   const props = useNode((node) => node.data.props as Partial<TronFAQProps>) ?? {};
   const {
     title = 'Frequently asked questions',
-    subtitle = 'Everything you need to know about our product.',
+    subtitle = "Everything you need to know. Can't find the answer? Contact us.",
+    layoutStyle = 'centered',
+    showCta = true,
+    ctaText = 'Contact support',
     items = DEFAULT_ITEMS,
     darkBg = '#0a0a0a',
     lightBg = '#ffffff',
-    sectionHeight = 70,
+    sectionHeight = 80,
     showGrid = true,
     animationType = 'none',
     animateDelay = '0',
@@ -269,7 +389,7 @@ function TronFAQSettings() {
 
   return (
     <div className="p-3 space-y-0 text-white">
-      {/* CONTENT */}
+      {/* 1. CONTENT */}
       <div className="border-t border-gray-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
@@ -284,7 +404,58 @@ function TronFAQSettings() {
         </div>
       </div>
 
-      {/* FAQ ITEMS */}
+      {/* 2. LAYOUT */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Layout</h3>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {(['centered', 'split'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setProp((p: Record<string, unknown>) => { p.layoutStyle = v; })}
+              style={{
+                flex: 1,
+                padding: '6px 0',
+                fontSize: 12,
+                borderRadius: 6,
+                border: '1px solid',
+                borderColor: layoutStyle === v ? '#FF6B35' : 'rgba(255,255,255,0.15)',
+                background: layoutStyle === v ? 'rgba(255,107,53,0.15)' : 'transparent',
+                color: layoutStyle === v ? '#FF6B35' : '#a1a1aa',
+                cursor: 'pointer',
+              }}
+            >
+              {v === 'centered' ? 'Centered' : 'Split'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 3. CTA (only if layoutStyle=split) */}
+      {layoutStyle === 'split' && (
+        <div className="border-t border-gray-700 pt-4 mt-4">
+          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">CTA</h3>
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-xs text-gray-400">
+              <input
+                type="checkbox"
+                checked={showCta}
+                onChange={(e) => setProp((p: Record<string, unknown>) => { p.showCta = e.target.checked; })}
+                className="rounded border-gray-600 bg-gray-700"
+              />
+              Show CTA button
+            </label>
+            {showCta && (
+              <div>
+                <label className={labelCls}>Button text</label>
+                <input type="text" value={ctaText} onChange={(e) => setT('ctaText', 500)(e.target.value)} className={inputCls} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 4. ITEMS */}
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">FAQ items</h3>
         <div className="space-y-3">
@@ -313,9 +484,9 @@ function TronFAQSettings() {
               <button
                 type="button"
                 onClick={() => removeItem(i)}
-                className="text-xs text-red-400 hover:text-red-300"
+                className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400"
               >
-                × Remove
+                ×
               </button>
             </div>
           ))}
@@ -329,7 +500,7 @@ function TronFAQSettings() {
         </div>
       </div>
 
-      {/* COLORS */}
+      {/* 5. COLORS */}
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
         <div>
@@ -356,7 +527,7 @@ function TronFAQSettings() {
         </div>
       </div>
 
-      {/* SIZE */}
+      {/* 6. SIZE */}
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Size</h3>
         <div>
@@ -367,13 +538,13 @@ function TronFAQSettings() {
             max={100}
             step={5}
             value={sectionHeight}
-            onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 300)}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)}
             className="w-full"
           />
         </div>
       </div>
 
-      {/* DISPLAY */}
+      {/* 7. DISPLAY */}
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
         <label className="flex items-center gap-2 text-xs text-gray-400">
@@ -387,7 +558,7 @@ function TronFAQSettings() {
         </label>
       </div>
 
-      {/* ANIMATION */}
+      {/* 8. ANIMATION */}
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
         <div className="space-y-3">
@@ -406,6 +577,7 @@ function TronFAQSettings() {
               <option value="slide-right">Slide Right</option>
               <option value="scale-in">Scale In</option>
               <option value="blur-in">Blur In</option>
+              <option value="rotate-in">Rotate In</option>
             </select>
           </div>
           <div>
@@ -427,17 +599,20 @@ function TronFAQSettings() {
 }
 
 // ── Craft config ──────────────────────────────────────────────────────────
-TronFAQ.craft = {
+const tronFAQCraft = {
   displayName: 'Tron FAQ',
   props: {
-    colorScheme: 'dark',
+    colorScheme: 'dark' as const,
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',
-    sectionHeight: 70,
+    sectionHeight: 80,
     showGrid: true,
     title: 'Frequently asked questions',
-    subtitle: 'Everything you need to know about our product.',
+    subtitle: "Everything you need to know. Can't find the answer? Contact us.",
+    layoutStyle: 'centered' as const,
+    showCta: true,
+    ctaText: 'Contact support',
     items: DEFAULT_ITEMS,
     animationType: 'none',
     animateDelay: '0',
@@ -453,6 +628,7 @@ TronFAQ.craft = {
     supportsGradient: false,
   },
 };
+(TronFAQ as unknown as { craft: typeof tronFAQCraft }).craft = tronFAQCraft;
 
 /** Minimal FAQItem for backward compatibility with resolver (legacy Element-based FAQ). */
 export const FAQItem = React.memo(function FAQItem(props: { question?: string; answer?: string }) {
