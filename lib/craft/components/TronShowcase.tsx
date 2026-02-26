@@ -328,6 +328,8 @@ export const TronShowcase = React.memo(function TronShowcase() {
   React.useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    const checkWidth = () => setIsMobile(el.getBoundingClientRect().width < 520);
+    checkWidth();
     const observer = new ResizeObserver(([entry]) => {
       setIsMobile((entry?.contentRect?.width ?? 0) < 520);
     });
@@ -336,19 +338,16 @@ export const TronShowcase = React.memo(function TronShowcase() {
   }, []);
 
   React.useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    setIsMobile(el.getBoundingClientRect().width < 520);
-  }, [layoutStyle]);
-
-  React.useEffect(() => {
     if (list.length === 0) return;
     if (activeIndex >= list.length) setActiveIndex(list.length - 1);
   }, [list.length, activeIndex]);
 
-  const gridLines = showGrid
-    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
-    : 'none';
+  const gridBg = showGrid
+    ? {
+        backgroundImage: `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`,
+        backgroundSize: '50px 50px',
+      }
+    : { backgroundImage: 'none' };
 
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType !== 'none') {
@@ -370,13 +369,11 @@ export const TronShowcase = React.memo(function TronShowcase() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
-      key={`${scheme}-${showGrid}`}
       data-block-type="showcase"
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
-        backgroundImage: gridLines,
-        backgroundSize: showGrid ? '50px 50px' : 'auto',
+        ...gridBg,
         minHeight: `${sectionHeight}vh`,
       }}
     >
