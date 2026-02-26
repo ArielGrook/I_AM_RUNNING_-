@@ -1,397 +1,763 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useEffect, useRef } from 'react';
-import { getSupabaseClient } from '@/lib/supabase/client';
+import React from 'react';
+import { useTheme } from '@/lib/craft/context/ThemeContext';
 
-type TronPortfolioItem = {
-  imageUrl: string;
-  title: string;
-  description: string;
-  cardWidth?: number;
-  cardMinHeight?: number;
-};
-
-const DEFAULT_ITEMS: TronPortfolioItem[] = [
-  { imageUrl: '', title: 'Project One', description: 'Short description.', cardWidth: 100, cardMinHeight: 300 },
-  { imageUrl: '', title: 'Project Two', description: 'Short description.', cardWidth: 100, cardMinHeight: 300 },
-  { imageUrl: '', title: 'Project Three', description: 'Short description.', cardWidth: 100, cardMinHeight: 300 },
-];
-
+// ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
-  if (!m) return '225, 29, 72';
-  return `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}`;
+  if (!m) return '255,107,53';
+  return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
 }
 
-export const TronPortfolio = ({
-  colorScheme = 'dark',
-  accentColor = '#e11d48',
-  darkBg = '#0a0a0a',
-  lightBg = '#ffffff',
-  showGrid = true,
-  sectionHeight = 75,
-  title = 'Our Work',
-  subtitle = 'Selected projects and case studies',
-  items = DEFAULT_ITEMS,
-  animationType = 'none',
-  animateDelay = '0',
-}: {
+// ── Tokens (from TronStats) ───────────────────────────────────────────────
+const tokens = {
+  dark: {
+    bg: '#0a0a0a',
+    text: '#ffffff',
+    textSecondary: '#a1a1aa',
+    border: 'rgba(255,255,255,0.08)',
+    cardBg: 'rgba(255,255,255,0.03)',
+    gridColor: 'rgba(255,255,255,0.03)',
+  },
+  light: {
+    bg: '#ffffff',
+    text: '#0a0a0a',
+    textSecondary: '#52525b',
+    border: 'rgba(0,0,0,0.08)',
+    cardBg: 'rgba(0,0,0,0.02)',
+    gridColor: 'rgba(0,0,0,0.06)',
+  },
+};
+
+function buildTokens(darkBg: string, lightBg: string) {
+  return {
+    dark: { ...tokens.dark, bg: darkBg ?? '#0a0a0a' },
+    light: { ...tokens.light, bg: lightBg ?? '#ffffff' },
+  };
+}
+
+// ── Interfaces ───────────────────────────────────────────────────────────
+export interface PortfolioItem {
+  title: string;
+  category: string;
+  imageBase64?: string;
+  imageUrl?: string; // legacy, used if imageBase64 not set
+  link?: string;
+}
+
+interface TronPortfolioProps {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
   darkBg?: string;
   lightBg?: string;
-  showGrid?: boolean;
   sectionHeight?: number;
+  showGrid?: boolean;
   title?: string;
   subtitle?: string;
-  items?: TronPortfolioItem[];
+  columns?: 2 | 3 | 4;
+  items?: PortfolioItem[];
+  showLoadMore?: boolean;
+  loadMoreText?: string;
   animationType?: string;
   animateDelay?: string;
-}) => {
+}
+
+function normalizePortfolioItem(raw: unknown): PortfolioItem {
+  if (raw && typeof raw === 'object') {
+    const o = raw as Record<string, unknown>;
+    const category = String(o.category ?? o.description ?? '');
+    return {
+      title: String(o.title ?? ''),
+      category,
+      imageBase64: (o.imageBase64 as string) || undefined,
+      imageUrl: (o.imageUrl as string) || undefined,
+      link: (o.link as string) || undefined,
+    };
+  }
+  return { title: '', category: '' };
+}
+
+const DEFAULT_ITEMS: PortfolioItem[] = [
+  { title: 'E-commerce Platform', category: 'Web Design', imageBase64: undefined, link: '#' },
+  { title: 'SaaS Dashboard', category: 'UI/UX', imageBase64: undefined, link: '#' },
+  { title: 'Mobile Banking App', category: 'Mobile', imageBase64: undefined, link: '#' },
+  { title: 'Brand Identity', category: 'Branding', imageBase64: undefined, link: '#' },
+  { title: 'Marketing Site', category: 'Web Design', imageBase64: undefined, link: '#' },
+  { title: 'Analytics Tool', category: 'SaaS', imageBase64: undefined, link: '#' },
+];
+
+// ── PortfolioCard (internal display) ───────────────────────────────────────
+interface PortfolioCardProps {
+  item: PortfolioItem;
+  accentColor: string;
+  t: { text: string; textSecondary: string; border: string; cardBg: string };
+  hexToRgb: (hex: string) => string;
+  enabled: boolean;
+}
+
+function PortfolioCard({ item, accentColor, t, hexToRgb, enabled }: PortfolioCardProps) {
+  const [hovered, setHovered] = React.useState(false);
+
+  return (
+    <div
+      onMouseEnter={() => !enabled && setHovered(true)}
+      onMouseLeave={() => !enabled && setHovered(false)}
+      style={{
+        borderRadius: 12,
+        overflow: 'hidden',
+        background: t.cardBg,
+        border: `1px solid ${hovered ? `rgba(${hexToRgb(accentColor)}, 0.3)` : t.border}`,
+        transition: 'border-color 0.2s',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ position: 'relative', aspectRatio: '16/10', overflow: 'hidden' }}>
+        {(item.imageBase64 || item.imageUrl) ? (
+          <img
+            src={item.imageBase64 || item.imageUrl}
+            alt={item.title}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transform: hovered ? 'scale(1.05)' : 'scale(1)',
+              transition: 'transform 0.4s ease',
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              background: `rgba(${hexToRgb(accentColor)}, 0.05)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={accentColor}
+              strokeWidth="1.5"
+              opacity={0.4}
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+          </div>
+        )}
+
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: `rgba(${hexToRgb(accentColor)}, 0.7)`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: hovered ? 1 : 0,
+            transition: 'opacity 0.3s ease',
+          }}
+        >
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transform: hovered ? 'scale(1)' : 'scale(0.7)',
+              transition: 'transform 0.3s ease',
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <path d="M7 17L17 7M17 7H7M17 7v10" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '16px 20px 20px' }}>
+        <div
+          style={{
+            color: accentColor,
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            marginBottom: 6,
+          }}
+        >
+          {item.category}
+        </div>
+        <div style={{ color: t.text, fontSize: 16, fontWeight: 600 }}>{item.title}</div>
+        {item.link && (
+          <a
+            href={item.link}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: 10,
+              color: accentColor,
+              fontSize: 13,
+              fontWeight: 500,
+              textDecoration: 'none',
+            }}
+            onClick={(e) => enabled && e.preventDefault()}
+          >
+            View
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M7 17L17 7M17 7H7M17 7v10" />
+            </svg>
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────
+export const TronPortfolio = React.memo(function TronPortfolio() {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
+  const { theme } = useTheme();
 
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [perPage, setPerPage] = useState(3);
-  const carouselRef = useRef<HTMLDivElement>(null);
+  const containerRef = React.useRef<HTMLElement | null>(null);
+  const [isMobile, setIsMobile] = React.useState(false);
 
-  useEffect(() => {
-    const el = carouselRef.current;
+  const props = useNode((node) => node.data.props as Partial<TronPortfolioProps>) ?? {};
+  const {
+    colorScheme = 'dark',
+    accentColor: propAccent,
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
+    sectionHeight = 80,
+    showGrid = true,
+    title = 'Our work',
+    subtitle = 'A selection of projects we are proud of.',
+    columns = 3,
+    items = DEFAULT_ITEMS,
+    showLoadMore = false,
+    loadMoreText = 'Load more',
+    animationType = 'none',
+    animateDelay = '0',
+  } = props;
+
+  React.useEffect(() => {
+    const el = containerRef.current;
     if (!el) return;
-    const update = () => {
-      const w = el.offsetWidth;
-      if (w <= 0) return;
-      if (w < 768) setPerPage(1);
-      else if (w < 1024) setPerPage(2);
-      else setPerPage(3);
+    const checkWidth = () => {
+      setIsMobile(el.getBoundingClientRect().width < 520);
     };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+    checkWidth();
+    const observer = new ResizeObserver(([entry]) => {
+      setIsMobile((entry?.contentRect?.width ?? 0) < 520);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [colorScheme]);
 
-  const tokens = {
-    dark: {
-      bg: darkBg ?? '#0a0a0a',
-      text: '#ffffff',
-      muted: '#52525b',
-      accent: accentColor,
-      gridColor: 'rgba(255,255,255,0.03)',
-      cardBg: 'rgba(255,255,255,0.02)',
-      cardBorder: 'rgba(255,255,255,0.08)',
-    },
-    light: {
-      bg: lightBg ?? '#ffffff',
-      bgSecondary: '#f8fafc',
-      text: '#0a0a0a',
-      textSecondary: '#52525b',
-      accent: accentColor,
-      border: 'rgba(0,0,0,0.08)',
-      cardBg: 'rgba(0,0,0,0.02)',
-      cardBorder: 'rgba(0,0,0,0.08)',
-      gridColor: 'rgba(0,0,0,0.06)',
-      muted: '#52525b',
-    },
+  const accentColor = propAccent ?? theme?.accentColor ?? '#FF6B35';
+  const scheme = colorScheme ?? theme?.colorScheme ?? 'dark';
+  const tokensBuilt = buildTokens(darkBg, lightBg);
+  const t = {
+    ...tokensBuilt[scheme],
+    accent: accentColor,
+    bg: scheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
   };
-  const t = tokens[colorScheme];
-
-  const list = items ?? DEFAULT_ITEMS;
-  const maxIndex = Math.max(0, Math.ceil(list.length / perPage) - 1);
-  const clampedIndex = Math.min(activeIndex, maxIndex);
-  const rgb = hexToRgb(accentColor ?? '#e11d48');
 
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
-  const backgroundStyle = {
-    background: t.bg,
-    backgroundImage: gridLines,
-    backgroundSize: showGrid ? '50px 50px' : 'auto',
-    backgroundPosition: '0 0',
-  };
+
+  const animAttrs: Record<string, string> = {};
+  if (!enabled && animationType !== 'none') {
+    animAttrs['data-animate'] = animationType;
+    if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
+  }
+
+  const rawList = (Array.isArray(items) ? items : DEFAULT_ITEMS).map(normalizePortfolioItem);
+  const titleWords = (title ?? '').split(' ');
+  const firstWord = titleWords[0] ?? '';
+  const restWords = titleWords.slice(1).join(' ');
+  const gridCols = isMobile ? 1 : (columns ?? 3);
 
   return (
     <section
-      id="portfolio"
-      key={`${colorScheme}-${showGrid}`}
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      ref={(el) => {
+        if (el) {
+          connect(drag(el));
+          (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
+        }
+      }}
+      key={scheme}
       data-block-type="portfolio"
-      className="w-full max-w-full px-4 md:px-8"
-      style={{ ...backgroundStyle, minHeight: `${sectionHeight}vh`, paddingTop: '100px', paddingBottom: '100px' }}
+      className={`w-full max-w-full py-20 px-4 sm:px-8 lg:px-16 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
+      style={{
+        background: t.bg,
+        backgroundImage: gridLines,
+        backgroundSize: showGrid ? '50px 50px' : 'auto',
+        minHeight: `${sectionHeight}vh`,
+      }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: `${sectionHeight}vh` }}>
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-10 md:mb-12">
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 16, color: t.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            aria-label="Previous"
-            disabled={clampedIndex <= 0}
-            onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
+      <div className="max-w-6xl mx-auto w-full" {...animAttrs}>
+        <div className="text-center mb-12 md:mb-16">
+          <h2
             style={{
-              background: 'transparent',
-            border: `1px solid ${t.accent}`,
-            color: t.accent,
-              width: 40,
-              height: 40,
-              borderRadius: 4,
-              cursor: clampedIndex <= 0 ? 'not-allowed' : 'pointer',
-              opacity: clampedIndex <= 0 ? 0.4 : 1,
-              flexShrink: 0,
+              fontSize: 'clamp(28px, 4vw, 48px)',
+              fontWeight: 700,
+              color: t.text,
+              margin: 0,
             }}
           >
-            ←
-          </button>
+            <span style={{ color: t.accent }}>{firstWord}</span>
+            {restWords ? ` ${restWords}` : ''}
+          </h2>
+          <p
+            style={{
+              fontSize: 16,
+              color: t.textSecondary,
+              marginTop: 12,
+              marginBottom: 0,
+              lineHeight: 1.6,
+            }}
+          >
+            {subtitle}
+          </p>
+        </div>
 
-          <div ref={carouselRef} className="flex-1 overflow-hidden min-w-0">
-            <div
-              className="flex"
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : `repeat(${gridCols}, 1fr)`,
+            gap: isMobile ? 16 : 24,
+            alignItems: 'start',
+            width: '100%',
+          }}
+        >
+          {rawList.map((item, i) => (
+            <PortfolioCard
+              key={i}
+              item={item}
+              accentColor={accentColor}
+              t={t}
+              hexToRgb={hexToRgb}
+              enabled={enabled}
+            />
+          ))}
+        </div>
+
+        {showLoadMore && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 48 }}>
+            <button
+              type="button"
               style={{
-                transform: `translateX(-${clampedIndex * (perPage / list.length) * 100}%)`,
-                transition: 'transform 400ms ease',
-                width: `${(list.length / perPage) * 100}%`,
+                padding: '12px 32px',
+                background: 'transparent',
+                border: `1px solid ${t.border}`,
+                borderRadius: 8,
+                color: t.text,
+                fontSize: 14,
+                fontWeight: 500,
+                cursor: 'default',
               }}
             >
-              {list.map((item, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: `${100 / list.length}%`,
-                    minWidth: `${100 / list.length}%`,
-                    padding: '0 8px',
-                    boxSizing: 'border-box',
-                    flexShrink: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <div style={{ width: `${item.cardWidth ?? 100}%`, flexShrink: 0 }}>
-                    <div
-                      style={{
-                        minHeight: `${item.cardMinHeight ?? 300}px`,
-                        background: item.imageUrl ? 'transparent' : t.cardBg,
-                        border: `1px solid ${t.cardBorder}`,
-                        borderRadius: 4,
-                        overflow: 'hidden',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <span style={{ color: '#52525b', fontSize: 14 }}>Add image</span>
-                      )}
-                    </div>
-                    <h3 style={{ fontSize: 17, fontWeight: 600, color: t.text, margin: '12px 0 4px' }}>{item.title}</h3>
-                    <p style={{ fontSize: 14, color: t.muted, margin: 0 }}>{item.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+              {loadMoreText ?? 'Load more'}
+            </button>
           </div>
-
-          <button
-            type="button"
-            aria-label="Next"
-            disabled={clampedIndex >= maxIndex}
-            onClick={() => setActiveIndex((i) => Math.min(maxIndex, i + 1))}
-            style={{
-              background: 'transparent',
-            border: `1px solid ${t.accent}`,
-            color: t.accent,
-              width: 40,
-              height: 40,
-              borderRadius: 4,
-              cursor: clampedIndex >= maxIndex ? 'not-allowed' : 'pointer',
-              opacity: clampedIndex >= maxIndex ? 0.4 : 1,
-              flexShrink: 0,
-            }}
-          >
-            →
-          </button>
-        </div>
-      </div>
+        )}
       </div>
     </section>
   );
-};
+});
 
-const TronPortfolioSettings = () => {
+// ── Settings ──────────────────────────────────────────────────────────────
+function TronPortfolioSettings() {
+  const { actions: { setProp } } = useNode();
+  const props = useNode((node) => node.data.props as Partial<TronPortfolioProps>) ?? {};
   const {
-    actions: { setProp },
-    colorScheme,
-    accentColor,
-    darkBg,
-    lightBg,
-    showGrid,
-    sectionHeight,
-    title,
-    subtitle,
-    items,
-    animationType,
-    animateDelay,
-  } = useNode((node) => ({
-    colorScheme: node.data.props.colorScheme as 'dark' | 'light',
-    accentColor: node.data.props.accentColor as string,
-    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
-    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
-    showGrid: node.data.props.showGrid as boolean,
-    sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
-    title: node.data.props.title as string,
-    subtitle: node.data.props.subtitle as string,
-    items: node.data.props.items as TronPortfolioItem[],
-    animationType: node.data.props.animationType as string,
-    animateDelay: node.data.props.animateDelay as string,
-  }));
+    title = 'Our work',
+    subtitle = 'A selection of projects we are proud of.',
+    items = DEFAULT_ITEMS,
+    columns = 3,
+    showLoadMore = false,
+    loadMoreText = 'Load more',
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
+    sectionHeight = 80,
+    showGrid = true,
+    animationType = 'none',
+    animateDelay = '0',
+  } = props;
 
-  const setT = (key: string, ms: number) => (val: unknown) =>
-    setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
+  const rawList = Array.isArray(items) ? items : DEFAULT_ITEMS;
+  const list = rawList.map(normalizePortfolioItem);
 
-  const updateItem = (index: number, field: keyof TronPortfolioItem, value: string) => {
+  const updateItem = (i: number, field: keyof PortfolioItem, value: string | undefined) => {
     setProp((p: Record<string, unknown>) => {
-      const arr = [...(p.items as TronPortfolioItem[])];
-      arr[index] = { ...arr[index], [field]: value };
+      const arr = [...((p.items as PortfolioItem[]) ?? [])];
+      if (arr[i]) arr[i] = { ...arr[i], [field]: value };
       p.items = arr;
-    });
+    }, 500);
+  };
+
+  const addItem = () => {
+    setProp((p: Record<string, unknown>) => {
+      const arr = [...((p.items as PortfolioItem[]) ?? []), { title: 'New Project', category: 'Category', link: '#' }];
+      p.items = arr;
+    }, 0);
+  };
+
+  const removeItem = (i: number) => {
+    setProp((p: Record<string, unknown>) => {
+      p.items = ((p.items as PortfolioItem[]) ?? []).filter((_, idx) => idx !== i);
+    }, 0);
   };
 
   return (
-    <div className="p-3 space-y-5 text-white">
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
+    <div className="p-3 space-y-0 text-white">
+      {/* CONTENT */}
+      <div className="border-t border-gray-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
-          <div><label className={labelCls}>Color scheme</label><select value={colorScheme ?? 'dark'} onChange={(e) => setT('colorScheme', 300)(e.target.value)} className={inputCls}><option value="dark">Dark</option><option value="light">Light</option></select></div>
-          <div className="flex items-center gap-2"><label className={`${labelCls} shrink-0 w-20`}>Accent</label><input type="color" value={accentColor ?? '#e11d48'} onChange={(e) => setT('accentColor', 300)(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0" /><span className="text-[10px] font-mono text-gray-500 truncate">{accentColor}</span></div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <label style={{ color: '#a1a1aa', fontSize: 12 }}>Show Grid</label>
-            <input type="checkbox" checked={showGrid ?? true} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })} />
+          <div>
+            <label className={labelCls}>Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.title = e.target.value; }, 500)}
+              className={inputCls}
+            />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота секции: {sectionHeight ?? 75}vh</label>
-            <input type="range" min={50} max={100} step={5} value={sectionHeight ?? 75} onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)} style={{ width: '100%' }} />
+            <label className={labelCls}>Subtitle</label>
+            <input
+              type="text"
+              value={subtitle}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.subtitle = e.target.value; }, 500)}
+              className={inputCls}
+            />
           </div>
         </div>
-      </section>
-      <section>
+      </div>
+
+      {/* ITEMS */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Items</h3>
+        <div className="space-y-4">
+          {list.map((item, i) => (
+            <div key={i} className="p-3 rounded bg-gray-800/50 space-y-3">
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={item.title}
+                  onChange={(e) => updateItem(i, 'title', e.target.value)}
+                  className={inputCls}
+                  placeholder="Title"
+                  style={{ flex: 1 }}
+                />
+                <input
+                  type="text"
+                  value={item.category}
+                  onChange={(e) => updateItem(i, 'category', e.target.value)}
+                  className={inputCls}
+                  placeholder="Category"
+                  style={{ width: 100 }}
+                />
+                <input
+                  type="text"
+                  value={item.link ?? ''}
+                  onChange={(e) => updateItem(i, 'link', e.target.value || undefined)}
+                  className={inputCls}
+                  placeholder="Link"
+                  style={{ width: 100 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeItem(i)}
+                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400"
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {item.imageBase64 && (
+                  <img
+                    src={item.imageBase64}
+                    alt=""
+                    style={{ width: 48, height: 32, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
+                  />
+                )}
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 10px',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    background: 'rgba(255,107,53,0.1)',
+                    border: '1px solid rgba(255,107,53,0.3)',
+                    color: '#FF6B35',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {item.imageBase64 ? '↺ Change image' : '+ Upload image'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const base64 = ev.target?.result as string;
+                        setProp((p: Record<string, unknown>) => {
+                          const items = [...((p.items as PortfolioItem[]) ?? [])];
+                          if (items[i]) items[i] = { ...items[i], imageBase64: base64 };
+                          p.items = items;
+                        }, 0);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                {item.imageBase64 && (
+                  <button
+                    type="button"
+                    onClick={() => updateItem(i, 'imageBase64', undefined)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#71717a',
+                      cursor: 'pointer',
+                      fontSize: 16,
+                      padding: 0,
+                    }}
+                    title="Remove photo"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addItem}
+            className="px-2 py-1.5 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#ff8555]"
+          >
+            + Add project
+          </button>
+        </div>
+      </div>
+
+      {/* LAYOUT */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Layout</h3>
+        <div>
+          <label className={labelCls}>Columns</label>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {([2, 3, 4] as const).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setProp((p: Record<string, unknown>) => { p.columns = n; })}
+                style={{
+                  flex: 1,
+                  padding: '4px 0',
+                  fontSize: 12,
+                  borderRadius: 6,
+                  border: '1px solid',
+                  borderColor: columns === n ? '#FF6B35' : 'rgba(255,255,255,0.15)',
+                  background: columns === n ? 'rgba(255,107,53,0.15)' : 'transparent',
+                  color: columns === n ? '#FF6B35' : '#a1a1aa',
+                  cursor: 'pointer',
+                }}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* DISPLAY */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
+        <div className="space-y-3">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, color: '#d4d4d8' }}>Show Load more</span>
+            <input
+              type="checkbox"
+              checked={showLoadMore ?? false}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showLoadMore = e.target.checked; })}
+              className="rounded border-gray-600 bg-gray-700"
+            />
+          </div>
+          {showLoadMore && (
+            <div>
+              <label className={labelCls}>Load more text</label>
+              <input
+                type="text"
+                value={loadMoreText ?? 'Load more'}
+                onChange={(e) => setProp((p: Record<string, unknown>) => { p.loadMoreText = e.target.value; }, 500)}
+                className={inputCls}
+                placeholder="Load more"
+              />
+            </div>
+          )}
+          <label className="flex items-center gap-2 text-xs text-gray-400">
+            <input
+              type="checkbox"
+              checked={showGrid}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
+              className="rounded border-gray-600 bg-gray-700"
+            />
+            Show grid
+          </label>
+        </div>
+      </div>
+
+      {/* COLORS */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
         <div>
           <label className={labelCls}>Background (dark mode)</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <input
+              type="color"
+              value={darkBg ?? '#0a0a0a'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)}
+              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
+            />
             <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
           </div>
-          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <label className={labelCls} style={{ marginTop: 12 }}>
+            Background (light mode)
+          </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <input
+              type="color"
+              value={lightBg ?? '#ffffff'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)}
+              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
+            />
             <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
           </div>
         </div>
-      </section>
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
-        <div className="space-y-3">
-          <div><label className={labelCls}>Title</label><input type="text" value={title ?? ''} onChange={(e) => setT('title', 500)(e.target.value)} className={inputCls} /></div>
-          <div><label className={labelCls}>Subtitle</label><input type="text" value={subtitle ?? ''} onChange={(e) => setT('subtitle', 500)(e.target.value)} className={inputCls} /></div>
+      </div>
+
+      {/* SIZE */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Size</h3>
+        <div>
+          <label className={labelCls}>Section height: {sectionHeight}vh</label>
+          <input
+            type="range"
+            min={50}
+            max={100}
+            step={5}
+            value={sectionHeight}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)}
+            className="w-full"
+          />
         </div>
-      </section>
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Items</h3>
-        <div className="space-y-3">
-          {(items ?? []).map((item, i) => (
-            <div key={i} className="p-2 rounded bg-gray-800/60 space-y-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt="" style={{ width: 60, height: 40, objectFit: 'cover', borderRadius: 4 }} />
-                ) : null}
-                <label className="cursor-pointer">
-                  <span className="inline-block px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-gray-300 hover:border-gray-500">
-                    {item.imageUrl ? 'Change image' : 'Upload image'}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const supabase = getSupabaseClient();
-                      const path = `portfolio/${Date.now()}-${file.name}`;
-                      const { error } = await supabase.storage.from('project-assets').upload(path, file);
-                      if (!error) {
-                        const { data: urlData } = supabase.storage.from('project-assets').getPublicUrl(path);
-                        setProp((p: Record<string, unknown>) => {
-                          const arr = [...(p.items as TronPortfolioItem[])];
-                          arr[i] = { ...arr[i], imageUrl: urlData.publicUrl };
-                          p.items = arr;
-                        });
-                      }
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-              </div>
-              <input type="text" value={item.title} onChange={(e) => updateItem(i, 'title', e.target.value)} className={inputCls} placeholder="Title" />
-              <input type="text" value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} className={inputCls} placeholder="Description" />
-              <div>
-                <label style={{ fontSize: 12, color: '#a1a1aa' }}>Ширина: {item.cardWidth ?? 100}%</label>
-                <input type="range" min={60} max={150} step={5} value={item.cardWidth ?? 100} onChange={(e) => setProp((p: Record<string, unknown>) => { const arr = [...(p.items as TronPortfolioItem[])]; arr[i] = { ...arr[i], cardWidth: Number(e.target.value) }; p.items = arr; }, 300)} style={{ width: '100%' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота изображения (min): {item.cardMinHeight ?? 300}px</label>
-                <input type="range" min={200} max={800} step={50} value={item.cardMinHeight ?? 300} onChange={(e) => setProp((p: Record<string, unknown>) => { const arr = [...(p.items as TronPortfolioItem[])]; arr[i] = { ...arr[i], cardMinHeight: Number(e.target.value) }; p.items = arr; }, 300)} style={{ width: '100%' }} />
-              </div>
-              <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.items = (p.items as TronPortfolioItem[]).filter((_, j) => j !== i); })} className="text-xs text-red-400">Remove</button>
-            </div>
-          ))}
-          <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.items = [...(p.items as TronPortfolioItem[] || []), { imageUrl: '', title: 'Project', description: 'Description.', cardWidth: 100, cardMinHeight: 300 }]; })} className="w-full py-1.5 text-xs border border-dashed border-gray-600 text-gray-400 rounded">+ Add item</button>
-        </div>
-      </section>
-      <section>
+      </div>
+
+      {/* ANIMATION */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
-        <div className="space-y-2">
-          <div><label className={labelCls}>Type</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
-          <div><label className={labelCls}>Delay (s)</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Type</label>
+            <select
+              value={animationType}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })}
+              className={inputCls}
+            >
+              <option value="none">None</option>
+              <option value="fade-in">Fade In</option>
+              <option value="slide-up">Slide Up</option>
+              <option value="slide-down">Slide Down</option>
+              <option value="slide-left">Slide Left</option>
+              <option value="slide-right">Slide Right</option>
+              <option value="scale-in">Scale In</option>
+              <option value="blur-in">Blur In</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Delay</label>
+            <select
+              value={animateDelay}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })}
+              className={inputCls}
+            >
+              {['0', '0.1', '0.2', '0.3', '0.5', '0.8', '1'].map((v) => (
+                <option key={v} value={v}>
+                  {v}s
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </section>
+      </div>
     </div>
   );
-};
+}
 
-TronPortfolio.craft = {
+// ── Craft config ──────────────────────────────────────────────────────────
+const tronPortfolioCraft = {
   displayName: 'Tron Portfolio',
   props: {
     colorScheme: 'dark',
-    accentColor: '#e11d48',
+    accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',
+    sectionHeight: 80,
     showGrid: true,
-    sectionHeight: 75,
-    title: 'Our Work',
-    subtitle: 'Selected projects and case studies',
+    title: 'Our work',
+    subtitle: 'A selection of projects we are proud of.',
+    columns: 3 as const,
+    showLoadMore: false,
+    loadMoreText: 'Load more',
     items: DEFAULT_ITEMS,
     animationType: 'none',
     animateDelay: '0',
-    'data-block-type': 'portfolio',
   },
   related: { settings: TronPortfolioSettings },
+  rules: { canDrag: () => true, canMoveIn: () => false },
   custom: {
-    styleTags: ['dark', 'neon', 'creative'],
-    businessTags: ['portfolio', 'agency', 'creative', 'photographer'],
-    featureTags: ['portfolio', 'carousel', 'gallery', 'interactive'],
+    styleTags: ['dark', 'minimal'],
+    businessTags: ['agency', 'freelance', 'studio'],
+    featureTags: ['portfolio', 'gallery'],
     supportsTheme: true,
     supportsColorPreset: true,
+    supportsGradient: false,
   },
-  rules: { canDrag: () => true, canMoveIn: () => false },
 };
+(TronPortfolio as unknown as { craft: typeof tronPortfolioCraft }).craft = tronPortfolioCraft;
