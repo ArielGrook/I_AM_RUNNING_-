@@ -176,6 +176,7 @@ interface PricingPlanCardDisplayProps {
 
 function PricingPlanCardDisplay({ plan, t, accentColor, enabled, isAnnual = false }: PricingPlanCardDisplayProps) {
   const [hovered, setHovered] = React.useState(false);
+  const displayPrice = isAnnual && plan.priceAnnual ? plan.priceAnnual : plan.price;
 
   const isHighlighted = plan.isHighlighted ?? false;
   const cardStyle: React.CSSProperties = isHighlighted
@@ -234,7 +235,7 @@ function PricingPlanCardDisplay({ plan, t, accentColor, enabled, isAnnual = fals
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
         <span style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: t.text }}>
-          {isAnnual && plan.priceAnnual ? plan.priceAnnual : plan.price}
+          {displayPrice}
         </span>
         <span style={{ fontSize: 14, color: t.textSecondary }}>{plan.period}</span>
       </div>
@@ -505,7 +506,7 @@ export const TronPricing = React.memo(function TronPricing() {
         >
           {displayPlans.map((plan, i) => (
             <PricingPlanCardDisplay
-              key={i}
+              key={`${i}-${isAnnual}`}
               plan={plan}
               t={t}
               accentColor={accentColor}
@@ -770,20 +771,23 @@ function TronPricingSettings() {
                   placeholder="Price"
                   style={{ width: 70 }}
                 />
-                <input
-                  type="text"
-                  value={plan.priceAnnual ?? ''}
-                  onChange={(e) =>
-                    setProp((p: Record<string, unknown>) => {
-                      const plans = [...((p.plans as PricingPlan[]) ?? [])];
-                      if (plans[pi]) plans[pi] = { ...plans[pi], priceAnnual: e.target.value };
-                      p.plans = plans;
-                    }, 300)
-                  }
-                  className={inputCls}
-                  placeholder="Annual (e.g. $23)"
-                  style={{ width: 90 }}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <label className={labelCls}>Annual price (per month)</label>
+                  <input
+                    type="text"
+                    value={plan.priceAnnual ?? ''}
+                    onChange={(e) =>
+                      setProp((p: Record<string, unknown>) => {
+                        const plans = [...((p.plans as PricingPlan[]) ?? [])];
+                        if (plans[pi]) plans[pi] = { ...plans[pi], priceAnnual: e.target.value };
+                        p.plans = plans;
+                      }, 300)
+                    }
+                    className={inputCls}
+                    placeholder="e.g. $23"
+                    style={{ width: 90 }}
+                  />
+                </div>
                 <input
                   type="text"
                   value={plan.period}
