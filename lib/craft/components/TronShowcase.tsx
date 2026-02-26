@@ -342,12 +342,9 @@ export const TronShowcase = React.memo(function TronShowcase() {
     if (activeIndex >= list.length) setActiveIndex(list.length - 1);
   }, [list.length, activeIndex]);
 
-  const gridBg = showGrid
-    ? {
-        backgroundImage: `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`,
-        backgroundSize: '50px 50px',
-      }
-    : { backgroundImage: 'none' };
+  const gridLines = showGrid
+    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+    : 'none';
 
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType !== 'none') {
@@ -373,7 +370,8 @@ export const TronShowcase = React.memo(function TronShowcase() {
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
-        ...gridBg,
+        backgroundImage: gridLines,
+        backgroundSize: showGrid ? '50px 50px' : 'auto',
         minHeight: `${sectionHeight}vh`,
       }}
     >
