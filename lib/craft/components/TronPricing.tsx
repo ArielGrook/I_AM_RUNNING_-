@@ -433,7 +433,10 @@ export const TronPricing = React.memo(function TronPricing() {
             </span>
             <button
               type="button"
-              onClick={() => setIsAnnual(!isAnnual)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsAnnual((prev) => !prev);
+              }}
               style={{
                 width: 44,
                 height: 24,
@@ -464,25 +467,30 @@ export const TronPricing = React.memo(function TronPricing() {
                 fontSize: 14,
                 fontWeight: isAnnual ? 600 : 400,
                 color: isAnnual ? t.text : t.textSecondary,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
               }}
             >
               Annually
+              {annualDiscount && (
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: 100,
+                    background: `rgba(${hexToRgb(accentColor)}, 0.12)`,
+                    border: `1px solid rgba(${hexToRgb(accentColor)}, 0.3)`,
+                    color: accentColor,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    opacity: isAnnual ? 1 : 0.5,
+                    transition: 'opacity 0.2s',
+                  }}
+                >
+                  {annualDiscount}
+                </span>
+              )}
             </span>
-            {isAnnual && annualDiscount && (
-              <span
-                style={{
-                  padding: '3px 10px',
-                  borderRadius: 100,
-                  background: `rgba(${hexToRgb(accentColor)}, 0.12)`,
-                  border: `1px solid rgba(${hexToRgb(accentColor)}, 0.3)`,
-                  color: accentColor,
-                  fontSize: 12,
-                  fontWeight: 600,
-                }}
-              >
-                {annualDiscount}
-              </span>
-            )}
           </div>
         )}
 
