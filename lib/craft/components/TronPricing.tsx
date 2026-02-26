@@ -53,6 +53,7 @@ export interface PricingPlan {
   ctaText: string;
   isPopular: boolean;
   isHighlighted: boolean;
+  popularText?: string;
 }
 
 interface TronPricingProps {
@@ -88,6 +89,7 @@ function normalizePricingPlan(raw: unknown): PricingPlan {
       ctaText: String(o.ctaText ?? 'Get started'),
       isPopular: Boolean(o.isPopular ?? false),
       isHighlighted: Boolean(o.isHighlighted ?? o.highlighted ?? false),
+      popularText: (o.popularText as string) || undefined,
     };
   }
   return {
@@ -110,6 +112,7 @@ const DEFAULT_PLANS: PricingPlan[] = [
     subtitle: 'For individuals',
     isPopular: false,
     isHighlighted: false,
+    popularText: 'Most popular',
     ctaText: 'Get started',
     features: [
       { text: '5 projects', included: true },
@@ -126,6 +129,7 @@ const DEFAULT_PLANS: PricingPlan[] = [
     subtitle: 'For growing teams',
     isPopular: true,
     isHighlighted: true,
+    popularText: 'Most popular',
     ctaText: 'Get started',
     features: [
       { text: '20 projects', included: true },
@@ -142,6 +146,7 @@ const DEFAULT_PLANS: PricingPlan[] = [
     subtitle: 'For large organizations',
     isPopular: false,
     isHighlighted: false,
+    popularText: 'Most popular',
     ctaText: 'Contact us',
     features: [
       { text: 'Unlimited projects', included: true },
@@ -211,7 +216,7 @@ function PricingPlanCardDisplay({ plan, t, accentColor, enabled }: PricingPlanCa
             whiteSpace: 'nowrap',
           }}
         >
-          Most popular
+          {plan.popularText ?? 'Most popular'}
         </div>
       )}
 
@@ -714,6 +719,21 @@ function TronPricingSettings() {
                   />
                   Most popular
                 </label>
+                {plan.isPopular && (
+                  <input
+                    type="text"
+                    value={plan.popularText ?? 'Most popular'}
+                    onChange={(e) =>
+                      setProp((p: Record<string, unknown>) => {
+                        const plans = [...((p.plans as PricingPlan[]) ?? [])];
+                        if (plans[pi]) plans[pi] = { ...plans[pi], popularText: e.target.value };
+                        p.plans = plans;
+                      }, 300)
+                    }
+                    className={inputCls}
+                    placeholder="Most popular"
+                  />
+                )}
                 <label className="flex items-center gap-2 text-xs text-gray-400">
                   <input
                     type="checkbox"
