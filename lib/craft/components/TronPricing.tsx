@@ -54,6 +54,7 @@ export interface PricingPlan {
   isPopular: boolean;
   isHighlighted: boolean;
   popularText?: string;
+  priceAnnual?: string;
 }
 
 interface TronPricingProps {
@@ -63,6 +64,8 @@ interface TronPricingProps {
   lightBg?: string;
   sectionHeight?: number;
   showGrid?: boolean;
+  showBillingToggle?: boolean;
+  annualDiscount?: string;
   title?: string;
   subtitle?: string;
   plans?: PricingPlan[];
@@ -90,6 +93,7 @@ function normalizePricingPlan(raw: unknown): PricingPlan {
       isPopular: Boolean(o.isPopular ?? false),
       isHighlighted: Boolean(o.isHighlighted ?? o.highlighted ?? false),
       popularText: (o.popularText as string) || undefined,
+      priceAnnual: (o.priceAnnual as string) || undefined,
     };
   }
   return {
@@ -108,6 +112,7 @@ const DEFAULT_PLANS: PricingPlan[] = [
   {
     name: 'Starter',
     price: '$29',
+    priceAnnual: '$23',
     period: '/mo',
     subtitle: 'For individuals',
     isPopular: false,
@@ -125,6 +130,7 @@ const DEFAULT_PLANS: PricingPlan[] = [
   {
     name: 'Pro',
     price: '$79',
+    priceAnnual: '$63',
     period: '/mo',
     subtitle: 'For growing teams',
     isPopular: true,
@@ -142,6 +148,7 @@ const DEFAULT_PLANS: PricingPlan[] = [
   {
     name: 'Enterprise',
     price: '$199',
+    priceAnnual: '$159',
     period: '/mo',
     subtitle: 'For large organizations',
     isPopular: false,
@@ -164,9 +171,10 @@ interface PricingPlanCardDisplayProps {
   t: { text: string; textSecondary: string; border: string; cardBg: string };
   accentColor: string;
   enabled: boolean;
+  isAnnual?: boolean;
 }
 
-function PricingPlanCardDisplay({ plan, t, accentColor, enabled }: PricingPlanCardDisplayProps) {
+function PricingPlanCardDisplay({ plan, t, accentColor, enabled, isAnnual = false }: PricingPlanCardDisplayProps) {
   const [hovered, setHovered] = React.useState(false);
 
   const isHighlighted = plan.isHighlighted ?? false;
@@ -226,7 +234,7 @@ function PricingPlanCardDisplay({ plan, t, accentColor, enabled }: PricingPlanCa
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
         <span style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: t.text }}>
-          {plan.price}
+          {isAnnual && plan.priceAnnual ? plan.priceAnnual : plan.price}
         </span>
         <span style={{ fontSize: 14, color: t.textSecondary }}>{plan.period}</span>
       </div>
@@ -298,6 +306,7 @@ export const TronPricing = React.memo(function TronPricing() {
 
   const containerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
+  const [isAnnual, setIsAnnual] = React.useState(false);
 
   const props = useNode((node) => node.data.props as Partial<TronPricingProps>) ?? {};
   const {
@@ -307,6 +316,8 @@ export const TronPricing = React.memo(function TronPricing() {
     lightBg = '#ffffff',
     sectionHeight = 80,
     showGrid = true,
+    showBillingToggle = true,
+    annualDiscount = 'Save 20%',
     title = 'Simple, transparent pricing',
     subtitle = 'Choose the plan that works best for you.',
     plans = DEFAULT_PLANS,
@@ -401,6 +412,80 @@ export const TronPricing = React.memo(function TronPricing() {
           </p>
         </div>
 
+        {showBillingToggle && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              marginBottom: 48,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: isAnnual ? 400 : 600,
+                color: isAnnual ? t.textSecondary : t.text,
+              }}
+            >
+              Monthly
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsAnnual(!isAnnual)}
+              style={{
+                width: 44,
+                height: 24,
+                borderRadius: 12,
+                background: isAnnual ? accentColor : t.border,
+                border: 'none',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'background 0.2s',
+                flexShrink: 0,
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 3,
+                  left: isAnnual ? 23 : 3,
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  background: '#fff',
+                  transition: 'left 0.2s',
+                }}
+              />
+            </button>
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: isAnnual ? 600 : 400,
+                color: isAnnual ? t.text : t.textSecondary,
+              }}
+            >
+              Annually
+            </span>
+            {isAnnual && annualDiscount && (
+              <span
+                style={{
+                  padding: '3px 10px',
+                  borderRadius: 100,
+                  background: `rgba(${hexToRgb(accentColor)}, 0.12)`,
+                  border: `1px solid rgba(${hexToRgb(accentColor)}, 0.3)`,
+                  color: accentColor,
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {annualDiscount}
+              </span>
+            )}
+          </div>
+        )}
+
         <div
           style={{
             display: 'grid',
@@ -417,6 +502,7 @@ export const TronPricing = React.memo(function TronPricing() {
               t={t}
               accentColor={accentColor}
               enabled={enabled}
+              isAnnual={isAnnual}
             />
           ))}
         </div>
@@ -545,6 +631,8 @@ function TronPricingSettings() {
     title = 'Simple, transparent pricing',
     subtitle = 'Choose the plan that works best for you.',
     plans = DEFAULT_PLANS,
+    showBillingToggle = true,
+    annualDiscount = 'Save 20%',
     darkBg = '#0a0a0a',
     lightBg = '#ffffff',
     sectionHeight = 80,
@@ -676,6 +764,20 @@ function TronPricingSettings() {
                 />
                 <input
                   type="text"
+                  value={plan.priceAnnual ?? ''}
+                  onChange={(e) =>
+                    setProp((p: Record<string, unknown>) => {
+                      const plans = [...((p.plans as PricingPlan[]) ?? [])];
+                      if (plans[pi]) plans[pi] = { ...plans[pi], priceAnnual: e.target.value };
+                      p.plans = plans;
+                    }, 300)
+                  }
+                  className={inputCls}
+                  placeholder="Annual (e.g. $23)"
+                  style={{ width: 90 }}
+                />
+                <input
+                  type="text"
                   value={plan.period}
                   onChange={(e) => updatePlan(pi, 'period', e.target.value)}
                   className={inputCls}
@@ -792,6 +894,40 @@ function TronPricingSettings() {
         </div>
       </div>
 
+      {/* BILLING */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Billing</h3>
+        <div className="space-y-3">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: '#d4d4d8' }}>Show Monthly/Annually</span>
+            <input
+              type="checkbox"
+              checked={showBillingToggle ?? true}
+              onChange={(e) =>
+                setProp((p: Record<string, unknown>) => {
+                  p.showBillingToggle = e.target.checked;
+                })
+              }
+              className="rounded border-gray-600 bg-gray-700"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Discount label</label>
+            <input
+              type="text"
+              value={annualDiscount ?? 'Save 20%'}
+              onChange={(e) =>
+                setProp((p: Record<string, unknown>) => {
+                  p.annualDiscount = e.target.value;
+                }, 300)
+              }
+              className={inputCls}
+              placeholder="Save 20%"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* COLORS */}
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
@@ -903,6 +1039,8 @@ const tronPricingCraft = {
     lightBg: '#ffffff',
     sectionHeight: 80,
     showGrid: true,
+    showBillingToggle: true,
+    annualDiscount: 'Save 20%',
     title: 'Simple, transparent pricing',
     subtitle: 'Choose the plan that works best for you.',
     plans: DEFAULT_PLANS,
