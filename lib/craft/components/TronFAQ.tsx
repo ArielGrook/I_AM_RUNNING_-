@@ -111,6 +111,8 @@ const NUM_FAQ = 4;
 export const TronFAQ = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  darkBg = '#0a0a0a',
+  lightBg = '#ffffff',
   showGrid = true,
   sectionHeight = 75,
   title = 'Frequently asked questions',
@@ -118,6 +120,8 @@ export const TronFAQ = ({
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
   showGrid?: boolean;
   sectionHeight?: number;
   title?: string;
@@ -127,7 +131,10 @@ export const TronFAQ = ({
   const isSelected = useNode((node) => node.events.selected);
   const editor = useEditor();
   const query = editor?.query;
-  const t = tokens[colorScheme];
+  const t = {
+    ...tokens[colorScheme],
+    bg: colorScheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
+  };
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
@@ -177,9 +184,11 @@ export const TronFAQ = ({
 };
 
 const TronFAQSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, showGrid, sectionHeight, title, subtitle } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, showGrid, sectionHeight, title, subtitle } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
+    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
+    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
     showGrid: node.data.props.showGrid as boolean,
     sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
     title: node.data.props.title as string,
@@ -207,6 +216,21 @@ const TronFAQSettings = () => {
         </div>
       </section>
       <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+          </div>
+        </div>
+      </section>
+      <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div><label className={labelCls}>Title</label><input type="text" value={title ?? ''} onChange={(e) => setT('title', 500)(e.target.value)} className={inputCls} /></div>
@@ -222,6 +246,8 @@ TronFAQ.craft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#e11d48',
+    darkBg: '#0a0a0a',
+    lightBg: '#ffffff',
     showGrid: true,
     sectionHeight: 75,
     title: 'Frequently asked questions',

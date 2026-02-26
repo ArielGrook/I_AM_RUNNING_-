@@ -276,12 +276,16 @@ const DEFAULT_BUTTON = { text: 'Get Started', href: '#', style: 'filled' as Hero
 export const HeroTron = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  darkBg = '#0a0a0a',
+  lightBg = '#ffffff',
   spotlightIntensity = 0.12,
   showGrid = true,
   badgeText = '✦ New',
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
   spotlightIntensity?: number;
   showGrid?: boolean;
   badgeText?: string;
@@ -364,7 +368,7 @@ export const HeroTron = ({
         justifyContent: 'center',
         overflow: 'hidden',
         position: 'relative',
-        background: colorScheme === 'dark' ? '#000000' : t.bg,
+        background: colorScheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
         backgroundImage,
         backgroundSize,
       }}
@@ -395,9 +399,11 @@ export const HeroTron = ({
 };
 
 const HeroTronSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, spotlightIntensity, showGrid, badgeText } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, spotlightIntensity, showGrid, badgeText } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
+    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
+    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
     spotlightIntensity: node.data.props.spotlightIntensity as number,
     showGrid: node.data.props.showGrid as boolean,
     badgeText: node.data.props.badgeText as string,
@@ -417,6 +423,21 @@ const HeroTronSettings = () => {
         </div>
       </section>
       <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+          </div>
+        </div>
+      </section>
+      <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div><label className={labelCls}>Badge text</label><input type="text" value={safeStr(badgeText, '')} onChange={(e) => setT('badgeText', 500)(e.target.value)} className={inputCls} placeholder="✦ New" /></div>
@@ -428,7 +449,7 @@ const HeroTronSettings = () => {
 
 HeroTron.craft = {
   displayName: 'Hero Tron',
-  props: { colorScheme: 'dark', accentColor: '#e11d48', spotlightIntensity: 0.12, showGrid: true, badgeText: '✦ New', 'data-block-type': 'hero' },
+  props: { colorScheme: 'dark', accentColor: '#e11d48', darkBg: '#0a0a0a', lightBg: '#ffffff', spotlightIntensity: 0.12, showGrid: true, badgeText: '✦ New', 'data-block-type': 'hero' },
   related: { settings: HeroTronSettings },
   custom: { styleTags: ['dark', 'minimal', 'bold'], businessTags: ['startup', 'saas', 'tech', 'agency'], featureTags: ['hero', 'above-fold', 'fullscreen', 'interactive'], supportsTheme: true, supportsColorPreset: true },
   rules: { canDrag: () => true, canMoveIn: () => false },

@@ -129,11 +129,15 @@ const DEFAULT_COLS = [DEFAULT_COL_0, DEFAULT_COL_1, DEFAULT_COL_2];
 export const TronFooter = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  darkBg = '#0a0a0a',
+  lightBg = '#ffffff',
   showGrid = true,
   copyright = '© 2025 Company. All rights reserved.',
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
   showGrid?: boolean;
   copyright?: string;
 }) => {
@@ -141,7 +145,10 @@ export const TronFooter = ({
   const isSelected = useNode((node) => node.events.selected);
   const editor = useEditor();
   const query = editor?.query;
-  const t = tokens[colorScheme];
+  const t = {
+    ...tokens[colorScheme],
+    bg: colorScheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
+  };
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
@@ -182,9 +189,11 @@ export const TronFooter = ({
 };
 
 const TronFooterSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, showGrid, copyright } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, showGrid, copyright } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
+    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
+    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
     showGrid: node.data.props.showGrid as boolean,
     copyright: node.data.props.copyright as string,
   }));
@@ -206,6 +215,21 @@ const TronFooterSettings = () => {
         </div>
       </section>
       <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+          </div>
+        </div>
+      </section>
+      <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div><label className={labelCls}>Copyright</label><input type="text" value={copyright ?? ''} onChange={(e) => setT('copyright', 500)(e.target.value)} className={inputCls} /></div>
@@ -220,6 +244,8 @@ TronFooter.craft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#e11d48',
+    darkBg: '#0a0a0a',
+    lightBg: '#ffffff',
     showGrid: true,
     copyright: '© 2025 Company. All rights reserved.',
     'data-block-type': 'footer',

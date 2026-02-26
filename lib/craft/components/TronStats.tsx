@@ -140,6 +140,8 @@ export interface StatItem {
 export interface TronStatsProps {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
   sectionHeight?: number;
   showGrid?: boolean;
   columns?: 2 | 3 | 4;
@@ -171,6 +173,8 @@ export const TronStats = React.memo(function TronStats() {
   const {
     colorScheme = 'dark',
     accentColor: propAccent,
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
     sectionHeight = 60,
     showGrid = true,
     columns = 4,
@@ -181,7 +185,11 @@ export const TronStats = React.memo(function TronStats() {
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
   const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
-  const t = { ...tokens[scheme], accent: accentColor };
+  const t = {
+    ...tokens[scheme],
+    accent: accentColor,
+    bg: scheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
+  };
 
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
@@ -235,6 +243,8 @@ function TronStatsSettings() {
     columns = 4,
     sectionHeight = 60,
     showGrid = true,
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
     animationType = 'none',
     animateDelay = '0',
   } = useNode((node) => ({
@@ -242,6 +252,8 @@ function TronStatsSettings() {
     columns: (node.data.props.columns as 2 | 3 | 4) ?? 4,
     sectionHeight: (node.data.props.sectionHeight as number) ?? 60,
     showGrid: (node.data.props.showGrid as boolean) ?? true,
+    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
+    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
     animationType: (node.data.props.animationType as string) ?? 'none',
     animateDelay: (node.data.props.animateDelay as string) ?? '0',
   }));
@@ -331,6 +343,33 @@ function TronStatsSettings() {
             >
               × Remove
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* COLORS */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="color"
+              value={darkBg ?? '#0a0a0a'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)}
+              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="color"
+              value={lightBg ?? '#ffffff'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)}
+              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
           </div>
         </div>
       </div>
@@ -444,6 +483,8 @@ const tronStatsCraft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#FF6B35',
+    darkBg: '#0a0a0a',
+    lightBg: '#ffffff',
     sectionHeight: 60,
     showGrid: true,
     columns: 4 as const,

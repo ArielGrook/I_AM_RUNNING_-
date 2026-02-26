@@ -66,6 +66,8 @@ export const TronShowcase = ({
   sectionLabel = 'ЧТО МЫ ПРЕДЛАГАЕМ',
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  darkBg = '#0a0a0a',
+  lightBg = '#ffffff',
   showGrid = true,
   sectionHeight = 75,
 }: {
@@ -73,6 +75,8 @@ export const TronShowcase = ({
   sectionLabel?: string;
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
   showGrid?: boolean;
   sectionHeight?: number;
 }) => {
@@ -149,12 +153,15 @@ export const TronShowcase = ({
     [setProp]
   );
 
-  const t = tokens[colorScheme];
+  const t = {
+    ...tokens[colorScheme],
+    bg: colorScheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
+  };
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
   const backgroundStyle = {
-    background: colorScheme === 'dark' ? '#000000' : t.bg,
+    background: t.bg,
     backgroundImage: gridLines,
     backgroundSize: showGrid ? '50px 50px' : 'auto',
   };
@@ -357,6 +364,8 @@ const TronShowcaseSettings = () => {
     sectionLabel,
     colorScheme,
     accentColor,
+    darkBg,
+    lightBg,
     showGrid,
     sectionHeight,
     tabs,
@@ -364,6 +373,8 @@ const TronShowcaseSettings = () => {
     sectionLabel: (node.data.props.sectionLabel as string) ?? 'ЧТО МЫ ПРЕДЛАГАЕМ',
     colorScheme: (node.data.props.colorScheme as 'dark' | 'light') ?? 'dark',
     accentColor: (node.data.props.accentColor as string) ?? '#e11d48',
+    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
+    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
     showGrid: (node.data.props.showGrid as boolean) ?? true,
     sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
     tabs: (node.data.props.tabs as ShowcaseTab[]) ?? DEFAULT_TABS,
@@ -460,6 +471,21 @@ const TronShowcaseSettings = () => {
         </div>
       </section>
       <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+          </div>
+        </div>
+      </section>
+      <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Tabs</h3>
         <div className="space-y-2">
           {safeTabs.map((tab, index) => (
@@ -503,6 +529,8 @@ TronShowcase.craft = {
     sectionLabel: 'ЧТО МЫ ПРЕДЛАГАЕМ',
     colorScheme: 'dark',
     accentColor: '#e11d48',
+    darkBg: '#0a0a0a',
+    lightBg: '#ffffff',
     showGrid: true,
     sectionHeight: 75,
   },

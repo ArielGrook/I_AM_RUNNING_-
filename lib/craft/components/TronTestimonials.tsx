@@ -120,6 +120,8 @@ const DEFAULT_ITEMS: TestimonialItem[] = [
 export const TronTestimonials = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  darkBg = '#0a0a0a',
+  lightBg = '#ffffff',
   showGrid = true,
   sectionHeight = 75,
   title = 'What people say',
@@ -133,6 +135,8 @@ export const TronTestimonials = ({
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
   showGrid?: boolean;
   sectionHeight?: number;
   title?: string;
@@ -152,6 +156,11 @@ export const TronTestimonials = ({
   const numCards = Math.max(1, items.length);
   const maxOffset = numCards * (CARD_WIDTH + GAP);
   const cardIds = Array.from({ length: numCards }, (_, i) => `${sectionId}-card-${i}`);
+
+  const t = {
+    ...tokens[colorScheme],
+    bg: colorScheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
+  };
 
   useEffect(() => {
     if (enabled || !autoplay) return;
@@ -173,7 +182,6 @@ export const TronTestimonials = ({
     return () => cancelAnimationFrame(animFrame);
   }, [enabled, autoplay, speed, row1Direction, row2Direction, maxOffset]);
 
-  const t = tokens[colorScheme];
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
@@ -262,10 +270,12 @@ export const TronTestimonials = ({
 };
 
 const TronTestimonialsSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, showGrid, sectionHeight, title, subtitle, items, doubleRow, row1Direction, row2Direction, autoplay, speed } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, showGrid, sectionHeight, title, subtitle, items, doubleRow, row1Direction, row2Direction, autoplay, speed } = useNode((node) => ({
     ...node,
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
+    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
+    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
     showGrid: node.data.props.showGrid as boolean,
     sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
     title: node.data.props.title as string,
@@ -361,6 +371,21 @@ const TronTestimonialsSettings = () => {
         </div>
       </section>
       <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+          </div>
+        </div>
+      </section>
+      <section>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div><label className={labelCls}>Title</label><input type="text" value={title ?? ''} onChange={(e) => setT('title', 500)(e.target.value)} className={inputCls} /></div>
@@ -386,6 +411,8 @@ TronTestimonials.craft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#e11d48',
+    darkBg: '#0a0a0a',
+    lightBg: '#ffffff',
     showGrid: true,
     sectionHeight: 75,
     title: 'What people say',

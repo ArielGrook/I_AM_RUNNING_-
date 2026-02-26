@@ -27,6 +27,8 @@ function hexToRgb(hex: string): string {
 export const TronPortfolio = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  darkBg = '#0a0a0a',
+  lightBg = '#ffffff',
   showGrid = true,
   sectionHeight = 75,
   title = 'Our Work',
@@ -37,6 +39,8 @@ export const TronPortfolio = ({
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
   showGrid?: boolean;
   sectionHeight?: number;
   title?: string;
@@ -71,7 +75,7 @@ export const TronPortfolio = ({
 
   const tokens = {
     dark: {
-      bg: '#000000',
+      bg: darkBg ?? '#0a0a0a',
       text: '#ffffff',
       muted: '#52525b',
       accent: accentColor,
@@ -80,7 +84,7 @@ export const TronPortfolio = ({
       cardBorder: 'rgba(255,255,255,0.08)',
     },
     light: {
-      bg: '#ffffff',
+      bg: lightBg ?? '#ffffff',
       bgSecondary: '#f8fafc',
       text: '#0a0a0a',
       textSecondary: '#52525b',
@@ -227,6 +231,8 @@ const TronPortfolioSettings = () => {
     actions: { setProp },
     colorScheme,
     accentColor,
+    darkBg,
+    lightBg,
     showGrid,
     sectionHeight,
     title,
@@ -237,6 +243,8 @@ const TronPortfolioSettings = () => {
   } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as 'dark' | 'light',
     accentColor: node.data.props.accentColor as string,
+    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
+    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
     showGrid: node.data.props.showGrid as boolean,
     sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
     title: node.data.props.title as string,
@@ -273,6 +281,21 @@ const TronPortfolioSettings = () => {
           <div>
             <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота секции: {sectionHeight ?? 75}vh</label>
             <input type="range" min={50} max={100} step={5} value={sectionHeight ?? 75} onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)} style={{ width: '100%' }} />
+          </div>
+        </div>
+      </section>
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
           </div>
         </div>
       </section>
@@ -351,6 +374,8 @@ TronPortfolio.craft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#e11d48',
+    darkBg: '#0a0a0a',
+    lightBg: '#ffffff',
     showGrid: true,
     sectionHeight: 75,
     title: 'Our Work',

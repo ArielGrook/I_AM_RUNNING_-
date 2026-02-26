@@ -23,6 +23,8 @@ const DEFAULT_NAV_LINKS: NavLinkItem[] = [
 export const HeaderTron = ({
   colorScheme = 'dark',
   accentColor = '#e11d48',
+  darkBg = '#0a0a0a',
+  lightBg = '#ffffff',
   logoText = 'BRAND',
   navLinks = DEFAULT_NAV_LINKS,
   ctaText = 'Get Started',
@@ -32,6 +34,8 @@ export const HeaderTron = ({
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
   logoText?: string;
   navLinks?: NavLinkItem[];
   ctaText?: string;
@@ -65,7 +69,7 @@ export const HeaderTron = ({
 
   const tokens = {
     dark: {
-      bg: 'rgba(0,0,0,0.92)',
+      bg: darkBg ?? '#0a0a0a',
       text: '#ffffff',
       textSecondary: '#a1a1aa',
       accent: accentColor,
@@ -76,7 +80,7 @@ export const HeaderTron = ({
       cardBorder: 'rgba(255,255,255,0.08)',
     },
     light: {
-      bg: '#ffffff',
+      bg: lightBg ?? '#ffffff',
       bgSecondary: '#f8fafc',
       text: '#0a0a0a',
       textSecondary: '#52525b',
@@ -187,9 +191,11 @@ export const HeaderTron = ({
 };
 
 const HeaderTronSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, logoText, ctaText, ctaHref, navLinks, animationType, animateDelay } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, navLinks, animationType, animateDelay } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as string,
     accentColor: node.data.props.accentColor as string,
+    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
+    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
     logoText: node.data.props.logoText as string,
     ctaText: node.data.props.ctaText as string,
     ctaHref: node.data.props.ctaHref as string,
@@ -237,6 +243,21 @@ const HeaderTronSettings = () => {
         <div className="space-y-2">
           <div><label className={labelCls}>Color Scheme</label><select value={colorScheme ?? 'dark'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.colorScheme = e.target.value; })} className={inputCls}><option value="dark">Dark</option><option value="light">Light</option></select></div>
           <div><label className={labelCls}>Accent Color</label><input type="color" value={accentColor ?? '#e11d48'} onChange={(e) => setT('accentColor', 300)(e.target.value)} className="w-full h-8 rounded cursor-pointer border-0 bg-transparent p-0" /></div>
+        </div>
+      </section>
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+          </div>
         </div>
       </section>
       <section>
@@ -316,6 +337,8 @@ HeaderTron.craft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#e11d48',
+    darkBg: '#0a0a0a',
+    lightBg: '#ffffff',
     logoText: 'BRAND',
     navLinks: [{ label: 'Features', href: '#features', type: 'section' }, { label: 'Pricing', href: '#pricing', type: 'section' }, { label: 'About', href: '#about', type: 'section' }, { label: 'Contact', href: '#contact', type: 'section' }],
     'data-block-type': 'header',
