@@ -32,25 +32,27 @@ const CONTACT_ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
-// ── Tokens (same as TronStats) ───────────────────────────────────────────
-const tokens = {
-  dark: {
-    bg: '#0a0a0a',
-    text: '#ffffff',
-    textSecondary: '#a1a1aa',
-    border: 'rgba(255,255,255,0.08)',
-    cardBg: 'rgba(255,255,255,0.03)',
-    gridColor: 'rgba(255,255,255,0.03)',
-  },
-  light: {
-    bg: '#ffffff',
-    text: '#0a0a0a',
-    textSecondary: '#52525b',
-    border: 'rgba(0,0,0,0.08)',
-    cardBg: 'rgba(0,0,0,0.02)',
-    gridColor: 'rgba(0,0,0,0.06)',
-  },
-};
+// ── Tokens base (bg comes from props darkBg/lightBg) ─────────────────────
+function buildTokens(darkBg: string, lightBg: string) {
+  return {
+    dark: {
+      bg: darkBg ?? '#0a0a0a',
+      text: '#ffffff',
+      textSecondary: '#a1a1aa',
+      border: 'rgba(255,255,255,0.08)',
+      cardBg: 'rgba(255,255,255,0.03)',
+      gridColor: 'rgba(255,255,255,0.03)',
+    },
+    light: {
+      bg: lightBg ?? '#ffffff',
+      text: '#0a0a0a',
+      textSecondary: '#52525b',
+      border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      gridColor: 'rgba(0,0,0,0.06)',
+    },
+  };
+}
 
 // ── Interfaces ───────────────────────────────────────────────────────────
 interface ContactInfo {
@@ -62,6 +64,8 @@ interface ContactInfo {
 interface TronContactProps {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
   sectionHeight?: number;
   showGrid?: boolean;
   title?: string;
@@ -103,6 +107,8 @@ export const TronContact = React.memo(function TronContact() {
   const {
     colorScheme = 'dark',
     accentColor: propAccent,
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
     sectionHeight = 80,
     showGrid = true,
     title = 'Get in touch',
@@ -118,6 +124,7 @@ export const TronContact = React.memo(function TronContact() {
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
   const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
 
   const gridLines = showGrid
@@ -289,6 +296,8 @@ function TronContactSettings() {
     namePlaceholder = 'Your name',
     emailPlaceholder = 'your@email.com',
     messagePlaceholder = 'Tell us about your project...',
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
     sectionHeight = 80,
     showGrid = true,
     animationType = 'none',
@@ -416,6 +425,33 @@ function TronContactSettings() {
         </div>
       </div>
 
+      {/* COLORS */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="color"
+              value={darkBg ?? '#0a0a0a'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)}
+              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="color"
+              value={lightBg ?? '#ffffff'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)}
+              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+          </div>
+        </div>
+      </div>
+
       {/* SIZE */}
       <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Size</h3>
@@ -492,6 +528,8 @@ const tronContactCraft = {
   props: {
     colorScheme: 'dark',
     accentColor: '#FF6B35',
+    darkBg: '#0a0a0a',
+    lightBg: '#ffffff',
     sectionHeight: 80,
     showGrid: true,
     title: 'Get in touch',
