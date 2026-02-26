@@ -32,7 +32,7 @@ const CONTACT_ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
-// ── Tokens (accent NOT in tokens, use from theme) ─────────────────────────
+// ── Tokens (accent from theme; no hardcoded colors in component) ──────────
 const tokens = {
   dark: {
     bg: '#0a0a0a',
@@ -42,6 +42,7 @@ const tokens = {
     cardBg: 'rgba(255,255,255,0.03)',
     inputBg: 'rgba(255,255,255,0.05)',
     gridColor: 'rgba(255,255,255,0.03)',
+    onAccent: '#ffffff',
   },
   light: {
     bg: '#ffffff',
@@ -51,6 +52,7 @@ const tokens = {
     cardBg: 'rgba(0,0,0,0.02)',
     inputBg: 'rgba(0,0,0,0.04)',
     gridColor: 'rgba(0,0,0,0.06)',
+    onAccent: '#ffffff',
   },
 };
 
@@ -129,8 +131,9 @@ export const TronContact = React.memo(function TronContact() {
   }
 
   const list = (Array.isArray(contactInfo) ? contactInfo : DEFAULT_CONTACT_INFO).map(normalizeContactItem);
-  const words = (title || '').split(/\s+/).filter(Boolean);
-  const firstWord = words[0] ?? '';
+  const titleWords = (title ?? '').split(' ');
+  const firstWord = titleWords[0] ?? '';
+  const restWords = titleWords.slice(1).join(' ');
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -172,16 +175,8 @@ export const TronContact = React.memo(function TronContact() {
               marginTop: 0,
             }}
           >
-            {words.map((word, i) => (
-              <React.Fragment key={i}>
-                {i > 0 && ' '}
-                {word === firstWord ? (
-                  <span style={{ color: accentColor }}>{word}</span>
-                ) : (
-                  <span>{word}</span>
-                )}
-              </React.Fragment>
-            ))}
+            <span style={{ color: accentColor }}>{firstWord}</span>
+            {restWords ? ` ${restWords}` : ''}
           </h2>
           <p
             style={{
@@ -265,7 +260,7 @@ export const TronContact = React.memo(function TronContact() {
                 width: '100%',
                 padding: '14px 24px',
                 background: accentColor,
-                color: '#fff',
+                color: t.onAccent,
                 border: 'none',
                 borderRadius: 8,
                 fontSize: 15,
