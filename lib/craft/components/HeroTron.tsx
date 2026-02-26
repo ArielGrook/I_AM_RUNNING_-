@@ -673,16 +673,16 @@ export const HeroTronButton = React.memo(function HeroTronButton(props: HeroTron
       href={href}
       className={isSelected ? 'craft-node-selected' : ''}
       style={{
-        display: 'inline-block',
-        padding: '16px 40px',
-        borderRadius: 8,
-        fontSize: 16,
-        fontWeight: 600,
+    display: 'inline-block',
+    padding: '16px 40px',
+    borderRadius: 8,
+    fontSize: 16,
+    fontWeight: 600,
         background: isFilled ? accentColor : 'transparent',
         color: isFilled ? '#fff' : accentColor,
-        border: isFilled ? 'none' : `2px solid ${accentColor}`,
-        textDecoration: 'none',
-        cursor: 'pointer',
+    border: isFilled ? 'none' : `2px solid ${accentColor}`,
+    textDecoration: 'none',
+    cursor: 'pointer',
       }}
     >
       {text}
