@@ -370,7 +370,7 @@ export const TronShowcase = React.memo(function TronShowcase() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
-      key={layoutStyle}
+      key={`${scheme}-${showGrid}`}
       data-block-type="showcase"
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
