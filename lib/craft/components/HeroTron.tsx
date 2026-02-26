@@ -128,6 +128,7 @@ export const HeroTron = React.memo(function HeroTron() {
 
   return (
     <section
+      key={`${scheme}-${showGrid}`}
       ref={(el) => {
         if (el) {
           connect(drag(el));
