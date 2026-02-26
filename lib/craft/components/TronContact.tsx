@@ -2,246 +2,488 @@
 
 import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
+import { useTheme } from '@/lib/craft/context/ThemeContext';
 
-function hexToRgb(hex: string): string {
+function hexToRgba(hex: string, alpha: number): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
-  if (!m) return '225, 29, 72';
-  return `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}`;
+  if (!m) return `rgba(255,107,53,${alpha})`;
+  const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
-export const TronContact = ({
-  colorScheme = 'dark',
-  accentColor = '#e11d48',
-  showGrid = true,
-  sectionHeight = 75,
-  title = 'Get in touch',
-  subtitle = "We'd love to hear from you. Send us a message.",
-  placeholderName = 'Name',
-  placeholderEmail = 'Email',
-  placeholderMessage = 'Message',
-  submitButtonText = 'Submit',
-}: {
-  colorScheme?: 'dark' | 'light';
-  accentColor?: string;
-  showGrid?: boolean;
-  sectionHeight?: number;
-  title?: string;
-  subtitle?: string;
-  placeholderName?: string;
-  placeholderEmail?: string;
-  placeholderMessage?: string;
-  submitButtonText?: string;
-}) => {
-  const { connectors: { connect, drag } } = useNode();
-  const isSelected = useNode((node) => node.events.selected);
-
-  const tokens = {
+// ── Tokens (accentColor injected) ─────────────────────────────────────────
+function getTokens(accentColor: string) {
+  return {
     dark: {
-      bg: '#000000',
+      bg: '#0a0a0a',
       text: '#ffffff',
-      muted: '#52525b',
+      textSecondary: '#a1a1aa',
       accent: accentColor,
-      gridColor: 'rgba(255,255,255,0.03)',
       border: 'rgba(255,255,255,0.08)',
-      cardBg: 'rgba(255,255,255,0.02)',
-      cardBorder: 'rgba(255,255,255,0.08)',
+      cardBg: 'rgba(255,255,255,0.03)',
+      inputBg: 'rgba(255,255,255,0.05)',
+      gridColor: 'rgba(255,255,255,0.03)',
     },
     light: {
       bg: '#ffffff',
-      bgSecondary: '#f8fafc',
       text: '#0a0a0a',
       textSecondary: '#52525b',
       accent: accentColor,
       border: 'rgba(0,0,0,0.08)',
       cardBg: 'rgba(0,0,0,0.02)',
-      cardBorder: 'rgba(0,0,0,0.08)',
+      inputBg: 'rgba(0,0,0,0.04)',
       gridColor: 'rgba(0,0,0,0.06)',
-      muted: '#52525b',
     },
   };
-  const t = tokens[colorScheme];
-  const rgb = hexToRgb(accentColor ?? '#e11d48');
+}
+
+// ── Interfaces ───────────────────────────────────────────────────────────
+interface ContactInfo {
+  icon: string;
+  label: string;
+  value: string;
+}
+
+interface TronContactProps {
+  sectionHeight?: number;
+  showGrid?: boolean;
+  title?: string;
+  subtitle?: string;
+  contactInfo?: ContactInfo[];
+  namePlaceholder?: string;
+  emailPlaceholder?: string;
+  messagePlaceholder?: string;
+  submitText?: string;
+  animationType?: string;
+  animateDelay?: string;
+  accentWord?: string;
+}
+
+const DEFAULT_CONTACT_INFO: ContactInfo[] = [
+  { icon: '📧', label: 'Email', value: 'hello@company.com' },
+  { icon: '📞', label: 'Phone', value: '+1 (555) 000-0000' },
+  { icon: '📍', label: 'Address', value: 'San Francisco, CA' },
+];
+
+// ── Main component ────────────────────────────────────────────────────────
+export const TronContact = React.memo(function TronContact() {
+  const { connectors: { connect, drag } } = useNode();
+  const isSelected = useNode((node) => node.events.selected);
+  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
+  const { theme } = useTheme();
+
+  const props = useNode((node) => node.data.props as Partial<TronContactProps>) ?? {};
+  const {
+    sectionHeight = 80,
+    showGrid = true,
+    title = 'Get in touch',
+    subtitle = "Have a question or want to work together? We'd love to hear from you.",
+    contactInfo = DEFAULT_CONTACT_INFO,
+    namePlaceholder = 'Your name',
+    emailPlaceholder = 'your@email.com',
+    messagePlaceholder = 'Tell us about your project...',
+    submitText = 'Send message',
+    animationType = 'none',
+    animateDelay = '0',
+    accentWord,
+  } = props;
+
+  const accentColor = theme.accentColor ?? '#FF6B35';
+  const colorScheme = theme.colorScheme ?? 'dark';
+  const t = getTokens(accentColor)[colorScheme];
+
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
-  const backgroundStyle = {
-    background: t.bg,
-    backgroundImage: gridLines,
-    backgroundSize: showGrid ? '50px 50px' : 'auto',
-    backgroundPosition: '0 0',
-  };
 
-  const fieldStyle: React.CSSProperties = {
-    background: t.cardBg,
-    border: `1px solid ${t.cardBorder}`,
-    color: t.text,
-    borderRadius: 4,
-    padding: '12px 16px',
+  const animAttrs: Record<string, string> = {};
+  if (!enabled && animationType !== 'none') {
+    animAttrs['data-animate'] = animationType;
+    if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
+  }
+
+  const list = Array.isArray(contactInfo) ? contactInfo : DEFAULT_CONTACT_INFO;
+  const words = (title || '').split(/\s+/).filter(Boolean);
+  const wordToAccent = accentWord ?? words[0] ?? '';
+
+  const inputStyle: React.CSSProperties = {
     width: '100%',
-    fontSize: 15,
-    boxSizing: 'border-box',
+    padding: '12px 16px',
+    background: t.inputBg,
+    border: `1px solid ${t.border}`,
+    borderRadius: 8,
+    color: t.text,
+    fontSize: 14,
     outline: 'none',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
+    marginBottom: 16,
   };
 
   return (
     <section
-      id="contact"
-      key={`${colorScheme}-${showGrid}`}
       ref={(ref) => { if (ref) connect(drag(ref)); }}
+      key={colorScheme}
       data-block-type="contact"
-      className="w-full max-w-full px-4 md:px-8"
-      style={{ ...backgroundStyle, minHeight: `${sectionHeight}vh`, paddingTop: '100px', paddingBottom: '100px' }}
+      className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
+      style={{
+        background: t.bg,
+        backgroundImage: gridLines,
+        backgroundSize: showGrid ? '50px 50px' : 'auto',
+        minHeight: `${sectionHeight}vh`,
+      }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: `${sectionHeight}vh` }}>
-      <div className="max-w-xl mx-auto">
-        <div className="text-center mb-10 md:mb-12">
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, color: t.text, margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 16, color: t.muted, marginTop: 12, marginBottom: 0 }}>{subtitle}</p>
-        </div>
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          className="space-y-4"
-        >
-          <input
-            type="text"
-            name="name"
-            placeholder={placeholderName}
-            className="placeholder:text-[#52525b]"
-            style={fieldStyle}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = t.accent;
-              e.currentTarget.style.boxShadow = `0 0 10px rgba(${rgb}, 0.2)`;
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = t.cardBorder;
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder={placeholderEmail}
-            className="placeholder:text-[#52525b]"
-            style={fieldStyle}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = t.accent;
-              e.currentTarget.style.boxShadow = `0 0 10px rgba(${rgb}, 0.2)`;
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = t.cardBorder;
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          />
-          <textarea
-            name="message"
-            placeholder={placeholderMessage}
-            rows={4}
-            className="placeholder:text-[#52525b]"
-            style={{ ...fieldStyle, resize: 'vertical', minHeight: 120 }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = t.accent;
-              e.currentTarget.style.boxShadow = `0 0 10px rgba(${rgb}, 0.2)`;
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = t.cardBorder;
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          />
-          <button
-            type="submit"
+      <div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 max-w-6xl mx-auto w-full"
+        {...animAttrs}
+      >
+        {/* Left column — info */}
+        <div className="flex flex-col justify-center">
+          <h2
             style={{
-              width: '100%',
-              padding: '14px 20px',
-              borderRadius: 4,
-              border: 'none',
-              background: t.accent,
-              color: '#fff',
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: 'pointer',
+              fontSize: 'clamp(28px, 4vw, 48px)',
+              fontWeight: 700,
+              color: t.text,
+              marginBottom: 16,
+              marginTop: 0,
             }}
           >
-            {submitButtonText}
-          </button>
-        </form>
-      </div>
+            {words.map((word, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && ' '}
+                {word === wordToAccent || (!accentWord && i === 0) ? (
+                  <span style={{ color: accentColor }}>{word}</span>
+                ) : (
+                  <span>{word}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </h2>
+          <p
+            style={{
+              fontSize: 16,
+              color: t.textSecondary,
+              lineHeight: 1.6,
+              marginBottom: 0,
+            }}
+          >
+            {subtitle}
+          </p>
+          {list.map((item, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-4"
+              style={{ marginTop: i === 0 ? 32 : 20 }}
+            >
+              <span
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: hexToRgba(accentColor, 0.1),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 18,
+                  flexShrink: 0,
+                }}
+              >
+                {item.icon}
+              </span>
+              <div>
+                <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 2 }}>
+                  {item.label}
+                </div>
+                <div style={{ fontSize: 15, color: t.text, fontWeight: 500 }}>
+                  {item.value}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Right column — form */}
+        <div
+          style={{
+            background: t.cardBg,
+            border: `1px solid ${t.border}`,
+            borderRadius: 16,
+            padding: 40,
+          }}
+        >
+          <form onSubmit={(e) => e.preventDefault()} className="flex flex-col">
+            <input
+              type="text"
+              placeholder={namePlaceholder}
+              style={inputStyle}
+              readOnly={enabled}
+            />
+            <input
+              type="email"
+              placeholder={emailPlaceholder}
+              style={inputStyle}
+              readOnly={enabled}
+            />
+            <textarea
+              placeholder={messagePlaceholder}
+              rows={5}
+              style={{
+                ...inputStyle,
+                resize: 'vertical',
+                minHeight: 120,
+              }}
+              readOnly={enabled}
+            />
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                padding: '14px 24px',
+                background: accentColor,
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: enabled ? 'default' : 'pointer',
+              }}
+            >
+              {submitText}
+            </button>
+          </form>
+        </div>
       </div>
     </section>
   );
-};
+});
 
-const TronContactSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, showGrid, sectionHeight, title, subtitle, placeholderName, placeholderEmail, placeholderMessage, submitButtonText } = useNode((node) => ({
-    colorScheme: node.data.props.colorScheme as 'dark' | 'light',
-    accentColor: node.data.props.accentColor as string,
-    showGrid: node.data.props.showGrid as boolean,
-    sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
-    title: node.data.props.title as string,
-    subtitle: node.data.props.subtitle as string,
-    placeholderName: node.data.props.placeholderName as string,
-    placeholderEmail: node.data.props.placeholderEmail as string,
-    placeholderMessage: node.data.props.placeholderMessage as string,
-    submitButtonText: node.data.props.submitButtonText as string,
-  }));
-  const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
+// ── Settings ─────────────────────────────────────────────────────────────
+function TronContactSettings() {
+  const { actions: { setProp } } = useNode();
+  const props = useNode((node) => node.data.props as Partial<TronContactProps>) ?? {};
+  const {
+    title = 'Get in touch',
+    subtitle = "Have a question or want to work together? We'd love to hear from you.",
+    accentWord,
+    submitText = 'Send message',
+    contactInfo = DEFAULT_CONTACT_INFO,
+    namePlaceholder = 'Your name',
+    emailPlaceholder = 'your@email.com',
+    messagePlaceholder = 'Tell us about your project...',
+    sectionHeight = 80,
+    showGrid = true,
+    animationType = 'none',
+    animateDelay = '0',
+  } = props;
+
+  const setT = (key: keyof TronContactProps, ms: number) => (val: unknown) =>
+    setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
+
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
 
+  const list = Array.isArray(contactInfo) ? contactInfo : DEFAULT_CONTACT_INFO;
+
+  const updateContactItem = (index: number, field: keyof ContactInfo, value: string) => {
+    setProp((p: Record<string, unknown>) => {
+      const arr = [...((p.contactInfo as ContactInfo[]) ?? [])];
+      arr[index] = { ...arr[index], [field]: value };
+      p.contactInfo = arr;
+    }, 500);
+  };
+
+  const removeContactItem = (index: number) => {
+    setProp((p: Record<string, unknown>) => {
+      const arr = ((p.contactInfo as ContactInfo[]) ?? []).filter((_, i) => i !== index);
+      p.contactInfo = arr;
+    }, 0);
+  };
+
+  const addContactItem = () => {
+    setProp((p: Record<string, unknown>) => {
+      const arr = [...((p.contactInfo as ContactInfo[]) ?? []), { icon: '📧', label: 'Label', value: 'Value' }];
+      p.contactInfo = arr;
+    }, 0);
+  };
+
   return (
-    <div className="p-3 space-y-5 text-white">
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
-        <div className="space-y-3">
-          <div><label className={labelCls}>Color scheme</label><select value={colorScheme ?? 'dark'} onChange={(e) => setT('colorScheme', 300)(e.target.value)} className={inputCls}><option value="dark">Dark</option><option value="light">Light</option></select></div>
-          <div className="flex items-center gap-2"><label className={`${labelCls} shrink-0 w-20`}>Accent</label><input type="color" value={accentColor ?? '#e11d48'} onChange={(e) => setT('accentColor', 300)(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0" /><span className="text-[10px] font-mono text-gray-500 truncate">{accentColor}</span></div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <label style={{ color: '#a1a1aa', fontSize: 12 }}>Show Grid</label>
-            <input type="checkbox" checked={showGrid ?? true} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })} />
-          </div>
-          <div>
-            <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота секции: {sectionHeight ?? 75}vh</label>
-            <input type="range" min={50} max={100} step={5} value={sectionHeight ?? 75} onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)} style={{ width: '100%' }} />
-          </div>
-        </div>
-      </section>
-      <section>
+    <div className="p-3 space-y-0 text-white">
+      {/* CONTENT */}
+      <div className="border-t border-gray-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
-          <div><label className={labelCls}>Title</label><input type="text" value={title ?? ''} onChange={(e) => setT('title', 500)(e.target.value)} className={inputCls} /></div>
-          <div><label className={labelCls}>Subtitle</label><input type="text" value={subtitle ?? ''} onChange={(e) => setT('subtitle', 500)(e.target.value)} className={inputCls} /></div>
-          <div><label className={labelCls}>Placeholder Name</label><input type="text" value={placeholderName ?? ''} onChange={(e) => setT('placeholderName', 500)(e.target.value)} className={inputCls} placeholder="Name" /></div>
-          <div><label className={labelCls}>Placeholder Email</label><input type="text" value={placeholderEmail ?? ''} onChange={(e) => setT('placeholderEmail', 500)(e.target.value)} className={inputCls} placeholder="Email" /></div>
-          <div><label className={labelCls}>Placeholder Message</label><input type="text" value={placeholderMessage ?? ''} onChange={(e) => setT('placeholderMessage', 500)(e.target.value)} className={inputCls} placeholder="Message" /></div>
-          <div><label className={labelCls}>Submit button text</label><input type="text" value={submitButtonText ?? ''} onChange={(e) => setT('submitButtonText', 500)(e.target.value)} className={inputCls} placeholder="Submit" /></div>
+          <div>
+            <label className={labelCls}>Title</label>
+            <input type="text" value={title} onChange={(e) => setT('title', 500)(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Subtitle</label>
+            <input type="text" value={subtitle} onChange={(e) => setT('subtitle', 500)(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Accent word (optional, defaults to first)</label>
+            <input type="text" value={accentWord ?? ''} onChange={(e) => setT('accentWord', 500)(e.target.value || undefined)} className={inputCls} placeholder="Leave empty for first word" />
+          </div>
+          <div>
+            <label className={labelCls}>Submit button text</label>
+            <input type="text" value={submitText} onChange={(e) => setT('submitText', 500)(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Contact info</label>
+            {list.map((item, i) => (
+              <div key={i} className="flex gap-2 items-start mb-2 p-2 rounded bg-gray-800/50">
+                <input
+                  type="text"
+                  value={item.icon}
+                  onChange={(e) => updateContactItem(i, 'icon', e.target.value)}
+                  className={inputCls}
+                  style={{ width: 30, minWidth: 30 }}
+                  placeholder="📧"
+                />
+                <input
+                  type="text"
+                  value={item.label}
+                  onChange={(e) => updateContactItem(i, 'label', e.target.value)}
+                  className={inputCls}
+                  placeholder="Label"
+                />
+                <input
+                  type="text"
+                  value={item.value}
+                  onChange={(e) => updateContactItem(i, 'value', e.target.value)}
+                  className={inputCls}
+                  placeholder="Value"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeContactItem(i)}
+                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addContactItem}
+              className="px-2 py-1.5 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#ff8555]"
+            >
+              + Add contact info
+            </button>
+          </div>
         </div>
-      </section>
+      </div>
+
+      {/* PLACEHOLDERS */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Placeholders</h3>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Name placeholder</label>
+            <input type="text" value={namePlaceholder} onChange={(e) => setT('namePlaceholder', 500)(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Email placeholder</label>
+            <input type="text" value={emailPlaceholder} onChange={(e) => setT('emailPlaceholder', 500)(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Message placeholder</label>
+            <input type="text" value={messagePlaceholder} onChange={(e) => setT('messagePlaceholder', 500)(e.target.value)} className={inputCls} />
+          </div>
+        </div>
+      </div>
+
+      {/* SIZE */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Size</h3>
+        <div>
+          <label className={labelCls}>Section height: {sectionHeight}vh</label>
+          <input
+            type="range"
+            min={50}
+            max={100}
+            step={5}
+            value={sectionHeight}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)}
+            className="w-full"
+          />
+        </div>
+      </div>
+
+      {/* DISPLAY */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={showGrid}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
+          />
+          <span className="text-xs text-gray-400">Show grid</span>
+        </label>
+      </div>
+
+      {/* ANIMATION */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Animation type</label>
+            <select
+              value={animationType}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })}
+              className={inputCls}
+            >
+              <option value="none">None</option>
+              <option value="fade-in">Fade In</option>
+              <option value="slide-up">Slide Up</option>
+              <option value="slide-down">Slide Down</option>
+              <option value="slide-left">Slide Left</option>
+              <option value="slide-right">Slide Right</option>
+              <option value="scale-in">Scale In</option>
+              <option value="blur-in">Blur In</option>
+              <option value="rotate-in">Rotate In</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Delay</label>
+            <select
+              value={animateDelay}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })}
+              className={inputCls}
+            >
+              {['0', '0.1', '0.2', '0.3', '0.5', '0.8', '1'].map((v) => (
+                <option key={v} value={v}>{v}s</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
+}
 
+// ── Craft config ──────────────────────────────────────────────────────────
 TronContact.craft = {
   displayName: 'Tron Contact',
   props: {
-    colorScheme: 'dark',
-    accentColor: '#e11d48',
+    sectionHeight: 80,
     showGrid: true,
-    sectionHeight: 75,
     title: 'Get in touch',
-    subtitle: "We'd love to hear from you. Send us a message.",
-    placeholderName: 'Name',
-    placeholderEmail: 'Email',
-    placeholderMessage: 'Message',
-    'data-block-type': 'contact',
-    submitButtonText: 'Submit',
+    subtitle: "Have a question or want to work together? We'd love to hear from you.",
+    contactInfo: DEFAULT_CONTACT_INFO,
+    namePlaceholder: 'Your name',
+    emailPlaceholder: 'your@email.com',
+    messagePlaceholder: 'Tell us about your project...',
+    submitText: 'Send message',
+    animationType: 'none',
+    animateDelay: '0',
   },
   related: { settings: TronContactSettings },
+  rules: { canDrag: () => true, canMoveIn: () => false },
   custom: {
-    styleTags: ['dark', 'neon', 'form'],
-    businessTags: ['contact', 'lead', 'tech'],
-    featureTags: ['contact', 'form'],
+    styleTags: ['dark', 'minimal'],
+    businessTags: ['startup', 'saas', 'agency'],
+    featureTags: ['contact'],
     supportsTheme: true,
     supportsColorPreset: true,
   },
-  rules: { canDrag: () => true, canMoveIn: () => false },
 };
