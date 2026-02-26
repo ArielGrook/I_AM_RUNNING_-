@@ -46,7 +46,7 @@ export const TronFAQ = React.memo(function TronFAQ() {
     const el = containerRef.current;
     if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
-      setIsMobile((entry?.contentRect?.width ?? 0) < 768);
+      setIsMobile((entry?.contentRect?.width ?? 0) < 520);
     });
     observer.observe(el);
     return () => observer.disconnect();
