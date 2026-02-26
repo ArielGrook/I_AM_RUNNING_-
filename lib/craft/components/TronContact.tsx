@@ -4,42 +4,59 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 
-function hexToRgba(hex: string, alpha: number): string {
+// ── Helpers ───────────────────────────────────────────────────────────────
+function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
-  if (!m) return `rgba(255,107,53,${alpha})`;
-  const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
-  return `rgba(${r},${g},${b},${alpha})`;
+  if (!m) return '255,107,53';
+  return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
 }
 
-// ── Tokens (accentColor injected) ─────────────────────────────────────────
-function getTokens(accentColor: string) {
-  return {
-    dark: {
-      bg: '#0a0a0a',
-      text: '#ffffff',
-      textSecondary: '#a1a1aa',
-      accent: accentColor,
-      border: 'rgba(255,255,255,0.08)',
-      cardBg: 'rgba(255,255,255,0.03)',
-      inputBg: 'rgba(255,255,255,0.05)',
-      gridColor: 'rgba(255,255,255,0.03)',
-    },
-    light: {
-      bg: '#ffffff',
-      text: '#0a0a0a',
-      textSecondary: '#52525b',
-      accent: accentColor,
-      border: 'rgba(0,0,0,0.08)',
-      cardBg: 'rgba(0,0,0,0.02)',
-      inputBg: 'rgba(0,0,0,0.04)',
-      gridColor: 'rgba(0,0,0,0.06)',
-    },
-  };
-}
+// ── SVG Icons (no emojis) ─────────────────────────────────────────────────
+const CONTACT_ICONS: Record<string, React.ReactNode> = {
+  email: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </svg>
+  ),
+  phone: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.1 2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z" />
+    </svg>
+  ),
+  location: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  ),
+};
+
+// ── Tokens (accent NOT in tokens, use from theme) ─────────────────────────
+const tokens = {
+  dark: {
+    bg: '#0a0a0a',
+    text: '#ffffff',
+    textSecondary: '#a1a1aa',
+    border: 'rgba(255,255,255,0.08)',
+    cardBg: 'rgba(255,255,255,0.03)',
+    inputBg: 'rgba(255,255,255,0.05)',
+    gridColor: 'rgba(255,255,255,0.03)',
+  },
+  light: {
+    bg: '#ffffff',
+    text: '#0a0a0a',
+    textSecondary: '#52525b',
+    border: 'rgba(0,0,0,0.08)',
+    cardBg: 'rgba(0,0,0,0.02)',
+    inputBg: 'rgba(0,0,0,0.04)',
+    gridColor: 'rgba(0,0,0,0.06)',
+  },
+};
 
 // ── Interfaces ───────────────────────────────────────────────────────────
 interface ContactInfo {
-  icon: string;
+  iconKey: 'email' | 'phone' | 'location';
   label: string;
   value: string;
 }
@@ -56,14 +73,24 @@ interface TronContactProps {
   submitText?: string;
   animationType?: string;
   animateDelay?: string;
-  accentWord?: string;
 }
 
 const DEFAULT_CONTACT_INFO: ContactInfo[] = [
-  { icon: '📧', label: 'Email', value: 'hello@company.com' },
-  { icon: '📞', label: 'Phone', value: '+1 (555) 000-0000' },
-  { icon: '📍', label: 'Address', value: 'San Francisco, CA' },
+  { iconKey: 'email', label: 'Email', value: 'hello@company.com' },
+  { iconKey: 'phone', label: 'Phone', value: '+1 (555) 000-0000' },
+  { iconKey: 'location', label: 'Address', value: 'San Francisco, CA' },
 ];
+
+function normalizeContactItem(item: unknown): ContactInfo {
+  if (item && typeof item === 'object' && 'iconKey' in item) return item as ContactInfo;
+  const legacy = item as { icon?: string; label?: string; value?: string };
+  const iconMap: Record<string, ContactInfo['iconKey']> = { '📧': 'email', '✉': 'email', '📞': 'phone', '📍': 'location' };
+  return {
+    iconKey: iconMap[legacy?.icon ?? ''] ?? 'email',
+    label: legacy?.label ?? 'Label',
+    value: legacy?.value ?? 'Value',
+  };
+}
 
 // ── Main component ────────────────────────────────────────────────────────
 export const TronContact = React.memo(function TronContact() {
@@ -77,7 +104,7 @@ export const TronContact = React.memo(function TronContact() {
     sectionHeight = 80,
     showGrid = true,
     title = 'Get in touch',
-    subtitle = "Have a question or want to work together? We'd love to hear from you.",
+    subtitle = "Have a question? We'd love to hear from you.",
     contactInfo = DEFAULT_CONTACT_INFO,
     namePlaceholder = 'Your name',
     emailPlaceholder = 'your@email.com',
@@ -85,12 +112,11 @@ export const TronContact = React.memo(function TronContact() {
     submitText = 'Send message',
     animationType = 'none',
     animateDelay = '0',
-    accentWord,
   } = props;
 
   const accentColor = theme.accentColor ?? '#FF6B35';
   const colorScheme = theme.colorScheme ?? 'dark';
-  const t = getTokens(accentColor)[colorScheme];
+  const t = tokens[colorScheme];
 
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
@@ -102,9 +128,9 @@ export const TronContact = React.memo(function TronContact() {
     if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
   }
 
-  const list = Array.isArray(contactInfo) ? contactInfo : DEFAULT_CONTACT_INFO;
+  const list = (Array.isArray(contactInfo) ? contactInfo : DEFAULT_CONTACT_INFO).map(normalizeContactItem);
   const words = (title || '').split(/\s+/).filter(Boolean);
-  const wordToAccent = accentWord ?? words[0] ?? '';
+  const firstWord = words[0] ?? '';
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -132,11 +158,11 @@ export const TronContact = React.memo(function TronContact() {
       }}
     >
       <div
-        className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 max-w-6xl mx-auto w-full"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 max-w-6xl mx-auto w-full"
         {...animAttrs}
       >
         {/* Left column — info */}
-        <div className="flex flex-col justify-center">
+        <div className="flex flex-col justify-center w-full">
           <h2
             style={{
               fontSize: 'clamp(28px, 4vw, 48px)',
@@ -149,7 +175,7 @@ export const TronContact = React.memo(function TronContact() {
             {words.map((word, i) => (
               <React.Fragment key={i}>
                 {i > 0 && ' '}
-                {word === wordToAccent || (!accentWord && i === 0) ? (
+                {word === firstWord ? (
                   <span style={{ color: accentColor }}>{word}</span>
                 ) : (
                   <span>{word}</span>
@@ -170,24 +196,24 @@ export const TronContact = React.memo(function TronContact() {
           {list.map((item, i) => (
             <div
               key={i}
-              className="flex items-center gap-4"
+              className="flex items-center gap-4 w-full"
               style={{ marginTop: i === 0 ? 32 : 20 }}
             >
-              <span
+              <div
                 style={{
                   width: 40,
                   height: 40,
                   borderRadius: '50%',
-                  background: hexToRgba(accentColor, 0.1),
+                  background: `rgba(${hexToRgb(accentColor)}, 0.12)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 18,
+                  color: accentColor,
                   flexShrink: 0,
                 }}
               >
-                {item.icon}
-              </span>
+                {CONTACT_ICONS[item.iconKey] ?? CONTACT_ICONS.email}
+              </div>
               <div>
                 <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 2 }}>
                   {item.label}
@@ -200,8 +226,9 @@ export const TronContact = React.memo(function TronContact() {
           ))}
         </div>
 
-        {/* Right column — form */}
+        {/* Right column — form card */}
         <div
+          className="w-full"
           style={{
             background: t.cardBg,
             border: `1px solid ${t.border}`,
@@ -209,7 +236,7 @@ export const TronContact = React.memo(function TronContact() {
             padding: 40,
           }}
         >
-          <form onSubmit={(e) => e.preventDefault()} className="flex flex-col">
+          <form onSubmit={(e) => e.preventDefault()} className="flex flex-col w-full">
             <input
               type="text"
               placeholder={namePlaceholder}
@@ -261,8 +288,7 @@ function TronContactSettings() {
   const props = useNode((node) => node.data.props as Partial<TronContactProps>) ?? {};
   const {
     title = 'Get in touch',
-    subtitle = "Have a question or want to work together? We'd love to hear from you.",
-    accentWord,
+    subtitle = "Have a question? We'd love to hear from you.",
     submitText = 'Send message',
     contactInfo = DEFAULT_CONTACT_INFO,
     namePlaceholder = 'Your name',
@@ -280,7 +306,7 @@ function TronContactSettings() {
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
 
-  const list = Array.isArray(contactInfo) ? contactInfo : DEFAULT_CONTACT_INFO;
+  const rawList = Array.isArray(contactInfo) ? contactInfo : DEFAULT_CONTACT_INFO;
 
   const updateContactItem = (index: number, field: keyof ContactInfo, value: string) => {
     setProp((p: Record<string, unknown>) => {
@@ -299,7 +325,7 @@ function TronContactSettings() {
 
   const addContactItem = () => {
     setProp((p: Record<string, unknown>) => {
-      const arr = [...((p.contactInfo as ContactInfo[]) ?? []), { icon: '📧', label: 'Label', value: 'Value' }];
+      const arr = [...((p.contactInfo as ContactInfo[]) ?? []), { iconKey: 'email', label: 'Label', value: 'Value' }];
       p.contactInfo = arr;
     }, 0);
   };
@@ -319,56 +345,60 @@ function TronContactSettings() {
             <input type="text" value={subtitle} onChange={(e) => setT('subtitle', 500)(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className={labelCls}>Accent word (optional, defaults to first)</label>
-            <input type="text" value={accentWord ?? ''} onChange={(e) => setT('accentWord', 500)(e.target.value || undefined)} className={inputCls} placeholder="Leave empty for first word" />
-          </div>
-          <div>
             <label className={labelCls}>Submit button text</label>
             <input type="text" value={submitText} onChange={(e) => setT('submitText', 500)(e.target.value)} className={inputCls} />
           </div>
-          <div>
-            <label className={labelCls}>Contact info</label>
-            {list.map((item, i) => (
-              <div key={i} className="flex gap-2 items-start mb-2 p-2 rounded bg-gray-800/50">
-                <input
-                  type="text"
-                  value={item.icon}
-                  onChange={(e) => updateContactItem(i, 'icon', e.target.value)}
-                  className={inputCls}
-                  style={{ width: 30, minWidth: 30 }}
-                  placeholder="📧"
-                />
-                <input
-                  type="text"
-                  value={item.label}
-                  onChange={(e) => updateContactItem(i, 'label', e.target.value)}
-                  className={inputCls}
-                  placeholder="Label"
-                />
-                <input
-                  type="text"
-                  value={item.value}
-                  onChange={(e) => updateContactItem(i, 'value', e.target.value)}
-                  className={inputCls}
-                  placeholder="Value"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeContactItem(i)}
-                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={addContactItem}
-              className="px-2 py-1.5 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#ff8555]"
-            >
-              + Add contact info
-            </button>
-          </div>
+        </div>
+      </div>
+
+      {/* CONTACT INFO */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Contact info</h3>
+        <div className="space-y-2">
+          {rawList.map((item, i) => {
+            const normalized = normalizeContactItem(item);
+            return (
+            <div key={i} className="flex gap-2 items-start p-2 rounded bg-gray-800/50">
+              <select
+                value={normalized.iconKey}
+                onChange={(e) => updateContactItem(i, 'iconKey', e.target.value as ContactInfo['iconKey'])}
+                className={inputCls}
+                style={{ width: 90, minWidth: 90 }}
+              >
+                <option value="email">Email</option>
+                <option value="phone">Phone</option>
+                <option value="location">Address</option>
+              </select>
+              <input
+                type="text"
+                value={normalized.label}
+                onChange={(e) => updateContactItem(i, 'label', e.target.value)}
+                className={inputCls}
+                placeholder="Label"
+              />
+              <input
+                type="text"
+                value={normalized.value}
+                onChange={(e) => updateContactItem(i, 'value', e.target.value)}
+                className={inputCls}
+                placeholder="Value"
+              />
+              <button
+                type="button"
+                onClick={() => removeContactItem(i)}
+                className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400"
+              >
+                ×
+              </button>
+            </div>
+          );})}
+          <button
+            type="button"
+            onClick={addContactItem}
+            className="px-2 py-1.5 text-xs rounded bg-[#FF6B35] text-white hover:bg-[#ff8555]"
+          >
+            + Add
+          </button>
         </div>
       </div>
 
@@ -462,13 +492,13 @@ function TronContactSettings() {
 }
 
 // ── Craft config ──────────────────────────────────────────────────────────
-TronContact.craft = {
+const tronContactCraft = {
   displayName: 'Tron Contact',
   props: {
     sectionHeight: 80,
     showGrid: true,
     title: 'Get in touch',
-    subtitle: "Have a question or want to work together? We'd love to hear from you.",
+    subtitle: "Have a question? We'd love to hear from you.",
     contactInfo: DEFAULT_CONTACT_INFO,
     namePlaceholder: 'Your name',
     emailPlaceholder: 'your@email.com',
@@ -485,5 +515,7 @@ TronContact.craft = {
     featureTags: ['contact'],
     supportsTheme: true,
     supportsColorPreset: true,
+    supportsGradient: false,
   },
 };
+(TronContact as unknown as { craft: typeof tronContactCraft }).craft = tronContactCraft;
