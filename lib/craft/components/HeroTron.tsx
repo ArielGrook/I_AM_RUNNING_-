@@ -1,29 +1,543 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import { Element } from '@craftjs/core';
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React from 'react';
+import { useTheme } from '@/lib/craft/context/ThemeContext';
 
+// ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
-  if (!m) return '225, 29, 72';
-  return `${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}`;
+  if (!m) return '255,107,53';
+  return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
 }
 
-const tokens = {
-  dark: { bg: '#000000', text: '#ffffff', accent: '#e11d48', gridColor: 'rgba(255,255,255,0.03)' },
-  light: { bg: '#ffffff', text: '#0a0a0a', textSecondary: '#52525b', accent: '#e11d48', border: 'rgba(0,0,0,0.08)', gridColor: 'rgba(0,0,0,0.06)' },
+// ── Tokens (darkBg/lightBg from props, like TronContact) ───────────────────
+function buildTokens(darkBg: string, lightBg: string) {
+  return {
+    dark: {
+      bg: darkBg ?? '#0a0a0a',
+      text: '#ffffff',
+      textSecondary: '#a1a1aa',
+      border: 'rgba(255,255,255,0.08)',
+      cardBg: 'rgba(255,255,255,0.03)',
+      gridColor: 'rgba(255,255,255,0.03)',
+    },
+    light: {
+      bg: lightBg ?? '#ffffff',
+      text: '#0a0a0a',
+      textSecondary: '#52525b',
+      border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      gridColor: 'rgba(0,0,0,0.06)',
+    },
+  };
+}
+
+// ── Interfaces ───────────────────────────────────────────────────────────
+export interface TronHeroProps {
+  colorScheme?: 'dark' | 'light';
+  accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
+  sectionHeight?: number;
+  showGrid?: boolean;
+  spotlightIntensity?: number;
+  badge?: string;
+  showBadge?: boolean;
+  headline?: string;
+  subheadline?: string;
+  subtitle?: string;
+  primaryCta?: string;
+  secondaryCta?: string;
+  showSecondaryCta?: boolean;
+  showSocialProof?: boolean;
+  socialProofText?: string;
+  animationType?: string;
+  animateDelay?: string;
+}
+
+// ── Main component ────────────────────────────────────────────────────────
+export const HeroTron = React.memo(function HeroTron() {
+  const { connectors: { connect, drag } } = useNode();
+  const isSelected = useNode((node) => node.events.selected);
+  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
+  const { theme } = useTheme();
+
+  const containerRef = React.useRef<HTMLElement | null>(null);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setIsMobile((entry?.contentRect?.width ?? 0) < 768);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const props = useNode((node) => node.data.props as Partial<TronHeroProps>) ?? {};
+  const {
+    colorScheme = 'dark',
+    accentColor: propAccent,
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
+    sectionHeight = 100,
+    showGrid = true,
+    spotlightIntensity = 15,
+    badge = '✦ Now in public beta',
+    showBadge = true,
+    headline = 'Build websites faster.',
+    subheadline = 'Professional websites in minutes',
+    subtitle = 'Drag, drop, and publish. No code required. Built for modern teams.',
+    primaryCta = 'Get started free',
+    secondaryCta = 'View demo',
+    showSecondaryCta = true,
+    showSocialProof = true,
+    socialProofText = '500+ teams already building',
+    animationType = 'none',
+    animateDelay = '0',
+  } = props;
+
+  const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const tokens = buildTokens(darkBg, lightBg);
+  const t = { ...tokens[scheme], accent: accentColor };
+  const rgb = hexToRgb(accentColor);
+
+  const spotlightStyle =
+    spotlightIntensity != null && spotlightIntensity > 0
+      ? {
+          backgroundImage: `radial-gradient(ellipse 80% 50% at 50% -10%, rgba(${rgb}, ${spotlightIntensity / 100}) 0%, transparent 70%)`,
+        }
+      : {};
+
+  const gridLines = showGrid
+    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+    : 'none';
+
+  const animAttrs: Record<string, string> = {};
+  if (!enabled && animationType !== 'none') {
+    animAttrs['data-animate'] = animationType;
+    if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
+  }
+
+  const headlineWords = (headline ?? '').split(' ');
+  const firstWord = headlineWords[0] ?? '';
+  const restHeadline = headlineWords.slice(1).join(' ');
+
+  return (
+    <section
+      ref={(el) => {
+        if (el) {
+          connect(drag(el));
+          (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
+        }
+      }}
+      data-block-type="hero"
+      data-block-category="header"
+      className={`w-full relative overflow-hidden flex flex-col items-center justify-center ${isSelected ? 'craft-node-selected' : ''}`}
+      style={{
+        background: t.bg,
+        backgroundImage: gridLines,
+        backgroundSize: showGrid ? '50px 50px' : 'auto',
+        minHeight: `${sectionHeight}vh`,
+      }}
+    >
+      {/* Spotlight overlay */}
+      {spotlightIntensity != null && spotlightIntensity > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            ...spotlightStyle,
+          }}
+        />
+      )}
+
+      {/* Content */}
+      <div
+        className="max-w-3xl mx-auto w-full px-4 sm:px-6 text-center relative z-10"
+        {...animAttrs}
+      >
+        {showBadge && badge && (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 14px',
+              borderRadius: 100,
+              border: `1px solid rgba(${rgb}, 0.3)`,
+              background: `rgba(${rgb}, 0.08)`,
+              color: accentColor,
+              fontSize: 13,
+              fontWeight: 500,
+              marginBottom: 24,
+            }}
+          >
+            {badge}
+          </div>
+        )}
+
+        <h1
+          style={{
+            fontSize: 'clamp(40px, 7vw, 96px)',
+            fontWeight: 800,
+            lineHeight: 1.05,
+            letterSpacing: '-0.02em',
+            color: t.text,
+            margin: '0 0 12px',
+          }}
+        >
+          <span style={{ color: accentColor }}>{firstWord}</span>
+          {restHeadline ? ` ${restHeadline}` : ''}
+        </h1>
+
+        {subheadline && (
+          <p
+            style={{
+              fontSize: 'clamp(18px, 2.5vw, 24px)',
+              fontWeight: 500,
+              color: t.text,
+              margin: '0 0 12px',
+              lineHeight: 1.4,
+            }}
+          >
+            {subheadline}
+          </p>
+        )}
+
+        {subtitle && (
+          <p
+            style={{
+              fontSize: 16,
+              color: t.textSecondary,
+              lineHeight: 1.6,
+              margin: '0 auto',
+              maxWidth: 520,
+            }}
+          >
+            {subtitle}
+          </p>
+        )}
+
+        {/* CTA buttons */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 12,
+            alignItems: isMobile ? 'stretch' : 'center',
+            justifyContent: 'center',
+            marginTop: 32,
+          }}
+        >
+          <button
+            type="button"
+            style={{
+              padding: '14px 32px',
+              background: accentColor,
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: enabled ? 'default' : 'pointer',
+            }}
+          >
+            {primaryCta}
+          </button>
+
+          {showSecondaryCta && (
+            <button
+              type="button"
+              style={{
+                padding: '14px 32px',
+                background: 'transparent',
+                color: t.text,
+                border: `1px solid ${t.border}`,
+                borderRadius: 8,
+                fontSize: 15,
+                fontWeight: 500,
+                cursor: enabled ? 'default' : 'pointer',
+              }}
+            >
+              {secondaryCta}
+            </button>
+          )}
+        </div>
+
+        {/* Social proof */}
+        {showSocialProof && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              marginTop: 40,
+            }}
+          >
+            <div style={{ display: 'flex', gap: 2 }}>
+              {[...Array(5)].map((_, i) => (
+                <span key={i} style={{ color: accentColor, fontSize: 14 }}>
+                  ★
+                </span>
+              ))}
+            </div>
+            <span style={{ color: t.textSecondary, fontSize: 14 }}>
+              {socialProofText}
+            </span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+});
+
+// ── Settings ───────────────────────────────────────────────────────────────
+function HeroTronSettings() {
+  const { actions: { setProp } } = useNode();
+  const props = useNode((node) => node.data.props as Partial<TronHeroProps>) ?? {};
+  const {
+    badge = '✦ Now in public beta',
+    headline = 'Build websites faster.',
+    subheadline = 'Professional websites in minutes',
+    subtitle = 'Drag, drop, and publish. No code required. Built for modern teams.',
+    primaryCta = 'Get started free',
+    secondaryCta = 'View demo',
+    showBadge = true,
+    showSecondaryCta = true,
+    showSocialProof = true,
+    showGrid = true,
+    socialProofText = '500+ teams already building',
+    spotlightIntensity = 15,
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
+    sectionHeight = 100,
+    animationType = 'none',
+    animateDelay = '0',
+  } = props;
+
+  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
+  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
+
+  const setT = (key: keyof TronHeroProps, ms: number) => (val: unknown) =>
+    setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
+
+  return (
+    <div className="p-3 space-y-0 text-white">
+      {/* CONTENT */}
+      <div className="border-t border-gray-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Badge</label>
+            <input type="text" value={badge} onChange={(e) => setT('badge', 500)(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Headline</label>
+            <input type="text" value={headline} onChange={(e) => setT('headline', 500)(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Subheadline</label>
+            <input type="text" value={subheadline} onChange={(e) => setT('subheadline', 500)(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Subtitle</label>
+            <input type="text" value={subtitle} onChange={(e) => setT('subtitle', 500)(e.target.value)} className={inputCls} />
+          </div>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">CTA</h3>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Primary button</label>
+            <input type="text" value={primaryCta} onChange={(e) => setT('primaryCta', 500)(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Secondary button</label>
+            <input type="text" value={secondaryCta} onChange={(e) => setT('secondaryCta', 500)(e.target.value)} className={inputCls} />
+          </div>
+        </div>
+      </div>
+
+      {/* DISPLAY */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs text-gray-400">
+            <input type="checkbox" checked={showBadge} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showBadge = e.target.checked; })} className="rounded border-gray-600 bg-gray-700" />
+            Show badge
+          </label>
+          <label className="flex items-center gap-2 text-xs text-gray-400">
+            <input type="checkbox" checked={showSecondaryCta} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showSecondaryCta = e.target.checked; })} className="rounded border-gray-600 bg-gray-700" />
+            Show secondary CTA
+          </label>
+          <label className="flex items-center gap-2 text-xs text-gray-400">
+            <input type="checkbox" checked={showSocialProof} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showSocialProof = e.target.checked; })} className="rounded border-gray-600 bg-gray-700" />
+            Show social proof
+          </label>
+          <label className="flex items-center gap-2 text-xs text-gray-400">
+            <input type="checkbox" checked={showGrid} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })} className="rounded border-gray-600 bg-gray-700" />
+            Show grid
+          </label>
+        </div>
+      </div>
+
+      {/* SOCIAL PROOF */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Social proof</h3>
+        <div>
+          <label className={labelCls}>Text</label>
+          <input type="text" value={socialProofText} onChange={(e) => setT('socialProofText', 500)(e.target.value)} className={inputCls} />
+        </div>
+      </div>
+
+      {/* STYLE */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
+        <div>
+          <label className={labelCls}>Spotlight intensity: {spotlightIntensity ?? 15}</label>
+          <input
+            type="range"
+            min={0}
+            max={30}
+            step={1}
+            value={spotlightIntensity ?? 15}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.spotlightIntensity = Number(e.target.value); }, 300)}
+            className="w-full"
+          />
+        </div>
+      </div>
+
+      {/* COLORS */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="color"
+              value={darkBg ?? '#0a0a0a'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)}
+              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="color"
+              value={lightBg ?? '#ffffff'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)}
+              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* SIZE */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Size</h3>
+        <div>
+          <label className={labelCls}>Section height: {sectionHeight}vh</label>
+          <input
+            type="range"
+            min={60}
+            max={100}
+            step={5}
+            value={sectionHeight}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 300)}
+            className="w-full"
+          />
+        </div>
+      </div>
+
+      {/* ANIMATION */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Type</label>
+            <select
+              value={animationType}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })}
+              className={inputCls}
+            >
+              <option value="none">None</option>
+              <option value="fade-in">Fade In</option>
+              <option value="slide-up">Slide Up</option>
+              <option value="slide-down">Slide Down</option>
+              <option value="slide-left">Slide Left</option>
+              <option value="slide-right">Slide Right</option>
+              <option value="scale-in">Scale In</option>
+              <option value="blur-in">Blur In</option>
+              <option value="rotate-in">Rotate In</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Delay</label>
+            <select
+              value={animateDelay}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })}
+              className={inputCls}
+            >
+              {['0', '0.1', '0.2', '0.3', '0.5', '0.8', '1'].map((v) => (
+                <option key={v} value={v}>{v}s</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Craft config ──────────────────────────────────────────────────────────
+const heroTronCraft = {
+  displayName: 'Hero Tron',
+  props: {
+    colorScheme: 'dark' as const,
+    accentColor: '#FF6B35',
+    darkBg: '#0a0a0a',
+    lightBg: '#ffffff',
+    sectionHeight: 100,
+    showGrid: true,
+    spotlightIntensity: 15,
+    showBadge: true,
+    badge: '✦ Now in public beta',
+    headline: 'Build websites faster.',
+    subheadline: 'Professional websites in minutes',
+    subtitle: 'Drag, drop, and publish. No code required. Built for modern teams.',
+    primaryCta: 'Get started free',
+    secondaryCta: 'View demo',
+    showSecondaryCta: true,
+    showSocialProof: true,
+    socialProofText: '500+ teams already building',
+    animationType: 'none',
+    animateDelay: '0',
+  },
+  related: { settings: HeroTronSettings },
+  rules: { canDrag: () => true, canMoveIn: () => false },
+  custom: {
+    styleTags: ['dark', 'minimal', 'bold'],
+    businessTags: ['saas', 'startup', 'agency'],
+    featureTags: ['hero'],
+    supportsTheme: true,
+    supportsColorPreset: true,
+    supportsGradient: false,
+  },
 };
+(HeroTron as unknown as { craft: typeof heroTronCraft }).craft = heroTronCraft;
 
-/** Avoid "[object Object]" when a prop is accidentally an object. */
-function safeStr(val: unknown, fallback: string): string {
-  if (typeof val === 'string') return val;
-  if (val == null) return fallback;
-  if (typeof val === 'object') return fallback;
-  return String(val);
-}
-
-// --- HeroTronHeading ---
+// ── Backward compatibility: HeroTronHeading, HeroTronSubheading, HeroTronButton ─────────────────
 export interface HeroTronHeadingProps {
   text: string;
   accentColor: string;
@@ -32,76 +546,55 @@ export interface HeroTronHeadingProps {
   animateDelay: string;
 }
 
-export const HeroTronHeading = ({ text, accentColor, colorScheme, animationType, animateDelay }: HeroTronHeadingProps) => {
-  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
-  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
-  const divRef = useRef<HTMLDivElement | null>(null);
-  const isFocusedRef = useRef(false);
+export const HeroTronHeading = React.memo(function HeroTronHeading(props: HeroTronHeadingProps) {
+  const { connectors: { connect, drag } } = useNode();
+  const isSelected = useNode((n) => n.events.selected);
+  const { text = 'Build faster.', accentColor = '#FF6B35', colorScheme = 'dark' } = props;
+  const tokens = buildTokens('#0a0a0a', '#ffffff');
   const t = tokens[colorScheme];
-  const displayText = safeStr(text, 'Build faster.');
-  const animAttrs: Record<string, string> = {};
-  if (!enabled && animationType && animationType !== 'none') {
-    animAttrs['data-animate'] = animationType;
-    if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
-  }
-  useEffect(() => {
-    if (!divRef.current || isFocusedRef.current) return;
-    if (divRef.current.textContent !== displayText) {
-      divRef.current.textContent = displayText;
-    }
-  }, [displayText]);
+  const words = (text ?? '').split(' ');
+  const first = words[0] ?? '';
+  const rest = words.slice(1).join(' ');
   return (
     <div
-      ref={(ref) => {
-        divRef.current = ref;
-        if (ref) connect(drag(ref));
-      }}
-      contentEditable={enabled}
-      suppressContentEditableWarning
-      {...animAttrs}
-      onFocus={() => { isFocusedRef.current = true; }}
-      onBlur={(e) => {
-        isFocusedRef.current = false;
-        const val = e.currentTarget.textContent || '';
-        setProp((p: Record<string, unknown>) => { p.text = val; }, 500);
-      }}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      className={isSelected ? 'craft-node-selected' : ''}
       style={{
         color: t.text,
         fontSize: 'clamp(40px, 6vw, 80px)',
         fontWeight: 800,
         letterSpacing: '-0.03em',
         margin: '0 0 24px 0',
-        outline: 'none',
-        cursor: enabled ? 'text' : 'default',
-        minHeight: '1.2em',
       }}
-    />
+    >
+      <span style={{ color: accentColor }}>{first}</span>
+      {rest ? ` ${rest}` : ''}
+    </div>
   );
-};
+});
 
-const HeroTronHeadingSettings = () => {
+// Minimal settings for HeroTronHeading
+function HeroTronHeadingSettings() {
   const { actions: { setProp } } = useNode();
-  const text = useNode((n) => (n.data.props as { text?: string }).text ?? '');
-  const { animationType, animateDelay } = useNode((n) => ({ animationType: (n.data.props as { animationType?: string }).animationType ?? 'none', animateDelay: (n.data.props as { animateDelay?: string }).animateDelay ?? '0' }));
+  const { text, animationType, animateDelay } = useNode((n) => n.data.props as HeroTronHeadingProps) ?? {};
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
   return (
     <div className="p-3 space-y-3 text-white">
-      <div><label className={labelCls}>Text</label><input type="text" value={safeStr(text, '')} onChange={(e) => setProp((p: Record<string, unknown>) => { p.text = e.target.value; }, 1000)} className={inputCls} placeholder="Build faster." /></div>
-      <div><label className={labelCls}>Animation</label><select value={animationType} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
-      <div><label className={labelCls}>Delay (s)</label><select value={animateDelay} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
+      <div><label className={labelCls}>Text</label><input type="text" value={text ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.text = e.target.value; }, 500)} className={inputCls} /></div>
+      <div><label className={labelCls}>Animation</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
+      <div><label className={labelCls}>Delay</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
     </div>
   );
-};
+}
 
-HeroTronHeading.craft = {
+(HeroTronHeading as unknown as { craft: object }).craft = {
   displayName: 'Hero Tron Heading',
-  props: { text: 'Build faster.', accentColor: '#e11d48', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
+  props: { text: 'Build faster.', accentColor: '#FF6B35', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
   related: { settings: HeroTronHeadingSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
 };
 
-// --- HeroTronSubheading ---
 export interface HeroTronSubheadingProps {
   text: string;
   accentColor: string;
@@ -110,75 +603,50 @@ export interface HeroTronSubheadingProps {
   animateDelay: string;
 }
 
-export const HeroTronSubheading = ({ text, accentColor, colorScheme, animationType, animateDelay }: HeroTronSubheadingProps) => {
-  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
-  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
-  const divRef = useRef<HTMLDivElement | null>(null);
-  const isFocusedRef = useRef(false);
-  const displayText = safeStr(text, 'Create modern websites in minutes.');
-  const animAttrs: Record<string, string> = {};
-  if (!enabled && animationType && animationType !== 'none') {
-    animAttrs['data-animate'] = animationType;
-    if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
-  }
-  useEffect(() => {
-    if (!divRef.current || isFocusedRef.current) return;
-    if (divRef.current.textContent !== displayText) {
-      divRef.current.textContent = displayText;
-    }
-  }, [displayText]);
+export const HeroTronSubheading = React.memo(function HeroTronSubheading(props: HeroTronSubheadingProps) {
+  const { connectors: { connect, drag } } = useNode();
+  const isSelected = useNode((n) => n.events.selected);
+  const { text = 'Create modern websites in minutes.', colorScheme = 'dark' } = props;
+  const tokens = buildTokens('#0a0a0a', '#ffffff');
+  const t = tokens[colorScheme];
   return (
     <div
-      ref={(ref) => {
-        divRef.current = ref;
-        if (ref) connect(drag(ref));
-      }}
-      contentEditable={enabled}
-      suppressContentEditableWarning
-      {...animAttrs}
-      onFocus={() => { isFocusedRef.current = true; }}
-      onBlur={(e) => {
-        isFocusedRef.current = false;
-        const val = e.currentTarget.textContent || '';
-        setProp((p: Record<string, unknown>) => { p.text = val; }, 500);
-      }}
+      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      className={isSelected ? 'craft-node-selected' : ''}
       style={{
         fontSize: 'clamp(16px, 2vw, 20px)',
-        color: '#71717a',
+        color: t.textSecondary,
         lineHeight: 1.7,
         maxWidth: 520,
         margin: '0 auto 40px',
-        outline: 'none',
-        cursor: enabled ? 'text' : 'default',
-        minHeight: '1.2em',
       }}
-    />
+    >
+      {text}
+    </div>
   );
-};
+});
 
-const HeroTronSubheadingSettings = () => {
+function HeroTronSubheadingSettings() {
   const { actions: { setProp } } = useNode();
-  const text = useNode((n) => (n.data.props as { text?: string }).text ?? '');
-  const { animationType, animateDelay } = useNode((n) => ({ animationType: (n.data.props as { animationType?: string }).animationType ?? 'none', animateDelay: (n.data.props as { animateDelay?: string }).animateDelay ?? '0' }));
+  const { text, animationType, animateDelay } = useNode((n) => n.data.props as HeroTronSubheadingProps) ?? {};
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
   return (
     <div className="p-3 space-y-3 text-white">
-      <div><label className={labelCls}>Text</label><textarea value={safeStr(text, '')} onChange={(e) => setProp((p: Record<string, unknown>) => { p.text = e.target.value; }, 1000)} className={inputCls} rows={2} placeholder="Create modern websites in minutes." /></div>
-      <div><label className={labelCls}>Animation</label><select value={animationType} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
-      <div><label className={labelCls}>Delay (s)</label><select value={animateDelay} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
+      <div><label className={labelCls}>Text</label><input type="text" value={text ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.text = e.target.value; }, 500)} className={inputCls} /></div>
+      <div><label className={labelCls}>Animation</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
+      <div><label className={labelCls}>Delay</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
     </div>
   );
-};
+}
 
-HeroTronSubheading.craft = {
+(HeroTronSubheading as unknown as { craft: object }).craft = {
   displayName: 'Hero Tron Subheading',
-  props: { text: 'Create modern websites in minutes.', accentColor: '#e11d48', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
+  props: { text: 'Create modern websites in minutes.', accentColor: '#FF6B35', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
   related: { settings: HeroTronSubheadingSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
 };
 
-// --- HeroTronButton ---
 export type HeroTronButtonStyle = 'filled' | 'outline';
 
 export interface HeroTronButtonProps {
@@ -191,266 +659,55 @@ export interface HeroTronButtonProps {
   animateDelay: string;
 }
 
-export const HeroTronButton = ({ text, href, style: btnStyle, accentColor, colorScheme, animationType, animateDelay }: HeroTronButtonProps) => {
+export const HeroTronButton = React.memo(function HeroTronButton(props: HeroTronButtonProps) {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((n) => n.events.selected);
-  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
-  const rgb = hexToRgb(accentColor);
-  const animAttrs: Record<string, string> = {};
-  if (!enabled && animationType && animationType !== 'none') {
-    animAttrs['data-animate'] = animationType;
-    if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
-  }
+  const { text = 'Get Started', href = '#', style: btnStyle = 'filled', accentColor = '#FF6B35', colorScheme = 'dark' } = props;
+  const tokens = buildTokens('#0a0a0a', '#ffffff');
+  const t = tokens[colorScheme];
   const isFilled = btnStyle === 'filled';
-  const wrapperStyle: React.CSSProperties = {
-    display: 'inline-block',
-    background: isFilled ? accentColor : 'transparent',
-    color: isFilled ? '#fff' : accentColor,
-    padding: '16px 40px',
-    borderRadius: 8,
-    fontSize: 16,
-    fontWeight: 600,
-    boxShadow: isFilled ? `0 0 30px rgba(${rgb},0.35)` : 'none',
-    border: isFilled ? 'none' : `2px solid ${accentColor}`,
-    transition: 'box-shadow 200ms ease, transform 200ms ease',
-    textDecoration: 'none',
-    cursor: 'pointer',
-  };
   return (
     <a
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      href={safeStr(href, '#')}
-      {...animAttrs}
-      className=""
-      style={wrapperStyle}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = isFilled ? `0 0 50px rgba(${rgb},0.5)` : `0 0 20px rgba(${rgb},0.2)`;
-        e.currentTarget.style.transform = 'translateY(-2px)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = isFilled ? `0 0 30px rgba(${rgb},0.35)` : 'none';
-        e.currentTarget.style.transform = 'translateY(0)';
+      href={href}
+      className={isSelected ? 'craft-node-selected' : ''}
+      style={{
+        display: 'inline-block',
+        padding: '16px 40px',
+        borderRadius: 8,
+        fontSize: 16,
+        fontWeight: 600,
+        background: isFilled ? accentColor : 'transparent',
+        color: isFilled ? '#fff' : accentColor,
+        border: isFilled ? 'none' : `2px solid ${accentColor}`,
+        textDecoration: 'none',
+        cursor: 'pointer',
       }}
     >
-      {safeStr(text, 'Get Started')}
+      {text}
     </a>
   );
-};
+});
 
-const HeroTronButtonSettings = () => {
+function HeroTronButtonSettings() {
   const { actions: { setProp } } = useNode();
-  const { text, href, style: btnStyle, animationType, animateDelay } = useNode((n) => ({
-    text: (n.data.props as { text?: string }).text ?? '',
-    href: (n.data.props as { href?: string }).href ?? '#',
-    style: (n.data.props as { style?: HeroTronButtonStyle }).style ?? 'filled',
-    animationType: (n.data.props as { animationType?: string }).animationType ?? 'none',
-    animateDelay: (n.data.props as { animateDelay?: string }).animateDelay ?? '0',
-  }));
-  const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
+  const { text, href, style: btnStyle, animationType, animateDelay } = useNode((n) => n.data.props as HeroTronButtonProps) ?? {};
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
   return (
     <div className="p-3 space-y-3 text-white">
-      <div><label className={labelCls}>Text</label><input type="text" value={safeStr(text, '')} onChange={(e) => setT('text', 500)(e.target.value)} className={inputCls} placeholder="Get Started" /></div>
-      <div><label className={labelCls}>Link</label><input type="text" value={safeStr(href, '')} onChange={(e) => setT('href', 500)(e.target.value)} className={inputCls} placeholder="#" /></div>
+      <div><label className={labelCls}>Text</label><input type="text" value={text ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.text = e.target.value; }, 500)} className={inputCls} /></div>
+      <div><label className={labelCls}>Link</label><input type="text" value={href ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.href = e.target.value; }, 500)} className={inputCls} /></div>
       <div><label className={labelCls}>Style</label><select value={btnStyle ?? 'filled'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.style = e.target.value; })} className={inputCls}><option value="filled">Filled</option><option value="outline">Outline</option></select></div>
-      <div><label className={labelCls}>Animation</label><select value={animationType} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
-      <div><label className={labelCls}>Delay (s)</label><select value={animateDelay} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
+      <div><label className={labelCls}>Animation</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option></select></div>
+      <div><label className={labelCls}>Delay</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option></select></div>
     </div>
   );
-};
+}
 
-HeroTronButton.craft = {
+(HeroTronButton as unknown as { craft: object }).craft = {
   displayName: 'Hero Tron Button',
-  props: { text: 'Get Started', href: '#', style: 'filled' as HeroTronButtonStyle, accentColor: '#e11d48', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
+  props: { text: 'Get Started', href: '#', style: 'filled' as HeroTronButtonStyle, accentColor: '#FF6B35', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
   related: { settings: HeroTronButtonSettings },
-  rules: { canDrag: () => true, canMoveIn: () => false },
-};
-
-// --- HeroTron section ---
-
-const DEFAULT_HEADING = { text: 'Build faster.', accentColor: '#e11d48', colorScheme: 'dark' as const, animationType: 'none' as const, animateDelay: '0' as const };
-const DEFAULT_SUBHEADING = { text: 'Create modern websites in minutes.', accentColor: '#e11d48', colorScheme: 'dark' as const, animationType: 'none' as const, animateDelay: '0' as const };
-const DEFAULT_BUTTON = { text: 'Get Started', href: '#', style: 'filled' as HeroTronButtonStyle, accentColor: '#e11d48', colorScheme: 'dark' as const, animationType: 'none' as const, animateDelay: '0' as const };
-
-export const HeroTron = ({
-  colorScheme = 'dark',
-  accentColor = '#e11d48',
-  darkBg = '#0a0a0a',
-  lightBg = '#ffffff',
-  spotlightIntensity = 0.12,
-  showGrid = true,
-  badgeText = '✦ New',
-}: {
-  colorScheme?: 'dark' | 'light';
-  accentColor?: string;
-  darkBg?: string;
-  lightBg?: string;
-  spotlightIntensity?: number;
-  showGrid?: boolean;
-  badgeText?: string;
-}) => {
-  const { id: sectionId, connectors: { connect, drag } } = useNode();
-  const isSelected = useNode((node) => node.events.selected);
-  const editor = useEditor();
-  const query = editor?.query;
-  const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
-
-  const [cursor, setCursor] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => {
-      if (!enabled) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      }
-    },
-    [enabled]
-  );
-
-  const t = tokens[colorScheme];
-  const rgb = hexToRgb(accentColor);
-  const spotlightOpacity = colorScheme === 'light' ? 0.05 : 0.08;
-
-  const gridOnly =
-    `linear-gradient(${t.gridColor} 1px, transparent 1px),
-     linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
-  const spotlightOnly =
-    `radial-gradient(600px circle at ${cursor.x}px ${cursor.y}px, rgba(${rgb},${spotlightOpacity}) 0%, transparent 60%)`;
-  const withSpotlight =
-    `radial-gradient(600px circle at ${cursor.x}px ${cursor.y}px, rgba(${rgb},${spotlightOpacity}) 0%, transparent 60%),
-     linear-gradient(${t.gridColor} 1px, transparent 1px),
-     linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`;
-
-  const showSpotlight = isHovered && !enabled;
-  let backgroundImage: string;
-  let backgroundSize: string;
-  if (showSpotlight) {
-    backgroundImage = showGrid ? withSpotlight : spotlightOnly;
-    backgroundSize = showGrid ? 'auto, 50px 50px, 50px 50px' : 'auto';
-  } else {
-    backgroundImage = showGrid ? gridOnly : 'none';
-    backgroundSize = showGrid ? '50px 50px, 50px 50px' : 'auto';
-  }
-
-  const getNodeSafe = typeof query?.getNode === 'function' ? query.getNode.bind(query) : () => null;
-  const headingId = `${sectionId}-heading`;
-  const subheadingId = `${sectionId}-subheading`;
-  const buttonId = `${sectionId}-button`;
-
-  const headingNode = getNodeSafe(headingId);
-  const subheadingNode = getNodeSafe(subheadingId);
-  const buttonNode = getNodeSafe(buttonId);
-
-  const rawHeading = headingNode?.data?.props ? { ...headingNode.data.props, accentColor, colorScheme } : { ...DEFAULT_HEADING, accentColor, colorScheme };
-  const rawSubheading = subheadingNode?.data?.props ? { ...subheadingNode.data.props, accentColor, colorScheme } : { ...DEFAULT_SUBHEADING, accentColor, colorScheme };
-  const rawButton = buttonNode?.data?.props ? { ...buttonNode.data.props, accentColor, colorScheme } : { ...DEFAULT_BUTTON, accentColor, colorScheme };
-  const headingProps = { ...rawHeading, text: safeStr(rawHeading.text, 'Build faster.') };
-  const subheadingProps = { ...rawSubheading, text: safeStr(rawSubheading.text, 'Create modern websites in minutes.') };
-  const buttonProps = { ...rawButton, text: safeStr(rawButton.text, 'Get Started'), href: safeStr(rawButton.href, '#') };
-
-  return (
-    <section
-      id="hero"
-      key={`${colorScheme}-${showGrid}`}
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
-      data-block-type="hero"
-      data-block-category="header"
-      className={`w-full relative overflow-hidden `}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        position: 'relative',
-        background: colorScheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
-        backgroundImage,
-        backgroundSize,
-      }}
-    >
-      <div style={{ maxWidth: 800, textAlign: 'center', padding: '0 24px' }}>
-        {badgeText && (
-          <span
-            style={{
-              display: 'inline-block',
-              border: `1px solid ${colorScheme === 'dark' ? 'rgba(225,29,72,0.3)' : `rgba(${hexToRgb(accentColor)},0.4)`}`,
-              background: colorScheme === 'dark' ? 'rgba(225,29,72,0.08)' : `rgba(${hexToRgb(accentColor)},0.08)`,
-              color: accentColor,
-              padding: '6px 16px',
-              borderRadius: 100,
-              fontSize: 13,
-              marginBottom: 32,
-            }}
-          >
-            {safeStr(badgeText, '✦ New')}
-          </span>
-        )}
-        <Element id={headingId} is={HeroTronHeading} canvas {...headingProps} />
-        <Element id={subheadingId} is={HeroTronSubheading} canvas {...subheadingProps} />
-        <Element id={buttonId} is={HeroTronButton} canvas {...buttonProps} />
-      </div>
-    </section>
-  );
-};
-
-const HeroTronSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, spotlightIntensity, showGrid, badgeText } = useNode((node) => ({
-    colorScheme: node.data.props.colorScheme as 'dark' | 'light',
-    accentColor: node.data.props.accentColor as string,
-    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
-    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
-    spotlightIntensity: node.data.props.spotlightIntensity as number,
-    showGrid: node.data.props.showGrid as boolean,
-    badgeText: node.data.props.badgeText as string,
-  }));
-  const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
-  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
-  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
-  return (
-    <div className="p-3 space-y-5 text-white">
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
-        <div className="space-y-3">
-          <div><label className={labelCls}>Color scheme</label><select value={colorScheme ?? 'dark'} onChange={(e) => setT('colorScheme', 300)(e.target.value)} className={inputCls}><option value="dark">Dark</option><option value="light">Light</option></select></div>
-          <div className="flex items-center gap-2"><label className={`${labelCls} shrink-0 w-20`}>Accent</label><input type="color" value={accentColor ?? '#e11d48'} onChange={(e) => setT('accentColor', 300)(e.target.value)} className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0" /><span className="text-[10px] font-mono text-gray-500 truncate">{accentColor}</span></div>
-          <div className="flex items-center gap-2"><input type="checkbox" id="herotron-show-grid" checked={showGrid ?? true} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })} className="rounded border-gray-600 bg-gray-700" /><label htmlFor="herotron-show-grid" className={labelCls}>Show grid</label></div>
-          <div><label className={labelCls}>Spotlight intensity — {Math.round((spotlightIntensity ?? 0.12) * 100)}%</label><input type="range" min={0} max={0.3} step={0.01} value={spotlightIntensity ?? 0.12} onChange={(e) => setProp((p: Record<string, unknown>) => { p.spotlightIntensity = parseFloat(e.target.value); }, 300)} className="w-full h-2 rounded bg-gray-700 accent-red-500" /></div>
-        </div>
-      </section>
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
-        <div>
-          <label className={labelCls}>Background (dark mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
-          </div>
-          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
-          </div>
-        </div>
-      </section>
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
-        <div className="space-y-3">
-          <div><label className={labelCls}>Badge text</label><input type="text" value={safeStr(badgeText, '')} onChange={(e) => setT('badgeText', 500)(e.target.value)} className={inputCls} placeholder="✦ New" /></div>
-        </div>
-      </section>
-    </div>
-  );
-};
-
-HeroTron.craft = {
-  displayName: 'Hero Tron',
-  props: { colorScheme: 'dark', accentColor: '#e11d48', darkBg: '#0a0a0a', lightBg: '#ffffff', spotlightIntensity: 0.12, showGrid: true, badgeText: '✦ New', 'data-block-type': 'hero' },
-  related: { settings: HeroTronSettings },
-  custom: { styleTags: ['dark', 'minimal', 'bold'], businessTags: ['startup', 'saas', 'tech', 'agency'], featureTags: ['hero', 'above-fold', 'fullscreen', 'interactive'], supportsTheme: true, supportsColorPreset: true },
   rules: { canDrag: () => true, canMoveIn: () => false },
 };
