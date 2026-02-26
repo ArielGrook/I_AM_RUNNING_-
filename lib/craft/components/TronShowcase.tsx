@@ -1,46 +1,24 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React from 'react';
+import { useTheme } from '@/lib/craft/context/ThemeContext';
 
-export interface ShowcaseTab {
-  id: string;
-  tabTitle: string;
-  contentTitle: string;
-  contentText: string;
+// ── Helpers ───────────────────────────────────────────────────────────────
+function hexToRgb(hex: string): string {
+  const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
+  if (!m) return '255,107,53';
+  return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
 }
 
-const DEFAULT_TABS: ShowcaseTab[] = [
-  {
-    id: '1',
-    tabTitle: 'Преимущества',
-    contentTitle: 'Почему выбирают нас',
-    contentText:
-      'Мы создаём решения которые работают на результат. Качество, скорость и надёжность — основа каждого проекта.',
-  },
-  {
-    id: '2',
-    tabTitle: 'Цены',
-    contentTitle: 'Прозрачные тарифы',
-    contentText:
-      'Никаких скрытых платежей. Гибкие пакеты под любой бюджет. Платишь только за результат.',
-  },
-  {
-    id: '3',
-    tabTitle: 'Опыт',
-    contentTitle: '5 лет на рынке',
-    contentText:
-      'За это время реализованы десятки проектов в разных нишах. Каждый проект — новый опыт.',
-  },
-];
-
+// ── Tokens (copy from TronStats, bg from darkBg/lightBg) ───────────────────
 const tokens = {
   dark: {
-    bg: '#000000',
-    bgSecondary: '#000000',
+    bg: '#0a0a0a',
     text: '#ffffff',
     textSecondary: '#a1a1aa',
     border: 'rgba(255,255,255,0.08)',
+    cardBg: 'rgba(255,255,255,0.03)',
     gridColor: 'rgba(255,255,255,0.03)',
   },
   light: {
@@ -48,499 +26,967 @@ const tokens = {
     text: '#0a0a0a',
     textSecondary: '#52525b',
     border: 'rgba(0,0,0,0.08)',
+    cardBg: 'rgba(0,0,0,0.02)',
     gridColor: 'rgba(0,0,0,0.06)',
   },
 };
 
-function hexToRgba(hex: string, alpha: number): string {
-  const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
-  if (!m) return `rgba(225, 29, 72, ${alpha})`;
-  const r = parseInt(m[1], 16);
-  const g = parseInt(m[2], 16);
-  const b = parseInt(m[3], 16);
-  return `rgba(${r},${g},${b},${alpha})`;
+// ── Interfaces ───────────────────────────────────────────────────────────
+interface ShowcaseBullet {
+  text: string;
 }
 
-export const TronShowcase = ({
-  tabs = DEFAULT_TABS,
-  sectionLabel = 'ЧТО МЫ ПРЕДЛАГАЕМ',
-  colorScheme = 'dark',
-  accentColor = '#e11d48',
-  darkBg = '#0a0a0a',
-  lightBg = '#ffffff',
-  showGrid = true,
-  sectionHeight = 75,
-}: {
-  tabs?: ShowcaseTab[];
-  sectionLabel?: string;
+interface ShowcaseTab {
+  label: string;
+  description: string;
+  title: string;
+  body: string;
+  bullets?: ShowcaseBullet[];
+  imageBase64?: string;
+  ctaText?: string;
+  ctaShow?: boolean;
+}
+
+interface TronShowcaseProps {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
   darkBg?: string;
   lightBg?: string;
-  showGrid?: boolean;
   sectionHeight?: number;
-}) => {
-  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
+  showGrid?: boolean;
+  title?: string;
+  subtitle?: string;
+  layoutStyle?: 'tabs-left' | 'tabs-top';
+  items?: ShowcaseTab[];
+  animationType?: string;
+  animateDelay?: string;
+}
+
+const DEFAULT_ITEMS: ShowcaseTab[] = [
+  {
+    label: 'Lightning Fast',
+    description: 'Optimized for speed',
+    title: 'Performance that scales',
+    body: 'Our infrastructure is built for speed. Every component is optimized to ensure your site loads instantly, even under heavy traffic.',
+    bullets: [
+      { text: 'Sub-100ms response times' },
+      { text: 'Global CDN with 200+ edge nodes' },
+      { text: 'Automatic image optimization' },
+    ],
+    imageBase64: undefined,
+    ctaText: 'See benchmarks',
+    ctaShow: false,
+  },
+  {
+    label: 'Secure by Default',
+    description: 'Enterprise-grade security',
+    title: 'Security you can trust',
+    body: 'Security is not an afterthought. Every component ships with best practices built in, so you can focus on building, not patching.',
+    bullets: [
+      { text: 'SOC 2 Type II certified' },
+      { text: 'End-to-end encryption' },
+      { text: 'Automatic vulnerability scanning' },
+    ],
+    imageBase64: undefined,
+    ctaText: 'Read security docs',
+    ctaShow: false,
+  },
+  {
+    label: 'Easy to Customize',
+    description: 'No code required',
+    title: 'Your brand, your way',
+    body: 'Change colors, fonts, layouts and more with just a few clicks. No design skills or code knowledge required.',
+    bullets: [
+      { text: 'Visual drag-and-drop editor' },
+      { text: 'Unlimited color schemes' },
+      { text: 'Custom fonts and typography' },
+    ],
+    imageBase64: undefined,
+    ctaText: 'Start customizing',
+    ctaShow: true,
+  },
+];
+
+// ── Image placeholder SVG ──────────────────────────────────────────────
+const ImagePlaceholder = ({ color }: { color: string }) => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1" opacity="0.3">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+    <polyline points="21 15 16 10 5 21" />
+  </svg>
+);
+
+// ── Tab content panel (shared by tabs-left, tabs-top, accordion) ───────────
+function TabContentPanel({
+  item,
+  t,
+  accentColor,
+  enabled,
+}: {
+  item: ShowcaseTab;
+  t: Record<string, string>;
+  accentColor: string;
+  enabled: boolean;
+}) {
+  return (
+    <>
+      <div
+        style={{
+          borderRadius: 12,
+          overflow: 'hidden',
+          border: `1px solid ${t.border}`,
+          marginBottom: 28,
+          aspectRatio: '16/9',
+          background: `rgba(${hexToRgb(accentColor)}, 0.03)`,
+        }}
+      >
+        {item.imageBase64 ? (
+          <img
+            src={item.imageBase64}
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ImagePlaceholder color={accentColor} />
+          </div>
+        )}
+      </div>
+      <h3
+        style={{
+          fontSize: 'clamp(20px, 3vw, 32px)',
+          fontWeight: 700,
+          color: t.text,
+          marginBottom: 12,
+          marginTop: 0,
+        }}
+      >
+        {item.title || 'Title'}
+      </h3>
+      <p
+        style={{
+          color: t.textSecondary,
+          fontSize: 15,
+          lineHeight: 1.75,
+          marginBottom: 20,
+          marginTop: 0,
+        }}
+      >
+        {item.body || 'Body text'}
+      </p>
+      {item.bullets?.map((b, bi) => (
+        <div
+          key={bi}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: 10,
+          }}
+        >
+          <span
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: '50%',
+              flexShrink: 0,
+              background: `rgba(${hexToRgb(accentColor)}, 0.12)`,
+              color: accentColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+            }}
+          >
+            ✓
+          </span>
+          <span style={{ color: t.text, fontSize: 14 }}>{b.text}</span>
+        </div>
+      ))}
+      {item.ctaShow && item.ctaText && (
+        <button
+          type="button"
+          style={{
+            marginTop: 24,
+            padding: '12px 28px',
+            background: accentColor,
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: enabled ? 'default' : 'pointer',
+          }}
+        >
+          {item.ctaText}
+        </button>
+      )}
+    </>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────
+export const TronShowcase = React.memo(function TronShowcase() {
+  const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
+  const { theme } = useTheme();
 
-  const safeTabs = Array.isArray(tabs) && tabs.length >= 1 ? tabs : DEFAULT_TABS;
-  const firstId = safeTabs[0]?.id ?? '1';
-  const [activeId, setActiveId] = useState(firstId);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [contentOpacity, setContentOpacity] = useState(1);
-  const [contentTranslateY, setContentTranslateY] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
-  const [tabHeight, setTabHeight] = useState(56);
-  const firstTabRef = useRef<HTMLButtonElement>(null);
+  const containerRef = React.useRef<HTMLElement | null>(null);
+  const [isMobile, setIsMobile] = React.useState(false);
+  const [activeIndex, setActiveIndex] = React.useState(0);
 
-  const activeIndex = safeTabs.findIndex((t) => t.id === activeId);
-  const effectiveActiveIndex = activeIndex >= 0 ? activeIndex : 0;
-
-  useEffect(() => {
-    if (isMobile) return;
-    const h = firstTabRef.current?.offsetHeight;
-    if (typeof h === 'number' && h > 0) setTabHeight(h);
-  }, [isMobile, safeTabs.length]);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setIsMobile((entry?.contentRect?.width ?? 0) < 520);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const exists = safeTabs.some((t) => t.id === activeId);
-    if (!exists) setActiveId(safeTabs[0]?.id ?? '1');
-  }, [safeTabs, activeId]);
+  const props = useNode((node) => node.data.props as Partial<TronShowcaseProps>) ?? {};
+  const {
+    colorScheme = 'dark',
+    accentColor: propAccent,
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
+    sectionHeight = 80,
+    showGrid = true,
+    title = 'Everything you need',
+    subtitle = 'Explore the features that make our platform stand out.',
+    layoutStyle = 'tabs-left',
+    items = DEFAULT_ITEMS,
+    animationType = 'none',
+    animateDelay = '0',
+  } = props;
 
-  const activeTab = safeTabs.find((t) => t.id === activeId) ?? safeTabs[0];
-
-  const handleTabClick = useCallback(
-    (id: string) => {
-      if (id === activeId) return;
-      setIsTransitioning(true);
-      setContentOpacity(0);
-      setContentTranslateY(12);
-      const t1 = setTimeout(() => {
-        setActiveId(id);
-        setContentTranslateY(-8);
-        const t2 = setTimeout(() => {
-          setContentOpacity(1);
-          setContentTranslateY(0);
-          setIsTransitioning(false);
-        }, 250);
-        return () => clearTimeout(t2);
-      }, 150);
-      return () => clearTimeout(t1);
-    },
-    [activeId]
-  );
-
-  const updateTabContent = useCallback(
-    (tabId: string, field: 'contentTitle' | 'contentText', value: string) => {
-      setProp((p: { tabs?: ShowcaseTab[] }) => {
-        const arr = p.tabs ?? DEFAULT_TABS;
-        const idx = arr.findIndex((t) => t.id === tabId);
-        if (idx >= 0) {
-          const next = [...arr];
-          next[idx] = { ...next[idx], [field]: value };
-          p.tabs = next;
-        }
-      }, 1000);
-    },
-    [setProp]
-  );
-
+  const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
   const t = {
-    ...tokens[colorScheme],
-    bg: colorScheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
+    ...tokens[scheme],
+    accent: accentColor,
+    bg: scheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
   };
+
+  const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
+
+  React.useEffect(() => {
+    if (list.length === 0) return;
+    if (activeIndex >= list.length) setActiveIndex(list.length - 1);
+  }, [list.length, activeIndex]);
+
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
     : 'none';
-  const backgroundStyle = {
-    background: t.bg,
-    backgroundImage: gridLines,
-    backgroundSize: showGrid ? '50px 50px' : 'auto',
-  };
+
+  const animAttrs: Record<string, string> = {};
+  if (!enabled && animationType !== 'none') {
+    animAttrs['data-animate'] = animationType;
+    if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
+  }
+
+  const displayActiveIndex = enabled ? 0 : activeIndex;
+  const effectiveActiveIndex = isMobile
+    ? displayActiveIndex
+    : Math.max(0, Math.min(displayActiveIndex, list.length - 1));
+  const effectiveActiveItem = effectiveActiveIndex >= 0 ? (list[effectiveActiveIndex] ?? list[0]) : null;
 
   return (
     <section
-      key={`${colorScheme}-${showGrid}`}
-      ref={(ref) => { if (ref) connect(drag(ref)); }}
+      ref={(el) => {
+        if (el) {
+          connect(drag(el));
+          (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
+        }
+      }}
+      key={`${scheme}-${layoutStyle}`}
       data-block-type="showcase"
-      data-block-category="content"
-      className={`w-full ${isSelected ? 'craft-node-selected' : ''}`}
+      className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
+        background: t.bg,
+        backgroundImage: gridLines,
+        backgroundSize: showGrid ? '50px 50px' : 'auto',
         minHeight: `${sectionHeight}vh`,
-        width: '100%',
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        ...backgroundStyle,
       }}
     >
-      {/* Left — tabs */}
       <div
         style={{
-          width: isMobile ? '100%' : '350px',
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: isMobile ? 'row' : 'column',
-          minHeight: isMobile ? 'auto' : `${sectionHeight}vh`,
-          borderRight: isMobile ? 'none' : `1px solid ${t.border}`,
-          borderBottom: isMobile ? `1px solid ${t.border}` : 'none',
-          overflowX: isMobile ? 'auto' : 'visible',
-          overflowY: isMobile ? 'visible' : 'auto',
-          ...(isMobile ? { scrollbarWidth: 'none' as const } : {}),
+          maxWidth: 1200,
+          margin: '0 auto',
+          width: '100%',
         }}
+        {...animAttrs}
       >
-        <div
-          style={{
-            flexShrink: 0,
-            width: isMobile ? 'auto' : '100%',
-            padding: '32px 32px 16px',
-            fontSize: 11,
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            color: t.textSecondary,
-          }}
-        >
-          {sectionLabel}
-        </div>
-        <div
-          style={{
-            position: 'relative',
-            flex: isMobile ? 1 : 'initial',
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: isMobile ? 'row' : 'column',
-            overflowX: isMobile ? 'auto' : 'visible',
-          }}
-        >
-          {!isMobile && (
-            <>
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 1,
-                  background: t.border,
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  width: 2,
-                  height: tabHeight,
-                  top: effectiveActiveIndex * tabHeight,
-                  background: accentColor,
-                  transition: 'top 300ms ease',
-                }}
-              />
-            </>
-          )}
-          {safeTabs.map((tab, index) => {
-            const isActive = tab.id === activeId;
-            return (
-              <button
-                key={tab.id}
-                ref={index === 0 ? firstTabRef : undefined}
-                type="button"
-                onClick={() => handleTabClick(tab.id)}
-                style={{
-                  flexShrink: 0,
-                  width: isMobile ? 'max-content' : '100%',
-                  minWidth: isMobile ? 140 : undefined,
-                  textAlign: 'left',
-                  transition: 'all 200ms ease-out',
-                  padding: isMobile ? '14px 20px' : '20px 32px',
-                  fontSize: 15,
-                  color: isActive ? accentColor : '#a1a1aa',
-                  background: isActive ? hexToRgba(accentColor, 0.06) : 'transparent',
-                  borderLeft: isMobile ? 'none' : `2px solid ${isActive ? accentColor : 'transparent'}`,
-                  borderBottom: isMobile ? `2px solid ${isActive ? accentColor : 'transparent'}` : 'none',
-                }}
-              >
-                <span
-                  style={{
-                    color: accentColor,
-                    opacity: 0.6,
-                    fontSize: 11,
-                    marginRight: 12,
-                    fontWeight: 700,
-                    display: isMobile ? 'none' : 'inline',
-                  }}
-                >
-                  {String(index + 1).padStart(2, '0')} /
-                </span>
-                {tab.tabTitle}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Right — content */}
-      <div
-        style={{
-          position: 'relative',
-          ...(isMobile ? { width: '100%' } : { flex: 1 }),
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          minHeight: isMobile ? '50vh' : `${sectionHeight}vh`,
-          padding: isMobile ? '32px 24px' : 'clamp(40px, 6vw, 80px)',
-        }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            border: `1px solid ${hexToRgba(accentColor, 0.3)}`,
-            color: accentColor,
-            padding: '3px 10px',
-            marginBottom: 24,
-            display: 'inline-block',
-            width: 'fit-content',
-          }}
-        >
-          {activeTab.tabTitle}
-        </span>
-        <div
-          style={{
-            opacity: contentOpacity,
-            transform: `translateY(${contentTranslateY}px)`,
-            transition: isTransitioning ? 'opacity 250ms ease, transform 250ms ease' : 'none',
-          }}
-        >
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
           <h2
-            contentEditable={enabled}
-            suppressContentEditableWarning
-            onBlur={(e) =>
-              updateTabContent(activeTab.id, 'contentTitle', e.currentTarget.textContent ?? '')
-            }
-            dangerouslySetInnerHTML={{ __html: activeTab.contentTitle }}
             style={{
-              fontSize: 'clamp(32px, 4vw, 56px)',
-              fontWeight: 800,
+              fontSize: 'clamp(28px, 4vw, 48px)',
+              fontWeight: 700,
               color: t.text,
               margin: 0,
               marginBottom: 16,
-              outline: 'none',
             }}
-          />
-          <div
-            contentEditable={enabled}
-            suppressContentEditableWarning
-            onBlur={(e) =>
-              updateTabContent(activeTab.id, 'contentText', e.currentTarget.textContent ?? '')
-            }
-            dangerouslySetInnerHTML={{ __html: activeTab.contentText }}
+          >
+            {title}
+          </h2>
+          <p
             style={{
               fontSize: 16,
-              lineHeight: 1.8,
               color: t.textSecondary,
+              lineHeight: 1.6,
               margin: 0,
-              outline: 'none',
             }}
-          />
+          >
+            {subtitle}
+          </p>
         </div>
+
+        {isMobile ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {list.map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  borderRadius: 10,
+                  border: `1px solid ${displayActiveIndex === i
+                    ? `rgba(${hexToRgb(accentColor)}, 0.3)`
+                    : t.border}`,
+                  marginBottom: 0,
+                  overflow: 'hidden',
+                  background: displayActiveIndex === i
+                    ? `rgba(${hexToRgb(accentColor)}, 0.03)`
+                    : t.cardBg,
+                  transition: 'border-color 0.2s, background 0.2s',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    !enabled && setActiveIndex(displayActiveIndex === i ? -1 : i)
+                  }
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '16px 20px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: enabled ? 'default' : 'pointer',
+                    color: t.text,
+                    fontSize: 14,
+                    fontWeight: 500,
+                  }}
+                >
+                  {item.label}
+                  <span
+                    style={{
+                      transform: displayActiveIndex === i ? 'rotate(45deg)' : 'rotate(0)',
+                      transition: 'transform 0.3s',
+                      color: accentColor,
+                      fontSize: 18,
+                      lineHeight: 1,
+                    }}
+                  >
+                    +
+                  </span>
+                </button>
+                <div
+                  style={{
+                    maxHeight: displayActiveIndex === i ? 600 : 0,
+                    overflow: 'hidden',
+                    transition: 'max-height 0.35s ease',
+                  }}
+                >
+                  <div style={{ padding: '0 20px 20px' }}>
+                    <TabContentPanel
+                      item={item}
+                      t={t}
+                      accentColor={accentColor}
+                      enabled={enabled}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : layoutStyle === 'tabs-left' ? (
+          <div
+            style={{
+              display: 'flex',
+              gap: 40,
+              alignItems: 'flex-start',
+              flexWrap: 'nowrap',
+            }}
+          >
+            <div
+              style={{
+                width: 280,
+                flexShrink: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+              }}
+            >
+              {list.map((item, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => !enabled && setActiveIndex(i)}
+                  style={{
+                    textAlign: 'left',
+                    padding: '16px 20px',
+                    borderRadius: 10,
+                    border: 'none',
+                    cursor: enabled ? 'default' : 'pointer',
+                    background:
+                      effectiveActiveIndex === i
+                        ? `rgba(${hexToRgb(accentColor)}, 0.08)`
+                        : 'transparent',
+                    borderLeft: `3px solid ${effectiveActiveIndex === i ? accentColor : 'transparent'}`,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: effectiveActiveIndex === i ? accentColor : t.text,
+                      marginBottom: 4,
+                      transition: 'color 0.2s',
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: t.textSecondary,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {item.description}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {effectiveActiveItem && (
+                <TabContentPanel
+                  item={effectiveActiveItem}
+                  t={t}
+                  accentColor={accentColor}
+                  enabled={enabled}
+                />
+              )}
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                gap: 4,
+                flexWrap: 'wrap',
+                borderBottom: `1px solid ${t.border}`,
+                marginBottom: 40,
+              }}
+            >
+              {list.map((item, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => !enabled && setActiveIndex(i)}
+                  style={{
+                    padding: '10px 20px',
+                    border: 'none',
+                    cursor: enabled ? 'default' : 'pointer',
+                    background: 'transparent',
+                    color: effectiveActiveIndex === i ? accentColor : t.textSecondary,
+                    borderBottom: `2px solid ${effectiveActiveIndex === i ? accentColor : 'transparent'}`,
+                    fontSize: 14,
+                    fontWeight: effectiveActiveIndex === i ? 600 : 400,
+                    marginBottom: -1,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            {effectiveActiveItem && (
+              <TabContentPanel
+                item={effectiveActiveItem}
+                t={t}
+                accentColor={accentColor}
+                enabled={enabled}
+              />
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
-};
+});
 
-const MAX_TABS = 8;
-const MIN_TABS = 2;
-
-const TronShowcaseSettings = () => {
+// ── Settings ─────────────────────────────────────────────────────────────
+function TronShowcaseSettings() {
+  const { actions: { setProp } } = useNode();
+  const props = useNode((node) => node.data.props as Partial<TronShowcaseProps>) ?? {};
   const {
-    actions: { setProp },
-    sectionLabel,
-    colorScheme,
-    accentColor,
-    darkBg,
-    lightBg,
-    showGrid,
-    sectionHeight,
-    tabs,
-  } = useNode((node) => ({
-    sectionLabel: (node.data.props.sectionLabel as string) ?? 'ЧТО МЫ ПРЕДЛАГАЕМ',
-    colorScheme: (node.data.props.colorScheme as 'dark' | 'light') ?? 'dark',
-    accentColor: (node.data.props.accentColor as string) ?? '#e11d48',
-    darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
-    lightBg: (node.data.props.lightBg as string) ?? '#ffffff',
-    showGrid: (node.data.props.showGrid as boolean) ?? true,
-    sectionHeight: (node.data.props.sectionHeight as number) ?? 75,
-    tabs: (node.data.props.tabs as ShowcaseTab[]) ?? DEFAULT_TABS,
-  }));
+    title = 'Everything you need',
+    subtitle = 'Explore the features that make our platform stand out.',
+    layoutStyle = 'tabs-left',
+    items = DEFAULT_ITEMS,
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
+    sectionHeight = 80,
+    showGrid = true,
+    animationType = 'none',
+    animateDelay = '0',
+  } = props;
 
-  const setT = (key: string, ms?: number) => (val: unknown) =>
-    setProp((p: Record<string, unknown>) => { p[key] = val; }, ms ?? 300);
+  const setT = (key: keyof TronShowcaseProps, ms: number) => (val: unknown) =>
+    setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
+
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
+  const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
 
-  const safeTabs = Array.isArray(tabs) && tabs.length >= 1 ? tabs : DEFAULT_TABS;
-
-  const updateTab = (index: number, field: keyof ShowcaseTab, value: string) => {
+  const updateItem = (index: number, field: keyof ShowcaseTab, value: unknown) => {
     setProp((p: Record<string, unknown>) => {
-      const arr = ((p.tabs as ShowcaseTab[]) ?? DEFAULT_TABS).slice();
+      const arr = [...((p.items as ShowcaseTab[]) ?? [])];
       if (arr[index]) {
         arr[index] = { ...arr[index], [field]: value };
-        p.tabs = arr;
+        p.items = arr;
       }
     }, 500);
   };
 
-  const addTab = () => {
-    if (safeTabs.length >= MAX_TABS) return;
+  const updateBullet = (tabIndex: number, bulletIndex: number, text: string) => {
     setProp((p: Record<string, unknown>) => {
-      const arr = ((p.tabs as ShowcaseTab[]) ?? DEFAULT_TABS).slice();
-      arr.push({
-        id: String(Date.now()),
-        tabTitle: 'Новый таб',
-        contentTitle: 'Заголовок',
-        contentText: 'Описание.',
-      });
-      p.tabs = arr;
-    });
+      const arr = [...((p.items as ShowcaseTab[]) ?? [])];
+      const tab = arr[tabIndex];
+      if (tab?.bullets) {
+        const bullets = [...tab.bullets];
+        bullets[bulletIndex] = { ...bullets[bulletIndex], text };
+        arr[tabIndex] = { ...tab, bullets };
+        p.items = arr;
+      }
+    }, 500);
   };
 
-  const removeTab = (index: number) => {
-    if (safeTabs.length <= MIN_TABS) return;
+  const addBullet = (tabIndex: number) => {
     setProp((p: Record<string, unknown>) => {
-      const arr = ((p.tabs as ShowcaseTab[]) ?? DEFAULT_TABS).slice();
-      arr.splice(index, 1);
-      p.tabs = arr;
-    });
+      const arr = [...((p.items as ShowcaseTab[]) ?? [])];
+      const tab = arr[tabIndex];
+      if (tab) {
+        const bullets = [...(tab.bullets ?? []), { text: 'New bullet' }];
+        arr[tabIndex] = { ...tab, bullets };
+        p.items = arr;
+      }
+    }, 0);
+  };
+
+  const removeBullet = (tabIndex: number, bulletIndex: number) => {
+    setProp((p: Record<string, unknown>) => {
+      const arr = [...((p.items as ShowcaseTab[]) ?? [])];
+      const tab = arr[tabIndex];
+      if (tab?.bullets) {
+        const bullets = tab.bullets.filter((_, i) => i !== bulletIndex);
+        arr[tabIndex] = { ...tab, bullets };
+        p.items = arr;
+      }
+    }, 0);
+  };
+
+  const removeItem = (index: number) => {
+    setProp((p: Record<string, unknown>) => {
+      const arr = ((p.items as ShowcaseTab[]) ?? []).filter((_, i) => i !== index);
+      p.items = arr;
+    }, 0);
+  };
+
+  const addItem = () => {
+    setProp((p: Record<string, unknown>) => {
+      const arr = [
+        ...((p.items as ShowcaseTab[]) ?? []),
+        {
+          label: 'New tab',
+          description: 'Short description',
+          title: 'Tab title',
+          body: 'Body text here.',
+          bullets: [],
+          imageBase64: undefined,
+          ctaText: 'Learn more',
+          ctaShow: false,
+        },
+      ];
+      p.items = arr;
+    }, 0);
   };
 
   return (
-    <div className="p-3 space-y-5 text-white">
-      <section>
+    <div className="p-3 space-y-0 text-white">
+      {/* 1. CONTENT */}
+      <div className="border-t border-gray-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div>
-            <label className={labelCls}>Section label</label>
-            <input
-              type="text"
-              value={sectionLabel}
-              onChange={(e) => setT('sectionLabel', 500)(e.target.value)}
-              className={inputCls}
-            />
-          </div>
-        </div>
-      </section>
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Style</h3>
-        <div className="space-y-3">
-          <div>
-            <label className={labelCls}>Color scheme</label>
-            <select value={colorScheme} onChange={(e) => setT('colorScheme')(e.target.value)} className={inputCls}>
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className={`${labelCls} shrink-0 w-20`}>Accent</label>
-            <input
-              type="color"
-              value={accentColor}
-              onChange={(e) => setT('accentColor', 300)(e.target.value)}
-              className="w-10 h-8 rounded cursor-pointer border-0 bg-transparent p-0"
-            />
-            <span className="text-[10px] font-mono text-gray-500 truncate">{accentColor}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className={labelCls}>Show grid</label>
-            <input
-              type="checkbox"
-              checked={showGrid}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
-            />
+            <label className={labelCls}>Title</label>
+            <input type="text" value={title} onChange={(e) => setT('title', 500)(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: '#a1a1aa' }}>Высота секции: {sectionHeight ?? 75}vh</label>
-            <input type="range" min={50} max={100} step={5} value={sectionHeight ?? 75} onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)} style={{ width: '100%' }} />
+            <label className={labelCls}>Subtitle</label>
+            <input type="text" value={subtitle} onChange={(e) => setT('subtitle', 500)(e.target.value)} className={inputCls} />
           </div>
         </div>
-      </section>
-      <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
-        <div>
-          <label className={labelCls}>Background (dark mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
-          </div>
-          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
-          </div>
+      </div>
+
+      {/* 2. LAYOUT */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Layout</h3>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {(['tabs-left', 'tabs-top'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setProp((p: Record<string, unknown>) => { p.layoutStyle = v; })}
+              style={{
+                flex: 1,
+                padding: '6px 0',
+                fontSize: 12,
+                borderRadius: 6,
+                border: '1px solid',
+                borderColor: layoutStyle === v ? '#FF6B35' : 'rgba(255,255,255,0.15)',
+                background: layoutStyle === v ? 'rgba(255,107,53,0.15)' : 'transparent',
+                color: layoutStyle === v ? '#FF6B35' : '#a1a1aa',
+                cursor: 'pointer',
+              }}
+            >
+              {v === 'tabs-left' ? 'Tabs left' : 'Tabs top'}
+            </button>
+          ))}
         </div>
-      </section>
-      <section>
+      </div>
+
+      {/* 3. ITEMS */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Tabs</h3>
-        <div className="space-y-2">
-          {safeTabs.map((tab, index) => (
-            <div key={tab.id} className="flex gap-2 items-center">
-              <input
-                type="text"
-                value={tab.tabTitle}
-                onChange={(e) => updateTab(index, 'tabTitle', e.target.value)}
-                className={`${inputCls} flex-1 min-w-0`}
-                placeholder="Tab title"
-              />
-              <button
-                type="button"
-                onClick={() => removeTab(index)}
-                disabled={safeTabs.length <= MIN_TABS}
-                className="shrink-0 px-2 py-1 text-red-400 hover:text-red-300 disabled:opacity-40 disabled:cursor-not-allowed text-xs"
-                title="Remove tab"
-              >
-                ×
-              </button>
+        <div className="space-y-4">
+          {list.map((item, i) => (
+            <div key={i} className="p-3 rounded bg-gray-800/50 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-gray-400">Tab {i + 1}</span>
+                <button
+                  type="button"
+                  onClick={() => removeItem(i)}
+                  disabled={list.length <= 1}
+                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400 disabled:opacity-40"
+                >
+                  ×
+                </button>
+              </div>
+              <div>
+                <label className={labelCls}>Label</label>
+                <input
+                  type="text"
+                  value={item.label}
+                  onChange={(e) => updateItem(i, 'label', e.target.value)}
+                  className={inputCls}
+                  placeholder="Tab label"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Description (tabs-left)</label>
+                <input
+                  type="text"
+                  value={item.description}
+                  onChange={(e) => updateItem(i, 'description', e.target.value)}
+                  className={inputCls}
+                  placeholder="Short description"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Title</label>
+                <input
+                  type="text"
+                  value={item.title}
+                  onChange={(e) => updateItem(i, 'title', e.target.value)}
+                  className={inputCls}
+                  placeholder="Content title"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Body</label>
+                <textarea
+                  value={item.body}
+                  onChange={(e) => updateItem(i, 'body', e.target.value)}
+                  className={inputCls}
+                  rows={3}
+                  placeholder="Body text"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Bullets</label>
+                <div className="space-y-2 mt-1">
+                  {(item.bullets ?? []).map((b, bi) => (
+                    <div key={bi} className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={b.text}
+                        onChange={(e) => updateBullet(i, bi, e.target.value)}
+                        className={inputCls}
+                        placeholder="Bullet text"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeBullet(i, bi)}
+                        className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addBullet(i)}
+                    className="text-xs text-[#FF6B35] hover:underline"
+                  >
+                    + Add bullet
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-xs text-gray-400">
+                  <input
+                    type="checkbox"
+                    checked={item.ctaShow ?? false}
+                    onChange={(e) => updateItem(i, 'ctaShow', e.target.checked)}
+                    className="rounded border-gray-600 bg-gray-700"
+                  />
+                  Show CTA
+                </label>
+                {item.ctaShow && (
+                  <input
+                    type="text"
+                    value={item.ctaText ?? ''}
+                    onChange={(e) => updateItem(i, 'ctaText', e.target.value)}
+                    className={inputCls}
+                    placeholder="Button text"
+                    style={{ flex: 1 }}
+                  />
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {item.imageBase64 && (
+                  <img
+                    src={item.imageBase64}
+                    alt=""
+                    style={{ width: 48, height: 32, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
+                  />
+                )}
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 10px',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    background: 'rgba(255,107,53,0.1)',
+                    border: '1px solid rgba(255,107,53,0.3)',
+                    color: '#FF6B35',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {item.imageBase64 ? '↺ Change' : '+ Upload image'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const base64 = ev.target?.result as string;
+                        setProp((p: Record<string, unknown>) => {
+                          const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                          if (items[i]) items[i] = { ...items[i], imageBase64: base64 };
+                          p.items = items;
+                        }, 0);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                {item.imageBase64 && (
+                  <button
+                    type="button"
+                    onClick={() => updateItem(i, 'imageBase64', undefined)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#71717a',
+                      cursor: 'pointer',
+                      fontSize: 16,
+                      padding: 0,
+                    }}
+                    title="Remove image"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
           ))}
           <button
             type="button"
-            onClick={addTab}
-            disabled={safeTabs.length >= MAX_TABS}
-            className="text-xs text-[#FF6B35] hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={addItem}
+            className="w-full py-1.5 text-xs border border-dashed border-gray-600 text-gray-400 rounded hover:border-gray-500"
           >
-            + Добавить (макс {MAX_TABS})
+            + Add tab
           </button>
         </div>
-      </section>
+      </div>
+
+      {/* 4. COLORS */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <div>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="color"
+              value={darkBg ?? '#0a0a0a'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)}
+              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="color"
+              value={lightBg ?? '#ffffff'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)}
+              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. SIZE */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Size</h3>
+        <div>
+          <label className={labelCls}>Section height: {sectionHeight}vh</label>
+          <input
+            type="range"
+            min={50}
+            max={100}
+            step={5}
+            value={sectionHeight}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)}
+            className="w-full"
+          />
+        </div>
+      </div>
+
+      {/* 6. DISPLAY */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
+        <label className="flex items-center gap-2 text-xs text-gray-400">
+          <input
+            type="checkbox"
+            checked={showGrid}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })}
+            className="rounded border-gray-600 bg-gray-700"
+          />
+          Show grid
+        </label>
+      </div>
+
+      {/* 7. ANIMATION */}
+      <div className="border-t border-gray-700 pt-4 mt-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Type</label>
+            <select
+              value={animationType}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })}
+              className={inputCls}
+            >
+              <option value="none">None</option>
+              <option value="fade-in">Fade In</option>
+              <option value="slide-up">Slide Up</option>
+              <option value="slide-down">Slide Down</option>
+              <option value="slide-left">Slide Left</option>
+              <option value="slide-right">Slide Right</option>
+              <option value="scale-in">Scale In</option>
+              <option value="blur-in">Blur In</option>
+              <option value="rotate-in">Rotate In</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Delay</label>
+            <select
+              value={animateDelay}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })}
+              className={inputCls}
+            >
+              {['0', '0.1', '0.2', '0.3', '0.5', '0.8', '1'].map((v) => (
+                <option key={v} value={v}>{v}s</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
+}
 
-TronShowcase.craft = {
+// ── Craft config ──────────────────────────────────────────────────────────
+const tronShowcaseCraft = {
   displayName: 'Tron Showcase',
   props: {
-    tabs: DEFAULT_TABS,
-    sectionLabel: 'ЧТО МЫ ПРЕДЛАГАЕМ',
-    colorScheme: 'dark',
-    accentColor: '#e11d48',
+    colorScheme: 'dark' as const,
+    accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',
+    sectionHeight: 80,
     showGrid: true,
-    sectionHeight: 75,
+    title: 'Everything you need',
+    subtitle: 'Explore the features that make our platform stand out.',
+    layoutStyle: 'tabs-left' as const,
+    items: DEFAULT_ITEMS,
+    animationType: 'none',
+    animateDelay: '0',
   },
   related: { settings: TronShowcaseSettings },
+  rules: { canDrag: () => true, canMoveIn: () => false },
   custom: {
-    styleTags: ['dark', 'bold'],
-    businessTags: ['startup', 'saas'],
-    featureTags: ['showcase', 'tabs', 'content'],
+    styleTags: ['dark', 'minimal'],
+    businessTags: ['saas', 'startup', 'agency'],
+    featureTags: ['showcase', 'features', 'tabs'],
     supportsTheme: true,
     supportsColorPreset: true,
+    supportsGradient: false,
   },
-  rules: { canDrag: () => true, canMoveIn: () => false },
 };
+(TronShowcase as unknown as { craft: typeof tronShowcaseCraft }).craft = tronShowcaseCraft;
