@@ -323,6 +323,10 @@ export const TronShowcase = React.memo(function TronShowcase() {
     bg: scheme === 'dark' ? (darkBg ?? '#0a0a0a') : (lightBg ?? '#ffffff'),
   };
 
+  const gridLines = showGrid
+    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+    : 'none';
+
   const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
 
   React.useEffect(() => {
@@ -341,10 +345,6 @@ export const TronShowcase = React.memo(function TronShowcase() {
     if (list.length === 0) return;
     if (activeIndex >= list.length) setActiveIndex(list.length - 1);
   }, [list.length, activeIndex]);
-
-  const gridLines = showGrid
-    ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
-    : 'none';
 
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType !== 'none') {
