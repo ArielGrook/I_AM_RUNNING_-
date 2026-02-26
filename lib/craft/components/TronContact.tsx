@@ -32,7 +32,7 @@ const CONTACT_ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
-// ── Tokens (accent from theme; no hardcoded colors in component) ──────────
+// ── Tokens (same as TronStats) ───────────────────────────────────────────
 const tokens = {
   dark: {
     bg: '#0a0a0a',
@@ -40,9 +40,7 @@ const tokens = {
     textSecondary: '#a1a1aa',
     border: 'rgba(255,255,255,0.08)',
     cardBg: 'rgba(255,255,255,0.03)',
-    inputBg: 'rgba(255,255,255,0.05)',
     gridColor: 'rgba(255,255,255,0.03)',
-    onAccent: '#ffffff',
   },
   light: {
     bg: '#ffffff',
@@ -50,9 +48,7 @@ const tokens = {
     textSecondary: '#52525b',
     border: 'rgba(0,0,0,0.08)',
     cardBg: 'rgba(0,0,0,0.02)',
-    inputBg: 'rgba(0,0,0,0.04)',
     gridColor: 'rgba(0,0,0,0.06)',
-    onAccent: '#ffffff',
   },
 };
 
@@ -64,6 +60,8 @@ interface ContactInfo {
 }
 
 interface TronContactProps {
+  colorScheme?: 'dark' | 'light';
+  accentColor?: string;
   sectionHeight?: number;
   showGrid?: boolean;
   title?: string;
@@ -103,6 +101,8 @@ export const TronContact = React.memo(function TronContact() {
 
   const props = useNode((node) => node.data.props as Partial<TronContactProps>) ?? {};
   const {
+    colorScheme = 'dark',
+    accentColor: propAccent,
     sectionHeight = 80,
     showGrid = true,
     title = 'Get in touch',
@@ -116,9 +116,9 @@ export const TronContact = React.memo(function TronContact() {
     animateDelay = '0',
   } = props;
 
-  const accentColor = theme.accentColor ?? '#FF6B35';
-  const colorScheme = theme.colorScheme ?? 'dark';
-  const t = tokens[colorScheme];
+  const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const t = { ...tokens[scheme], accent: accentColor };
 
   const gridLines = showGrid
     ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
@@ -138,7 +138,7 @@ export const TronContact = React.memo(function TronContact() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '12px 16px',
-    background: t.inputBg,
+    background: t.cardBg,
     border: `1px solid ${t.border}`,
     borderRadius: 8,
     color: t.text,
@@ -150,7 +150,7 @@ export const TronContact = React.memo(function TronContact() {
   return (
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
-      key={colorScheme}
+      key={`${scheme}-${showGrid}`}
       data-block-type="contact"
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
@@ -175,7 +175,7 @@ export const TronContact = React.memo(function TronContact() {
               marginTop: 0,
             }}
           >
-            <span style={{ color: accentColor }}>{firstWord}</span>
+            <span style={{ color: t.accent }}>{firstWord}</span>
             {restWords ? ` ${restWords}` : ''}
           </h2>
           <p
@@ -199,11 +199,11 @@ export const TronContact = React.memo(function TronContact() {
                   width: 40,
                   height: 40,
                   borderRadius: '50%',
-                  background: `rgba(${hexToRgb(accentColor)}, 0.12)`,
+                  background: `rgba(${hexToRgb(t.accent)}, 0.12)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: accentColor,
+                  color: t.accent,
                   flexShrink: 0,
                 }}
               >
@@ -259,8 +259,8 @@ export const TronContact = React.memo(function TronContact() {
               style={{
                 width: '100%',
                 padding: '14px 24px',
-                background: accentColor,
-                color: t.onAccent,
+                background: t.accent,
+                color: '#ffffff',
                 border: 'none',
                 borderRadius: 8,
                 fontSize: 15,
@@ -490,6 +490,8 @@ function TronContactSettings() {
 const tronContactCraft = {
   displayName: 'Tron Contact',
   props: {
+    colorScheme: 'dark',
+    accentColor: '#FF6B35',
     sectionHeight: 80,
     showGrid: true,
     title: 'Get in touch',
