@@ -70,6 +70,7 @@ export const Viewport = ({
   const [spotlightIntensity, setSpotlightIntensity] = useState(15);
   const [showSpotlightMenu, setShowSpotlightMenu] = useState(false);
   const [spotlightPos, setSpotlightPos] = useState({ x: -9999, y: -9999 });
+  const [headerHeight, setHeaderHeight] = useState(0);
   const { t } = useEditorTheme();
 
   const applySchemeToTronNodes = useCallback(
@@ -151,6 +152,25 @@ export const Viewport = ({
     };
   }, [spotlightEnabled, previewMode]);
 
+  // Header height for spotlight clip (starts below header)
+  React.useEffect(() => {
+    if (!previewMode || !spotlightEnabled) return;
+
+    const updateHeaderHeight = () => {
+      const header = document.querySelector('[data-block-type="header"]') as HTMLElement;
+      if (header) {
+        const rect = header.getBoundingClientRect();
+        setHeaderHeight(rect.bottom);
+      } else {
+        setHeaderHeight(0);
+      }
+    };
+
+    updateHeaderHeight();
+    document.addEventListener('scroll', updateHeaderHeight, { passive: true });
+    return () => document.removeEventListener('scroll', updateHeaderHeight);
+  }, [previewMode, spotlightEnabled]);
+
   const spotlightButtonRef = React.useRef<HTMLDivElement>(null);
 
   // Close spotlight dropdown on click outside
@@ -198,10 +218,13 @@ export const Viewport = ({
         <div
           style={{
             position: 'fixed',
-            inset: 0,
+            top: headerHeight,
+            left: 0,
+            right: 0,
+            bottom: 0,
             pointerEvents: 'none',
             zIndex: 9999,
-            background: `radial-gradient(circle 400px at ${spotlightPos.x}px ${spotlightPos.y}px,
+            background: `radial-gradient(circle 400px at ${spotlightPos.x}px ${spotlightPos.y - headerHeight}px,
               rgba(${hexToRgb(accentColor)}, ${spotlightIntensity / 100}) 0%,
               transparent 70%
             )`,
