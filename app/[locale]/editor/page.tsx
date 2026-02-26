@@ -191,10 +191,12 @@ function EditorLayout({
       {children}
       {!previewMode && (
         <div
-          className="flex transition-all duration-200 shrink-0 overflow-visible relative"
+          className="flex transition-all duration-200 overflow-visible relative"
           style={{
             width: rightPanelOpen ? '21rem' : 0,
             minWidth: rightPanelOpen ? undefined : 0,
+            flexShrink: 0,
+            marginLeft: 'auto',
           }}
         >
           {rightPanelOpen && (
