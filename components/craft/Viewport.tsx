@@ -8,6 +8,15 @@ import { COLOR_PRESETS } from '@/lib/craft/presets/colors';
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 
+const ANIM_PRESETS = [
+  { id: 'none', label: 'No animation', icon: '○' },
+  { id: 'fade', label: 'Fade in', icon: '◐' },
+  { id: 'slide-up', label: 'Slide up', icon: '↑' },
+  { id: 'slide-left', label: 'Slide left', icon: '←' },
+  { id: 'zoom', label: 'Zoom in', icon: '⊕' },
+  { id: 'bounce', label: 'Bounce', icon: '⟳' },
+];
+
 const DEVICES: { key: DeviceMode; label: string; width: string }[] = [
   { key: 'desktop', label: 'Desktop', width: '100%' },
   { key: 'tablet', label: '768', width: '768px' },
@@ -62,6 +71,8 @@ export const Viewport = ({
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [animPreset, setAnimPreset] = React.useState('none');
+  const [showAnimMenu, setShowAnimMenu] = React.useState(false);
   const [accentColor, setAccentColor] = useState('#e11d48');
   const [canvasScheme, setCanvasScheme] = useState<'dark' | 'light'>('dark');
 
@@ -205,6 +216,53 @@ export const Viewport = ({
     },
     [query, actions]
   );
+
+  // Map preset ids to component animationType values
+  const presetToAnimationType: Record<string, string> = {
+    none: 'none',
+    fade: 'fade-in',
+    'slide-up': 'slide-up',
+    'slide-left': 'slide-left',
+    zoom: 'scale-in',
+    bounce: 'bounce',
+  };
+
+  const applyAnimPreset = useCallback(
+    (presetId: string) => {
+      setAnimPreset(presetId);
+      const animationType = presetToAnimationType[presetId] ?? presetId;
+      try {
+        const nodes = query.getState()?.nodes ?? {};
+        Object.keys(nodes).forEach((nodeId) => {
+          const node = nodes[nodeId];
+          if (node?.data?.props?.animationType !== undefined) {
+            actions.setProp(nodeId, (props: Record<string, unknown>) => {
+              props.animationType = animationType;
+            });
+          }
+        });
+      } catch {
+        // noop
+      }
+      setShowAnimMenu(false);
+    },
+    [query, actions]
+  );
+
+  const animMenuRef = React.useRef<HTMLDivElement>(null);
+
+  // Close anim dropdown on click outside
+  React.useEffect(() => {
+    if (!showAnimMenu) return;
+    const handler = (e: MouseEvent) => {
+      const el = animMenuRef.current;
+      if (el && !el.contains(e.target as Node)) {
+        setShowAnimMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showAnimMenu]);
 
   return (
     <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative ${t('bg-[#e2e8f0]', 'bg-[#1f1f1f]')}`}>
@@ -451,6 +509,90 @@ export const Viewport = ({
                   }}
                 />
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Animation preset */}
+        <div ref={animMenuRef} style={{ position: 'relative' }}>
+          <button
+            type="button"
+            title="Animation preset"
+            onClick={() => setShowAnimMenu(!showAnimMenu)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 28,
+              height: 28,
+              borderRadius: 6,
+              background: animPreset !== 'none' ? 'rgba(255,107,53,0.15)' : 'transparent',
+              border: animPreset !== 'none' ? '1px solid rgba(255,107,53,0.4)' : '1px solid transparent',
+              cursor: 'pointer',
+              color: animPreset !== 'none' ? '#FF6B35' : '#a1a1aa',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M5 3l14 9-14 9V3z" />
+            </svg>
+          </button>
+
+          {showAnimMenu && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                marginTop: 8,
+                zIndex: 100,
+                background: '#1a1a1a',
+                border: '1px solid rgba(255,107,53,0.3)',
+                borderRadius: 10,
+                padding: 8,
+                minWidth: 180,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  color: '#666',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  padding: '4px 8px 8px',
+                  letterSpacing: '0.08em',
+                }}
+              >
+                Animation preset
+              </div>
+              {ANIM_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applyAnimPreset(preset.id)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: animPreset === preset.id ? 'rgba(255,107,53,0.1)' : 'transparent',
+                    color: animPreset === preset.id ? '#FF6B35' : '#d4d4d8',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    textAlign: 'left',
+                  }}
+                >
+                  <span style={{ fontSize: 14, width: 18 }}>{preset.icon}</span>
+                  {preset.label}
+                  {animPreset === preset.id && (
+                    <span style={{ marginLeft: 'auto', fontSize: 10, color: '#FF6B35' }}>✓</span>
+                  )}
+                </button>
+              ))}
             </div>
           )}
         </div>
