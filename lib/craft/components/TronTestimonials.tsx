@@ -62,6 +62,20 @@ interface TronTestimonialsProps {
   animateDelay?: string;
 }
 
+// Legacy format: { quote, author, role } — normalize to new format
+function normalizeTestimonialItem(raw: unknown): TestimonialItem {
+  if (raw && typeof raw === 'object') {
+    const o = raw as Record<string, unknown>;
+    const name = (o.name ?? o.author ?? '') as string;
+    const text = (o.text ?? o.quote ?? '') as string;
+    const role = (o.role ?? '') as string;
+    const company = (o.company ?? '') as string;
+    const rating = typeof o.rating === 'number' ? o.rating : 5;
+    return { name: String(name ?? ''), role: String(role ?? ''), company: String(company ?? ''), text: String(text ?? ''), rating };
+  }
+  return { name: '', role: '', company: '', text: '', rating: 5 };
+}
+
 // ── CSS animation injection ───────────────────────────────────────────────
 const STYLE_ID = 'testimonials-animation';
 
@@ -129,7 +143,7 @@ function TestimonialCardDisplay({ item, t, accentColor, enabled }: TestimonialCa
           <span
             key={i}
             style={{
-              color: i < item.rating ? accentColor : t.border,
+              color: i < (item.rating ?? 5) ? accentColor : t.border,
               fontSize: 14,
             }}
           >
@@ -146,7 +160,7 @@ function TestimonialCardDisplay({ item, t, accentColor, enabled }: TestimonialCa
           margin: '0 0 20px 0',
         }}
       >
-        &quot;{item.text}&quot;
+        &quot;{item.text ?? ''}&quot;
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -165,13 +179,13 @@ function TestimonialCardDisplay({ item, t, accentColor, enabled }: TestimonialCa
             flexShrink: 0,
           }}
         >
-          {item.name.charAt(0)}
+          {(item.name ?? '').charAt(0) || '?'}
         </div>
         <div>
-          <div style={{ color: t.text, fontSize: 13, fontWeight: 600 }}>{item.name}</div>
+          <div style={{ color: t.text, fontSize: 13, fontWeight: 600 }}>{item.name ?? ''}</div>
           <div style={{ color: t.textSecondary, fontSize: 12 }}>
-            {item.role}
-            {item.company ? ` · ${item.company}` : ''}
+            {item.role ?? ''}
+            {(item.company ?? '') ? ` · ${item.company}` : ''}
           </div>
         </div>
       </div>
@@ -285,7 +299,8 @@ export const TronTestimonials = React.memo(function TronTestimonials() {
     if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
   }
 
-  const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
+  const rawList = Array.isArray(items) ? items : DEFAULT_ITEMS;
+  const list = rawList.map(normalizeTestimonialItem);
   const titleWords = (title ?? '').split(' ');
   const firstWord = titleWords[0] ?? '';
   const restWords = titleWords.slice(1).join(' ');
@@ -501,7 +516,8 @@ function TronTestimonialsSettings() {
 
   const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
   const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
-  const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
+  const rawList = Array.isArray(items) ? items : DEFAULT_ITEMS;
+  const list = rawList.map(normalizeTestimonialItem);
 
   const updateItem = (i: number, field: keyof TestimonialItem, value: string | number) => {
     setProp((p: Record<string, unknown>) => {
