@@ -144,6 +144,7 @@ export const TronContact = React.memo(function TronContact() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
+    boxSizing: 'border-box',
     padding: '12px 16px',
     background: t.cardBg,
     border: `1px solid ${t.border}`,
@@ -168,11 +169,11 @@ export const TronContact = React.memo(function TronContact() {
       }}
     >
       <div
-        className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 max-w-6xl mx-auto w-full min-w-0"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 max-w-6xl mx-auto w-full"
         {...animAttrs}
       >
         {/* Left column — info */}
-        <div className="flex flex-col justify-center w-full min-w-0">
+        <div className="w-full flex flex-col">
           <h2
             style={{
               fontSize: 'clamp(28px, 4vw, 48px)',
@@ -230,26 +231,25 @@ export const TronContact = React.memo(function TronContact() {
 
         {/* Right column — form card */}
         <div
-          className="w-full min-w-0"
+          className="w-full"
           style={{
             background: t.cardBg,
             border: `1px solid ${t.border}`,
             borderRadius: 16,
-            padding: 40,
-            boxSizing: 'border-box',
+            padding: '32px 24px',
           }}
         >
           <form onSubmit={(e) => e.preventDefault()} className="flex flex-col w-full">
             <input
               type="text"
               placeholder={namePlaceholder}
-              style={inputStyle}
+              style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
               readOnly={enabled}
             />
             <input
               type="email"
               placeholder={emailPlaceholder}
-              style={inputStyle}
+              style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
               readOnly={enabled}
             />
             <textarea
@@ -257,6 +257,8 @@ export const TronContact = React.memo(function TronContact() {
               rows={5}
               style={{
                 ...inputStyle,
+                width: '100%',
+                boxSizing: 'border-box',
                 resize: 'vertical',
                 minHeight: 120,
               }}
