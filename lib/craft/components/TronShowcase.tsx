@@ -299,22 +299,6 @@ export const TronShowcase = React.memo(function TronShowcase() {
   const [isMobile, setIsMobile] = React.useState(false);
   const [activeIndex, setActiveIndex] = React.useState(0);
 
-  React.useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setIsMobile((entry?.contentRect?.width ?? 0) < 520);
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  React.useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    setIsMobile(el.getBoundingClientRect().width < 520);
-  }, [layoutStyle]);
-
   const props = useNode((node) => node.data.props as Partial<TronShowcaseProps>) ?? {};
   const {
     colorScheme = 'dark',
@@ -340,6 +324,22 @@ export const TronShowcase = React.memo(function TronShowcase() {
   };
 
   const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setIsMobile((entry?.contentRect?.width ?? 0) < 520);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    setIsMobile(el.getBoundingClientRect().width < 520);
+  }, [layoutStyle]);
 
   React.useEffect(() => {
     if (list.length === 0) return;
