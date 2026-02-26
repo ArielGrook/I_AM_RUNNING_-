@@ -332,8 +332,13 @@ export const TronShowcase = React.memo(function TronShowcase() {
   React.useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const checkWidth = () => setIsMobile(el.getBoundingClientRect().width < 520);
+
+    const checkWidth = () => {
+      setIsMobile(el.getBoundingClientRect().width < 520);
+    };
+
     checkWidth();
+
     const observer = new ResizeObserver(([entry]) => {
       setIsMobile((entry?.contentRect?.width ?? 0) < 520);
     });

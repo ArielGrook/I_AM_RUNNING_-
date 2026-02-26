@@ -109,6 +109,13 @@ export const TronContact = React.memo(function TronContact() {
   React.useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+
+    const checkWidth = () => {
+      setIsMobile(el.getBoundingClientRect().width < 520);
+    };
+
+    checkWidth();
+
     const observer = new ResizeObserver(([entry]) => {
       setIsMobile((entry?.contentRect?.width ?? 0) < 520);
     });
@@ -176,7 +183,6 @@ export const TronContact = React.memo(function TronContact() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
-      key={`${scheme}-${showGrid}`}
       data-block-type="contact"
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
