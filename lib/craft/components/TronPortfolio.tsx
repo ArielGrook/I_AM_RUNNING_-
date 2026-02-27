@@ -5,6 +5,8 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from './TronStats';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { MediaLibrary } from '@/components/craft/MediaLibrary';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -46,6 +48,7 @@ export interface PortfolioItem {
   description: string;
   category: string;
   imageBase64?: string;
+  imageUrl?: string;
 }
 
 interface TronPortfolioProps {
@@ -68,12 +71,12 @@ interface TronPortfolioProps {
 function normalizePortfolioItem(raw: unknown): PortfolioItem {
   if (raw && typeof raw === 'object') {
     const o = raw as Record<string, unknown>;
-    const img = (o.imageBase64 as string) || (o.imageUrl as string) || undefined;
     return {
       title: String(o.title ?? ''),
       description: String(o.description ?? ''),
       category: String(o.category ?? ''),
-      imageBase64: img || undefined,
+      imageBase64: (o.imageBase64 as string) || undefined,
+      imageUrl: (o.imageUrl as string) || undefined,
     };
   }
   return { title: '', description: '', category: '' };
@@ -118,9 +121,9 @@ function PortfolioCard({ item, index, accentColor, t, hexToRgb, enabled, onSaveC
       }}
     >
       <div style={{ position: 'relative', aspectRatio: '16/10', overflow: 'hidden' }}>
-        {item.imageBase64 ? (
+        {(item.imageUrl ?? item.imageBase64) ? (
           <img
-            src={item.imageBase64}
+            src={item.imageUrl ?? item.imageBase64}
             alt={item.title}
             style={{
               width: '100%',
@@ -502,6 +505,8 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
 // ── Settings ──────────────────────────────────────────────────────────────
 function TronPortfolioSettings() {
   const { actions: { setProp } } = useNode();
+  const { user } = useAuth();
+  const [showMedia, setShowMedia] = React.useState<number | null>(null);
   const props = useNode((node) => node.data.props as Partial<TronPortfolioProps>) ?? {};
   const {
     title = 'Our work',
@@ -659,18 +664,17 @@ function TronPortfolioSettings() {
               {/* Upload + удалить item */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {item.imageBase64 && (
+                  {(item.imageUrl ?? item.imageBase64) && (
                     <img
-                      src={item.imageBase64}
+                      src={item.imageUrl ?? item.imageBase64}
                       alt=""
                       style={{ width: 48, height: 32, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
                     />
                   )}
-                  <label
+                  <button
+                    type="button"
+                    onClick={() => setShowMedia(i)}
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
                       padding: '5px 10px',
                       borderRadius: 6,
                       cursor: 'pointer',
@@ -679,34 +683,18 @@ function TronPortfolioSettings() {
                       color: '#FF6B35',
                       fontSize: 11,
                       fontWeight: 500,
-                      whiteSpace: 'nowrap',
                     }}
                   >
-                    {item.imageBase64 ? '↺ Change image' : '+ Upload image'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          const base64 = ev.target?.result as string;
-                          setProp((p: Record<string, unknown>) => {
-                            const items = [...((p.items as PortfolioItem[]) ?? [])];
-                            if (items[i]) items[i] = { ...items[i], imageBase64: base64 };
-                            p.items = items;
-                          }, 0);
-                        };
-                        reader.readAsDataURL(file);
-                      }}
-                    />
-                  </label>
-                  {item.imageBase64 && (
+                    {(item.imageUrl ?? item.imageBase64) ? '↺ Change' : '+ Add image'}
+                  </button>
+                  {(item.imageUrl ?? item.imageBase64) && (
                     <button
                       type="button"
-                      onClick={() => updateItem(i, 'imageBase64', undefined)}
+                      onClick={() => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as PortfolioItem[]) ?? [])];
+                        if (items[i]) items[i] = { ...items[i], imageUrl: undefined, imageBase64: undefined };
+                        p.items = items;
+                      }, 0)}
                       style={{
                         background: 'none',
                         border: 'none',
@@ -910,6 +898,24 @@ function TronPortfolioSettings() {
           </div>
         </div>
       </div>
+
+      {showMedia !== null && user && (
+        <MediaLibrary
+          userId={user.id}
+          accept="image"
+          onSelect={(url) => {
+            setProp((p: Record<string, unknown>) => {
+              const items = [...((p.items as PortfolioItem[]) ?? [])];
+              if (items[showMedia] !== undefined) {
+                items[showMedia] = { ...items[showMedia], imageUrl: url, imageBase64: undefined };
+              }
+              p.items = items;
+            }, 0);
+            setShowMedia(null);
+          }}
+          onClose={() => setShowMedia(null)}
+        />
+      )}
     </div>
   );
 }

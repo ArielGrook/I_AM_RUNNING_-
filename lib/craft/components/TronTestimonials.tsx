@@ -5,6 +5,8 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from './TronStats';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { MediaLibrary } from '@/components/craft/MediaLibrary';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -48,6 +50,7 @@ export interface TestimonialItem {
   text: string;
   rating: number;
   avatarBase64?: string;
+  avatarUrl?: string;
 }
 
 interface TronTestimonialsProps {
@@ -75,8 +78,9 @@ function normalizeTestimonialItem(raw: unknown): TestimonialItem {
     const role = (o.role ?? '') as string;
     const company = (o.company ?? '') as string;
     const rating = typeof o.rating === 'number' ? o.rating : 5;
-    const avatarBase64 = (o.avatarBase64 ?? o.avatarUrl ?? '') as string;
-    return { name: String(name ?? ''), role: String(role ?? ''), company: String(company ?? ''), text: String(text ?? ''), rating, avatarBase64: avatarBase64 || undefined };
+    const avatarBase64 = (o.avatarBase64 as string) || undefined;
+    const avatarUrl = (o.avatarUrl as string) || undefined;
+    return { name: String(name ?? ''), role: String(role ?? ''), company: String(company ?? ''), text: String(text ?? ''), rating, avatarBase64, avatarUrl };
   }
   return { name: '', role: '', company: '', text: '', rating: 5 };
 }
@@ -132,7 +136,8 @@ interface TestimonialCardDisplayProps {
 function TestimonialCardDisplay({ item, index, t, accentColor, enabled, onSaveText, onSaveName, onSaveRole, onSaveCompany }: TestimonialCardDisplayProps) {
   const [hovered, setHovered] = React.useState(false);
   const [imgError, setImgError] = React.useState(false);
-  const showAvatar = item.avatarBase64 && !imgError;
+  const avatarSrc = item.avatarUrl ?? item.avatarBase64;
+  const showAvatar = avatarSrc && !imgError;
   const initial = (item.name ?? '').charAt(0) || '?';
 
   return (
@@ -193,7 +198,7 @@ function TestimonialCardDisplay({ item, index, t, accentColor, enabled, onSaveTe
         >
           {showAvatar ? (
             <img
-              src={item.avatarBase64!}
+              src={avatarSrc!}
               alt={item.name ?? ''}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={() => setImgError(true)}
@@ -596,6 +601,8 @@ function TestimonialCardSettings() {
 // ── Settings ──────────────────────────────────────────────────────────────
 function TronTestimonialsSettings() {
   const { actions: { setProp } } = useNode();
+  const { user } = useAuth();
+  const [showMedia, setShowMedia] = React.useState<number | null>(null);
   const props = useNode((node) => node.data.props as Partial<TronTestimonialsProps>) ?? {};
   const {
     title = 'Loved by teams worldwide',
@@ -740,18 +747,17 @@ function TronTestimonialsSettings() {
                 placeholder="Testimonial text"
               />
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                {item.avatarBase64 && (
+                {(item.avatarUrl ?? item.avatarBase64) && (
                   <img
-                    src={item.avatarBase64}
+                    src={item.avatarUrl ?? item.avatarBase64}
                     alt=""
                     style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
                   />
                 )}
-                <label
+                <button
+                  type="button"
+                  onClick={() => setShowMedia(i)}
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
                     padding: '5px 10px',
                     borderRadius: 6,
                     cursor: 'pointer',
@@ -760,37 +766,17 @@ function TronTestimonialsSettings() {
                     color: '#FF6B35',
                     fontSize: 11,
                     fontWeight: 500,
-                    whiteSpace: 'nowrap',
                   }}
                 >
-                  {item.avatarBase64 ? '↺ Change photo' : '+ Upload photo'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = (ev) => {
-                        const base64 = ev.target?.result as string;
-                        setProp((p: Record<string, unknown>) => {
-                          const items = [...((p.items as TestimonialItem[]) ?? [])];
-                          if (items[i]) items[i] = { ...items[i], avatarBase64: base64 };
-                          p.items = items;
-                        }, 0);
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                </label>
-                {item.avatarBase64 && (
+                  {(item.avatarUrl ?? item.avatarBase64) ? '↺ Change' : '+ Add photo'}
+                </button>
+                {(item.avatarUrl ?? item.avatarBase64) && (
                   <button
                     type="button"
                     onClick={() =>
                       setProp((p: Record<string, unknown>) => {
                         const items = [...((p.items as TestimonialItem[]) ?? [])];
-                        if (items[i]) items[i] = { ...items[i], avatarBase64: undefined };
+                        if (items[i]) items[i] = { ...items[i], avatarUrl: undefined, avatarBase64: undefined };
                         p.items = items;
                       }, 0)
                     }
@@ -945,6 +931,24 @@ function TronTestimonialsSettings() {
           </div>
         </div>
       </div>
+
+      {showMedia !== null && user && (
+        <MediaLibrary
+          userId={user.id}
+          accept="image"
+          onSelect={(url) => {
+            setProp((p: Record<string, unknown>) => {
+              const items = [...((p.items as TestimonialItem[]) ?? [])];
+              if (items[showMedia] !== undefined) {
+                items[showMedia] = { ...items[showMedia], avatarUrl: url, avatarBase64: undefined };
+              }
+              p.items = items;
+            }, 0);
+            setShowMedia(null);
+          }}
+          onClose={() => setShowMedia(null)}
+        />
+      )}
     </div>
   );
 }

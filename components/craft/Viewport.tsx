@@ -5,6 +5,8 @@ import React, { useState, useCallback } from 'react';
 import lz from 'lzutf8';
 import { useEditorTheme } from './EditorThemeContext';
 import { COLOR_PRESETS } from '@/lib/craft/presets/colors';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { MediaLibrary } from '@/components/craft/MediaLibrary';
 
 type DeviceMode = 'desktop' | 'tablet' | 'mobile';
 
@@ -82,6 +84,8 @@ export const Viewport = ({
   const [showSpotlightMenu, setShowSpotlightMenu] = useState(false);
   const [spotlightPos, setSpotlightPos] = useState({ x: -9999, y: -9999 });
   const [headerHeight, setHeaderHeight] = useState(0);
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const { user } = useAuth();
   const { t } = useEditorTheme();
 
   const applySchemeToTronNodes = useCallback(
@@ -285,6 +289,15 @@ export const Viewport = ({
         />
       )}
 
+      {showMediaLibrary && user && (
+        <MediaLibrary
+          userId={user.id}
+          accept="all"
+          onSelect={() => setShowMediaLibrary(false)}
+          onClose={() => setShowMediaLibrary(false)}
+        />
+      )}
+
       {/* Secondary toolbar — viewport, accent presets, zoom (editor always dark) */}
       <div
         className="craft-canvas-toolbar flex items-center justify-between gap-3 shrink-0 px-4 h-11 border-b"
@@ -399,6 +412,31 @@ export const Viewport = ({
           title={canvasScheme === 'dark' ? 'Switch canvas to light' : 'Switch canvas to dark'}
         >
           {canvasScheme === 'dark' ? '☀' : '☾'}
+        </button>
+
+        {/* Media Library */}
+        <button
+          type="button"
+          title="Media Library"
+          onClick={() => setShowMediaLibrary(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 28,
+            height: 28,
+            borderRadius: 6,
+            background: 'transparent',
+            border: '1px solid transparent',
+            cursor: 'pointer',
+            color: '#a1a1aa',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
         </button>
 
         {/* Spotlight cursor */}

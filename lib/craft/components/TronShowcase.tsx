@@ -5,6 +5,8 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from './TronStats';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { MediaLibrary } from '@/components/craft/MediaLibrary';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -56,6 +58,7 @@ interface ShowcaseTab {
   body: string;
   bullets?: ShowcaseBullet[];
   imageBase64?: string;
+  imageUrl?: string;
   videoUrl?: string;
   mediaType?: 'image' | 'video';
   ctaText?: string;
@@ -278,9 +281,9 @@ function TabContentPanel({
               </div>
             );
           })()
-        ) : item.imageBase64 ? (
+        ) : (item.imageUrl ?? item.imageBase64) ? (
           <img
-            src={item.imageBase64}
+            src={item.imageUrl ?? item.imageBase64}
             alt=""
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
@@ -744,6 +747,8 @@ export const TronShowcase = React.memo(function TronShowcase() {
 // ── Settings ─────────────────────────────────────────────────────────────
 function TronShowcaseSettings() {
   const { actions: { setProp } } = useNode();
+  const { user } = useAuth();
+  const [showMedia, setShowMedia] = React.useState<number | null>(null);
   const props = useNode((node) => node.data.props as Partial<TronShowcaseProps>) ?? {};
   const {
     title = 'Everything you need',
@@ -1029,18 +1034,17 @@ function TronShowcaseSettings() {
                 </div>
                 {(item.mediaType ?? 'image') === 'image' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {item.imageBase64 && (
+                    {(item.imageUrl ?? item.imageBase64) && (
                       <img
-                        src={item.imageBase64}
+                        src={item.imageUrl ?? item.imageBase64}
                         alt=""
                         style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
                       />
                     )}
-                    <label
+                    <button
+                      type="button"
+                      onClick={() => setShowMedia(i)}
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
                         padding: '5px 10px',
                         borderRadius: 6,
                         cursor: 'pointer',
@@ -1051,31 +1055,16 @@ function TronShowcaseSettings() {
                         fontWeight: 500,
                       }}
                     >
-                      {item.imageBase64 ? '↺ Change' : '+ Upload image'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            const base64 = ev.target?.result as string;
-                            setProp((p: Record<string, unknown>) => {
-                              const items = [...((p.items as ShowcaseTab[]) ?? [])];
-                              if (items[i]) items[i] = { ...items[i], imageBase64: base64 };
-                              p.items = items;
-                            }, 0);
-                          };
-                          reader.readAsDataURL(file);
-                        }}
-                      />
-                    </label>
-                    {item.imageBase64 && (
+                      {(item.imageUrl ?? item.imageBase64) ? '↺ Change' : '+ Add image'}
+                    </button>
+                    {(item.imageUrl ?? item.imageBase64) && (
                       <button
                         type="button"
-                        onClick={() => updateItem(i, 'imageBase64', undefined)}
+                        onClick={() => setProp((p: Record<string, unknown>) => {
+                          const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                          if (items[i]) items[i] = { ...items[i], imageUrl: undefined, imageBase64: undefined };
+                          p.items = items;
+                        }, 0)}
                         style={{ background: 'none', border: 'none', color: '#71717a', cursor: 'pointer' }}
                       >
                         ×
@@ -1201,6 +1190,24 @@ function TronShowcaseSettings() {
           </div>
         </div>
       </div>
+
+      {showMedia !== null && user && (
+        <MediaLibrary
+          userId={user.id}
+          accept="image"
+          onSelect={(url) => {
+            setProp((p: Record<string, unknown>) => {
+              const items = [...((p.items as ShowcaseTab[]) ?? [])];
+              if (items[showMedia] !== undefined) {
+                items[showMedia] = { ...items[showMedia], imageUrl: url, imageBase64: undefined };
+              }
+              p.items = items;
+            }, 0);
+            setShowMedia(null);
+          }}
+          onClose={() => setShowMedia(null)}
+        />
+      )}
     </div>
   );
 }
