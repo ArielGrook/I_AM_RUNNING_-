@@ -7,6 +7,15 @@ const BASE_CSS = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, -apple-system, sans-serif; }
 img { max-width: 100%; height: auto; }
+@keyframes scrollLeft { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+section::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: radial-gradient(600px circle at var(--sx,50%) var(--sy,50%), rgba(var(--sa,255,107,53),0.04), transparent 40%);
+  pointer-events:none;
+  z-index:0;
+}
 `;
 
 // Рендер одного нода в HTML строку
@@ -105,7 +114,10 @@ function sectionWrap(content: string, props: Record<string, unknown>, name: stri
   const bg = colorScheme === 'dark' ? String(props.darkBg ?? '#0a0a0a') : String(props.lightBg ?? '#ffffff');
   const minH = `${String(props.sectionHeight ?? 80)}vh`;
   const accent = String(props.accentColor ?? '#FF6B35');
+  const showGrid = props.showGrid !== false;
+  const gridColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)';
   return `<section id="${name.toLowerCase().replace('tron', '').replace('hero', 'hero')}" style="background:${bg};min-height:${minH};position:relative;" data-accent="${accent}" data-scheme="${colorScheme}">
+  ${showGrid ? `<div style="position:absolute;inset:0;background-image:linear-gradient(${gridColor} 1px,transparent 1px),linear-gradient(90deg,${gridColor} 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0;"></div>` : ''}
   <div style="position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:80px 24px;">
     ${content}
   </div>
@@ -160,8 +172,13 @@ function renderHeroTron(props: Record<string, unknown>): string {
   const dark = String(props.colorScheme ?? 'dark') === 'dark';
   const bg = dark ? String(props.darkBg ?? '#0a0a0a') : String(props.lightBg ?? '#ffffff');
   const minH = `${String(props.sectionHeight ?? 85)}vh`;
+  const showGrid = props.showGrid !== false;
+  const gridColor = String(props.colorScheme ?? 'dark') === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)';
 
-  return `<section style="background:${bg};min-height:${minH};display:flex;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px;">
+  return `<section style="background:${bg};min-height:${minH};position:relative;">
+  ${showGrid ? `<div style="position:absolute;inset:0;background-image:linear-gradient(${gridColor} 1px,transparent 1px),linear-gradient(90deg,${gridColor} 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0;"></div>` : ''}
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%, rgba(${hexToRgb(c.accent)},0.15), transparent 70%);pointer-events:none;z-index:0;"></div>
+  <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:120px 24px 80px;min-height:${minH};">
   <div style="max-width:800px;">
     ${props.showBadge !== false && props.badge ? `<div style="display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:999px;background:rgba(${hexToRgb(c.accent)},0.1);border:1px solid rgba(${hexToRgb(c.accent)},0.2);color:${c.accent};font-size:13px;font-weight:500;margin-bottom:32px;">${esc(props.badge)}</div>` : ''}
     <h1 style="color:${c.text};font-size:clamp(40px,6vw,80px);font-weight:800;line-height:1.1;margin-bottom:16px;letter-spacing:-0.02em;">${esc(props.headline ?? '')}</h1>
@@ -171,7 +188,8 @@ function renderHeroTron(props: Record<string, unknown>): string {
       <a href="#" style="background:${c.accent};color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-size:16px;font-weight:600;">${esc(props.primaryCta ?? 'Get started')}</a>
       ${props.showSecondaryCta !== false && props.secondaryCta ? `<a href="#" style="border:1px solid ${c.border};color:${c.text};padding:14px 32px;border-radius:10px;text-decoration:none;font-size:16px;font-weight:500;">${esc(props.secondaryCta)}</a>` : ''}
     </div>
-    ${props.showSocialProof && props.socialProofText ? `<p style="color:${c.secondary};font-size:14px;margin-top:32px;">${esc(props.socialProofText)}</p>` : ''}
+    ${props.showSocialProof && props.socialProofText ? `<p style="color:${c.secondary};font-size:14px;margin-top:32px;display:flex;align-items:center;gap:8px;justify-content:center;"><span style="color:${c.accent};">★★★★★</span> ${esc(props.socialProofText)}</p>` : ''}
+  </div>
   </div>
 </section>`;
 }
@@ -210,7 +228,7 @@ function renderTronFeatures(props: Record<string, unknown>): string {
     .map(
       (item) =>
         `<div style="${cardCss}">
-      <div style="color:${c.accent};margin-bottom:16px;">${ICONS[item.iconKey ?? ''] ?? ICONS.bullet}</div>
+      <div style="color:${c.accent};margin-bottom:16px;display:flex;align-items:center;">${(ICONS[item.iconKey ?? ''] ?? ICONS.bullet).replace(/stroke="currentColor"/g, `stroke="${c.accent}"`).replace(/fill="currentColor"/g, `fill="${c.accent}"`)}</div>
       <h3 style="color:${c.text};font-size:18px;font-weight:700;margin-bottom:12px;">${esc(item.title)}</h3>
       <p style="color:${c.secondary};font-size:15px;line-height:1.6;">${esc(item.description)}</p>
     </div>`
@@ -262,7 +280,8 @@ function renderTronTestimonials(props: Record<string, unknown>): string {
     .join('');
 
   const header = sectionHeader(props.title, props.subtitle, c.text, c.secondary);
-  return sectionWrap(`${header}<div style="display:flex;gap:24px;overflow-x:auto;padding-bottom:16px;">${itemsHtml}</div>`, props, 'testimonials');
+  const track = `<div style="display:flex;gap:24px;animation:scrollLeft 30s linear infinite;">${itemsHtml}${itemsHtml}</div>`;
+  return sectionWrap(`${header}<div style="overflow:hidden;position:relative;">${track}</div>`, props, 'testimonials');
 }
 
 function renderTronPricing(props: Record<string, unknown>): string {
@@ -582,6 +601,26 @@ export function craftJsonToHtml(craftJsonString: string): ExportResult {
 </head>
 <body>
 ${bodyContent}
+<script>
+(function(){
+  const spots = document.querySelectorAll('section');
+  document.addEventListener('mousemove', function(e){
+    spots.forEach(function(s){
+      const r = s.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+      const accent = s.dataset.accent || '#FF6B35';
+      const hex = accent.replace('#','');
+      const r2 = parseInt(hex.slice(0,2),16);
+      const g2 = parseInt(hex.slice(2,4),16);
+      const b2 = parseInt(hex.slice(4,6),16);
+      s.style.setProperty('--sx', x+'px');
+      s.style.setProperty('--sy', y+'px');
+      s.style.setProperty('--sa', r2+','+g2+','+b2);
+    });
+  });
+})();
+</script>
 </body>
 </html>`;
 
