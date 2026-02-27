@@ -4,6 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { EditableText } from './TronStats';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -124,16 +125,26 @@ const DEFAULT_ITEMS: ShowcaseTab[] = [
 // ── Tab content panel (shared by tabs-left, tabs-top, accordion) ───────────
 function TabContentPanel({
   item,
+  itemIndex,
   t,
   accentColor,
   enabled,
   constrainTextWidth,
+  onSaveTitle,
+  onSaveBody,
+  onSaveBullet,
+  onSaveCta,
 }: {
   item: ShowcaseTab;
+  itemIndex: number;
   t: Record<string, string>;
   accentColor: string;
   enabled: boolean;
   constrainTextWidth?: boolean;
+  onSaveTitle: (val: string) => void;
+  onSaveBody: (val: string) => void;
+  onSaveBullet: (bi: number, val: string) => void;
+  onSaveCta: (val: string) => void;
 }) {
   const textContent = (
     <>
@@ -146,7 +157,11 @@ function TabContentPanel({
           marginTop: 0,
         }}
       >
-        {item.title || 'Title'}
+        {enabled ? (
+          <EditableText value={item.title ?? ''} fieldKey={`showcase-${itemIndex}-title`} tag="span" style={{ color: t.text, fontWeight: 700 }} enabled={enabled} onSave={onSaveTitle} />
+        ) : (
+          item.title || 'Title'
+        )}
       </h3>
       <p
         style={{
@@ -157,7 +172,11 @@ function TabContentPanel({
           marginTop: 0,
         }}
       >
-        {item.body || 'Body text'}
+        {enabled ? (
+          <EditableText value={item.body ?? ''} fieldKey={`showcase-${itemIndex}-body`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={onSaveBody} />
+        ) : (
+          item.body || 'Body text'
+        )}
       </p>
       {item.bullets?.map((b, bi) => (
         <div
@@ -185,10 +204,16 @@ function TabContentPanel({
           >
             ✓
           </span>
-          <span style={{ color: t.text, fontSize: 14 }}>{b.text}</span>
+          <span style={{ color: t.text, fontSize: 14 }}>
+            {enabled ? (
+              <EditableText value={b.text ?? ''} fieldKey={`showcase-${itemIndex}-bullet-${bi}`} tag="span" style={{ color: t.text }} enabled={enabled} onSave={(val) => onSaveBullet(bi, val)} />
+            ) : (
+              b.text
+            )}
+          </span>
         </div>
       ))}
-      {item.ctaShow && item.ctaText && (
+      {((item.ctaShow || enabled) && (item.ctaText || enabled)) && (
         <button
           type="button"
           style={{
@@ -203,7 +228,11 @@ function TabContentPanel({
             cursor: enabled ? 'default' : 'pointer',
           }}
         >
-          {item.ctaText}
+          {enabled ? (
+            <EditableText value={item.ctaText ?? ''} fieldKey={`showcase-${itemIndex}-cta`} tag="span" style={{ color: '#fff', fontWeight: 600 }} enabled={enabled} onSave={onSaveCta} />
+          ) : (
+            item.ctaText
+          )}
         </button>
       )}
     </>
@@ -291,7 +320,7 @@ function TabContentPanel({
 
 // ── Main component ────────────────────────────────────────────────────────
 export const TronShowcase = React.memo(function TronShowcase() {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
@@ -402,27 +431,22 @@ export const TronShowcase = React.memo(function TronShowcase() {
         {...animAttrs}
       >
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h2
-            style={{
-              fontSize: 'clamp(28px, 4vw, 48px)',
-              fontWeight: 700,
-              color: t.text,
-              margin: 0,
-              marginBottom: 16,
-            }}
-          >
-            {title}
-          </h2>
-          <p
-            style={{
-              fontSize: 16,
-              color: t.textSecondary,
-              lineHeight: 1.6,
-              margin: 0,
-            }}
-          >
-            {subtitle}
-          </p>
+          <EditableText
+            value={title ?? ''}
+            fieldKey="title"
+            tag="h2"
+            style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: t.text, margin: 0, marginBottom: 16 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.title = val; }, 0)}
+          />
+          <EditableText
+            value={subtitle ?? ''}
+            fieldKey="subtitle"
+            tag="p"
+            style={{ fontSize: 16, color: t.textSecondary, lineHeight: 1.6, margin: 0 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
+          />
         </div>
 
         {isMobile ? (
@@ -462,7 +486,15 @@ export const TronShowcase = React.memo(function TronShowcase() {
                     fontWeight: 500,
                   }}
                 >
-                  {item.label}
+                  {enabled ? (
+                    <EditableText value={item.label ?? ''} fieldKey={`showcase-${i}-label`} tag="span" style={{ color: t.text, fontWeight: 500 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                      const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                      items[i] = { ...items[i], label: val };
+                      p.items = items;
+                    }, 0)} />
+                  ) : (
+                    item.label
+                  )}
                   <span
                     style={{
                       transform: displayActiveIndex === i ? 'rotate(45deg)' : 'rotate(0)',
@@ -485,9 +517,32 @@ export const TronShowcase = React.memo(function TronShowcase() {
                   <div style={{ padding: '0 20px 20px' }}>
                     <TabContentPanel
                       item={item}
+                      itemIndex={i}
                       t={t}
                       accentColor={accentColor}
                       enabled={enabled}
+                      onSaveTitle={(val) => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                        items[i] = { ...items[i], title: val };
+                        p.items = items;
+                      }, 0)}
+                      onSaveBody={(val) => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                        items[i] = { ...items[i], body: val };
+                        p.items = items;
+                      }, 0)}
+                      onSaveBullet={(bi, val) => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                        const bullets = [...(items[i]?.bullets ?? [])];
+                        bullets[bi] = { ...bullets[bi], text: val };
+                        items[i] = { ...items[i], bullets };
+                        p.items = items;
+                      }, 0)}
+                      onSaveCta={(val) => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                        items[i] = { ...items[i], ctaText: val };
+                        p.items = items;
+                      }, 0)}
                     />
                   </div>
                 </div>
@@ -542,7 +597,15 @@ export const TronShowcase = React.memo(function TronShowcase() {
                       transition: 'color 0.2s',
                     }}
                   >
-                    {item.label}
+                    {enabled ? (
+                      <EditableText value={item.label ?? ''} fieldKey={`showcase-${i}-label`} tag="span" style={{ color: effectiveActiveIndex === i ? accentColor : t.text, fontWeight: 600 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                        items[i] = { ...items[i], label: val };
+                        p.items = items;
+                      }, 0)} />
+                    ) : (
+                      item.label
+                    )}
                   </div>
                   <div
                     style={{
@@ -551,7 +614,15 @@ export const TronShowcase = React.memo(function TronShowcase() {
                       lineHeight: 1.5,
                     }}
                   >
-                    {item.description}
+                    {enabled ? (
+                      <EditableText value={item.description ?? ''} fieldKey={`showcase-${i}-desc`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                        items[i] = { ...items[i], description: val };
+                        p.items = items;
+                      }, 0)} />
+                    ) : (
+                      item.description
+                    )}
                   </div>
                 </button>
               ))}
@@ -560,10 +631,33 @@ export const TronShowcase = React.memo(function TronShowcase() {
               {effectiveActiveItem && (
                 <TabContentPanel
                   item={effectiveActiveItem}
+                  itemIndex={effectiveActiveIndex}
                   t={t}
                   accentColor={accentColor}
                   enabled={enabled}
                   constrainTextWidth
+                  onSaveTitle={(val) => setProp((p: Record<string, unknown>) => {
+                    const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                    items[effectiveActiveIndex] = { ...items[effectiveActiveIndex], title: val };
+                    p.items = items;
+                  }, 0)}
+                  onSaveBody={(val) => setProp((p: Record<string, unknown>) => {
+                    const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                    items[effectiveActiveIndex] = { ...items[effectiveActiveIndex], body: val };
+                    p.items = items;
+                  }, 0)}
+                  onSaveBullet={(bi, val) => setProp((p: Record<string, unknown>) => {
+                    const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                    const bullets = [...(items[effectiveActiveIndex]?.bullets ?? [])];
+                    bullets[bi] = { ...bullets[bi], text: val };
+                    items[effectiveActiveIndex] = { ...items[effectiveActiveIndex], bullets };
+                    p.items = items;
+                  }, 0)}
+                  onSaveCta={(val) => setProp((p: Record<string, unknown>) => {
+                    const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                    items[effectiveActiveIndex] = { ...items[effectiveActiveIndex], ctaText: val };
+                    p.items = items;
+                  }, 0)}
                 />
               )}
             </div>
@@ -597,16 +691,47 @@ export const TronShowcase = React.memo(function TronShowcase() {
                     transition: 'all 0.2s',
                   }}
                 >
-                  {item.label}
+                  {enabled ? (
+                    <EditableText value={item.label ?? ''} fieldKey={`showcase-${i}-label`} tag="span" style={{ color: effectiveActiveIndex === i ? accentColor : t.textSecondary, fontWeight: effectiveActiveIndex === i ? 600 : 400 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                      const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                      items[i] = { ...items[i], label: val };
+                      p.items = items;
+                    }, 0)} />
+                  ) : (
+                    item.label
+                  )}
                 </button>
               ))}
             </div>
             {effectiveActiveItem && (
               <TabContentPanel
                 item={effectiveActiveItem}
+                itemIndex={effectiveActiveIndex}
                 t={t}
                 accentColor={accentColor}
                 enabled={enabled}
+                onSaveTitle={(val) => setProp((p: Record<string, unknown>) => {
+                  const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                  items[effectiveActiveIndex] = { ...items[effectiveActiveIndex], title: val };
+                  p.items = items;
+                }, 0)}
+                onSaveBody={(val) => setProp((p: Record<string, unknown>) => {
+                  const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                  items[effectiveActiveIndex] = { ...items[effectiveActiveIndex], body: val };
+                  p.items = items;
+                }, 0)}
+                onSaveBullet={(bi, val) => setProp((p: Record<string, unknown>) => {
+                  const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                  const bullets = [...(items[effectiveActiveIndex]?.bullets ?? [])];
+                  bullets[bi] = { ...bullets[bi], text: val };
+                  items[effectiveActiveIndex] = { ...items[effectiveActiveIndex], bullets };
+                  p.items = items;
+                }, 0)}
+                onSaveCta={(val) => setProp((p: Record<string, unknown>) => {
+                  const items = [...((p.items as ShowcaseTab[]) ?? [])];
+                  items[effectiveActiveIndex] = { ...items[effectiveActiveIndex], ctaText: val };
+                  p.items = items;
+                }, 0)}
               />
             )}
           </div>

@@ -4,6 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { EditableText } from './TronStats';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -118,12 +119,17 @@ function useTestimonialsAnimation() {
 // ── TestimonialCard (internal display) ────────────────────────────────────
 interface TestimonialCardDisplayProps {
   item: TestimonialItem;
+  index: number;
   t: { text: string; textSecondary: string; border: string; cardBg: string };
   accentColor: string;
   enabled: boolean;
+  onSaveText: (val: string) => void;
+  onSaveName: (val: string) => void;
+  onSaveRole: (val: string) => void;
+  onSaveCompany: (val: string) => void;
 }
 
-function TestimonialCardDisplay({ item, t, accentColor, enabled }: TestimonialCardDisplayProps) {
+function TestimonialCardDisplay({ item, index, t, accentColor, enabled, onSaveText, onSaveName, onSaveRole, onSaveCompany }: TestimonialCardDisplayProps) {
   const [hovered, setHovered] = React.useState(false);
   const [imgError, setImgError] = React.useState(false);
   const showAvatar = item.avatarBase64 && !imgError;
@@ -167,7 +173,11 @@ function TestimonialCardDisplay({ item, t, accentColor, enabled }: TestimonialCa
           margin: '0 0 20px 0',
         }}
       >
-        &quot;{item.text ?? ''}&quot;
+        {enabled ? (
+          <EditableText value={item.text ?? ''} fieldKey={`testimonial-${index}-text`} tag="span" style={{ color: t.text }} enabled={enabled} onSave={onSaveText} />
+        ) : (
+          <> &quot;{item.text ?? ''}&quot;</>
+        )}
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -206,10 +216,26 @@ function TestimonialCardDisplay({ item, t, accentColor, enabled }: TestimonialCa
           )}
         </div>
         <div>
-          <div style={{ color: t.text, fontSize: 13, fontWeight: 600 }}>{item.name ?? ''}</div>
+          <div style={{ color: t.text, fontSize: 13, fontWeight: 600 }}>
+            {enabled ? (
+              <EditableText value={item.name ?? ''} fieldKey={`testimonial-${index}-name`} tag="span" style={{ color: t.text, fontWeight: 600 }} enabled={enabled} onSave={onSaveName} />
+            ) : (
+              item.name ?? ''
+            )}
+          </div>
           <div style={{ color: t.textSecondary, fontSize: 12 }}>
-            {item.role ?? ''}
-            {(item.company ?? '') ? ` · ${item.company}` : ''}
+            {enabled ? (
+              <>
+                <EditableText value={item.role ?? ''} fieldKey={`testimonial-${index}-role`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={onSaveRole} />
+                {(item.company ?? '') ? ' · ' : ''}
+                <EditableText value={item.company ?? ''} fieldKey={`testimonial-${index}-company`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={onSaveCompany} />
+              </>
+            ) : (
+              <>
+                {item.role ?? ''}
+                {(item.company ?? '') ? ` · ${item.company}` : ''}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -264,7 +290,7 @@ const DEFAULT_ITEMS: TestimonialItem[] = [
 
 // ── Main component ────────────────────────────────────────────────────────
 export const TronTestimonials = React.memo(function TronTestimonials() {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
@@ -326,9 +352,6 @@ export const TronTestimonials = React.memo(function TronTestimonials() {
 
   const rawList = Array.isArray(items) ? items : DEFAULT_ITEMS;
   const list = rawList.map(normalizeTestimonialItem);
-  const titleWords = (title ?? '').split(' ');
-  const firstWord = titleWords[0] ?? '';
-  const restWords = titleWords.slice(1).join(' ');
 
   const scrollDuration = `${speed ?? 40}s`;
   const scrollDurationRow2 = `${(speed ?? 40) * 1.2}s`;
@@ -354,28 +377,22 @@ export const TronTestimonials = React.memo(function TronTestimonials() {
     >
       <div className="max-w-6xl mx-auto w-full">
         <div className="text-center mb-12 md:mb-16">
-          <h2
-            style={{
-              fontSize: 'clamp(28px, 4vw, 48px)',
-              fontWeight: 700,
-              color: t.text,
-              margin: 0,
-            }}
-          >
-            <span style={{ color: t.accent }}>{firstWord}</span>
-            {restWords ? ` ${restWords}` : ''}
-          </h2>
-          <p
-            style={{
-              fontSize: 16,
-              color: t.textSecondary,
-              marginTop: 12,
-              marginBottom: 0,
-              lineHeight: 1.6,
-            }}
-          >
-            {subtitle}
-          </p>
+          <EditableText
+            value={title ?? ''}
+            fieldKey="title"
+            tag="h2"
+            style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: t.text, margin: 0 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.title = val; }, 0)}
+          />
+          <EditableText
+            value={subtitle ?? ''}
+            fieldKey="subtitle"
+            tag="p"
+            style={{ fontSize: 16, color: t.textSecondary, marginTop: 12, marginBottom: 0, lineHeight: 1.6 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
+          />
         </div>
 
         <div
@@ -393,15 +410,39 @@ export const TronTestimonials = React.memo(function TronTestimonials() {
               className="testimonials-track-left"
               style={{ display: 'flex', gap: 20, width: 'max-content' }}
             >
-              {[...list, ...list].map((item, i) => (
-                <TestimonialCardDisplay
-                  key={i}
-                  item={item}
-                  t={t}
-                  accentColor={accentColor}
-                  enabled={enabled}
-                />
-              ))}
+              {[...list, ...list].map((item, i) => {
+                const idx = i % list.length;
+                return (
+                  <TestimonialCardDisplay
+                    key={i}
+                    item={item}
+                    index={idx}
+                    t={t}
+                    accentColor={accentColor}
+                    enabled={enabled}
+                    onSaveText={(val) => setProp((p: Record<string, unknown>) => {
+                      const items = [...((p.items as TestimonialItem[]) ?? [])];
+                      items[idx] = { ...items[idx], text: val };
+                      p.items = items;
+                    }, 0)}
+                    onSaveName={(val) => setProp((p: Record<string, unknown>) => {
+                      const items = [...((p.items as TestimonialItem[]) ?? [])];
+                      items[idx] = { ...items[idx], name: val };
+                      p.items = items;
+                    }, 0)}
+                    onSaveRole={(val) => setProp((p: Record<string, unknown>) => {
+                      const items = [...((p.items as TestimonialItem[]) ?? [])];
+                      items[idx] = { ...items[idx], role: val };
+                      p.items = items;
+                    }, 0)}
+                    onSaveCompany={(val) => setProp((p: Record<string, unknown>) => {
+                      const items = [...((p.items as TestimonialItem[]) ?? [])];
+                      items[idx] = { ...items[idx], company: val };
+                      p.items = items;
+                    }, 0)}
+                  />
+                );
+              })}
             </div>
           </div>
 
@@ -419,15 +460,39 @@ export const TronTestimonials = React.memo(function TronTestimonials() {
                 className="testimonials-track-right"
                 style={{ display: 'flex', gap: 20, width: 'max-content' }}
               >
-                {[...list, ...list].map((item, i) => (
-                  <TestimonialCardDisplay
-                    key={i}
-                    item={item}
-                    t={t}
-                    accentColor={accentColor}
-                    enabled={enabled}
-                  />
-                ))}
+                {[...list, ...list].map((item, i) => {
+                  const idx = i % list.length;
+                  return (
+                    <TestimonialCardDisplay
+                      key={i}
+                      item={item}
+                      index={idx}
+                      t={t}
+                      accentColor={accentColor}
+                      enabled={enabled}
+                      onSaveText={(val) => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as TestimonialItem[]) ?? [])];
+                        items[idx] = { ...items[idx], text: val };
+                        p.items = items;
+                      }, 0)}
+                      onSaveName={(val) => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as TestimonialItem[]) ?? [])];
+                        items[idx] = { ...items[idx], name: val };
+                        p.items = items;
+                      }, 0)}
+                      onSaveRole={(val) => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as TestimonialItem[]) ?? [])];
+                        items[idx] = { ...items[idx], role: val };
+                        p.items = items;
+                      }, 0)}
+                      onSaveCompany={(val) => setProp((p: Record<string, unknown>) => {
+                        const items = [...((p.items as TestimonialItem[]) ?? [])];
+                        items[idx] = { ...items[idx], company: val };
+                        p.items = items;
+                      }, 0)}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
@@ -479,9 +544,14 @@ export const TestimonialCard = React.memo(function TestimonialCard({
     >
       <TestimonialCardDisplay
         item={item}
+        index={0}
         t={t}
         accentColor={accentColor ?? '#FF6B35'}
         enabled={false}
+        onSaveText={() => {}}
+        onSaveName={() => {}}
+        onSaveRole={() => {}}
+        onSaveCompany={() => {}}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { EditableText } from './TronStats';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -90,13 +91,17 @@ const DEFAULT_ITEMS: PortfolioItem[] = [
 // ── PortfolioCard (internal display) ───────────────────────────────────────
 interface PortfolioCardProps {
   item: PortfolioItem;
+  index: number;
   accentColor: string;
   t: { text: string; textSecondary: string; border: string; cardBg: string };
   hexToRgb: (hex: string) => string;
   enabled: boolean;
+  onSaveCategory: (val: string) => void;
+  onSaveTitle: (val: string) => void;
+  onSaveDescription: (val: string) => void;
 }
 
-function PortfolioCard({ item, accentColor, t, hexToRgb, enabled }: PortfolioCardProps) {
+function PortfolioCard({ item, index, accentColor, t, hexToRgb, enabled, onSaveCategory, onSaveTitle, onSaveDescription }: PortfolioCardProps) {
   const [hovered, setHovered] = React.useState(false);
 
   return (
@@ -164,11 +169,27 @@ function PortfolioCard({ item, accentColor, t, hexToRgb, enabled }: PortfolioCar
             marginBottom: 6,
           }}
         >
-          {item.category}
+          {enabled ? (
+            <EditableText value={item.category ?? ''} fieldKey={`portfolio-${index}-category`} tag="span" style={{ color: accentColor }} enabled={enabled} onSave={onSaveCategory} />
+          ) : (
+            item.category
+          )}
         </div>
-        <div style={{ color: t.text, fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{item.title}</div>
-        {item.description && (
-          <div style={{ color: t.textSecondary, fontSize: 14, lineHeight: 1.6 }}>{item.description}</div>
+        <div style={{ color: t.text, fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
+          {enabled ? (
+            <EditableText value={item.title ?? ''} fieldKey={`portfolio-${index}-title`} tag="span" style={{ color: t.text, fontWeight: 600 }} enabled={enabled} onSave={onSaveTitle} />
+          ) : (
+            item.title
+          )}
+        </div>
+        {(item.description || enabled) && (
+          <div style={{ color: t.textSecondary, fontSize: 14, lineHeight: 1.6 }}>
+            {enabled ? (
+              <EditableText value={item.description ?? ''} fieldKey={`portfolio-${index}-desc`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={onSaveDescription} />
+            ) : (
+              item.description
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -177,7 +198,7 @@ function PortfolioCard({ item, accentColor, t, hexToRgb, enabled }: PortfolioCar
 
 // ── Main component ────────────────────────────────────────────────────────
 export const TronPortfolio = React.memo(function TronPortfolio() {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
@@ -308,9 +329,6 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
     if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
   }
 
-  const titleWords = (title ?? '').split(' ');
-  const firstWord = titleWords[0] ?? '';
-  const restWords = titleWords.slice(1).join(' ');
   const gap = 20;
   const slideWidth = carouselWidth > 0 ? (carouselWidth - gap * (visible - 1)) / visible : 0;
   const translateX = -currentIndex * (slideWidth + gap);
@@ -335,28 +353,22 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
     >
       <div className="max-w-6xl mx-auto w-full" {...animAttrs}>
         <div className="text-center mb-12 md:mb-16">
-          <h2
-            style={{
-              fontSize: 'clamp(28px, 4vw, 48px)',
-              fontWeight: 700,
-              color: t.text,
-              margin: 0,
-            }}
-          >
-            <span style={{ color: t.accent }}>{firstWord}</span>
-            {restWords ? ` ${restWords}` : ''}
-          </h2>
-          <p
-            style={{
-              fontSize: 16,
-              color: t.textSecondary,
-              marginTop: 12,
-              marginBottom: 0,
-              lineHeight: 1.6,
-            }}
-          >
-            {subtitle}
-          </p>
+          <EditableText
+            value={title ?? ''}
+            fieldKey="title"
+            tag="h2"
+            style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: t.text, margin: 0 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.title = val; }, 0)}
+          />
+          <EditableText
+            value={subtitle ?? ''}
+            fieldKey="subtitle"
+            tag="p"
+            style={{ fontSize: 16, color: t.textSecondary, marginTop: 12, marginBottom: 0, lineHeight: 1.6 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
+          />
         </div>
 
         <div style={{ position: 'relative', width: '100%' }}>
@@ -379,7 +391,29 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
                     width: carouselWidth > 0 ? slideWidth : `calc((100% - ${gap * (visible - 1)}px) / ${visible})`,
                   }}
                 >
-                  <PortfolioCard item={item} accentColor={accentColor} t={t} hexToRgb={hexToRgb} enabled={enabled} />
+                  <PortfolioCard
+                    item={item}
+                    index={i}
+                    accentColor={accentColor}
+                    t={t}
+                    hexToRgb={hexToRgb}
+                    enabled={enabled}
+                    onSaveCategory={(val) => setProp((p: Record<string, unknown>) => {
+                      const items = [...((p.items as PortfolioItem[]) ?? [])];
+                      items[i] = { ...items[i], category: val };
+                      p.items = items;
+                    }, 0)}
+                    onSaveTitle={(val) => setProp((p: Record<string, unknown>) => {
+                      const items = [...((p.items as PortfolioItem[]) ?? [])];
+                      items[i] = { ...items[i], title: val };
+                      p.items = items;
+                    }, 0)}
+                    onSaveDescription={(val) => setProp((p: Record<string, unknown>) => {
+                      const items = [...((p.items as PortfolioItem[]) ?? [])];
+                      items[i] = { ...items[i], description: val };
+                      p.items = items;
+                    }, 0)}
+                  />
                 </div>
               ))}
             </div>

@@ -4,6 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { EditableText } from './TronStats';
 
 // ── Tokens (darkBg/lightBg from props, like TronContact) ─────────────────
 function buildTokens(darkBg: string, lightBg: string) {
@@ -88,7 +89,7 @@ const DEFAULT_COLUMNS: FooterColumn[] = [
 
 // ── Main component ────────────────────────────────────────────────────────
 export const TronFooter = React.memo(function TronFooter() {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
@@ -140,10 +141,6 @@ export const TronFooter = React.memo(function TronFooter() {
   const cols = Array.isArray(columns) ? columns : DEFAULT_COLUMNS;
   const socials = Array.isArray(socialLinks) ? socialLinks : [];
 
-  const brandWords = (brandName ?? '').split(' ');
-  const firstWord = brandWords[0] ?? '';
-  const restBrand = brandWords.slice(1).join(' ');
-
   const sectionRef = React.useRef<HTMLElement | null>(null);
 
   return (
@@ -190,7 +187,7 @@ export const TronFooter = React.memo(function TronFooter() {
                 marginBottom: 16,
               }}
             >
-              {firstWord ? firstWord.charAt(0).toUpperCase() : 'C'}
+              {brandName ? brandName.charAt(0).toUpperCase() : 'C'}
             </div>
             <h3
               style={{
@@ -200,8 +197,11 @@ export const TronFooter = React.memo(function TronFooter() {
                 margin: '0 0 8px',
               }}
             >
-              <span style={{ color: t.accent }}>{firstWord}</span>
-              {restBrand ? ` ${restBrand}` : ''}
+              {enabled ? (
+                <EditableText value={brandName ?? ''} fieldKey="brandName" tag="span" style={{ color: t.text, fontWeight: 600 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.brandName = val; }, 0)} />
+              ) : (
+                brandName
+              )}
             </h3>
             <p
               style={{
@@ -212,7 +212,11 @@ export const TronFooter = React.memo(function TronFooter() {
                 maxWidth: 280,
               }}
             >
-              {brandDescription}
+              {enabled ? (
+                <EditableText value={brandDescription ?? ''} fieldKey="brandDescription" tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.brandDescription = val; }, 0)} />
+              ) : (
+                brandDescription
+              )}
             </p>
             {showSocials && socials.length > 0 && (
               <div
@@ -267,7 +271,15 @@ export const TronFooter = React.memo(function TronFooter() {
                       margin: '0 0 12px',
                     }}
                   >
-                    {col.title}
+                    {enabled ? (
+                      <EditableText value={col.title ?? ''} fieldKey={`footer-col-${i}-title`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                        const cols = [...((p.columns as FooterColumn[]) ?? [])];
+                        cols[i] = { ...cols[i], title: val };
+                        p.columns = cols;
+                      }, 0)} />
+                    ) : (
+                      col.title
+                    )}
                   </h4>
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                     {(col.links ?? []).map((link, j) => (
@@ -280,7 +292,17 @@ export const TronFooter = React.memo(function TronFooter() {
                             textDecoration: 'none',
                           }}
                         >
-                          {link.label}
+                          {enabled ? (
+                            <EditableText value={link.label ?? ''} fieldKey={`footer-col-${i}-link-${j}`} tag="span" style={{ color: t.text }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                              const cols = [...((p.columns as FooterColumn[]) ?? [])];
+                              const links = [...(cols[i]?.links ?? [])];
+                              links[j] = { ...links[j], label: val };
+                              cols[i] = { ...cols[i], links };
+                              p.columns = cols;
+                            }, 0)} />
+                          ) : (
+                            link.label
+                          )}
                         </a>
                       </li>
                     ))}
@@ -301,7 +323,15 @@ export const TronFooter = React.memo(function TronFooter() {
                     margin: '0 0 12px',
                   }}
                 >
-                  {col.title}
+                  {enabled ? (
+                    <EditableText value={col.title ?? ''} fieldKey={`footer-col-${i}-title`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                      const cols = [...((p.columns as FooterColumn[]) ?? [])];
+                      cols[i] = { ...cols[i], title: val };
+                      p.columns = cols;
+                    }, 0)} />
+                  ) : (
+                    col.title
+                  )}
                 </h4>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {(col.links ?? []).map((link, j) => (
@@ -314,7 +344,17 @@ export const TronFooter = React.memo(function TronFooter() {
                           textDecoration: 'none',
                         }}
                       >
-                        {link.label}
+                        {enabled ? (
+                          <EditableText value={link.label ?? ''} fieldKey={`footer-col-${i}-link-${j}`} tag="span" style={{ color: t.text }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                            const cols = [...((p.columns as FooterColumn[]) ?? [])];
+                            const links = [...(cols[i]?.links ?? [])];
+                            links[j] = { ...links[j], label: val };
+                            cols[i] = { ...cols[i], links };
+                            p.columns = cols;
+                          }, 0)} />
+                        ) : (
+                          link.label
+                        )}
                       </a>
                     </li>
                   ))}
@@ -338,7 +378,11 @@ export const TronFooter = React.memo(function TronFooter() {
               margin: 0,
             }}
           >
-            {copyright}
+            {enabled ? (
+              <EditableText value={copyright ?? ''} fieldKey="copyright" tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.copyright = val; }, 0)} />
+            ) : (
+              copyright
+            )}
           </p>
         </div>
       </div>

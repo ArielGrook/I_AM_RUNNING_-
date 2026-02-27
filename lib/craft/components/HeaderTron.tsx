@@ -4,6 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React, { useState, useContext } from 'react';
 import { PagesContext } from '@/lib/craft/context/PagesContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { EditableText } from './TronStats';
 
 type NavLinkType = 'section' | 'page' | 'external';
 type NavLinkItem = { label: string; href: string; type?: NavLinkType };
@@ -48,7 +49,7 @@ export const HeaderTron = ({
   animationType?: string;
   animateDelay?: string;
 }) => {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { navigateTo } = useContext(PagesContext);
@@ -98,7 +99,9 @@ export const HeaderTron = ({
   };
   const t = tokens[colorScheme];
 
-  const logoDisplay = logoText?.length ? (
+  const logoDisplay = enabled ? (
+    <EditableText value={logoText ?? ''} fieldKey="logoText" tag="span" style={{ color: t.text, fontSize: 20, fontWeight: 800 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.logoText = val; }, 0)} />
+  ) : logoText?.length ? (
     <>
       <span style={{ color: t.accent }}>{logoText[0]}</span>
       <span style={{ color: t.text }}>{logoText.slice(1)}</span>
@@ -144,7 +147,15 @@ export const HeaderTron = ({
                 onMouseLeave={() => setHoveredNavIndex(null)}
                 style={{ fontSize: 14, fontWeight: 500, color: hoveredNavIndex === i ? t.text : t.textSecondary, transition: 'color 150ms ease', textDecoration: 'none', cursor: 'pointer' }}
               >
-                {link.label}
+                {enabled ? (
+                  <EditableText value={link.label ?? ''} fieldKey={`nav-${i}-label`} tag="span" style={{ color: hoveredNavIndex === i ? t.text : t.textSecondary }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                    const arr = [...((p.navLinks as NavLinkItem[]) ?? [])];
+                    arr[i] = { ...arr[i], label: val };
+                    p.navLinks = arr;
+                  }, 0)} />
+                ) : (
+                  link.label
+                )}
               </a>
             ))}
           </nav>
@@ -158,7 +169,11 @@ export const HeaderTron = ({
                 onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
               >
-                {ctaText}
+                {enabled ? (
+                  <EditableText value={ctaText ?? ''} fieldKey="ctaText" tag="span" style={{ color: '#ffffff', fontWeight: 600 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.ctaText = val; }, 0)} />
+                ) : (
+                  ctaText
+                )}
               </a>
             )}
             <button
@@ -190,7 +205,15 @@ export const HeaderTron = ({
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = t.accent; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = t.text; }}
               >
-                {link.label}
+                {enabled ? (
+                  <EditableText value={link.label ?? ''} fieldKey={`nav-mobile-${i}-label`} tag="span" style={{ color: t.text }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                    const arr = [...((p.navLinks as NavLinkItem[]) ?? [])];
+                    arr[i] = { ...arr[i], label: val };
+                    p.navLinks = arr;
+                  }, 0)} />
+                ) : (
+                  link.label
+                )}
               </a>
             ))}
           </nav>

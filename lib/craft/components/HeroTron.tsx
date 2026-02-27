@@ -177,7 +177,7 @@ export const HeroTron = React.memo(function HeroTron() {
         style={{ position: 'relative', zIndex: 1 }}
         {...animAttrs}
       >
-        {showBadge && badge && (
+        {showBadge && (badge || enabled) && (
           <div
             style={{
               display: 'inline-flex',
@@ -193,7 +193,11 @@ export const HeroTron = React.memo(function HeroTron() {
               marginBottom: 24,
             }}
           >
-            {badge}
+            {enabled ? (
+              <EditableText value={badge ?? ''} fieldKey="badge" tag="span" style={{ color: accentColor }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.badge = val; }, 0)} />
+            ) : (
+              badge
+            )}
           </div>
         )}
 
@@ -271,7 +275,11 @@ export const HeroTron = React.memo(function HeroTron() {
               cursor: enabled ? 'default' : 'pointer',
             }}
           >
-            {primaryCta}
+            {enabled ? (
+              <EditableText value={primaryCta ?? ''} fieldKey="primaryCta" tag="span" style={{ color: '#fff', fontWeight: 600 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.primaryCta = val; }, 0)} />
+            ) : (
+              primaryCta
+            )}
           </button>
 
           {showSecondaryCta && (
@@ -288,7 +296,11 @@ export const HeroTron = React.memo(function HeroTron() {
                 cursor: enabled ? 'default' : 'pointer',
               }}
             >
-              {secondaryCta}
+              {enabled ? (
+                <EditableText value={secondaryCta ?? ''} fieldKey="secondaryCta" tag="span" style={{ color: t.text, fontWeight: 500 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.secondaryCta = val; }, 0)} />
+              ) : (
+                secondaryCta
+              )}
             </button>
           )}
         </div>
@@ -312,7 +324,11 @@ export const HeroTron = React.memo(function HeroTron() {
               ))}
             </div>
             <span style={{ color: t.textSecondary, fontSize: 14 }}>
-              {socialProofText}
+              {enabled ? (
+                <EditableText value={socialProofText ?? ''} fieldKey="socialProofText" tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.socialProofText = val; }, 0)} />
+              ) : (
+                socialProofText
+              )}
             </span>
           </div>
         )}

@@ -4,6 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { EditableText } from './TronStats';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -65,7 +66,7 @@ const DEFAULT_ITEMS: FAQItem[] = [
 
 // ── Main component ────────────────────────────────────────────────────────
 export const TronFAQ = React.memo(function TronFAQ() {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
@@ -123,7 +124,15 @@ export const TronFAQ = React.memo(function TronFAQ() {
   const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
   const displayOpenIndex = enabled ? 0 : openIndex;
 
-  const accordionItems = list.map((item, i) => (
+  const accordionItems = list.map((item, i) => {
+    const updateItem = (field: 'question' | 'answer', val: string) => {
+      setProp((p: Record<string, unknown>) => {
+        const arr = [...((p.items as FAQItem[]) ?? [])];
+        arr[i] = { ...arr[i], [field]: val };
+        p.items = arr;
+      }, 0);
+    };
+    return (
     <div
       key={i}
       style={{
@@ -184,7 +193,11 @@ export const TronFAQ = React.memo(function TronFAQ() {
               lineHeight: 1.4,
             }}
           >
-            {item.question || 'Question'}
+            {enabled ? (
+              <EditableText value={item.question ?? ''} fieldKey={`faq-${i}-q`} tag="span" style={{ color: t.text, fontWeight: 500 }} enabled={enabled} onSave={(val) => updateItem('question', val)} />
+            ) : (
+              item.question || 'Question'
+            )}
           </span>
         </div>
         <div
@@ -223,11 +236,16 @@ export const TronFAQ = React.memo(function TronFAQ() {
             lineHeight: 1.75,
           }}
         >
-          {item.answer || 'Answer'}
+          {enabled ? (
+            <EditableText value={item.answer ?? ''} fieldKey={`faq-${i}-a`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={(val) => updateItem('answer', val)} />
+          ) : (
+            item.answer || 'Answer'
+          )}
         </p>
       </div>
     </div>
-  ));
+  );
+  });
 
   return (
     <section
@@ -265,27 +283,22 @@ export const TronFAQ = React.memo(function TronFAQ() {
             }}
           >
             <div style={{ position: isMobile ? 'relative' : 'sticky', top: 40 }}>
-              <h2
-                style={{
-                  fontSize: 'clamp(28px, 4vw, 48px)',
-                  fontWeight: 700,
-                  color: t.text,
-                  margin: 0,
-                  marginBottom: 16,
-                }}
-              >
-                {title}
-              </h2>
-              <p
-                style={{
-                  fontSize: 16,
-                  color: t.textSecondary,
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}
-              >
-                {subtitle}
-              </p>
+              <EditableText
+                value={title ?? ''}
+                fieldKey="title"
+                tag="h2"
+                style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: t.text, margin: 0, marginBottom: 16 }}
+                enabled={enabled}
+                onSave={(val) => setProp((p: Record<string, unknown>) => { p.title = val; }, 0)}
+              />
+              <EditableText
+                value={subtitle ?? ''}
+                fieldKey="subtitle"
+                tag="p"
+                style={{ fontSize: 16, color: t.textSecondary, lineHeight: 1.6, margin: 0 }}
+                enabled={enabled}
+                onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
+              />
               {showCta && layoutStyle === 'split' && (
                 <button
                   type="button"
@@ -301,7 +314,11 @@ export const TronFAQ = React.memo(function TronFAQ() {
                     cursor: enabled ? 'default' : 'pointer',
                   }}
                 >
-                  {ctaText}
+                  {enabled ? (
+                    <EditableText value={ctaText ?? ''} fieldKey="ctaText" tag="span" style={{ color: '#fff', fontWeight: 600 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.ctaText = val; }, 0)} />
+                  ) : (
+                    ctaText
+                  )}
                 </button>
               )}
             </div>
@@ -310,27 +327,22 @@ export const TronFAQ = React.memo(function TronFAQ() {
         ) : (
           <div style={{ maxWidth: 720, margin: '0 auto', width: '100%' }}>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <h2
-                style={{
-                  fontSize: 'clamp(28px, 4vw, 48px)',
-                  fontWeight: 700,
-                  color: t.text,
-                  margin: 0,
-                  marginBottom: 16,
-                }}
-              >
-                {title}
-              </h2>
-              <p
-                style={{
-                  fontSize: 16,
-                  color: t.textSecondary,
-                  lineHeight: 1.6,
-                  margin: 0,
-                }}
-              >
-                {subtitle}
-              </p>
+              <EditableText
+                value={title ?? ''}
+                fieldKey="title"
+                tag="h2"
+                style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: t.text, margin: 0, marginBottom: 16 }}
+                enabled={enabled}
+                onSave={(val) => setProp((p: Record<string, unknown>) => { p.title = val; }, 0)}
+              />
+              <EditableText
+                value={subtitle ?? ''}
+                fieldKey="subtitle"
+                tag="p"
+                style={{ fontSize: 16, color: t.textSecondary, lineHeight: 1.6, margin: 0 }}
+                enabled={enabled}
+                onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
+              />
             </div>
             <div>{accordionItems}</div>
           </div>

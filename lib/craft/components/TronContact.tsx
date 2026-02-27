@@ -4,6 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { EditableText } from './TronStats';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -99,7 +100,7 @@ function normalizeContactItem(item: unknown): ContactInfo {
 
 // ── Main component ────────────────────────────────────────────────────────
 export const TronContact = React.memo(function TronContact() {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
@@ -155,9 +156,6 @@ export const TronContact = React.memo(function TronContact() {
   }
 
   const list = (Array.isArray(contactInfo) ? contactInfo : DEFAULT_CONTACT_INFO).map(normalizeContactItem);
-  const titleWords = (title ?? '').split(' ');
-  const firstWord = titleWords[0] ?? '';
-  const restWords = titleWords.slice(1).join(' ');
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -218,28 +216,22 @@ export const TronContact = React.memo(function TronContact() {
       >
         {/* Left column — info */}
         <div style={{ width: '100%' }}>
-          <h2
-            style={{
-              fontSize: 'clamp(28px, 4vw, 48px)',
-              fontWeight: 700,
-              color: t.text,
-              marginBottom: 16,
-              marginTop: 0,
-            }}
-          >
-            <span style={{ color: t.accent }}>{firstWord}</span>
-            {restWords ? ` ${restWords}` : ''}
-          </h2>
-          <p
-            style={{
-              fontSize: 16,
-              color: t.textSecondary,
-              lineHeight: 1.6,
-              marginBottom: 0,
-            }}
-          >
-            {subtitle}
-          </p>
+          <EditableText
+            value={title ?? ''}
+            fieldKey="title"
+            tag="h2"
+            style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: t.text, marginBottom: 16, marginTop: 0 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.title = val; }, 0)}
+          />
+          <EditableText
+            value={subtitle ?? ''}
+            fieldKey="subtitle"
+            tag="p"
+            style={{ fontSize: 16, color: t.textSecondary, lineHeight: 1.6, marginBottom: 0 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
+          />
           {list.map((item, i) => (
             <div
               key={i}
@@ -262,10 +254,26 @@ export const TronContact = React.memo(function TronContact() {
               </div>
               <div>
                 <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 2 }}>
-                  {item.label}
+                  {enabled ? (
+                    <EditableText value={item.label ?? ''} fieldKey={`contact-${i}-label`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                      const arr = [...((p.contactInfo as ContactInfo[]) ?? [])];
+                      arr[i] = { ...arr[i], label: val };
+                      p.contactInfo = arr;
+                    }, 0)} />
+                  ) : (
+                    item.label
+                  )}
                 </div>
                 <div style={{ fontSize: 15, color: t.text, fontWeight: 500 }}>
-                  {item.value}
+                  {enabled ? (
+                    <EditableText value={item.value ?? ''} fieldKey={`contact-${i}-value`} tag="span" style={{ color: t.text, fontWeight: 500 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => {
+                      const arr = [...((p.contactInfo as ContactInfo[]) ?? [])];
+                      arr[i] = { ...arr[i], value: val };
+                      p.contactInfo = arr;
+                    }, 0)} />
+                  ) : (
+                    item.value
+                  )}
                 </div>
               </div>
             </div>
@@ -321,7 +329,11 @@ export const TronContact = React.memo(function TronContact() {
                 cursor: enabled ? 'default' : 'pointer',
               }}
             >
-              {submitText}
+              {enabled ? (
+                <EditableText value={submitText ?? ''} fieldKey="submitText" tag="span" style={{ color: '#ffffff', fontWeight: 600 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.submitText = val; }, 0)} />
+              ) : (
+                submitText
+              )}
             </button>
           </form>
         </div>

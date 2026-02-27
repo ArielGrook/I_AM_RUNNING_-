@@ -4,6 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { EditableText } from './TronStats';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -105,15 +106,18 @@ interface TronFeaturesProps {
 // ── FeatureCardDisplay (internal, with hover) ──────────────────────────────
 interface FeatureCardDisplayProps {
   item: FeatureItem;
+  index: number;
   cardStyle: 'border' | 'filled' | 'minimal';
   cardStyles: Record<string, React.CSSProperties>;
   accentColor: string;
   t: { text: string; textSecondary: string };
   hexToRgb: (hex: string) => string;
   enabled: boolean;
+  onSaveTitle: (val: string) => void;
+  onSaveDescription: (val: string) => void;
 }
 
-function FeatureCardDisplay({ item, cardStyle, cardStyles, accentColor, t, hexToRgb, enabled }: FeatureCardDisplayProps) {
+function FeatureCardDisplay({ item, index, cardStyle, cardStyles, accentColor, t, hexToRgb, enabled, onSaveTitle, onSaveDescription }: FeatureCardDisplayProps) {
   const [hovered, setHovered] = React.useState(false);
   const baseStyle = cardStyles[cardStyle ?? 'border'] ?? cardStyles.border;
 
@@ -147,8 +151,20 @@ function FeatureCardDisplay({ item, cardStyle, cardStyles, accentColor, t, hexTo
       >
         {FEATURE_ICONS[item.iconKey] ?? FEATURE_ICONS.zap}
       </div>
-      <h3 style={{ fontSize: 18, fontWeight: 600, color: t.text, margin: 0, marginBottom: 8 }}>{item.title}</h3>
-      <p style={{ fontSize: 14, color: t.textSecondary, lineHeight: 1.6, margin: 0 }}>{item.description}</p>
+      <h3 style={{ fontSize: 18, fontWeight: 600, color: t.text, margin: 0, marginBottom: 8 }}>
+        {enabled ? (
+          <EditableText value={item.title} fieldKey={`feature-${index}-title`} tag="span" style={{ color: t.text, fontWeight: 600 }} enabled={enabled} onSave={onSaveTitle} />
+        ) : (
+          item.title
+        )}
+      </h3>
+      <p style={{ fontSize: 14, color: t.textSecondary, lineHeight: 1.6, margin: 0 }}>
+        {enabled ? (
+          <EditableText value={item.description} fieldKey={`feature-${index}-desc`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={onSaveDescription} />
+        ) : (
+          item.description
+        )}
+      </p>
     </div>
   );
 }
@@ -164,7 +180,7 @@ const DEFAULT_ITEMS: FeatureItem[] = [
 
 // ── Main component ──────────────────────────────────────────────────────────
 export const TronFeatures = React.memo(function TronFeatures() {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
@@ -246,9 +262,6 @@ export const TronFeatures = React.memo(function TronFeatures() {
   }
 
   const list = Array.isArray(items) ? items : DEFAULT_ITEMS;
-  const titleWords = (title ?? '').split(' ');
-  const firstWord = titleWords[0] ?? '';
-  const restWords = titleWords.slice(1).join(' ');
 
   return (
     <section
@@ -270,28 +283,22 @@ export const TronFeatures = React.memo(function TronFeatures() {
     >
       <div className="max-w-6xl mx-auto w-full" {...animAttrs}>
         <div className="text-center mb-12 md:mb-16">
-          <h2
-            style={{
-              fontSize: 'clamp(28px, 4vw, 48px)',
-              fontWeight: 700,
-              color: t.text,
-              margin: 0,
-            }}
-          >
-            <span style={{ color: t.accent }}>{firstWord}</span>
-            {restWords ? ` ${restWords}` : ''}
-          </h2>
-          <p
-            style={{
-              fontSize: 16,
-              color: t.textSecondary,
-              marginTop: 12,
-              marginBottom: 0,
-              lineHeight: 1.6,
-            }}
-          >
-            {subtitle}
-          </p>
+          <EditableText
+            value={title ?? ''}
+            fieldKey="title"
+            tag="h2"
+            style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: t.text, margin: 0 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.title = val; }, 0)}
+          />
+          <EditableText
+            value={subtitle ?? ''}
+            fieldKey="subtitle"
+            tag="p"
+            style={{ fontSize: 16, color: t.textSecondary, marginTop: 12, marginBottom: 0, lineHeight: 1.6 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
+          />
         </div>
 
         <div
@@ -307,12 +314,23 @@ export const TronFeatures = React.memo(function TronFeatures() {
             <FeatureCardDisplay
               key={i}
               item={item}
+              index={i}
               cardStyle={cardStyle}
               cardStyles={cardStyles}
               accentColor={accentColor}
               t={t}
               hexToRgb={hexToRgb}
               enabled={enabled}
+              onSaveTitle={(val) => setProp((p: Record<string, unknown>) => {
+                const items = [...((p.items as FeatureItem[]) ?? [])];
+                items[i] = { ...items[i], title: val };
+                p.items = items;
+              }, 0)}
+              onSaveDescription={(val) => setProp((p: Record<string, unknown>) => {
+                const items = [...((p.items as FeatureItem[]) ?? [])];
+                items[i] = { ...items[i], description: val };
+                p.items = items;
+              }, 0)}
             />
           ))}
         </div>

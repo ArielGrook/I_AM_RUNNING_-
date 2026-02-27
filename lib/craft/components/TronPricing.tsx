@@ -4,6 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { EditableText } from './TronStats';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -169,13 +170,19 @@ const DEFAULT_PLANS: PricingPlan[] = [
 // ── PricingPlanCardDisplay (internal) ──────────────────────────────────────
 interface PricingPlanCardDisplayProps {
   plan: PricingPlan;
+  planIndex: number;
   t: { text: string; textSecondary: string; border: string; cardBg: string };
   accentColor: string;
   enabled: boolean;
   isAnnual?: boolean;
+  onSaveName: (val: string) => void;
+  onSaveSubtitle: (val: string) => void;
+  onSaveFeature: (fi: number, val: string) => void;
+  onSaveCta: (val: string) => void;
+  onSavePopularText: (val: string) => void;
 }
 
-function PricingPlanCardDisplay({ plan, t, accentColor, enabled, isAnnual = false }: PricingPlanCardDisplayProps) {
+function PricingPlanCardDisplay({ plan, planIndex, t, accentColor, enabled, isAnnual = false, onSaveName, onSaveSubtitle, onSaveFeature, onSaveCta, onSavePopularText }: PricingPlanCardDisplayProps) {
   const [hovered, setHovered] = React.useState(false);
   const displayPrice = isAnnual && plan.priceAnnual ? plan.priceAnnual : plan.price;
 
@@ -226,12 +233,20 @@ function PricingPlanCardDisplay({ plan, t, accentColor, enabled, isAnnual = fals
             whiteSpace: 'nowrap',
           }}
         >
-          {plan.popularText ?? 'Most popular'}
+          {enabled ? (
+            <EditableText value={plan.popularText ?? 'Most popular'} fieldKey={`plan-${planIndex}-popular`} tag="span" style={{ color: '#fff' }} enabled={enabled} onSave={onSavePopularText} />
+          ) : (
+            plan.popularText ?? 'Most popular'
+          )}
         </div>
       )}
 
       <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 8 }}>
-        {plan.name}
+        {enabled ? (
+          <EditableText value={plan.name} fieldKey={`plan-${planIndex}-name`} tag="span" style={{ color: t.text, fontWeight: 600 }} enabled={enabled} onSave={onSaveName} />
+        ) : (
+          plan.name
+        )}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
@@ -241,8 +256,14 @@ function PricingPlanCardDisplay({ plan, t, accentColor, enabled, isAnnual = fals
         <span style={{ fontSize: 14, color: t.textSecondary }}>{plan.period}</span>
       </div>
 
-      {plan.subtitle && (
-        <div style={{ fontSize: 13, color: t.textSecondary, marginBottom: 20 }}>{plan.subtitle}</div>
+      {(plan.subtitle || enabled) && (
+        <div style={{ fontSize: 13, color: t.textSecondary, marginBottom: 20 }}>
+          {enabled ? (
+            <EditableText value={plan.subtitle ?? ''} fieldKey={`plan-${planIndex}-subtitle`} tag="span" style={{ color: t.textSecondary }} enabled={enabled} onSave={onSaveSubtitle} />
+          ) : (
+            plan.subtitle
+          )}
+        </div>
       )}
 
       <div
@@ -274,7 +295,13 @@ function PricingPlanCardDisplay({ plan, t, accentColor, enabled, isAnnual = fals
             >
               {feat.included ? '✓' : '×'}
             </span>
-            <span style={{ color: t.text, fontSize: 14 }}>{feat.text}</span>
+            <span style={{ color: t.text, fontSize: 14 }}>
+              {enabled ? (
+                <EditableText value={feat.text} fieldKey={`plan-${planIndex}-feat-${fi}`} tag="span" style={{ color: t.text }} enabled={enabled} onSave={(val) => onSaveFeature(fi, val)} />
+              ) : (
+                feat.text
+              )}
+            </span>
           </div>
         ))}
       </div>
@@ -293,7 +320,11 @@ function PricingPlanCardDisplay({ plan, t, accentColor, enabled, isAnnual = fals
           cursor: 'default',
         }}
       >
-        {plan.ctaText}
+        {enabled ? (
+          <EditableText value={plan.ctaText} fieldKey={`plan-${planIndex}-cta`} tag="span" style={{ color: '#fff', fontWeight: 600 }} enabled={enabled} onSave={onSaveCta} />
+        ) : (
+          plan.ctaText
+        )}
       </button>
     </div>
   );
@@ -301,7 +332,7 @@ function PricingPlanCardDisplay({ plan, t, accentColor, enabled, isAnnual = fals
 
 // ── Main component ────────────────────────────────────────────────────────
 export const TronPricing = React.memo(function TronPricing() {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
@@ -366,10 +397,6 @@ export const TronPricing = React.memo(function TronPricing() {
     ? [...rawPlans].sort((a, b) => (b.isPopular ? 1 : 0) - (a.isPopular ? 1 : 0))
     : rawPlans;
 
-  const titleWords = (title ?? '').split(' ');
-  const firstWord = titleWords[0] ?? '';
-  const restWords = titleWords.slice(1).join(' ');
-
   return (
     <section
       ref={(el) => {
@@ -390,28 +417,22 @@ export const TronPricing = React.memo(function TronPricing() {
     >
       <div className="max-w-6xl mx-auto w-full" {...animAttrs}>
         <div className="text-center mb-12 md:mb-16">
-          <h2
-            style={{
-              fontSize: 'clamp(28px, 4vw, 48px)',
-              fontWeight: 700,
-              color: t.text,
-              margin: 0,
-            }}
-          >
-            <span style={{ color: t.accent }}>{firstWord}</span>
-            {restWords ? ` ${restWords}` : ''}
-          </h2>
-          <p
-            style={{
-              fontSize: 16,
-              color: t.textSecondary,
-              marginTop: 12,
-              marginBottom: 0,
-              lineHeight: 1.6,
-            }}
-          >
-            {subtitle}
-          </p>
+          <EditableText
+            value={title ?? ''}
+            fieldKey="title"
+            tag="h2"
+            style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: t.text, margin: 0 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.title = val; }, 0)}
+          />
+          <EditableText
+            value={subtitle ?? ''}
+            fieldKey="subtitle"
+            tag="p"
+            style={{ fontSize: 16, color: t.textSecondary, marginTop: 12, marginBottom: 0, lineHeight: 1.6 }}
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
+          />
         </div>
 
         {showBillingToggle && (
@@ -475,7 +496,7 @@ export const TronPricing = React.memo(function TronPricing() {
               }}
             >
               Annually
-              {annualDiscount && (
+              {(annualDiscount || enabled) && (
                 <span
                   style={{
                     padding: '2px 8px',
@@ -489,7 +510,11 @@ export const TronPricing = React.memo(function TronPricing() {
                     transition: 'opacity 0.2s',
                   }}
                 >
-                  {annualDiscount}
+                  {enabled ? (
+                    <EditableText value={annualDiscount ?? ''} fieldKey="annualDiscount" tag="span" style={{ color: accentColor, fontWeight: 600 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.annualDiscount = val; }, 0)} />
+                  ) : (
+                    annualDiscount
+                  )}
                 </span>
               )}
             </span>
@@ -505,16 +530,50 @@ export const TronPricing = React.memo(function TronPricing() {
             width: '100%',
           }}
         >
-          {displayPlans.map((plan, i) => (
-            <PricingPlanCardDisplay
-              key={`${i}-${isAnnual}`}
-              plan={plan}
-              t={t}
-              accentColor={accentColor}
-              enabled={enabled}
-              isAnnual={isAnnual}
-            />
-          ))}
+          {displayPlans.map((plan, i) => {
+            const planIndex = rawPlans.findIndex((p) => p === plan);
+            const pi = planIndex >= 0 ? planIndex : i;
+            return (
+              <PricingPlanCardDisplay
+                key={`${i}-${isAnnual}`}
+                plan={plan}
+                planIndex={pi}
+                t={t}
+                accentColor={accentColor}
+                enabled={enabled}
+                isAnnual={isAnnual}
+                onSaveName={(val) => setProp((p: Record<string, unknown>) => {
+                  const arr = [...((p.plans as PricingPlan[]) ?? [])];
+                  if (arr[pi]) arr[pi] = { ...arr[pi], name: val };
+                  p.plans = arr;
+                }, 0)}
+                onSaveSubtitle={(val) => setProp((p: Record<string, unknown>) => {
+                  const arr = [...((p.plans as PricingPlan[]) ?? [])];
+                  if (arr[pi]) arr[pi] = { ...arr[pi], subtitle: val };
+                  p.plans = arr;
+                }, 0)}
+                onSaveFeature={(fi, val) => setProp((p: Record<string, unknown>) => {
+                  const arr = [...((p.plans as PricingPlan[]) ?? [])];
+                  if (arr[pi]?.features) {
+                    const feats = [...arr[pi].features];
+                    if (feats[fi]) feats[fi] = { ...feats[fi], text: val };
+                    arr[pi] = { ...arr[pi], features: feats };
+                  }
+                  p.plans = arr;
+                }, 0)}
+                onSaveCta={(val) => setProp((p: Record<string, unknown>) => {
+                  const arr = [...((p.plans as PricingPlan[]) ?? [])];
+                  if (arr[pi]) arr[pi] = { ...arr[pi], ctaText: val };
+                  p.plans = arr;
+                }, 0)}
+                onSavePopularText={(val) => setProp((p: Record<string, unknown>) => {
+                  const arr = [...((p.plans as PricingPlan[]) ?? [])];
+                  if (arr[pi]) arr[pi] = { ...arr[pi], popularText: val };
+                  p.plans = arr;
+                }, 0)}
+              />
+            );
+          })}
         </div>
       </div>
     </section>
@@ -572,9 +631,15 @@ export const PricingCard = React.memo(function PricingCard({
     >
       <PricingPlanCardDisplay
         plan={plan}
+        planIndex={0}
         t={t}
         accentColor={accentColor ?? '#FF6B35'}
         enabled={false}
+        onSaveName={() => {}}
+        onSaveSubtitle={() => {}}
+        onSaveFeature={() => {}}
+        onSaveCta={() => {}}
+        onSavePopularText={() => {}}
       />
     </div>
   );
