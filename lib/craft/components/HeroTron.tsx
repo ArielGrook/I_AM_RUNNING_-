@@ -4,6 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { EditableText } from './TronStats';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -59,7 +60,7 @@ export interface TronHeroProps {
 
 // ── Main component ────────────────────────────────────────────────────────
 export const HeroTron = React.memo(function HeroTron() {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
@@ -125,10 +126,6 @@ export const HeroTron = React.memo(function HeroTron() {
     animAttrs['data-animate'] = animationType;
     if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
   }
-
-  const headlineWords = (headline ?? '').split(' ');
-  const firstWord = headlineWords[0] ?? '';
-  const restHeadline = headlineWords.slice(1).join(' ');
 
   return (
     <section
@@ -200,7 +197,10 @@ export const HeroTron = React.memo(function HeroTron() {
           </div>
         )}
 
-        <h1
+        <EditableText
+          value={headline ?? ''}
+          fieldKey="headline"
+          tag="h1"
           style={{
             fontSize: 'clamp(40px, 7vw, 96px)',
             fontWeight: 800,
@@ -209,13 +209,15 @@ export const HeroTron = React.memo(function HeroTron() {
             color: t.text,
             margin: '0 0 12px',
           }}
-        >
-          <span style={{ color: accentColor }}>{firstWord}</span>
-          {restHeadline ? ` ${restHeadline}` : ''}
-        </h1>
+          enabled={enabled}
+          onSave={(val) => setProp((p: Record<string, unknown>) => { p.headline = val; }, 0)}
+        />
 
-        {subheadline && (
-          <p
+        {(enabled || subheadline) && (
+          <EditableText
+            value={subheadline ?? ''}
+            fieldKey="subheadline"
+            tag="p"
             style={{
               fontSize: 'clamp(18px, 2.5vw, 24px)',
               fontWeight: 500,
@@ -223,13 +225,16 @@ export const HeroTron = React.memo(function HeroTron() {
               margin: '0 0 12px',
               lineHeight: 1.4,
             }}
-          >
-            {subheadline}
-          </p>
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.subheadline = val; }, 0)}
+          />
         )}
 
-        {subtitle && (
-          <p
+        {(enabled || subtitle) && (
+          <EditableText
+            value={subtitle ?? ''}
+            fieldKey="subtitle"
+            tag="p"
             style={{
               fontSize: 16,
               color: t.textSecondary,
@@ -237,9 +242,9 @@ export const HeroTron = React.memo(function HeroTron() {
               margin: '0 auto',
               maxWidth: 520,
             }}
-          >
-            {subtitle}
-          </p>
+            enabled={enabled}
+            onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
+          />
         )}
 
         {/* CTA buttons */}

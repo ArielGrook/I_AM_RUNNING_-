@@ -5,6 +5,107 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 
+// ── EditableText (double-click to edit on canvas) ───────────────────────────
+export function EditableText({
+  value,
+  fieldKey,
+  tag = 'span',
+  style,
+  enabled,
+  onSave,
+}: {
+  value: string;
+  fieldKey: string;
+  tag?: keyof JSX.IntrinsicElements;
+  style?: React.CSSProperties;
+  enabled: boolean;
+  onSave: (val: string) => void;
+}) {
+  const ref = React.useRef<HTMLElement>(null);
+  const [editing, setEditing] = React.useState(false);
+  const [hover, setHover] = React.useState(false);
+
+  const Tag = tag as 'span';
+
+  React.useEffect(() => {
+    if (editing && ref.current) {
+      ref.current.innerText = value;
+      ref.current.focus();
+      const range = document.createRange();
+      range.selectNodeContents(ref.current);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [editing, value]);
+
+  const handleDoubleClick = () => {
+    if (!enabled) return;
+    setEditing(true);
+  };
+
+  const handleBlur = () => {
+    setEditing(false);
+    const newVal = ref.current?.innerText ?? value;
+    if (newVal !== value) onSave(newVal);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && tag !== 'p') {
+      e.preventDefault();
+      ref.current?.blur();
+    }
+    if (e.key === 'Escape') {
+      if (ref.current) ref.current.innerText = value;
+      ref.current?.blur();
+    }
+  };
+
+  const el = (
+    <Tag
+      ref={ref}
+      contentEditable={editing}
+      suppressContentEditableWarning
+      onDoubleClick={handleDoubleClick}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      onMouseEnter={() => enabled && setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        ...style,
+        outline: editing ? '2px solid rgba(255,107,53,0.6)' : 'none',
+        borderRadius: editing ? 4 : 0,
+        cursor: enabled ? 'text' : 'inherit',
+        minWidth: editing ? 20 : 'auto',
+      }}
+    >
+      {!editing ? value : undefined}
+    </Tag>
+  );
+
+  if (!enabled) return el;
+
+  return (
+    <span style={{ position: 'relative', display: 'inline-block' }}>
+      {hover && !editing && (
+        <span
+          style={{
+            position: 'absolute',
+            top: -20,
+            left: 0,
+            fontSize: 10,
+            color: 'rgba(255,107,53,0.6)',
+            pointerEvents: 'none',
+          }}
+        >
+          Double-click to edit
+        </span>
+      )}
+      {el}
+    </span>
+  );
+}
+
 function useCountUp(target: string, duration: number = 2000, isVisible: boolean = true) {
   const [display, setDisplay] = React.useState('0');
 
@@ -69,9 +170,12 @@ interface StatItemDisplayProps {
   textSecondary: string;
   delay?: number;
   enabled: boolean;
+  index: number;
+  onSaveValue: (val: string) => void;
+  onSaveLabel: (val: string) => void;
 }
 
-function StatItemDisplay({ value, label, prefix, accentColor, textSecondary, delay = 0, enabled }: StatItemDisplayProps) {
+function StatItemDisplay({ value, label, prefix, accentColor, textSecondary, delay = 0, enabled, index, onSaveValue, onSaveLabel }: StatItemDisplayProps) {
   const { ref, inView } = useInView();
   const shouldAnimate = !enabled && inView;
   const fullValue = (prefix && prefix !== '' ? prefix : '') + value;
@@ -97,7 +201,22 @@ function StatItemDisplay({ value, label, prefix, accentColor, textSecondary, del
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        {enabled ? fullValue : displayValue}
+        {enabled ? (
+          <EditableText
+            value={fullValue}
+            fieldKey={`stat-${index}-value`}
+            tag="span"
+            style={{ color: accentColor }}
+            enabled={enabled}
+            onSave={(val) => {
+              const prefixPart = prefix && prefix !== '' ? prefix : '';
+              const valOnly = prefixPart && val.startsWith(prefixPart) ? val.slice(prefixPart.length) : val;
+              onSaveValue(valOnly);
+            }}
+          />
+        ) : (
+          displayValue
+        )}
       </div>
       <div
         style={{
@@ -107,7 +226,18 @@ function StatItemDisplay({ value, label, prefix, accentColor, textSecondary, del
           textTransform: 'uppercase',
         }}
       >
-        {label}
+        {enabled ? (
+          <EditableText
+            value={label}
+            fieldKey={`stat-${index}-label`}
+            tag="span"
+            style={{ color: textSecondary }}
+            enabled={enabled}
+            onSave={onSaveLabel}
+          />
+        ) : (
+          label
+        )}
       </div>
     </div>
   );
@@ -165,7 +295,7 @@ const COLUMNS_CLASS = {
 } as const;
 
 export const TronStats = React.memo(function TronStats() {
-  const { connectors: { connect, drag } } = useNode();
+  const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
@@ -229,6 +359,17 @@ export const TronStats = React.memo(function TronStats() {
               textSecondary={t.textSecondary}
               delay={i * 150}
               enabled={enabled}
+              index={i}
+              onSaveValue={(val) => setProp((p: Record<string, unknown>) => {
+                const stats = [...((p.items as StatItem[]) ?? [])];
+                stats[i] = { ...stats[i], value: val };
+                p.items = stats;
+              }, 0)}
+              onSaveLabel={(val) => setProp((p: Record<string, unknown>) => {
+                const stats = [...((p.items as StatItem[]) ?? [])];
+                stats[i] = { ...stats[i], label: val };
+                p.items = stats;
+              }, 0)}
             />
           ))}
         </div>
