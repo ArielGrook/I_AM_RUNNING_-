@@ -1,4 +1,6 @@
 import { CraftJson, ExportResult } from './types';
+import JSZip from 'jszip';
+import lz from 'lzutf8';
 
 // Базовые стили которые всегда включаются в экспорт
 const BASE_CSS = `
@@ -586,4 +588,60 @@ ${bodyContent}
   const assets = extractMediaUrls(nodes);
 
   return { html, css: BASE_CSS, assets };
+}
+
+export async function generateProjectZip(project: any): Promise<Buffer> {
+  // 1) Extract first page craft data
+  const pages = (project?.data?.craft?.pages ?? []) as Array<Record<string, unknown>>;
+  if (!Array.isArray(pages) || pages.length === 0) {
+    throw new Error('No pages found');
+  }
+
+  const firstPage = pages[0] ?? {};
+  const compressedData = (firstPage as any).desktopData ?? (firstPage as any).data;
+  if (!compressedData || typeof compressedData !== 'string') {
+    throw new Error('No page data');
+  }
+
+  // 2) Decompress craft JSON
+  const craftJsonString = lz.decompress(compressedData, { inputEncoding: 'Base64' }) as string;
+  if (!craftJsonString) {
+    throw new Error('Failed to decompress page data');
+  }
+
+  // 3) Generate HTML/CSS + assets list
+  const { html, css, assets } = craftJsonToHtml(craftJsonString);
+
+  // 4) Build ZIP
+  const zip = new JSZip();
+  zip.file('index.html', html);
+  zip.file('styles.css', css);
+
+  const assetsFolder = zip.folder('assets');
+  if (assetsFolder) {
+    await Promise.allSettled(
+      assets.map(async ({ filename, url }) => {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 5000);
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeout);
+          if (res.ok) {
+            const buffer = await res.arrayBuffer();
+            assetsFolder.file(filename, buffer);
+          }
+        } catch {
+          // noop (best-effort assets)
+        }
+      })
+    );
+  }
+
+  const zipBuffer = await zip.generateAsync({
+    type: 'nodebuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+  });
+
+  return zipBuffer as unknown as Buffer;
 }

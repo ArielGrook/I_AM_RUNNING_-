@@ -66,6 +66,8 @@ export const Toolbar = ({
   const [editingProject, setEditingProject] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState('');
   const [exportingZip, setExportingZip] = React.useState(false);
+  const [deploying, setDeploying] = React.useState(false);
+  const [deployUrl, setDeployUrl] = React.useState<string | null>(null);
 
   const handleSave = () => {
     try {
@@ -111,6 +113,23 @@ export const Toolbar = ({
       alert('Export failed. Check console.');
     } finally {
       setExportingZip(false);
+    }
+  };
+
+  const handleDeploy = async () => {
+    if (!projectId) return;
+    setDeploying(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/deploy`, { method: 'POST' });
+      const data = await res.json();
+      if (data?.url) {
+        setDeployUrl(data.url);
+        window.open(data.url, '_blank');
+      }
+    } catch (err) {
+      console.error('Deploy failed:', err);
+    } finally {
+      setDeploying(false);
     }
   };
 
@@ -365,6 +384,20 @@ export const Toolbar = ({
       <button onClick={handleExportZip} className={btnCls} title="Export ZIP" disabled={exportingZip}>
         {exportingZip ? '⏳' : '📦'} ZIP
       </button>
+      {/* Deploy */}
+      <button onClick={handleDeploy} className={btnCls} title="Deploy to VPS" disabled={deploying}>
+        {deploying ? '⏳ Deploying...' : deployUrl ? '🌐 Deployed' : '🚀 Deploy'}
+      </button>
+      {deployUrl && (
+        <a
+          href={deployUrl}
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: 11, color: '#FF6B35', marginLeft: 6, textDecoration: 'none' }}
+        >
+          {deployUrl}
+        </a>
+      )}
 
       {/* Theme toggle */}
       <button onClick={toggle} className={iconBtnCls} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
