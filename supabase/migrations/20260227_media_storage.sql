@@ -4,7 +4,7 @@ VALUES (
   'media',
   'media',
   true,
-  10485760, -- 10MB limit
+  52428800, -- 50MB limit
   ARRAY['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'video/mp4', 'video/webm', 'video/quicktime']
 )
 ON CONFLICT (id) DO NOTHING;
