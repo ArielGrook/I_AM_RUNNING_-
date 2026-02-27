@@ -65,6 +65,7 @@ export const Toolbar = ({
   const [editingPageName, setEditingPageName] = useState('');
   const [editingProject, setEditingProject] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState('');
+  const [exportingZip, setExportingZip] = React.useState(false);
 
   const handleSave = () => {
     try {
@@ -87,6 +88,29 @@ export const Toolbar = ({
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error('Export failed:', e);
+    }
+  };
+
+  const handleExportZip = async () => {
+    if (!projectId) return;
+    setExportingZip(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/export`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'site-export.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('ZIP export failed:', e);
+      alert('Export failed. Check console.');
+    } finally {
+      setExportingZip(false);
     }
   };
 
@@ -333,9 +357,13 @@ export const Toolbar = ({
         👁 Preview
       </button>
 
-      {/* Export */}
+      {/* Export JSON */}
       <button onClick={handleExportJSON} className={btnCls} title="Export JSON">
-        📥 Export
+        📋 JSON
+      </button>
+      {/* Export ZIP */}
+      <button onClick={handleExportZip} className={btnCls} title="Export ZIP" disabled={exportingZip}>
+        {exportingZip ? '⏳' : '📦'} ZIP
       </button>
 
       {/* Theme toggle */}
