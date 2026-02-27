@@ -4,7 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
-import { EditableText } from './TronStats';
+import { EditableText } from '@/lib/craft/shared/EditableText';
 
 // ── Tokens (darkBg/lightBg from props, like TronContact) ─────────────────
 function buildTokens(darkBg: string, lightBg: string) {
@@ -100,8 +100,12 @@ export const TronFooter = React.memo(function TronFooter() {
   React.useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    const checkWidth = () => {
+      setIsMobile(el.getBoundingClientRect().width < 520);
+    };
+    checkWidth();
     const observer = new ResizeObserver(([entry]) => {
-      setIsMobile((entry?.contentRect?.width ?? 0) < 768);
+      setIsMobile((entry?.contentRect?.width ?? 0) < 520);
     });
     observer.observe(el);
     return () => observer.disconnect();

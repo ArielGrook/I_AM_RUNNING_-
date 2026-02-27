@@ -4,7 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React, { useState, useContext } from 'react';
 import { PagesContext } from '@/lib/craft/context/PagesContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
-import { EditableText } from './TronStats';
+import { EditableText } from '@/lib/craft/shared/EditableText';
 
 type NavLinkType = 'section' | 'page' | 'external';
 type NavLinkItem = { label: string; href: string; type?: NavLinkType };

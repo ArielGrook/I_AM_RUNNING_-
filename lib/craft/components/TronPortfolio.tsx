@@ -4,7 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
-import { EditableText } from './TronStats';
+import { EditableText } from '@/lib/craft/shared/EditableText';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { MediaLibrary } from '@/components/craft/MediaLibrary';
 
@@ -244,7 +244,7 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [colorScheme]);
+  }, []);
 
   React.useEffect(() => {
     const el = carouselViewportRef.current;

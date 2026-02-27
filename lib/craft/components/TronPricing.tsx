@@ -4,7 +4,7 @@ import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
-import { EditableText } from './TronStats';
+import { EditableText } from '@/lib/craft/shared/EditableText';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -370,7 +370,7 @@ export const TronPricing = React.memo(function TronPricing() {
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [colorScheme]);
+  }, []);
 
   const accentColor = propAccent ?? theme?.accentColor ?? '#FF6B35';
   const scheme = colorScheme ?? theme?.colorScheme ?? 'dark';
