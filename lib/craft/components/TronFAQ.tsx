@@ -255,18 +255,31 @@ export const TronFAQ = React.memo(function TronFAQ() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
-      key={`${scheme}-${layoutStyle}`}
       data-block-type="faq"
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
+        position: 'relative',
         background: t.bg,
-        backgroundImage: gridLines,
-        backgroundSize: showGrid ? '50px 50px' : 'auto',
         minHeight: `${sectionHeight}vh`,
       }}
     >
       <div
+        key={colorScheme}
         style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: showGrid
+            ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+            : 'none',
+          backgroundSize: showGrid ? '50px 50px' : 'auto',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
           maxWidth: 1200,
           margin: '0 auto',
           width: '100%',

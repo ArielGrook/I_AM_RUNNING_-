@@ -344,17 +344,28 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
-      key={scheme}
       data-block-type="portfolio"
       className={`w-full max-w-full py-20 px-4 sm:px-8 lg:px-16 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
+        position: 'relative',
         background: t.bg,
-        backgroundImage: gridLines,
-        backgroundSize: showGrid ? '50px 50px' : 'auto',
         minHeight: `${sectionHeight}vh`,
       }}
     >
-      <div className="max-w-6xl mx-auto w-full" {...animAttrs}>
+      <div
+        key={colorScheme}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: showGrid
+            ? `linear-gradient(${t.gridColor} 1px, transparent 1px), linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
+            : 'none',
+          backgroundSize: showGrid ? '50px 50px' : 'auto',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
+      <div className="max-w-6xl mx-auto w-full" style={{ position: 'relative', zIndex: 1 }} {...animAttrs}>
         <div className="text-center mb-12 md:mb-16">
           <EditableText
             value={title ?? ''}
