@@ -60,7 +60,7 @@ interface ShowcaseTab {
   imageBase64?: string;
   imageUrl?: string;
   videoUrl?: string;
-  mediaType?: 'image' | 'video';
+  mediaType?: 'image' | 'video' | 'upload-video';
   ctaText?: string;
   ctaShow?: boolean;
 }
@@ -255,7 +255,13 @@ function TabContentPanel({
           position: 'relative',
         }}
       >
-        {item.mediaType === 'video' && item.videoUrl ? (
+        {item.mediaType === 'upload-video' && item.videoUrl ? (
+          <video
+            src={item.videoUrl}
+            controls
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : item.mediaType === 'video' && item.videoUrl ? (
           (() => {
             const embedUrl = getEmbedUrl(item.videoUrl);
             return embedUrl ? (
@@ -1008,7 +1014,7 @@ function TronShowcaseSettings() {
               <div>
                 <label className={labelCls}>Media</label>
                 <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                  {(['image', 'video'] as const).map((type) => (
+                  {(['image', 'video', 'upload-video'] as const).map((type) => (
                     <button
                       key={type}
                       type="button"
@@ -1028,7 +1034,7 @@ function TronShowcaseSettings() {
                         color: (item.mediaType ?? 'image') === type ? '#FF6B35' : '#a1a1aa',
                       }}
                     >
-                      {type === 'image' ? '🖼 Image' : '▶ Video'}
+                      {type === 'image' ? '🖼 Image' : type === 'video' ? '▶ YouTube/Vimeo' : '📁 Upload video'}
                     </button>
                   ))}
                 </div>
@@ -1084,6 +1090,32 @@ function TronShowcaseSettings() {
                     }, 500)}
                     className={inputCls}
                   />
+                )}
+                {item.mediaType === 'upload-video' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {item.videoUrl && (
+                      <video
+                        src={item.videoUrl}
+                        style={{ width: 60, height: 36, objectFit: 'cover', borderRadius: 4 }}
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowMedia(i)}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        background: 'rgba(255,107,53,0.1)',
+                        border: '1px solid rgba(255,107,53,0.3)',
+                        color: '#FF6B35',
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {item.videoUrl ? '↺ Change video' : '+ Upload video'}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -1194,12 +1226,17 @@ function TronShowcaseSettings() {
       {showMedia !== null && user && (
         <MediaLibrary
           userId={user.id}
-          accept="image"
+          accept={list[showMedia]?.mediaType === 'upload-video' ? 'video' : 'image'}
           onSelect={(url) => {
             setProp((p: Record<string, unknown>) => {
               const items = [...((p.items as ShowcaseTab[]) ?? [])];
               if (items[showMedia] !== undefined) {
-                items[showMedia] = { ...items[showMedia], imageUrl: url, imageBase64: undefined };
+                const mt = items[showMedia].mediaType;
+                if (mt === 'upload-video') {
+                  items[showMedia] = { ...items[showMedia], videoUrl: url };
+                } else {
+                  items[showMedia] = { ...items[showMedia], imageUrl: url, imageBase64: undefined };
+                }
               }
               p.items = items;
             }, 0);

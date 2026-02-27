@@ -249,6 +249,18 @@ function MediaFileCard({
             objectFit: 'cover',
           }}
         />
+      ) : file.type === 'video' ? (
+        <video
+          src={file.url}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          muted
+          onMouseEnter={(e) => (e.currentTarget as HTMLVideoElement).play()}
+          onMouseLeave={(e) => {
+            const v = e.currentTarget as HTMLVideoElement;
+            v.pause();
+            v.currentTime = 0;
+          }}
+        />
       ) : (
         <div
           style={{
