@@ -1,0 +1,3 @@
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS published BOOLEAN DEFAULT false;
+CREATE INDEX IF NOT EXISTS projects_slug_idx ON projects(slug);
