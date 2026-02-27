@@ -546,112 +546,168 @@ function TronPortfolioSettings() {
             <div
               key={i}
               style={{
-                background: 'var(--settings-card-bg, rgba(0,0,0,0.03))',
-                border: '1px solid var(--settings-border, rgba(0,0,0,0.08))',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: 8,
                 padding: 12,
                 marginBottom: 8,
               }}
-              className="space-y-3"
             >
-              <div className="flex gap-2 items-center">
-                <input
-                  type="text"
-                  value={item.title}
-                  onChange={(e) => updateItem(i, 'title', e.target.value)}
-                  className={inputCls}
-                  placeholder="Title"
-                  style={{ flex: 1 }}
-                />
-                <input
-                  type="text"
-                  value={item.category}
-                  onChange={(e) => updateItem(i, 'category', e.target.value)}
-                  className={inputCls}
-                  placeholder="Category"
-                  style={{ width: 90 }}
-                />
+              {/* TITLE — полная ширина, первым */}
+              <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#71717a', display: 'block', marginBottom: 4 }}>
+                Title
+              </label>
+              <input
+                type="text"
+                value={item.title ?? ''}
+                placeholder="Project title"
+                onChange={(e) => updateItem(i, 'title', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '7px 10px',
+                  borderRadius: 6,
+                  marginBottom: 8,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: '#ffffff',
+                  fontSize: 13,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+
+              {/* CATEGORY */}
+              <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#71717a', display: 'block', marginBottom: 4 }}>
+                Category
+              </label>
+              <input
+                type="text"
+                value={item.category ?? ''}
+                placeholder="e.g. Web Design"
+                onChange={(e) => updateItem(i, 'category', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '7px 10px',
+                  borderRadius: 6,
+                  marginBottom: 8,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: '#ffffff',
+                  fontSize: 13,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+
+              {/* Description */}
+              <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#71717a', display: 'block', marginBottom: 4 }}>
+                Description
+              </label>
+              <input
+                type="text"
+                value={item.description ?? ''}
+                placeholder="Short description"
+                onChange={(e) => updateItem(i, 'description', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '7px 10px',
+                  borderRadius: 6,
+                  marginBottom: 8,
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: '#ffffff',
+                  fontSize: 13,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+
+              {/* Upload + удалить item */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {item.imageBase64 && (
+                    <img
+                      src={item.imageBase64}
+                      alt=""
+                      style={{ width: 48, height: 32, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
+                    />
+                  )}
+                  <label
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '5px 10px',
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                      background: 'rgba(255,107,53,0.1)',
+                      border: '1px solid rgba(255,107,53,0.3)',
+                      color: '#FF6B35',
+                      fontSize: 11,
+                      fontWeight: 500,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.imageBase64 ? '↺ Change image' : '+ Upload image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const base64 = ev.target?.result as string;
+                          setProp((p: Record<string, unknown>) => {
+                            const items = [...((p.items as PortfolioItem[]) ?? [])];
+                            if (items[i]) items[i] = { ...items[i], imageBase64: base64 };
+                            p.items = items;
+                          }, 0);
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                  {item.imageBase64 && (
+                    <button
+                      type="button"
+                      onClick={() => updateItem(i, 'imageBase64', undefined)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#71717a',
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        padding: 0,
+                      }}
+                      title="Remove photo"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => removeItem(i)}
-                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400"
-                  title="Remove"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: 'rgba(239,68,68,0.15)',
+                    color: '#f87171',
+                    fontSize: 18,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                  title="Remove item"
                 >
                   ×
                 </button>
-              </div>
-              <div>
-                <label className={labelCls}>Description</label>
-                <input
-                  type="text"
-                  value={item.description ?? ''}
-                  onChange={(e) => updateItem(i, 'description', e.target.value)}
-                  className={inputCls}
-                  placeholder="Description"
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {item.imageBase64 && (
-                  <img
-                    src={item.imageBase64}
-                    alt=""
-                    style={{ width: 48, height: 32, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
-                  />
-                )}
-                <label
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '5px 10px',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                    background: 'rgba(255,107,53,0.1)',
-                    border: '1px solid rgba(255,107,53,0.3)',
-                    color: '#FF6B35',
-                    fontSize: 11,
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {item.imageBase64 ? '↺ Change image' : '+ Upload image'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = (ev) => {
-                        const base64 = ev.target?.result as string;
-                        setProp((p: Record<string, unknown>) => {
-                          const items = [...((p.items as PortfolioItem[]) ?? [])];
-                          if (items[i]) items[i] = { ...items[i], imageBase64: base64 };
-                          p.items = items;
-                        }, 0);
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                </label>
-                {item.imageBase64 && (
-                  <button
-                    type="button"
-                    onClick={() => updateItem(i, 'imageBase64', undefined)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#71717a',
-                      cursor: 'pointer',
-                      fontSize: 16,
-                      padding: 0,
-                    }}
-                    title="Remove photo"
-                  >
-                    ×
-                  </button>
-                )}
               </div>
             </div>
           ))}
