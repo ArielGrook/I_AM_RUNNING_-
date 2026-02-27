@@ -3,6 +3,7 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React, { useState, useContext } from 'react';
 import { PagesContext } from '@/lib/craft/context/PagesContext';
+import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 
 type NavLinkType = 'section' | 'page' | 'external';
 type NavLinkItem = { label: string; href: string; type?: NavLinkType };
@@ -217,8 +218,6 @@ const HeaderTronSettings = () => {
   const { nodes } = useEditor((s) => ({ nodes: s.nodes }));
   const { pages } = useContext(PagesContext);
   const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
-  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
-  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
 
   const availableSections = React.useMemo(() => {
     const nodeList = nodes ? Object.values(nodes) : [];
@@ -248,31 +247,35 @@ const HeaderTronSettings = () => {
 
   const links = navLinks ?? DEFAULT_NAV_LINKS;
   return (
-    <div className="p-3 space-y-5 text-white">
+    <div className="p-3 space-y-5">
       <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Theme</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Theme</h3>
         <div className="space-y-2">
           <div><label className={labelCls}>Color Scheme</label><select value={colorScheme ?? 'dark'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.colorScheme = e.target.value; })} className={inputCls}><option value="dark">Dark</option><option value="light">Light</option></select></div>
-          <div><label className={labelCls}>Accent Color</label><input type="color" value={accentColor ?? '#e11d48'} onChange={(e) => setT('accentColor', 300)(e.target.value)} className="w-full h-8 rounded cursor-pointer border-0 bg-transparent p-0" /></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <label className={labelCls}>Accent Color</label>
+            <input type="color" value={accentColor ?? '#e11d48'} onChange={(e) => setT('accentColor', 300)(e.target.value)} />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{accentColor ?? '#e11d48'}</span>
+          </div>
         </div>
       </section>
       <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Colors</h3>
         <div>
           <label className={labelCls}>Background (dark mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <input type="color" value={darkBg ?? '#0a0a0a'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{darkBg ?? '#0a0a0a'}</span>
           </div>
           <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <input type="color" value={lightBg ?? '#ffffff'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{lightBg ?? '#ffffff'}</span>
           </div>
         </div>
       </section>
       <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Content</h3>
         <div className="space-y-2">
           <div><label className={labelCls}>Logo Text</label><input type="text" value={logoText ?? ''} onChange={(e) => setT('logoText', 500)(e.target.value)} className={inputCls} placeholder="BRAND" /></div>
           <div><label className={labelCls}>CTA Button Text</label><input type="text" value={ctaText ?? ''} onChange={(e) => setT('ctaText', 500)(e.target.value)} className={inputCls} placeholder="Get Started" /></div>
@@ -280,12 +283,22 @@ const HeaderTronSettings = () => {
         </div>
       </section>
       <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Nav Links</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Nav Links</h3>
         <div className="space-y-3">
           {links.map((link, i) => {
             const type = link.type ?? linkTypeFromHref(link.href);
             return (
-              <div key={i} className="border border-[#3a3a3a] rounded p-2 space-y-2">
+              <div
+                key={i}
+                style={{
+                  background: 'var(--settings-card-bg, rgba(0,0,0,0.03))',
+                  border: '1px solid var(--settings-border, rgba(0,0,0,0.08))',
+                  borderRadius: 8,
+                  padding: 12,
+                  marginBottom: 8,
+                }}
+                className="space-y-2"
+              >
                 <div className="flex gap-2 items-center">
                   <input value={link.label} placeholder="Label" className="flex-1 bg-[#2a2a2a] border border-[#3a3a3a] rounded px-2 py-1.5 text-xs text-white" onChange={(e) => setProp((p: Record<string, unknown>) => { const arr = [...(p.navLinks as NavLinkItem[])]; if (arr[i]) arr[i] = { ...arr[i], label: e.target.value }; p.navLinks = arr; }, 500)} />
                   <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.navLinks = (p.navLinks as NavLinkItem[]).filter((_, idx) => idx !== i); })} className="text-red-400 hover:text-red-300 text-lg leading-none px-1" title="Remove link">×</button>
@@ -332,7 +345,7 @@ const HeaderTronSettings = () => {
           {links.length < 6 && <button type="button" onClick={() => setProp((p: Record<string, unknown>) => { p.navLinks = [...(p.navLinks as NavLinkItem[]), { label: 'New Link', href: '#', type: 'section' }]; })} className="w-full border border-dashed border-[#3a3a3a] rounded py-2 text-sm text-gray-500 hover:text-gray-300 hover:border-gray-500 transition-colors mt-1">+ Add Link</button>}
         </div>
       </section>
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <label className={labelCls}>Display</label>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ fontSize: 12, color: '#d4d4d8' }}>Show CTA button</span>
@@ -346,7 +359,7 @@ const HeaderTronSettings = () => {
         </div>
       </div>
       <section>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Animation</h3>
         <div className="space-y-2">
           <div><label className={labelCls}>Type</label><select value={animationType ?? 'none'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}><option value="none">None</option><option value="fade-in">Fade In</option><option value="slide-up">Slide Up</option><option value="slide-left">Slide Left</option><option value="scale-in">Scale In</option><option value="blur-in">Blur In</option></select></div>
           <div><label className={labelCls}>Delay (s)</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option><option value="0.3">0.3s</option><option value="0.5">0.5s</option><option value="0.8">0.8s</option><option value="1">1s</option></select></div>

@@ -3,6 +3,7 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
+import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -490,19 +491,20 @@ function TestimonialCardSettings() {
   const { actions: { setProp } } = useNode();
   const { quote = '', author = '', role = '', company = '', accentColor = '#FF6B35', colorScheme = 'dark' } =
     useNode((n) => n.data.props as TestimonialCardProps) ?? {};
-  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
-  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
-
   const setT = (key: keyof TestimonialCardProps, ms: number) => (val: unknown) =>
     setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
 
   return (
-    <div className="p-3 space-y-3 text-white">
+    <div className="p-3 space-y-3">
       <div><label className={labelCls}>Quote</label><textarea value={quote} onChange={(e) => setT('quote', 500)(e.target.value)} className={inputCls} rows={2} /></div>
       <div><label className={labelCls}>Author</label><input type="text" value={author} onChange={(e) => setT('author', 500)(e.target.value)} className={inputCls} /></div>
       <div><label className={labelCls}>Role</label><input type="text" value={role} onChange={(e) => setT('role', 500)(e.target.value)} className={inputCls} /></div>
       <div><label className={labelCls}>Company</label><input type="text" value={company} onChange={(e) => setT('company', 500)(e.target.value)} className={inputCls} /></div>
-      <div><label className={labelCls}>Accent</label><input type="color" value={accentColor} onChange={(e) => setT('accentColor', 300)(e.target.value)} style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }} /></div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <label className={labelCls}>Accent</label>
+        <input type="color" value={accentColor} onChange={(e) => setT('accentColor', 300)(e.target.value)} />
+        <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{accentColor}</span>
+      </div>
     </div>
   );
 }
@@ -539,8 +541,6 @@ function TronTestimonialsSettings() {
     animateDelay = '0',
   } = props;
 
-  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
-  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
   const rawList = Array.isArray(items) ? items : DEFAULT_ITEMS;
   const list = rawList.map(normalizeTestimonialItem);
 
@@ -575,10 +575,10 @@ function TronTestimonialsSettings() {
   };
 
   return (
-    <div className="p-3 space-y-0 text-white">
+    <div className="p-3 space-y-0">
       {/* CONTENT */}
-      <div className="border-t border-gray-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
+      <div className={`${sectionCls} first:border-t-0 first:pt-0 first:mt-0`}>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div>
             <label className={labelCls}>Title</label>
@@ -602,11 +602,21 @@ function TronTestimonialsSettings() {
       </div>
 
       {/* ITEMS */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Items</h3>
         <div className="space-y-2">
           {list.map((item, i) => (
-            <div key={i} className="p-2 rounded bg-gray-800/50 space-y-2">
+            <div
+              key={i}
+              style={{
+                background: 'var(--settings-card-bg, rgba(0,0,0,0.03))',
+                border: '1px solid var(--settings-border, rgba(0,0,0,0.08))',
+                borderRadius: 8,
+                padding: 12,
+                marginBottom: 8,
+              }}
+              className="space-y-2"
+            >
               <div className="flex gap-2 items-center">
                 <input
                   type="text"
@@ -741,7 +751,7 @@ function TronTestimonialsSettings() {
       </div>
 
       {/* SPEED */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Speed</h3>
         <div>
           <label className={labelCls}>Speed: {speed}s</label>
@@ -752,42 +762,38 @@ function TronTestimonialsSettings() {
             step={5}
             value={speed}
             onChange={(e) => setProp((p: Record<string, unknown>) => { p.speed = Number(e.target.value); }, 300)}
-            className="w-full"
+            className="settings-slider"
           />
         </div>
       </div>
 
       {/* COLORS */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
+      <div className={sectionCls}>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Colors</h3>
         <div>
           <label className={labelCls}>Background (dark mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <input
               type="color"
               value={darkBg ?? '#0a0a0a'}
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)}
-              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
             />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{darkBg ?? '#0a0a0a'}</span>
           </div>
-          <label className={labelCls} style={{ marginTop: 12 }}>
-            Background (light mode)
-          </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <input
               type="color"
               value={lightBg ?? '#ffffff'}
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)}
-              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
             />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{lightBg ?? '#ffffff'}</span>
           </div>
         </div>
       </div>
 
       {/* SIZE */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Size</h3>
         <div>
           <label className={labelCls}>Section height: {sectionHeight}vh</label>
@@ -798,13 +804,13 @@ function TronTestimonialsSettings() {
             step={5}
             value={sectionHeight}
             onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)}
-            className="w-full"
+            className="settings-slider"
           />
         </div>
       </div>
 
       {/* DISPLAY */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-xs text-gray-400">
@@ -833,7 +839,7 @@ function TronTestimonialsSettings() {
       </div>
 
       {/* ANIMATION */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
         <div className="space-y-3">
           <div>

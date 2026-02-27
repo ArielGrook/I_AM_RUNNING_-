@@ -3,6 +3,7 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
+import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 
 // ── Tokens (darkBg/lightBg from props, like TronContact) ─────────────────
 function buildTokens(darkBg: string, lightBg: string) {
@@ -366,9 +367,6 @@ function TronFooterSettings() {
     animateDelay = '0',
   } = props;
 
-  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
-  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
-
   const cols = Array.isArray(columns) ? columns : DEFAULT_COLUMNS;
   const socials = Array.isArray(socialLinks) ? socialLinks : [];
 
@@ -448,9 +446,9 @@ function TronFooterSettings() {
   };
 
   return (
-    <div className="p-3 space-y-0 text-white">
+    <div className="p-3 space-y-0">
       {/* BRAND */}
-      <div className="border-t border-gray-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
+      <div className={`${sectionCls} first:border-t-0 first:pt-0 first:mt-0`}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Brand</h3>
         <div className="space-y-3">
           <div>
@@ -475,11 +473,21 @@ function TronFooterSettings() {
       </div>
 
       {/* COLUMNS */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Columns</h3>
         <div className="space-y-4">
           {cols.map((col, colIndex) => (
-            <div key={colIndex} className="p-2 rounded bg-gray-800/50 space-y-2">
+            <div
+              key={colIndex}
+              style={{
+                background: 'var(--settings-card-bg, rgba(0,0,0,0.03))',
+                border: '1px solid var(--settings-border, rgba(0,0,0,0.08))',
+                borderRadius: 8,
+                padding: 12,
+                marginBottom: 8,
+              }}
+              className="space-y-2"
+            >
               <div>
                 <label className={labelCls}>Column title</label>
                 <input
@@ -544,7 +552,7 @@ function TronFooterSettings() {
       </div>
 
       {/* SOCIALS */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Socials</h3>
         <label className="flex items-center gap-2 text-xs text-gray-400 mb-2">
           <input
@@ -596,7 +604,7 @@ function TronFooterSettings() {
       </div>
 
       {/* COPYRIGHT */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Copyright</h3>
         <div>
           <label className={labelCls}>Copyright text</label>
@@ -610,34 +618,32 @@ function TronFooterSettings() {
       </div>
 
       {/* COLORS */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
         <div>
           <label className={labelCls}>Background (dark mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <input
               type="color"
               value={darkBg ?? '#0a0a0a'}
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)}
-              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
             />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{darkBg ?? '#0a0a0a'}</span>
           </div>
           <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <input
               type="color"
               value={lightBg ?? '#ffffff'}
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)}
-              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
             />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{lightBg ?? '#ffffff'}</span>
           </div>
         </div>
       </div>
 
       {/* ANIMATION */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
         <div className="space-y-3">
           <div>
@@ -777,8 +783,6 @@ function FooterColumnSettings() {
   const { actions: { setProp } } = useNode();
   const { title, links, description, animationType, animateDelay } = useNode((n) => n.data.props as FooterColumnProps) ?? {} as FooterColumnProps;
   const setT = (key: string, ms: number) => (val: unknown) => setProp((p: Record<string, unknown>) => { p[key] = val; }, ms);
-  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
-  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
   const linkList = links ?? [];
 
   const updateLink = (index: number, field: 'label' | 'href', value: string) => {

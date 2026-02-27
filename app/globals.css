@@ -1474,6 +1474,84 @@ footer[data-cy="craft-canvas"]:empty::after {
   color: #52525b !important;
 }
 
+/* Settings Panel — красивые слайдеры */
+.craft-settings-panel .settings-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: #d4d4d8;
+  outline: none;
+  cursor: pointer;
+  margin: 8px 0 16px;
+}
+
+.craft-settings-panel .settings-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #FF6B35;
+  cursor: pointer;
+  border: 2px solid #1a1a1a;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.3);
+}
+
+.craft-settings-panel .settings-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #FF6B35;
+  cursor: pointer;
+  border: 2px solid #1a1a1a;
+}
+
+/* Dark mode — тёмный track */
+.dark .craft-settings-panel .settings-slider {
+  background: #3f3f46;
+}
+
+:root:not(.dark) .craft-settings-panel .settings-slider::-webkit-slider-thumb {
+  border-color: #ffffff;
+}
+
+.dark .craft-settings-panel .settings-slider::-webkit-slider-thumb {
+  border-color: #1a1a1a;
+}
+
+/* Color picker — убрать белый ободок */
+.craft-settings-panel input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  padding: 2px;
+  background: none;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+}
+
+.craft-settings-panel input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 4px;
+}
+
+.craft-settings-panel input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+.dark .craft-settings-panel input[type="color"] {
+  border-color: #3f3f46;
+}
+
+:root:not(.dark) .craft-settings-panel input[type="color"] {
+  border-color: #d4d4d8;
+}
+
 /* Сброс всех рамок с невыделенных нод */
 [data-id]:not(.craft-node-selected) {
   border-color: transparent !important;

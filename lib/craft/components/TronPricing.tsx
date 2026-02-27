@@ -3,6 +3,7 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
+import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -583,9 +584,6 @@ function PricingCardSettings() {
   const { actions: { setProp } } = useNode();
   const { name = '', price = '', period = '/mo', description = '', features = [], highlighted = false, ctaText = '', accentColor = '#FF6B35', colorScheme = 'dark' } =
     useNode((n) => n.data.props as PricingCardProps) ?? {};
-  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
-  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
-
   const updateFeature = (i: number, v: string) =>
     setProp((p: Record<string, unknown>) => {
       const arr = [...((p.features as string[]) ?? [])];
@@ -594,7 +592,7 @@ function PricingCardSettings() {
     }, 500);
 
   return (
-    <div className="p-3 space-y-3 text-white">
+    <div className="p-3 space-y-3">
       <div><label className={labelCls}>Name</label><input type="text" value={name} onChange={(e) => setProp((p: Record<string, unknown>) => { p.name = e.target.value; }, 500)} className={inputCls} /></div>
       <div><label className={labelCls}>Price</label><input type="text" value={price} onChange={(e) => setProp((p: Record<string, unknown>) => { p.price = e.target.value; }, 500)} className={inputCls} /></div>
       <div><label className={labelCls}>Period</label><input type="text" value={period} onChange={(e) => setProp((p: Record<string, unknown>) => { p.period = e.target.value; }, 500)} className={inputCls} /></div>
@@ -650,8 +648,6 @@ function TronPricingSettings() {
     animateDelay = '0',
   } = props;
 
-  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
-  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
   const rawList = Array.isArray(plans) ? plans : DEFAULT_PLANS;
   const list = rawList.map(normalizePricingPlan);
 
@@ -724,7 +720,7 @@ function TronPricingSettings() {
   return (
     <div className="p-3 space-y-0 text-white">
       {/* CONTENT */}
-      <div className="border-t border-gray-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
+      <div className={`${sectionCls} first:border-t-0 first:pt-0 first:mt-0`}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div>
@@ -749,11 +745,21 @@ function TronPricingSettings() {
       </div>
 
       {/* PLANS */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Plans</h3>
         <div className="space-y-4">
           {list.map((plan, pi) => (
-            <div key={pi} className="p-3 rounded bg-gray-800/50 space-y-3">
+            <div
+              key={pi}
+              style={{
+                background: 'var(--settings-card-bg, rgba(0,0,0,0.03))',
+                border: '1px solid var(--settings-border, rgba(0,0,0,0.08))',
+                borderRadius: 8,
+                padding: 12,
+                marginBottom: 8,
+              }}
+              className="space-y-3"
+            >
               <div className="flex gap-2 items-center">
                 <input
                   type="text"
@@ -907,7 +913,7 @@ function TronPricingSettings() {
       </div>
 
       {/* BILLING */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Billing</h3>
         <div className="space-y-3">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -941,36 +947,32 @@ function TronPricingSettings() {
       </div>
 
       {/* COLORS */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
         <div>
           <label className={labelCls}>Background (dark mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <input
               type="color"
               value={darkBg ?? '#0a0a0a'}
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)}
-              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
             />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{darkBg ?? '#0a0a0a'}</span>
           </div>
-          <label className={labelCls} style={{ marginTop: 12 }}>
-            Background (light mode)
-          </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <input
               type="color"
               value={lightBg ?? '#ffffff'}
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)}
-              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
             />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{lightBg ?? '#ffffff'}</span>
           </div>
         </div>
       </div>
 
       {/* SIZE */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Size</h3>
         <div>
           <label className={labelCls}>Section height: {sectionHeight}vh</label>
@@ -981,13 +983,13 @@ function TronPricingSettings() {
             step={5}
             value={sectionHeight}
             onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)}
-            className="w-full"
+            className="settings-slider"
           />
         </div>
       </div>
 
       {/* DISPLAY */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
         <label className="flex items-center gap-2 text-xs text-gray-400">
           <input
@@ -1001,7 +1003,7 @@ function TronPricingSettings() {
       </div>
 
       {/* ANIMATION */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
         <div className="space-y-3">
           <div>

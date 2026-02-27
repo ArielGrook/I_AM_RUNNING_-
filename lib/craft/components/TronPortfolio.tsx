@@ -3,6 +3,7 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
+import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -483,8 +484,6 @@ function TronPortfolioSettings() {
     animateDelay = '0',
   } = props;
 
-  const labelCls = 'block text-xs mb-1.5 text-gray-400 uppercase tracking-wide';
-  const inputCls = 'w-full px-2 py-1.5 text-xs rounded bg-gray-700 border border-gray-600 text-white';
   const rawList = Array.isArray(items) ? items : DEFAULT_ITEMS;
   const list = rawList.map(normalizePortfolioItem);
 
@@ -515,7 +514,7 @@ function TronPortfolioSettings() {
   return (
     <div className="p-3 space-y-0 text-white">
       {/* CONTENT */}
-      <div className="border-t border-gray-700 pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
+      <div className={`${sectionCls} first:border-t-0 first:pt-0 first:mt-0`}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Content</h3>
         <div className="space-y-3">
           <div>
@@ -540,11 +539,21 @@ function TronPortfolioSettings() {
       </div>
 
       {/* ITEMS */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Items</h3>
         <div className="space-y-4">
           {list.slice(0, 12).map((item, i) => (
-            <div key={i} className="p-3 rounded bg-gray-800/50 space-y-3">
+            <div
+              key={i}
+              style={{
+                background: 'var(--settings-card-bg, rgba(0,0,0,0.03))',
+                border: '1px solid var(--settings-border, rgba(0,0,0,0.08))',
+                borderRadius: 8,
+                padding: 12,
+                marginBottom: 8,
+              }}
+              className="space-y-3"
+            >
               <div className="flex gap-2 items-center">
                 <input
                   type="text"
@@ -659,7 +668,7 @@ function TronPortfolioSettings() {
       </div>
 
       {/* LAYOUT */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Layout</h3>
         <div>
           <label className={labelCls}>Visible cards</label>
@@ -689,7 +698,7 @@ function TronPortfolioSettings() {
       </div>
 
       {/* AUTOPLAY */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Autoplay</h3>
         <div className="space-y-3">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -711,7 +720,7 @@ function TronPortfolioSettings() {
                 step={1}
                 value={autoplaySpeed ?? 5}
                 onChange={(e) => setProp((p: Record<string, unknown>) => { p.autoplaySpeed = Number(e.target.value); }, 300)}
-                className="w-full"
+                className="settings-slider"
               />
             </div>
           )}
@@ -719,36 +728,32 @@ function TronPortfolioSettings() {
       </div>
 
       {/* COLORS */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Colors</h3>
         <div>
           <label className={labelCls}>Background (dark mode)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <input
               type="color"
               value={darkBg ?? '#0a0a0a'}
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)}
-              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
             />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{darkBg ?? '#0a0a0a'}</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{darkBg ?? '#0a0a0a'}</span>
           </div>
-          <label className={labelCls} style={{ marginTop: 12 }}>
-            Background (light mode)
-          </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <input
               type="color"
               value={lightBg ?? '#ffffff'}
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)}
-              style={{ width: 32, height: 32, borderRadius: 6, border: 'none', cursor: 'pointer' }}
             />
-            <span style={{ fontSize: 12, color: '#a1a1aa' }}>{lightBg ?? '#ffffff'}</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{lightBg ?? '#ffffff'}</span>
           </div>
         </div>
       </div>
 
       {/* SIZE */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Size</h3>
         <div>
           <label className={labelCls}>Section height: {sectionHeight}vh</label>
@@ -759,13 +764,13 @@ function TronPortfolioSettings() {
             step={5}
             value={sectionHeight}
             onChange={(e) => setProp((p: Record<string, unknown>) => { p.sectionHeight = Number(e.target.value); }, 500)}
-            className="w-full"
+            className="settings-slider"
           />
         </div>
       </div>
 
       {/* DISPLAY */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Display</h3>
         <label className="flex items-center gap-2 text-xs text-gray-400">
           <input
@@ -779,7 +784,7 @@ function TronPortfolioSettings() {
       </div>
 
       {/* ANIMATION */}
-      <div className="border-t border-gray-700 pt-4 mt-4">
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-3">Animation</h3>
         <div className="space-y-3">
           <div>
