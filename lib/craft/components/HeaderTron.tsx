@@ -2,6 +2,19 @@
 
 import { useNode, useEditor } from '@craftjs/core';
 import React, { useState, useContext } from 'react';
+
+const SunIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+);
 import { PagesContext } from '@/lib/craft/context/PagesContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
@@ -166,10 +179,11 @@ export const HeaderTron = ({
             ))}
           </nav>
           <div className="flex items-center gap-3 shrink-0">
+            {/* Desktop: theme toggle */}
             {!enabled && (showThemeToggle || siteCtx.showThemeToggle) && (
               <button
                 onClick={siteCtx.toggleTheme}
-                className="flex"
+                className="hidden md:flex"
                 style={{
                   width: 36,
                   height: 36,
@@ -177,7 +191,6 @@ export const HeaderTron = ({
                   background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
                   border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
                   color: t.text,
-                  fontSize: 16,
                   cursor: 'pointer',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -186,14 +199,15 @@ export const HeaderTron = ({
                 onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(${hexToRgb(accentColor)}, 0.2)`; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = `rgba(${hexToRgb(accentColor)}, 0.1)`; }}
               >
-                {siteCtx.colorScheme === 'dark' ? '☀️' : '🌙'}
+                {siteCtx.colorScheme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
             )}
+            {/* Desktop: language select */}
             {!enabled && (showLanguageToggle || siteCtx.showLanguageToggle) && siteCtx.availableLanguages.length > 1 && (
               <select
                 value={siteCtx.language}
                 onChange={(e) => siteCtx.setLanguage(e.target.value)}
-                className="block"
+                className="hidden md:block"
                 style={{
                   background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
                   border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
@@ -210,6 +224,7 @@ export const HeaderTron = ({
                 ))}
               </select>
             )}
+            {/* Desktop: CTA */}
             {showCta && (
               <a
                 href={ctaHref}
@@ -227,6 +242,52 @@ export const HeaderTron = ({
                 )}
               </a>
             )}
+            {/* Mobile: theme toggle (before hamburger) */}
+            {!enabled && (showThemeToggle || siteCtx.showThemeToggle) && (
+              <button
+                onClick={siteCtx.toggleTheme}
+                className="flex md:hidden"
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 8,
+                  background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
+                  border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
+                  color: t.text,
+                  cursor: 'pointer',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {siteCtx.colorScheme === 'dark' ? <SunIcon /> : <MoonIcon />}
+              </button>
+            )}
+            {/* Mobile: CTA (before hamburger) */}
+            {showCta && (
+              <a
+                href={enabled ? undefined : ctaHref}
+                className="flex md:hidden"
+                onClick={(e) => { handleLinkClick(e, ctaHref ?? '#', enabled, siteCtx.navigateToPage); }}
+                onTouchEnd={(e) => { handleLinkClick(e as any, ctaHref ?? '#', enabled, siteCtx.navigateToPage); }}
+                style={{
+                  background: t.accent,
+                  color: '#fff',
+                  padding: '7px 14px',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                {ctaText}
+              </a>
+            )}
+            {/* Hamburger */}
             <button
               type="button"
               className="flex md:hidden p-2 border-0 bg-transparent cursor-pointer"
@@ -268,51 +329,6 @@ export const HeaderTron = ({
               </a>
             ))}
           </nav>
-          {/* CTA и theme toggle в мобильном меню */}
-          <div style={{ padding: '12px 24px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: `1px solid ${t.border}` }}>
-            {showCta && (
-              <a
-                href={enabled ? undefined : ctaHref}
-                onClick={(e) => { handleLinkClick(e, ctaHref ?? '#', enabled, siteCtx.navigateToPage); setMobileMenuOpen(false); }}
-                onTouchEnd={(e) => { handleLinkClick(e as any, ctaHref ?? '#', enabled, siteCtx.navigateToPage); setMobileMenuOpen(false); }}
-                style={{
-                  background: t.accent,
-                  color: '#fff',
-                  padding: '10px 20px',
-                  borderRadius: 8,
-                  textDecoration: 'none',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  textAlign: 'center',
-                  display: 'block',
-                  cursor: 'pointer',
-                }}
-              >
-                {ctaText}
-              </a>
-            )}
-            {!enabled && (showThemeToggle || siteCtx.showThemeToggle) && (
-              <button
-                type="button"
-                onClick={() => { siteCtx.toggleTheme(); setMobileMenuOpen(false); }}
-                style={{
-                  background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
-                  border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
-                  color: t.text,
-                  padding: '8px',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                }}
-              >
-                {siteCtx.colorScheme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode'}
-              </button>
-            )}
-          </div>
         </div>
       )}
     </header>
