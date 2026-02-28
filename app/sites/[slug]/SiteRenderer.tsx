@@ -36,7 +36,7 @@ import {
   CardBlock,
   PricingCardBlock,
 } from '@/lib/craft/components';
-import { ThemeProvider } from '@/lib/craft/context/ThemeContext';
+import { ThemeProvider, useTheme } from '@/lib/craft/context/ThemeContext';
 
 const resolver = {
   Container,
@@ -108,6 +108,52 @@ function extractAccentColor(craftData: string): string {
     // noop
   }
   return '#FF6B35';
+}
+
+function extractColorScheme(craftData: string): 'dark' | 'light' {
+  try {
+    const parsed = JSON.parse(craftData) as Record<string, unknown>;
+    const nodesObj = (parsed?.nodes ?? parsed) as Record<string, { props?: { colorScheme?: string } }>;
+    const nodes = Object.values(nodesObj ?? {});
+    for (const node of nodes) {
+      if (node?.props?.colorScheme === 'light' || node?.props?.colorScheme === 'dark') {
+        return node.props.colorScheme;
+      }
+    }
+  } catch {
+    // noop
+  }
+  return 'dark';
+}
+
+function ThemeToggle() {
+  const { theme, setColorScheme } = useTheme();
+  return (
+    <button
+      onClick={() => setColorScheme(theme.colorScheme === 'dark' ? 'light' : 'dark')}
+      style={{
+        position: 'fixed',
+        bottom: 24,
+        right: 24,
+        width: 44,
+        height: 44,
+        borderRadius: '50%',
+        background: theme.colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+        border: `1px solid ${theme.colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
+        color: theme.colorScheme === 'dark' ? '#ffffff' : '#0a0a0a',
+        fontSize: 18,
+        cursor: 'pointer',
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backdropFilter: 'blur(10px)',
+        transition: 'all 0.2s ease',
+      }}
+    >
+      {theme.colorScheme === 'dark' ? '☀️' : '🌙'}
+    </button>
+  );
 }
 
 export function SiteRenderer({ project }: { project: Project }) {
@@ -249,8 +295,9 @@ export function SiteRenderer({ project }: { project: Project }) {
   return (
     <>
       <Editor resolver={resolver} enabled={false}>
-        <ThemeProvider>
+        <ThemeProvider initialTheme={{ accentColor, colorScheme: extractColorScheme(craftJson) }}>
           <Frame data={craftJson} />
+          <ThemeToggle />
         </ThemeProvider>
       </Editor>
       {!isMobile && (
