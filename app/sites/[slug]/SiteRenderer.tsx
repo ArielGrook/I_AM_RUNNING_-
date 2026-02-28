@@ -96,6 +96,21 @@ function hexToRgb(hex: string): string {
   return `${r},${g},${b}`;
 }
 
+function extractColorScheme(craftData: string): 'dark' | 'light' {
+  try {
+    const parsed = JSON.parse(craftData) as Record<string, unknown>;
+    const nodes = Object.values(parsed) as Array<{ props?: { colorScheme?: string } }>;
+    for (const node of nodes) {
+      if (node?.props?.colorScheme === 'light' || node?.props?.colorScheme === 'dark') {
+        return node.props.colorScheme;
+      }
+    }
+  } catch {
+    // noop
+  }
+  return 'dark';
+}
+
 function extractAccentColor(craftData: string): string {
   try {
     const parsed = JSON.parse(craftData) as Record<string, unknown>;
@@ -108,22 +123,6 @@ function extractAccentColor(craftData: string): string {
     // noop
   }
   return '#FF6B35';
-}
-
-function extractColorScheme(craftData: string): 'dark' | 'light' {
-  try {
-    const parsed = JSON.parse(craftData) as Record<string, unknown>;
-    const nodesObj = (parsed?.nodes ?? parsed) as Record<string, { props?: { colorScheme?: string } }>;
-    const nodes = Object.values(nodesObj ?? {});
-    for (const node of nodes) {
-      if (node?.props?.colorScheme === 'light' || node?.props?.colorScheme === 'dark') {
-        return node.props.colorScheme;
-      }
-    }
-  } catch {
-    // noop
-  }
-  return 'dark';
 }
 
 function ThemeToggle() {
