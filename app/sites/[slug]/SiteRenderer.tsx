@@ -202,6 +202,7 @@ function decompressPage(page: PageType | undefined): string {
 export function SiteRenderer({ project, initialPageSlug }: { project: Project; initialPageSlug?: string }) {
   const spotlightRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const pages = project.data?.craft?.pages ?? [];
 
@@ -242,6 +243,7 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
         p.name.toLowerCase().replace(/\s+/g, '-') === pageSlug
     );
     if (!page) return;
+    setIsLoaded(false);
     setActivePage(page);
     const newCraftJson = decompressPage(page);
     setCraftJson(newCraftJson);
@@ -322,8 +324,10 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (ScrollTrigger as any).refresh();
+        setIsLoaded(true);
       } catch (e) {
         console.error('[GSAP] Error:', e);
+        setIsLoaded(true);
       }
     };
 
@@ -389,11 +393,60 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
           activePage?.slug ?? activePage?.name.toLowerCase().replace(/\s+/g, '-') ?? '',
       }}
     >
+      {/* Лоадер */}
+      {!isLoaded && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: '#0a0a0a',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+        }}>
+          <div style={{
+            fontSize: 28,
+            fontWeight: 800,
+            letterSpacing: '0.15em',
+            color: '#ffffff',
+            marginBottom: 32,
+            fontFamily: 'system-ui, sans-serif',
+          }}>
+            I AM RUNNING
+          </div>
+          <div style={{
+            width: 200,
+            height: 2,
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: 2,
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              height: '100%',
+              background: accentColor,
+              borderRadius: 2,
+              animation: 'loaderBar 1.2s ease-in-out infinite',
+            }} />
+          </div>
+          <style>{`
+            @keyframes loaderBar {
+              0%   { width: 0%;   margin-left: 0%; }
+              50%  { width: 60%;  margin-left: 20%; }
+              100% { width: 0%;   margin-left: 100%; }
+            }
+          `}</style>
+        </div>
+      )}
+
       <Editor resolver={resolver} enabled={false}>
         <ThemeProvider>
-          <Frame key={frameKey} data={activeCraftJson} />
+          <div style={{ opacity: isLoaded ? 1 : 0, transition: 'opacity 0.5s ease' }}>
+            <Frame key={frameKey} data={activeCraftJson} />
+          </div>
         </ThemeProvider>
       </Editor>
+
       {!isMobile && (
         <div
           ref={spotlightRef}
