@@ -178,6 +178,7 @@ export const TronContact = React.memo(function TronContact() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
+      id="contact"
       data-block-type="contact"
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{

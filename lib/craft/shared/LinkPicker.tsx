@@ -128,7 +128,10 @@ export function handleLinkClick(
   e.preventDefault();
 
   if (href.startsWith('#')) {
-    const el = document.querySelector(href);
+    const slug = href.slice(1);
+    const el =
+      document.querySelector(href) ??
+      document.querySelector(`[data-block-type="${slug}"]`);
     if (el) el.scrollIntoView({ behavior: 'smooth' });
     return;
   }

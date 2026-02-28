@@ -369,6 +369,7 @@ export const TronTestimonials = React.memo(function TronTestimonials() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
+      id="testimonials"
       data-block-type="testimonials"
       className={`w-full max-w-full py-20 px-4 sm:px-8 lg:px-16 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{

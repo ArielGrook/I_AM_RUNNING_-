@@ -252,7 +252,7 @@ export const HeaderTron = ({
                 href={link.href}
                 onClick={(e) => { handleNavClick(e, link.href); setMobileMenuOpen(false); }}
                 className="block px-6 py-3 text-sm font-medium transition-colors duration-150"
-                style={{ color: t.text, textDecoration: 'none', borderBottom: i < links.length - 1 ? `1px solid ${t.border}` : 'none', cursor: 'pointer' }}
+                style={{ color: t.text, textDecoration: 'none', borderBottom: `1px solid ${t.border}`, cursor: 'pointer' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = t.accent; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = t.text; }}
               >
@@ -268,6 +268,51 @@ export const HeaderTron = ({
               </a>
             ))}
           </nav>
+          {/* CTA и theme toggle в мобильном меню */}
+          <div style={{ padding: '12px 24px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: `1px solid ${t.border}` }}>
+            {showCta && (
+              <a
+                href={enabled ? undefined : ctaHref}
+                onClick={(e) => { handleLinkClick(e, ctaHref ?? '#', enabled, siteCtx.navigateToPage); setMobileMenuOpen(false); }}
+                onTouchEnd={(e) => { handleLinkClick(e as any, ctaHref ?? '#', enabled, siteCtx.navigateToPage); setMobileMenuOpen(false); }}
+                style={{
+                  background: t.accent,
+                  color: '#fff',
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  textDecoration: 'none',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  textAlign: 'center',
+                  display: 'block',
+                  cursor: 'pointer',
+                }}
+              >
+                {ctaText}
+              </a>
+            )}
+            {!enabled && (showThemeToggle || siteCtx.showThemeToggle) && (
+              <button
+                type="button"
+                onClick={() => { siteCtx.toggleTheme(); setMobileMenuOpen(false); }}
+                style={{
+                  background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
+                  border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
+                  color: t.text,
+                  padding: '8px',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                {siteCtx.colorScheme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode'}
+              </button>
+            )}
+          </div>
         </div>
       )}
     </header>

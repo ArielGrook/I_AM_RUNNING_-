@@ -262,6 +262,7 @@ export const TronFAQ = React.memo(function TronFAQ() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
+      id="faq"
       data-block-type="faq"
       className={`w-full max-w-full py-16 px-4 sm:px-6 lg:px-8 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{

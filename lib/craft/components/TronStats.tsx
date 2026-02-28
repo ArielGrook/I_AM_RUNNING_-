@@ -235,6 +235,7 @@ export const TronStats = React.memo(function TronStats() {
     <section
       ref={(ref) => { if (ref) connect(drag(ref)); }}
       key={`${scheme}-${showGrid}`}
+      id="stats"
       data-block-type="stats"
       className={`w-full max-w-full py-20 px-4 sm:px-8 lg:px-16 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{

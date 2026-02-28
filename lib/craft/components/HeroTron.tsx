@@ -146,6 +146,7 @@ export const HeroTron = React.memo(function HeroTron() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
+      id="hero"
       data-block-type="hero"
       data-block-category="header"
       className={`w-full relative overflow-hidden flex flex-col items-center justify-center ${isSelected ? 'craft-node-selected' : ''}`}

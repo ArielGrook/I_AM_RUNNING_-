@@ -157,6 +157,7 @@ export const TronFooter = React.memo(function TronFooter() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
+      id="footer"
       data-block-type="footer"
       className={`w-full max-w-full py-12 px-4 sm:px-6 lg:px-16 ${isSelected ? 'craft-node-selected' : ''}`}
       style={{

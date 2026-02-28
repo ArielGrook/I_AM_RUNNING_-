@@ -344,6 +344,7 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
           (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
         }
       }}
+      id="portfolio"
       data-block-type="portfolio"
       className={`w-full max-w-full py-20 px-4 sm:px-8 lg:px-16 flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
