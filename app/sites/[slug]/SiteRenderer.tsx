@@ -75,12 +75,14 @@ const resolver = {
 
 type Project = {
   id: string;
+  slug?: string;
   data?: {
     accentColor?: string;
     craft?: {
       pages?: Array<{
         id: string;
         name: string;
+        slug?: string;
         desktopData?: string;
         mobileData?: string;
         data?: string;
@@ -177,22 +179,45 @@ function extractHeaderSettings(craftData: string) {
   return { showThemeToggle: false, showLanguageToggle: false, availableLanguages: ['en'] };
 }
 
-export function SiteRenderer({ project }: { project: Project }) {
+type PageType = {
+  id: string;
+  name: string;
+  slug?: string;
+  desktopData?: string;
+  mobileData?: string;
+  data?: string;
+};
+
+function decompressPage(page: PageType | undefined): string {
+  if (!page) return '{}';
+  const compressedData = page.desktopData ?? page.data ?? '';
+  if (!compressedData) return '{}';
+  try {
+    return lz.decompress(compressedData, { inputEncoding: 'Base64' }) as string;
+  } catch {
+    return '{}';
+  }
+}
+
+export function SiteRenderer({ project, initialPageSlug }: { project: Project; initialPageSlug?: string }) {
   const spotlightRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   const pages = project.data?.craft?.pages ?? [];
-  const firstPage = pages[0];
-  const compressedData = firstPage?.desktopData ?? firstPage?.data ?? '';
 
-  let craftJson = '{}';
-  if (compressedData && typeof compressedData === 'string') {
-    try {
-      craftJson = lz.decompress(compressedData, { inputEncoding: 'Base64' }) as string;
-    } catch {
-      craftJson = '{}';
-    }
-  }
+  const findPage = (pageSlug?: string) => {
+    if (!pageSlug) return pages[0];
+    return (
+      pages.find(
+        (p) =>
+          p.slug === pageSlug ||
+          p.name.toLowerCase().replace(/\s+/g, '-') === pageSlug
+      ) ?? pages[0]
+    );
+  };
+
+  const [activePage, setActivePage] = useState(() => findPage(initialPageSlug));
+  const [craftJson, setCraftJson] = useState(() => decompressPage(activePage));
 
   const accentColor = extractAccentColor(craftJson);
   const spotlightIntensity = extractSpotlightIntensity(craftJson);
@@ -208,6 +233,23 @@ export function SiteRenderer({ project }: { project: Project }) {
     setColorScheme(next);
     setActiveCraftJson(applyColorScheme(craftJson, next));
     setFrameKey((k) => k + 1);
+  }
+
+  function navigateToPage(pageSlug: string) {
+    const page = pages.find(
+      (p) =>
+        p.slug === pageSlug ||
+        p.name.toLowerCase().replace(/\s+/g, '-') === pageSlug
+    );
+    if (!page) return;
+    setActivePage(page);
+    const newCraftJson = decompressPage(page);
+    setCraftJson(newCraftJson);
+    setActiveCraftJson(applyColorScheme(newCraftJson, colorScheme));
+    setFrameKey((k) => k + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const projectSlug = project.slug ?? '';
+    window.history.pushState({}, '', `/sites/${projectSlug}/${pageSlug}`);
   }
 
   useEffect(() => {
@@ -337,6 +379,14 @@ export function SiteRenderer({ project }: { project: Project }) {
         setLanguage,
         availableLanguages: headerSettings.availableLanguages,
         showLanguageToggle: headerSettings.showLanguageToggle,
+        navigateToPage,
+        pages: pages.map((p) => ({
+          id: p.id,
+          name: p.name,
+          slug: p.slug ?? p.name.toLowerCase().replace(/\s+/g, '-'),
+        })),
+        activePageSlug:
+          activePage?.slug ?? activePage?.name.toLowerCase().replace(/\s+/g, '-') ?? '',
       }}
     >
       <Editor resolver={resolver} enabled={false}>

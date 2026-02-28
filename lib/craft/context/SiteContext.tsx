@@ -10,6 +10,9 @@ interface SiteContextValue {
   setLanguage: (lang: string) => void;
   availableLanguages: string[];
   showLanguageToggle: boolean;
+  navigateToPage: (pageSlug: string) => void;
+  pages: Array<{ id: string; name: string; slug: string }>;
+  activePageSlug: string;
 }
 
 const SiteContext = React.createContext<SiteContextValue>({
@@ -20,6 +23,9 @@ const SiteContext = React.createContext<SiteContextValue>({
   setLanguage: () => {},
   availableLanguages: ['en'],
   showLanguageToggle: false,
+  navigateToPage: () => {},
+  pages: [],
+  activePageSlug: '',
 });
 
 export function useSiteContext() {

@@ -82,7 +82,12 @@ export const HeaderTron = ({
       document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
     } else if (href.startsWith('/')) {
       e.preventDefault();
-      navigateTo(href.replace(/^\//, ''));
+      const pageSlug = href.replace(/^\//, '');
+      if (!enabled && siteCtx.navigateToPage) {
+        siteCtx.navigateToPage(pageSlug);
+      } else {
+        navigateTo(pageSlug);
+      }
     } else {
       e.preventDefault();
       window.open(href, '_blank');
