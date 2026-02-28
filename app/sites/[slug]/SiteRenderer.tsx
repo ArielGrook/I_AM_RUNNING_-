@@ -134,6 +134,90 @@ export function SiteRenderer({ project }: { project: Project }) {
   }, []);
 
   useEffect(() => {
+    const initAnimations = async () => {
+      try {
+        const gsapModule = await import('gsap');
+        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const gsap = (gsapModule as any).gsap || (gsapModule as any).default;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        gsap.registerPlugin(ScrollTrigger);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (ScrollTrigger as any).getAll().forEach((t: any) => t.kill());
+
+        document.querySelectorAll('[data-animate]').forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          const animationType = htmlEl.getAttribute('data-animate') || '';
+          if (!animationType || animationType === 'none') return;
+
+          const delay = parseFloat(htmlEl.getAttribute('data-animate-delay') || '0');
+          const fromVars: Record<string, unknown> = { immediateRender: false };
+          const toVars: Record<string, unknown> = { duration: 0.8, delay, ease: 'power2.out' };
+
+          switch (animationType) {
+            case 'fade-in':    fromVars.opacity = 0; toVars.opacity = 1; break;
+            case 'slide-up':   fromVars.opacity = 0; fromVars.y = 60; toVars.opacity = 1; toVars.y = 0; break;
+            case 'slide-down': fromVars.opacity = 0; fromVars.y = -60; toVars.opacity = 1; toVars.y = 0; break;
+            case 'slide-left': fromVars.opacity = 0; fromVars.x = -60; toVars.opacity = 1; toVars.x = 0; break;
+            case 'blur-in':    fromVars.opacity = 0; fromVars.filter = 'blur(12px)'; toVars.opacity = 1; toVars.filter = 'blur(0px)'; break;
+            case 'scale-in':   fromVars.opacity = 0; fromVars.scale = 0.85; toVars.opacity = 1; toVars.scale = 1; break;
+            default:           fromVars.opacity = 0; toVars.opacity = 1;
+          }
+
+          const rect = htmlEl.getBoundingClientRect();
+          const inViewport = rect.top < window.innerHeight * 0.95;
+
+          if (inViewport) {
+            gsap.fromTo(htmlEl, fromVars, { ...toVars, delay: 0.2 });
+          } else {
+            gsap.fromTo(htmlEl, fromVars, {
+              ...toVars,
+              scrollTrigger: {
+                trigger: htmlEl,
+                start: 'top 85%',
+                toggleActions: 'play none none none',
+                once: true,
+              },
+            });
+          }
+        });
+
+        document.querySelectorAll('[data-animate-from]').forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          const from = htmlEl.getAttribute('data-animate-from');
+          if (!from || from === 'none') return;
+          const fromY = from === 'slide-top' ? -80 : 80;
+          gsap.fromTo(
+            htmlEl,
+            { opacity: 0, y: fromY, immediateRender: false },
+            {
+              opacity: 1, y: 0, duration: 0.7, ease: 'power2.out',
+              scrollTrigger: { trigger: htmlEl, start: 'top 88%', once: true },
+            }
+          );
+        });
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (ScrollTrigger as any).refresh();
+      } catch (e) {
+        console.error('[GSAP] Error:', e);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      initAnimations();
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      import('gsap/ScrollTrigger').then((m) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (m as any).ScrollTrigger?.getAll?.().forEach((t: any) => t.kill());
+      });
+    };
+  }, []);
+
+  useEffect(() => {
     const mobile = window.matchMedia('(pointer: coarse)').matches;
     if (mobile) return;
 
