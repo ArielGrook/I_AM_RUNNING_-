@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-export interface SiteContextValue {
+interface SiteContextValue {
   colorScheme: 'dark' | 'light';
   toggleTheme: () => void;
   showThemeToggle: boolean;

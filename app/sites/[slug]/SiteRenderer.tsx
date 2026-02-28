@@ -196,13 +196,12 @@ export function SiteRenderer({ project }: { project: Project }) {
 
   const accentColor = extractAccentColor(craftJson);
   const spotlightIntensity = extractSpotlightIntensity(craftJson);
+  const headerSettings = extractHeaderSettings(craftJson);
 
   const [colorScheme, setColorScheme] = useState<'dark' | 'light'>(extractColorScheme(craftJson));
   const [frameKey, setFrameKey] = useState(0);
   const [activeCraftJson, setActiveCraftJson] = useState(craftJson);
   const [language, setLanguage] = useState('en');
-
-  const headerSettings = extractHeaderSettings(craftJson);
 
   function toggleTheme() {
     const next = colorScheme === 'dark' ? 'light' : 'dark';
@@ -341,7 +340,7 @@ export function SiteRenderer({ project }: { project: Project }) {
       }}
     >
       <Editor resolver={resolver} enabled={false}>
-        <ThemeProvider initialTheme={{ accentColor, colorScheme }}>
+        <ThemeProvider>
           <Frame key={frameKey} data={activeCraftJson} />
         </ThemeProvider>
       </Editor>
