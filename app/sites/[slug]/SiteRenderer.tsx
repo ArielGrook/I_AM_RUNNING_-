@@ -36,7 +36,7 @@ import {
   CardBlock,
   PricingCardBlock,
 } from '@/lib/craft/components';
-import { ThemeProvider, useTheme } from '@/lib/craft/context/ThemeContext';
+import { ThemeProvider } from '@/lib/craft/context/ThemeContext';
 
 const resolver = {
   Container,
@@ -125,34 +125,35 @@ function extractAccentColor(craftData: string): string {
   return '#FF6B35';
 }
 
-function ThemeToggle() {
-  const { theme, setColorScheme } = useTheme();
-  return (
-    <button
-      onClick={() => setColorScheme(theme.colorScheme === 'dark' ? 'light' : 'dark')}
-      style={{
-        position: 'fixed',
-        bottom: 24,
-        right: 24,
-        width: 44,
-        height: 44,
-        borderRadius: '50%',
-        background: theme.colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-        border: `1px solid ${theme.colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
-        color: theme.colorScheme === 'dark' ? '#ffffff' : '#0a0a0a',
-        fontSize: 18,
-        cursor: 'pointer',
-        zIndex: 10000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backdropFilter: 'blur(10px)',
-        transition: 'all 0.2s ease',
-      }}
-    >
-      {theme.colorScheme === 'dark' ? '☀️' : '🌙'}
-    </button>
-  );
+function extractSpotlightIntensity(craftData: string): number {
+  try {
+    const parsed = JSON.parse(craftData) as Record<string, unknown>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nodes = Object.values(parsed) as any[];
+    for (const node of nodes) {
+      if (node?.props?.spotlightIntensity != null) {
+        return Number(node.props.spotlightIntensity);
+      }
+    }
+  } catch {
+    // noop
+  }
+  return 15;
+}
+
+function applyColorScheme(craftData: string, scheme: 'dark' | 'light'): string {
+  try {
+    const parsed = JSON.parse(craftData);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Object.values(parsed).forEach((node: any) => {
+      if (node?.props && 'colorScheme' in node.props) {
+        node.props.colorScheme = scheme;
+      }
+    });
+    return JSON.stringify(parsed);
+  } catch {
+    return craftData;
+  }
 }
 
 export function SiteRenderer({ project }: { project: Project }) {
@@ -173,6 +174,18 @@ export function SiteRenderer({ project }: { project: Project }) {
   }
 
   const accentColor = extractAccentColor(craftJson);
+  const spotlightIntensity = extractSpotlightIntensity(craftJson);
+
+  const [colorScheme, setColorScheme] = useState<'dark' | 'light'>(extractColorScheme(craftJson));
+  const [frameKey, setFrameKey] = useState(0);
+  const [activeCraftJson, setActiveCraftJson] = useState(craftJson);
+
+  function toggleTheme() {
+    const next = colorScheme === 'dark' ? 'light' : 'dark';
+    setColorScheme(next);
+    setActiveCraftJson(applyColorScheme(craftJson, next));
+    setFrameKey((k) => k + 1);
+  }
 
   useEffect(() => {
     setIsMobile(window.matchMedia('(pointer: coarse)').matches);
@@ -260,7 +273,7 @@ export function SiteRenderer({ project }: { project: Project }) {
         (m as any).ScrollTrigger?.getAll?.().forEach((t: any) => t.kill());
       });
     };
-  }, []);
+  }, [frameKey]);
 
   useEffect(() => {
     const mobile = window.matchMedia('(pointer: coarse)').matches;
@@ -272,7 +285,7 @@ export function SiteRenderer({ project }: { project: Project }) {
       rafId = requestAnimationFrame(() => {
         if (spotlightRef.current) {
           spotlightRef.current.style.background = `radial-gradient(circle 400px at ${e.clientX}px ${e.clientY}px,
-            rgba(${hexToRgb(accentColor)}, 0.12) 0%,
+            rgba(${hexToRgb(accentColor)}, ${spotlightIntensity / 100}) 0%,
             transparent 70%
           )`;
           spotlightRef.current.style.opacity = '1';
@@ -289,16 +302,37 @@ export function SiteRenderer({ project }: { project: Project }) {
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [accentColor]);
+  }, [accentColor, spotlightIntensity]);
 
   return (
     <>
       <Editor resolver={resolver} enabled={false}>
-        <ThemeProvider initialTheme={{ accentColor, colorScheme: extractColorScheme(craftJson) }}>
-          <Frame data={craftJson} />
-          <ThemeToggle />
+        <ThemeProvider>
+          <Frame key={frameKey} data={activeCraftJson} />
         </ThemeProvider>
       </Editor>
+      <div style={{ position: 'fixed', top: 12, right: 80, zIndex: 10000 }}>
+        <button
+          onClick={toggleTheme}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
+            color: colorScheme === 'dark' ? '#ffffff' : '#0a0a0a',
+            fontSize: 16,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {colorScheme === 'dark' ? '☀️' : '🌙'}
+        </button>
+      </div>
       {!isMobile && (
         <div
           ref={spotlightRef}
