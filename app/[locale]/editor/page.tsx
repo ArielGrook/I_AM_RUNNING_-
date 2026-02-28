@@ -343,6 +343,7 @@ export default function EditorPage() {
   const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [desktopData, setDesktopData] = useState<string | null>(null);
   const [mobileData, setMobileData] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const activePage = pages.find((p) => p.id === activePageId);
 
@@ -685,13 +686,12 @@ export default function EditorPage() {
 
         if (error) {
           console.error('Save failed:', error);
-          alert('Save failed');
           return;
         }
         setPages(updatedPages);
         setDesktopData(latestDesktop);
         setMobileData(latestMobile);
-        alert('Saved!');
+        setHasUnsavedChanges(false);
       } finally {
         setIsSaving(false);
       }
@@ -800,6 +800,17 @@ export default function EditorPage() {
     [pages, activePageId, loadedProject]
   );
 
+  // Warn on browser close/reload if unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   // Wait for project load before mounting Editor so Frame gets correct data on first paint
   if (authLoading || !isAuthenticated || !projectId) {
     return (
@@ -860,6 +871,7 @@ export default function EditorPage() {
           transition: 'none',
           thickness: 3,
         }}
+        onNodesChange={() => setHasUnsavedChanges(true)}
       >
         <ThemeProvider>
         <PagesProvider
@@ -895,6 +907,7 @@ export default function EditorPage() {
           projectId={projectId}
           projectName={loadedProject?.name}
           onRenameProject={handleRenameProject}
+          hasUnsavedChanges={hasUnsavedChanges}
         />
         <EditorLayout
           leftPanelOpen={leftPanelOpen}

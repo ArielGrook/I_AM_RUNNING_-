@@ -38,12 +38,12 @@ export function ToastContainer() {
     <div
       style={{
         position: 'fixed',
-        bottom: 24,
+        top: '50%',
         left: '50%',
-        transform: 'translateX(-50%)',
+        transform: 'translate(-50%, -50%)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
+        gap: 12,
         zIndex: 99999,
         pointerEvents: 'none',
       }}
@@ -52,21 +52,17 @@ export function ToastContainer() {
         <div
           key={t.id}
           style={{
-            padding: '10px 20px',
-            borderRadius: 10,
-            fontSize: 14,
-            fontWeight: 500,
-            color: '#fff',
-            background:
-              t.type === 'success'
-                ? 'rgba(34,197,94,0.95)'
-                : t.type === 'error'
-                  ? 'rgba(239,68,68,0.95)'
-                  : 'rgba(255,107,53,0.95)',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
-            backdropFilter: 'blur(8px)',
+            padding: '20px 40px',
+            borderRadius: 16,
+            fontSize: 18,
+            fontWeight: 700,
+            color: '#ffffff',
+            background: '#FF6B35',
+            boxShadow: '0 8px 40px rgba(255,107,53,0.4)',
+            backdropFilter: 'blur(12px)',
             animation: 'toastIn 0.3s ease',
             whiteSpace: 'nowrap',
+            letterSpacing: '0.02em',
           }}
         >
           {t.message}
@@ -74,8 +70,8 @@ export function ToastContainer() {
       ))}
       <style>{`
         @keyframes toastIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
         }
       `}</style>
     </div>

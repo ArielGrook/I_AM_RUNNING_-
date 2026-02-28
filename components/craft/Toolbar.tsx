@@ -34,6 +34,7 @@ export const Toolbar = ({
   projectId,
   projectName,
   onRenameProject,
+  hasUnsavedChanges,
 }: {
   onSave: (serializedJson: string) => void | Promise<void>;
   onPreview: () => void;
@@ -56,6 +57,7 @@ export const Toolbar = ({
   projectId?: string | null;
   projectName?: string;
   onRenameProject?: (newName: string) => Promise<void>;
+  hasUnsavedChanges?: boolean;
 }) => {
   const { query, actions } = useEditor();
   const canUndo = query.history.canUndo();
@@ -296,7 +298,17 @@ export const Toolbar = ({
       'bg-[#1a1a1a] border-gray-700/60'
     )}`}>
       {/* Back */}
-      <button onClick={() => router.push(`/${locale}/dashboard`)} className={iconBtnCls} title="Back to Dashboard">
+      <button
+        onClick={() => {
+          if (hasUnsavedChanges) {
+            toast('Save your project before leaving — changes will be lost!', 'warning');
+            return;
+          }
+          router.push(`/${locale}/dashboard`);
+        }}
+        className={iconBtnCls}
+        title="Back to Dashboard"
+      >
         ←
       </button>
 
