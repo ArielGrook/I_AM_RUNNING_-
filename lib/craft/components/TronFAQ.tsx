@@ -3,9 +3,10 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
+import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
-import { LinkPicker } from '@/lib/craft/shared/LinkPicker';
+import { LinkPicker, handleLinkClick } from '@/lib/craft/shared/LinkPicker';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -73,6 +74,7 @@ export const TronFAQ = React.memo(function TronFAQ() {
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
+  const siteCtx = useSiteContext();
 
   const containerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
@@ -320,16 +322,8 @@ export const TronFAQ = React.memo(function TronFAQ() {
               {showCta && layoutStyle === 'split' && (
                 <a
                   href={enabled ? undefined : ctaHref}
-                  onClick={(e) => {
-                    if (enabled) {
-                      e.preventDefault();
-                      return;
-                    }
-                    if (ctaHref?.startsWith('#')) {
-                      e.preventDefault();
-                      document.querySelector(ctaHref)?.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
+                  onClick={(e) => handleLinkClick(e, ctaHref ?? '#', enabled, siteCtx.navigateToPage)}
+                  onTouchEnd={(e) => handleLinkClick(e as any, ctaHref ?? '#', enabled, siteCtx.navigateToPage)}
                   style={{
                     marginTop: 32,
                     padding: '12px 28px',

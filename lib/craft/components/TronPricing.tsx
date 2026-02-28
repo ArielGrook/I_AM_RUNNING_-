@@ -3,9 +3,10 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
+import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
-import { LinkPicker } from '@/lib/craft/shared/LinkPicker';
+import { LinkPicker, handleLinkClick } from '@/lib/craft/shared/LinkPicker';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -184,6 +185,7 @@ interface PricingPlanCardDisplayProps {
   accentColor: string;
   enabled: boolean;
   isAnnual?: boolean;
+  navigateToPage?: (slug: string) => void;
   onSaveName: (val: string) => void;
   onSaveSubtitle: (val: string) => void;
   onSaveFeature: (fi: number, val: string) => void;
@@ -191,7 +193,7 @@ interface PricingPlanCardDisplayProps {
   onSavePopularText: (val: string) => void;
 }
 
-function PricingPlanCardDisplay({ plan, planIndex, t, accentColor, enabled, isAnnual = false, onSaveName, onSaveSubtitle, onSaveFeature, onSaveCta, onSavePopularText }: PricingPlanCardDisplayProps) {
+function PricingPlanCardDisplay({ plan, planIndex, t, accentColor, enabled, isAnnual = false, navigateToPage, onSaveName, onSaveSubtitle, onSaveFeature, onSaveCta, onSavePopularText }: PricingPlanCardDisplayProps) {
   const [hovered, setHovered] = React.useState(false);
   const displayPrice = isAnnual && plan.priceAnnual ? plan.priceAnnual : plan.price;
 
@@ -317,16 +319,8 @@ function PricingPlanCardDisplay({ plan, planIndex, t, accentColor, enabled, isAn
 
       <a
         href={enabled ? undefined : (plan.ctaHref ?? '#')}
-        onClick={(e) => {
-          if (enabled) {
-            e.preventDefault();
-            return;
-          }
-          if (plan.ctaHref?.startsWith('#')) {
-            e.preventDefault();
-            document.querySelector(plan.ctaHref)?.scrollIntoView({ behavior: 'smooth' });
-          }
-        }}
+        onClick={(e) => handleLinkClick(e, plan.ctaHref ?? '#', enabled, navigateToPage)}
+        onTouchEnd={(e) => handleLinkClick(e as any, plan.ctaHref ?? '#', enabled, navigateToPage)}
         style={{
           width: '100%',
           padding: '12px 20px',
@@ -358,6 +352,7 @@ export const TronPricing = React.memo(function TronPricing() {
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
+  const siteCtx = useSiteContext();
 
   const containerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
@@ -575,6 +570,7 @@ export const TronPricing = React.memo(function TronPricing() {
                 accentColor={accentColor}
                 enabled={enabled}
                 isAnnual={isAnnual}
+                navigateToPage={siteCtx.navigateToPage}
                 onSaveName={(val) => setProp((p: Record<string, unknown>) => {
                   const arr = [...((p.plans as PricingPlan[]) ?? [])];
                   if (arr[pi]) arr[pi] = { ...arr[pi], name: val };

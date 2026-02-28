@@ -108,3 +108,40 @@ export function hrefToLinkValue(href: string): LinkValue {
   if (href.startsWith('/')) return { type: 'page', href };
   return { type: 'external', href };
 }
+
+// Хелпер — универсальный обработчик кликов для всех типов ссылок
+export function handleLinkClick(
+  e: React.MouseEvent | React.TouchEvent,
+  href: string,
+  enabled: boolean,
+  navigateToPage?: (slug: string) => void
+) {
+  if (enabled) {
+    e.preventDefault();
+    return;
+  }
+  if (!href || href === '#') {
+    e.preventDefault();
+    return;
+  }
+
+  e.preventDefault();
+
+  if (href.startsWith('#')) {
+    const el = document.querySelector(href);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  if (href.startsWith('/')) {
+    const pageSlug = href.replace(/^\//, '');
+    if (navigateToPage) {
+      navigateToPage(pageSlug);
+    } else {
+      window.location.href = href;
+    }
+    return;
+  }
+
+  window.open(href, '_blank');
+}

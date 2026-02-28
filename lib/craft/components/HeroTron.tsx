@@ -3,9 +3,10 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
+import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
-import { LinkPicker } from '@/lib/craft/shared/LinkPicker';
+import { LinkPicker, handleLinkClick } from '@/lib/craft/shared/LinkPicker';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -69,6 +70,7 @@ export const HeroTron = React.memo(function HeroTron() {
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
+  const siteCtx = useSiteContext();
 
   const containerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
@@ -273,16 +275,8 @@ export const HeroTron = React.memo(function HeroTron() {
         >
           <a
             href={enabled ? undefined : primaryCtaHref}
-            onClick={(e) => {
-              if (enabled) {
-                e.preventDefault();
-                return;
-              }
-              if (primaryCtaHref?.startsWith('#')) {
-                e.preventDefault();
-                document.querySelector(primaryCtaHref)?.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
+            onClick={(e) => handleLinkClick(e, primaryCtaHref ?? '#', enabled, siteCtx.navigateToPage)}
+            onTouchEnd={(e) => handleLinkClick(e as any, primaryCtaHref ?? '#', enabled, siteCtx.navigateToPage)}
             style={{
               padding: '14px 32px',
               background: accentColor,
@@ -306,16 +300,8 @@ export const HeroTron = React.memo(function HeroTron() {
           {showSecondaryCta && (
             <a
               href={enabled ? undefined : secondaryCtaHref}
-              onClick={(e) => {
-                if (enabled) {
-                  e.preventDefault();
-                  return;
-                }
-                if (secondaryCtaHref?.startsWith('#')) {
-                  e.preventDefault();
-                  document.querySelector(secondaryCtaHref)?.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
+              onClick={(e) => handleLinkClick(e, secondaryCtaHref ?? '#', enabled, siteCtx.navigateToPage)}
+              onTouchEnd={(e) => handleLinkClick(e as any, secondaryCtaHref ?? '#', enabled, siteCtx.navigateToPage)}
               style={{
                 padding: '14px 32px',
                 background: 'transparent',

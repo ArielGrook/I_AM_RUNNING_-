@@ -371,10 +371,10 @@ export const Viewport = ({
           <button
             type="button"
             onClick={() => {
-              if (!desktopData) return;
-              const json = lz.decompress(desktopData, { inputEncoding: 'Base64' }) as string;
-              actions.deserialize(json);
-              setMobileData(desktopData);
+              const liveJson = query.serialize();
+              actions.deserialize(liveJson);
+              const compressed = lz.compress(liveJson, { outputEncoding: 'Base64' }) as string;
+              setMobileData(compressed);
             }}
             style={{
               background: 'rgba(255, 107, 53, 0.15)',

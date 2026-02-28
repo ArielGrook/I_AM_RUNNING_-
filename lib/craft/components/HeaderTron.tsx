@@ -6,7 +6,7 @@ import { PagesContext } from '@/lib/craft/context/PagesContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
-import { LinkPicker } from '@/lib/craft/shared/LinkPicker';
+import { LinkPicker, handleLinkClick } from '@/lib/craft/shared/LinkPicker';
 
 type NavLinkType = 'section' | 'page' | 'external';
 type NavLinkItem = { label: string; href: string; type?: NavLinkType };
@@ -76,25 +76,7 @@ export const HeaderTron = ({
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null);
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
-    if (enabled) {
-      e.preventDefault();
-      return;
-    }
-    if (href.startsWith('#')) {
-      e.preventDefault();
-      document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
-    } else if (href.startsWith('/')) {
-      e.preventDefault();
-      const pageSlug = href.replace(/^\//, '');
-      if (!enabled && siteCtx.navigateToPage) {
-        siteCtx.navigateToPage(pageSlug);
-      } else {
-        navigateTo(pageSlug);
-      }
-    } else {
-      e.preventDefault();
-      window.open(href, '_blank');
-    }
+    handleLinkClick(e, href, enabled, siteCtx.navigateToPage || navigateTo);
   };
 
   const tokens = {
@@ -187,7 +169,7 @@ export const HeaderTron = ({
             {!enabled && (showThemeToggle || siteCtx.showThemeToggle) && (
               <button
                 onClick={siteCtx.toggleTheme}
-                className="hidden md:flex"
+                className="flex"
                 style={{
                   width: 36,
                   height: 36,
@@ -211,7 +193,7 @@ export const HeaderTron = ({
               <select
                 value={siteCtx.language}
                 onChange={(e) => siteCtx.setLanguage(e.target.value)}
-                className="hidden md:block"
+                className="block"
                 style={{
                   background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
                   border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
@@ -233,6 +215,7 @@ export const HeaderTron = ({
                 href={ctaHref}
                 className="hidden md:block"
                 onClick={(e) => handleNavClick(e, ctaHref)}
+                onTouchEnd={(e) => handleNavClick(e as any, ctaHref)}
                 style={{ background: t.accent, color: '#ffffff', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600, transition: 'opacity 150ms ease, transform 150ms ease', textDecoration: 'none', cursor: 'pointer' }}
                 onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
