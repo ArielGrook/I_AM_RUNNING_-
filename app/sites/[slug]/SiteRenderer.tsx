@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Editor, Frame } from '@craftjs/core';
 import lz from 'lzutf8';
 import {
@@ -111,7 +111,8 @@ function extractAccentColor(craftData: string): string {
 }
 
 export function SiteRenderer({ project }: { project: Project }) {
-  const [spotlightPos, setSpotlightPos] = useState({ x: -9999, y: -9999 });
+  const spotlightRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const pages = project.data?.craft?.pages ?? [];
   const firstPage = pages[0];
@@ -129,24 +130,37 @@ export function SiteRenderer({ project }: { project: Project }) {
   const accentColor = extractAccentColor(craftJson);
 
   useEffect(() => {
+    setIsMobile(window.matchMedia('(pointer: coarse)').matches);
+  }, []);
+
+  useEffect(() => {
+    const mobile = window.matchMedia('(pointer: coarse)').matches;
+    if (mobile) return;
+
     let rafId: number;
     const handleMouseMove = (e: MouseEvent) => {
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        setSpotlightPos({ x: e.clientX, y: e.clientY });
+        if (spotlightRef.current) {
+          spotlightRef.current.style.background = `radial-gradient(circle 400px at ${e.clientX}px ${e.clientY}px,
+            rgba(${hexToRgb(accentColor)}, 0.12) 0%,
+            transparent 70%
+          )`;
+          spotlightRef.current.style.opacity = '1';
+        }
       });
     };
     const handleMouseLeave = () => {
-      setSpotlightPos({ x: -9999, y: -9999 });
+      if (spotlightRef.current) spotlightRef.current.style.opacity = '0';
     };
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
-      cancelAnimationFrame(rafId);
     };
-  }, []);
+  }, [accentColor]);
 
   return (
     <>
@@ -155,17 +169,16 @@ export function SiteRenderer({ project }: { project: Project }) {
           <Frame data={craftJson} />
         </ThemeProvider>
       </Editor>
-      {spotlightPos.x >= 0 && spotlightPos.y >= 0 && (
+      {!isMobile && (
         <div
+          ref={spotlightRef}
           style={{
             position: 'fixed',
             inset: 0,
             pointerEvents: 'none',
             zIndex: 9999,
-            background: `radial-gradient(circle 400px at ${spotlightPos.x}px ${spotlightPos.y}px,
-              rgba(${hexToRgb(accentColor)}, 0.12) 0%,
-              transparent 70%
-            )`,
+            opacity: 0,
+            transition: 'opacity 0.3s ease',
           }}
         />
       )}
