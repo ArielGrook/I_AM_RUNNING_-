@@ -3,6 +3,7 @@
 import { Element, useEditor } from '@craftjs/core';
 import React, { useState, useCallback } from 'react';
 import { Upload, ChevronDown } from 'lucide-react';
+import { toast } from '@/components/ui/Toast';
 import {
   Container,
   Text,
@@ -135,14 +136,6 @@ export const Toolbox = () => {
     (preset: (typeof PRESETS)[number]) => {
       try {
         const state = query.getState();
-        const nodeCount = Object.keys(state?.nodes ?? {}).length;
-        if (nodeCount > 1) {
-          const ok = window.confirm(
-            'This will replace your current canvas. Continue?'
-          );
-          if (!ok) return;
-        }
-
         const rootNode = state?.nodes?.[ROOT_ID];
         const childIds = (rootNode?.data?.nodes ?? []) as string[];
         [...childIds].reverse().forEach((id) => actions.delete(id));
@@ -152,8 +145,10 @@ export const Toolbox = () => {
           const tree = query.parseReactElement(element).toNodeTree();
           actions.addNodeTree(tree, ROOT_ID, index);
         });
+        toast('Canvas replaced with preset', 'warning');
       } catch (err) {
         console.error('Load preset failed:', err);
+        toast('Preset load failed', 'error');
       }
     },
     [query, actions]

@@ -6,7 +6,7 @@ export function LoadingScreen() {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#0a0a0a',
+        background: '#ffffff',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -17,25 +17,25 @@ export function LoadingScreen() {
       {/* Logotype */}
       <div
         style={{
-          fontSize: 'clamp(24px, 5vw, 40px)',
+          fontSize: 'clamp(32px, 6vw, 52px)',
           fontWeight: 900,
-          letterSpacing: '0.2em',
-          color: '#ffffff',
+          letterSpacing: '0.15em',
+          color: '#FF6B35',
           fontFamily: 'system-ui, sans-serif',
-          marginBottom: 40,
+          marginBottom: 48,
           userSelect: 'none',
         }}
       >
-        I AM <span style={{ color: '#FF6B35' }}>RUNNING</span>
+        I AM RUNNING
       </div>
 
       {/* Progress bar */}
       <div
         style={{
-          width: 160,
-          height: 1,
-          background: 'rgba(255,255,255,0.1)',
-          borderRadius: 1,
+          width: 200,
+          height: 2,
+          background: 'rgba(255,107,53,0.15)',
+          borderRadius: 2,
           overflow: 'hidden',
           position: 'relative',
         }}
@@ -46,18 +46,18 @@ export function LoadingScreen() {
             top: 0,
             left: 0,
             height: '100%',
-            width: '40%',
+            width: '45%',
             background: '#FF6B35',
-            borderRadius: 1,
-            animation: 'shimmer 1.5s ease-in-out infinite',
+            borderRadius: 2,
+            animation: 'shimmer 1.4s ease-in-out infinite',
           }}
         />
       </div>
 
       <style>{`
         @keyframes shimmer {
-          0%   { transform: translateX(-250%); }
-          100% { transform: translateX(500%); }
+          0%   { transform: translateX(-220%); }
+          100% { transform: translateX(520%); }
         }
       `}</style>
     </div>

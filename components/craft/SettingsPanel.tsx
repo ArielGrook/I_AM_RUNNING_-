@@ -4,6 +4,7 @@ import { useEditor, useNode, NodeProvider } from '@craftjs/core';
 import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useEditorTheme } from './EditorThemeContext';
+import { toast } from '@/components/ui/Toast';
 
 // ── Accordion section ──────────────────────────────────
 export function SettingsSection({
@@ -122,9 +123,8 @@ export const SettingsPanel = () => {
           <button
             type="button"
             onClick={() => {
-              if (window.confirm('Delete this component?')) {
-                actions.delete(selected.id);
-              }
+              actions.delete(selected.id);
+              toast('Component deleted', 'warning');
             }}
             className="w-full py-2 px-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-red-400 hover:text-red-300 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
           >

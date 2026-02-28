@@ -6,6 +6,7 @@ import { Trash2 } from 'lucide-react';
 import { useEditorTheme } from './EditorThemeContext';
 import { PagesContext } from '@/lib/craft/context/PagesContext';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
+import { toast } from '@/components/ui/Toast';
 
 type PageItem = { id: string; name: string };
 
@@ -73,8 +74,10 @@ export const Toolbar = ({
     try {
       const json = query.serialize();
       await onSave(json);
+      toast('Project saved ✓');
     } catch (e) {
       console.error('Serialize failed:', e);
+      toast('Save failed', 'error');
     }
   };
 
@@ -146,7 +149,6 @@ export const Toolbar = ({
   };
 
   const clearCanvas = () => {
-    if (!window.confirm('Clear all content? This cannot be undone.')) return;
     try {
       const state = query.getState();
       const rootNode = state?.nodes?.[ROOT_ID];
@@ -156,8 +158,10 @@ export const Toolbar = ({
           actions.delete(id);
         } catch {}
       });
+      toast('Canvas cleared', 'warning');
     } catch (e) {
       console.error('Clear canvas failed:', e);
+      toast('Clear failed', 'error');
     }
   };
 

@@ -60,6 +60,7 @@ import { KeyboardShortcuts } from '@/components/craft/KeyboardShortcuts';
 import { EditorThemeProvider, useEditorTheme } from '@/components/craft/EditorThemeContext';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ToastContainer } from '@/components/ui/Toast';
 
 /** Root wrapper: applies .dark class when editor theme is dark (for Settings/mini toolbar CSS). */
 function EditorRoot({ children }: { children: React.ReactNode }) {
@@ -943,6 +944,7 @@ export default function EditorPage() {
           onClose={() => setPreviewOpen(false)}
           data={previewHTML}
         />
+        <ToastContainer />
         </PagesProvider>
         </ThemeProvider>
       </Editor>
