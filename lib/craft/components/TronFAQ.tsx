@@ -5,6 +5,7 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
+import { LinkPicker } from '@/lib/craft/shared/LinkPicker';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -51,6 +52,8 @@ interface TronFAQProps {
   layoutStyle?: 'centered' | 'split';
   showCta?: boolean;
   ctaText?: string;
+  ctaHref?: string;
+  ctaHrefType?: 'section' | 'page' | 'external';
   items?: FAQItem[];
   animationType?: string;
   animateDelay?: string;
@@ -98,6 +101,8 @@ export const TronFAQ = React.memo(function TronFAQ() {
     layoutStyle = 'centered',
     showCta = true,
     ctaText = 'Contact support',
+    ctaHref = '#',
+    ctaHrefType = 'external',
     items = DEFAULT_ITEMS,
     animationType = 'none',
     animateDelay = '0',
@@ -313,8 +318,18 @@ export const TronFAQ = React.memo(function TronFAQ() {
                 onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
               />
               {showCta && layoutStyle === 'split' && (
-                <button
-                  type="button"
+                <a
+                  href={enabled ? undefined : ctaHref}
+                  onClick={(e) => {
+                    if (enabled) {
+                      e.preventDefault();
+                      return;
+                    }
+                    if (ctaHref?.startsWith('#')) {
+                      e.preventDefault();
+                      document.querySelector(ctaHref)?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
                   style={{
                     marginTop: 32,
                     padding: '12px 28px',
@@ -323,6 +338,8 @@ export const TronFAQ = React.memo(function TronFAQ() {
                     border: 'none',
                     borderRadius: 8,
                     fontSize: 14,
+                    textDecoration: 'none',
+                    display: 'inline-block',
                     fontWeight: 600,
                     cursor: enabled ? 'default' : 'pointer',
                   }}
@@ -332,7 +349,7 @@ export const TronFAQ = React.memo(function TronFAQ() {
                   ) : (
                     ctaText
                   )}
-                </button>
+                </a>
               )}
             </div>
             <div>{accordionItems}</div>
@@ -375,6 +392,8 @@ function TronFAQSettings() {
     layoutStyle = 'centered',
     showCta = true,
     ctaText = 'Contact support',
+    ctaHref = '#',
+    ctaHrefType = 'external',
     items = DEFAULT_ITEMS,
     darkBg = '#0a0a0a',
     lightBg = '#ffffff',
@@ -470,10 +489,22 @@ function TronFAQSettings() {
               Show CTA button
             </label>
             {showCta && (
-              <div>
-                <label className={labelCls}>Button text</label>
-                <input type="text" value={ctaText} onChange={(e) => setT('ctaText', 500)(e.target.value)} className={inputCls} />
-              </div>
+              <>
+                <div>
+                  <label className={labelCls}>Button text</label>
+                  <input type="text" value={ctaText} onChange={(e) => setT('ctaText', 500)(e.target.value)} className={inputCls} />
+                </div>
+                <LinkPicker
+                  label="Button link"
+                  value={{ type: ctaHrefType, href: ctaHref }}
+                  onChange={(val) => {
+                    setProp((p: Record<string, unknown>) => {
+                      p.ctaHref = val.href;
+                      p.ctaHrefType = val.type;
+                    }, 0);
+                  }}
+                />
+              </>
             )}
           </div>
         </div>
@@ -645,6 +676,8 @@ const tronFAQCraft = {
     layoutStyle: 'centered' as const,
     showCta: true,
     ctaText: 'Contact support',
+    ctaHref: '#',
+    ctaHrefType: 'external' as const,
     items: DEFAULT_ITEMS,
     animationType: 'none',
     animateDelay: '0',

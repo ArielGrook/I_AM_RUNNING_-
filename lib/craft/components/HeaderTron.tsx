@@ -6,6 +6,7 @@ import { PagesContext } from '@/lib/craft/context/PagesContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
+import { LinkPicker } from '@/lib/craft/shared/LinkPicker';
 
 type NavLinkType = 'section' | 'page' | 'external';
 type NavLinkItem = { label: string; href: string; type?: NavLinkType };
@@ -40,6 +41,7 @@ export const HeaderTron = ({
   navLinks = DEFAULT_NAV_LINKS,
   ctaText = 'Get Started',
   ctaHref = '#',
+  ctaHrefType = 'external',
   showCta = true,
   sticky = true,
   animationType = 'none',
@@ -56,6 +58,7 @@ export const HeaderTron = ({
   navLinks?: NavLinkItem[];
   ctaText?: string;
   ctaHref?: string;
+  ctaHrefType?: 'section' | 'page' | 'external';
   showCta?: boolean;
   sticky?: boolean;
   animationType?: string;
@@ -289,7 +292,7 @@ export const HeaderTron = ({
 };
 
 const HeaderTronSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, ctaHrefType, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as string,
     accentColor: node.data.props.accentColor as string,
     darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
@@ -297,6 +300,7 @@ const HeaderTronSettings = () => {
     logoText: node.data.props.logoText as string,
     ctaText: node.data.props.ctaText as string,
     ctaHref: node.data.props.ctaHref as string,
+    ctaHrefType: (node.data.props.ctaHrefType as 'section' | 'page' | 'external') ?? 'external',
     navLinks: node.data.props.navLinks as NavLinkItem[],
     showCta: node.data.props.showCta as boolean | undefined,
     sticky: node.data.props.sticky as boolean | undefined,
@@ -370,7 +374,16 @@ const HeaderTronSettings = () => {
         <div className="space-y-2">
           <div><label className={labelCls}>Logo Text</label><input type="text" value={logoText ?? ''} onChange={(e) => setT('logoText', 500)(e.target.value)} className={inputCls} placeholder="BRAND" /></div>
           <div><label className={labelCls}>CTA Button Text</label><input type="text" value={ctaText ?? ''} onChange={(e) => setT('ctaText', 500)(e.target.value)} className={inputCls} placeholder="Get Started" /></div>
-          <div><label className={labelCls}>CTA Button Link</label><input type="text" value={ctaHref ?? '#'} onChange={(e) => setT('ctaHref', 500)(e.target.value)} className={inputCls} placeholder="#" /></div>
+          <LinkPicker
+            label="CTA Button Link"
+            value={{ type: ctaHrefType, href: ctaHref }}
+            onChange={(val) => {
+              setProp((p: Record<string, unknown>) => {
+                p.ctaHref = val.href;
+                p.ctaHrefType = val.type;
+              }, 0);
+            }}
+          />
         </div>
       </section>
       <section>
@@ -508,6 +521,7 @@ HeaderTron.craft = {
     'data-block-type': 'header',
     ctaText: 'Get Started',
     ctaHref: '#',
+    ctaHrefType: 'external' as const,
     showCta: true,
     sticky: true,
     animationType: 'none',

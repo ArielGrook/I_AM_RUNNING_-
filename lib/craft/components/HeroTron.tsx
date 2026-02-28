@@ -5,6 +5,7 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
+import { LinkPicker } from '@/lib/craft/shared/LinkPicker';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -50,7 +51,11 @@ export interface TronHeroProps {
   subheadline?: string;
   subtitle?: string;
   primaryCta?: string;
+  primaryCtaHref?: string;
+  primaryCtaHrefType?: 'section' | 'page' | 'external';
   secondaryCta?: string;
+  secondaryCtaHref?: string;
+  secondaryCtaHrefType?: 'section' | 'page' | 'external';
   showSecondaryCta?: boolean;
   showSocialProof?: boolean;
   socialProofText?: string;
@@ -100,7 +105,11 @@ export const HeroTron = React.memo(function HeroTron() {
     subheadline = 'Professional websites in minutes',
     subtitle = 'Drag, drop, and publish. No code required. Built for modern teams.',
     primaryCta = 'Get started free',
+    primaryCtaHref = '#',
+    primaryCtaHrefType = 'external',
     secondaryCta = 'View demo',
+    secondaryCtaHref = '#',
+    secondaryCtaHrefType = 'external',
     showSecondaryCta = true,
     showSocialProof = true,
     socialProofText = '500+ teams already building',
@@ -262,8 +271,18 @@ export const HeroTron = React.memo(function HeroTron() {
             marginTop: 32,
           }}
         >
-          <button
-            type="button"
+          <a
+            href={enabled ? undefined : primaryCtaHref}
+            onClick={(e) => {
+              if (enabled) {
+                e.preventDefault();
+                return;
+              }
+              if (primaryCtaHref?.startsWith('#')) {
+                e.preventDefault();
+                document.querySelector(primaryCtaHref)?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
             style={{
               padding: '14px 32px',
               background: accentColor,
@@ -273,6 +292,8 @@ export const HeroTron = React.memo(function HeroTron() {
               fontSize: 15,
               fontWeight: 600,
               cursor: enabled ? 'default' : 'pointer',
+              textDecoration: 'none',
+              display: 'inline-block',
             }}
           >
             {enabled ? (
@@ -280,11 +301,21 @@ export const HeroTron = React.memo(function HeroTron() {
             ) : (
               primaryCta
             )}
-          </button>
+          </a>
 
           {showSecondaryCta && (
-            <button
-              type="button"
+            <a
+              href={enabled ? undefined : secondaryCtaHref}
+              onClick={(e) => {
+                if (enabled) {
+                  e.preventDefault();
+                  return;
+                }
+                if (secondaryCtaHref?.startsWith('#')) {
+                  e.preventDefault();
+                  document.querySelector(secondaryCtaHref)?.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
               style={{
                 padding: '14px 32px',
                 background: 'transparent',
@@ -294,6 +325,8 @@ export const HeroTron = React.memo(function HeroTron() {
                 fontSize: 15,
                 fontWeight: 500,
                 cursor: enabled ? 'default' : 'pointer',
+                textDecoration: 'none',
+                display: 'inline-block',
               }}
             >
               {enabled ? (
@@ -301,7 +334,7 @@ export const HeroTron = React.memo(function HeroTron() {
               ) : (
                 secondaryCta
               )}
-            </button>
+            </a>
           )}
         </div>
 
@@ -347,7 +380,11 @@ function HeroTronSettings() {
     subheadline = 'Professional websites in minutes',
     subtitle = 'Drag, drop, and publish. No code required. Built for modern teams.',
     primaryCta = 'Get started free',
+    primaryCtaHref = '#',
+    primaryCtaHrefType = 'external',
     secondaryCta = 'View demo',
+    secondaryCtaHref = '#',
+    secondaryCtaHrefType = 'external',
     showBadge = true,
     showSecondaryCta = true,
     showSocialProof = true,
@@ -397,10 +434,30 @@ function HeroTronSettings() {
             <label className={labelCls}>Primary button</label>
             <input type="text" value={primaryCta} onChange={(e) => setT('primaryCta', 500)(e.target.value)} className={inputCls} />
           </div>
+          <LinkPicker
+            label="Primary button link"
+            value={{ type: primaryCtaHrefType, href: primaryCtaHref }}
+            onChange={(val) => {
+              setProp((p: Record<string, unknown>) => {
+                p.primaryCtaHref = val.href;
+                p.primaryCtaHrefType = val.type;
+              }, 0);
+            }}
+          />
           <div>
             <label className={labelCls}>Secondary button</label>
             <input type="text" value={secondaryCta} onChange={(e) => setT('secondaryCta', 500)(e.target.value)} className={inputCls} />
           </div>
+          <LinkPicker
+            label="Secondary button link"
+            value={{ type: secondaryCtaHrefType, href: secondaryCtaHref }}
+            onChange={(val) => {
+              setProp((p: Record<string, unknown>) => {
+                p.secondaryCtaHref = val.href;
+                p.secondaryCtaHrefType = val.type;
+              }, 0);
+            }}
+          />
         </div>
       </div>
 
@@ -552,7 +609,11 @@ const heroTronCraft = {
     subheadline: 'Professional websites in minutes',
     subtitle: 'Drag, drop, and publish. No code required. Built for modern teams.',
     primaryCta: 'Get started free',
+    primaryCtaHref: '#',
+    primaryCtaHrefType: 'external' as const,
     secondaryCta: 'View demo',
+    secondaryCtaHref: '#',
+    secondaryCtaHrefType: 'external' as const,
     showSecondaryCta: true,
     showSocialProof: true,
     socialProofText: '500+ teams already building',

@@ -5,6 +5,7 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
+import { LinkPicker, hrefToLinkValue } from '@/lib/craft/shared/LinkPicker';
 
 // ── Tokens (darkBg/lightBg from props, like TronContact) ─────────────────
 function buildTokens(darkBg: string, lightBg: string) {
@@ -548,7 +549,7 @@ function TronFooterSettings() {
               <div>
                 <label className={labelCls}>Links</label>
                 {(col.links ?? []).map((link, linkIndex) => (
-                  <div key={linkIndex} className="flex gap-2 items-center mb-2">
+                  <div key={linkIndex} className="mb-3">
                     <input
                       type="text"
                       value={link.label}
@@ -556,20 +557,30 @@ function TronFooterSettings() {
                       className={inputCls}
                       placeholder="Label"
                     />
-                    <input
-                      type="text"
-                      value={link.href}
-                      onChange={(e) => updateLink(colIndex, linkIndex, 'href', e.target.value)}
-                      className={inputCls}
-                      placeholder="URL"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeLink(colIndex, linkIndex)}
-                      className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400"
-                    >
-                      ×
-                    </button>
+                    <div className="flex gap-2 items-start mt-2">
+                      <div className="flex-1">
+                        <LinkPicker
+                          label="Link"
+                          value={hrefToLinkValue(link.href)}
+                          onChange={(val) => {
+                            setProp((p: Record<string, unknown>) => {
+                              const cols = [...((p.columns as FooterColumn[]) ?? [])];
+                              if (cols[colIndex]?.links?.[linkIndex]) {
+                                cols[colIndex].links[linkIndex].href = val.href;
+                              }
+                              p.columns = cols;
+                            }, 0);
+                          }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeLink(colIndex, linkIndex)}
+                        className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-red-500/20 hover:text-red-400 mt-6"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                 ))}
                 <button

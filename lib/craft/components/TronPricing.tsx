@@ -5,6 +5,7 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
+import { LinkPicker } from '@/lib/craft/shared/LinkPicker';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -53,6 +54,8 @@ export interface PricingPlan {
   subtitle: string;
   features: PricingFeature[];
   ctaText: string;
+  ctaHref?: string;
+  ctaHrefType?: 'section' | 'page' | 'external';
   isPopular: boolean;
   isHighlighted: boolean;
   popularText?: string;
@@ -121,6 +124,8 @@ const DEFAULT_PLANS: PricingPlan[] = [
     isHighlighted: false,
     popularText: 'Most popular',
     ctaText: 'Get started',
+    ctaHref: '#',
+    ctaHrefType: 'external',
     features: [
       { text: '5 projects', included: true },
       { text: '10GB storage', included: true },
@@ -139,6 +144,8 @@ const DEFAULT_PLANS: PricingPlan[] = [
     isHighlighted: true,
     popularText: 'Most popular',
     ctaText: 'Get started',
+    ctaHref: '#',
+    ctaHrefType: 'external',
     features: [
       { text: '20 projects', included: true },
       { text: '50GB storage', included: true },
@@ -157,6 +164,8 @@ const DEFAULT_PLANS: PricingPlan[] = [
     isHighlighted: false,
     popularText: 'Most popular',
     ctaText: 'Contact us',
+    ctaHref: '#',
+    ctaHrefType: 'external',
     features: [
       { text: 'Unlimited projects', included: true },
       { text: '500GB storage', included: true },
@@ -306,8 +315,18 @@ function PricingPlanCardDisplay({ plan, planIndex, t, accentColor, enabled, isAn
         ))}
       </div>
 
-      <button
-        type="button"
+      <a
+        href={enabled ? undefined : (plan.ctaHref ?? '#')}
+        onClick={(e) => {
+          if (enabled) {
+            e.preventDefault();
+            return;
+          }
+          if (plan.ctaHref?.startsWith('#')) {
+            e.preventDefault();
+            document.querySelector(plan.ctaHref)?.scrollIntoView({ behavior: 'smooth' });
+          }
+        }}
         style={{
           width: '100%',
           padding: '12px 20px',
@@ -317,7 +336,10 @@ function PricingPlanCardDisplay({ plan, planIndex, t, accentColor, enabled, isAn
           color: '#fff',
           fontSize: 14,
           fontWeight: 600,
-          cursor: 'default',
+          cursor: enabled ? 'default' : 'pointer',
+          textDecoration: 'none',
+          display: 'block',
+          textAlign: 'center',
         }}
       >
         {enabled ? (
@@ -325,7 +347,7 @@ function PricingPlanCardDisplay({ plan, planIndex, t, accentColor, enabled, isAn
         ) : (
           plan.ctaText
         )}
-      </button>
+      </a>
     </div>
   );
 }
@@ -905,6 +927,19 @@ function TronPricingSettings() {
                   className={inputCls}
                 />
               </div>
+              <LinkPicker
+                label="CTA link"
+                value={{ type: plan.ctaHrefType ?? 'external', href: plan.ctaHref ?? '#' }}
+                onChange={(val) => {
+                  setProp((p: Record<string, unknown>) => {
+                    const plans = [...((p.plans as PricingPlan[]) ?? [])];
+                    if (plans[pi]) {
+                      plans[pi] = { ...plans[pi], ctaHref: val.href, ctaHrefType: val.type };
+                    }
+                    p.plans = plans;
+                  }, 0);
+                }}
+              />
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 text-xs text-gray-400">
                   <input
