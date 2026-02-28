@@ -61,8 +61,8 @@ export function ToastContainer() {
               t.type === 'success'
                 ? 'rgba(34,197,94,0.95)'
                 : t.type === 'error'
-                ? 'rgba(239,68,68,0.95)'
-                : 'rgba(255,107,53,0.95)',
+                  ? 'rgba(239,68,68,0.95)'
+                  : 'rgba(255,107,53,0.95)',
             boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
             backdropFilter: 'blur(8px)',
             animation: 'toastIn 0.3s ease',
@@ -74,14 +74,8 @@ export function ToastContainer() {
       ))}
       <style>{`
         @keyframes toastIn {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>

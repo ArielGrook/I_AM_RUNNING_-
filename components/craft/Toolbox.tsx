@@ -3,7 +3,6 @@
 import { Element, useEditor } from '@craftjs/core';
 import React, { useState, useCallback } from 'react';
 import { Upload, ChevronDown } from 'lucide-react';
-import { toast } from '@/components/ui/Toast';
 import {
   Container,
   Text,
@@ -31,6 +30,7 @@ import {
 import { PRESETS } from '@/lib/craft/presets';
 import { Icons } from '@/lib/craft/icons';
 import { useEditorTheme } from './EditorThemeContext';
+import { toast } from '@/components/ui/Toast';
 
 const ROOT_ID = 'ROOT';
 type TabId = 'components' | 'presets';
@@ -145,10 +145,9 @@ export const Toolbox = () => {
           const tree = query.parseReactElement(element).toNodeTree();
           actions.addNodeTree(tree, ROOT_ID, index);
         });
-        toast('Canvas replaced with preset', 'warning');
+        toast('Preset loaded', 'warning');
       } catch (err) {
         console.error('Load preset failed:', err);
-        toast('Preset load failed', 'error');
       }
     },
     [query, actions]

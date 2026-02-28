@@ -944,10 +944,10 @@ export default function EditorPage() {
           onClose={() => setPreviewOpen(false)}
           data={previewHTML}
         />
-        <ToastContainer />
         </PagesProvider>
         </ThemeProvider>
       </Editor>
+      <ToastContainer />
       </EditorRoot>
     </EditorThemeProvider>
   );

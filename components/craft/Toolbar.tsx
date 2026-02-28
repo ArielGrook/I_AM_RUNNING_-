@@ -161,7 +161,6 @@ export const Toolbar = ({
       toast('Canvas cleared', 'warning');
     } catch (e) {
       console.error('Clear canvas failed:', e);
-      toast('Clear failed', 'error');
     }
   };
 
