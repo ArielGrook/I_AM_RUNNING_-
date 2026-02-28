@@ -96,13 +96,26 @@ function hexToRgb(hex: string): string {
   return `${r},${g},${b}`;
 }
 
+function extractAccentColor(craftData: string): string {
+  try {
+    const parsed = JSON.parse(craftData) as Record<string, unknown>;
+    const nodesObj = (parsed?.nodes ?? parsed) as Record<string, { props?: { accentColor?: string } }>;
+    const nodes = Object.values(nodesObj ?? {});
+    for (const node of nodes) {
+      if (node?.props?.accentColor) return node.props.accentColor;
+    }
+  } catch {
+    // noop
+  }
+  return '#FF6B35';
+}
+
 export function SiteRenderer({ project }: { project: Project }) {
   const [spotlightPos, setSpotlightPos] = useState({ x: -9999, y: -9999 });
-  const accentColor = project.data?.accentColor ?? '#FF6B35';
 
   const pages = project.data?.craft?.pages ?? [];
   const firstPage = pages[0];
-  const compressedData = firstPage?.desktopData ?? firstPage?.data;
+  const compressedData = firstPage?.desktopData ?? firstPage?.data ?? '';
 
   let craftJson = '{}';
   if (compressedData && typeof compressedData === 'string') {
@@ -113,9 +126,15 @@ export function SiteRenderer({ project }: { project: Project }) {
     }
   }
 
+  const accentColor = extractAccentColor(craftJson);
+
   useEffect(() => {
+    let rafId: number;
     const handleMouseMove = (e: MouseEvent) => {
-      setSpotlightPos({ x: e.clientX, y: e.clientY });
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setSpotlightPos({ x: e.clientX, y: e.clientY });
+      });
     };
     const handleMouseLeave = () => {
       setSpotlightPos({ x: -9999, y: -9999 });
@@ -125,6 +144,7 @@ export function SiteRenderer({ project }: { project: Project }) {
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
+      cancelAnimationFrame(rafId);
     };
   }, []);
 
