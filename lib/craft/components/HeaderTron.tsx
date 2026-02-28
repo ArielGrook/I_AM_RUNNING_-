@@ -3,6 +3,7 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React, { useState, useContext } from 'react';
 import { PagesContext } from '@/lib/craft/context/PagesContext';
+import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
 
@@ -35,6 +36,9 @@ export const HeaderTron = ({
   sticky = true,
   animationType = 'none',
   animateDelay = '0',
+  showThemeToggle = false,
+  showLanguageToggle = false,
+  availableLanguages = ['en'],
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
@@ -48,11 +52,15 @@ export const HeaderTron = ({
   sticky?: boolean;
   animationType?: string;
   animateDelay?: string;
+  showThemeToggle?: boolean;
+  showLanguageToggle?: boolean;
+  availableLanguages?: string[];
 }) => {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { navigateTo } = useContext(PagesContext);
+  const siteCtx = useSiteContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null);
 
@@ -98,6 +106,14 @@ export const HeaderTron = ({
     },
   };
   const t = tokens[colorScheme];
+
+  function hexToRgb(hex: string): string {
+    const h = hex.replace(/^#/, '');
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return `${r},${g},${b}`;
+  }
 
   const logoDisplay = enabled ? (
     <EditableText value={logoText ?? ''} fieldKey="logoText" tag="span" style={{ color: t.text, fontSize: 20, fontWeight: 800 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.logoText = val; }, 0)} />
@@ -160,6 +176,50 @@ export const HeaderTron = ({
             ))}
           </nav>
           <div className="flex items-center gap-3 shrink-0">
+            {!enabled && (showThemeToggle || siteCtx.showThemeToggle) && (
+              <button
+                onClick={siteCtx.toggleTheme}
+                className="hidden md:flex"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
+                  border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
+                  color: t.text,
+                  fontSize: 16,
+                  cursor: 'pointer',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `rgba(${hexToRgb(accentColor)}, 0.2)`; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `rgba(${hexToRgb(accentColor)}, 0.1)`; }}
+              >
+                {siteCtx.colorScheme === 'dark' ? '☀️' : '🌙'}
+              </button>
+            )}
+            {!enabled && (showLanguageToggle || siteCtx.showLanguageToggle) && siteCtx.availableLanguages.length > 1 && (
+              <select
+                value={siteCtx.language}
+                onChange={(e) => siteCtx.setLanguage(e.target.value)}
+                className="hidden md:block"
+                style={{
+                  background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
+                  border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
+                  color: t.text,
+                  borderRadius: 8,
+                  padding: '6px 10px',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                {siteCtx.availableLanguages.map((lang) => (
+                  <option key={lang} value={lang}>{lang.toUpperCase()}</option>
+                ))}
+              </select>
+            )}
             {showCta && (
               <a
                 href={ctaHref}
@@ -224,7 +284,7 @@ export const HeaderTron = ({
 };
 
 const HeaderTronSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, navLinks, showCta, sticky, animationType, animateDelay } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as string,
     accentColor: node.data.props.accentColor as string,
     darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
@@ -237,6 +297,9 @@ const HeaderTronSettings = () => {
     sticky: node.data.props.sticky as boolean | undefined,
     animationType: node.data.props.animationType as string,
     animateDelay: node.data.props.animateDelay as string,
+    showThemeToggle: node.data.props.showThemeToggle as boolean | undefined,
+    showLanguageToggle: node.data.props.showLanguageToggle as boolean | undefined,
+    availableLanguages: (node.data.props.availableLanguages as string[]) ?? ['en'],
   }));
   const { nodes } = useEditor((s) => ({ nodes: s.nodes }));
   const { pages } = useContext(PagesContext);
@@ -388,6 +451,36 @@ const HeaderTronSettings = () => {
           <div><label className={labelCls}>Delay (s)</label><select value={animateDelay ?? '0'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}><option value="0">0s</option><option value="0.1">0.1s</option><option value="0.2">0.2s</option><option value="0.3">0.3s</option><option value="0.5">0.5s</option><option value="0.8">0.8s</option><option value="1">1s</option></select></div>
         </div>
       </section>
+      <section>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Site Controls</h3>
+        <div className={sectionCls}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: '#d4d4d8' }}>Show theme switcher</span>
+            <input type="checkbox" checked={showThemeToggle ?? false}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showThemeToggle = e.target.checked; })} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: '#d4d4d8' }}>Show language switcher</span>
+            <input type="checkbox" checked={showLanguageToggle ?? false}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showLanguageToggle = e.target.checked; })} />
+          </div>
+          {(showLanguageToggle ?? false) && (
+            <div style={{ marginTop: 8 }}>
+              <label className={labelCls}>Languages (comma-separated)</label>
+              <input
+                type="text"
+                value={(availableLanguages ?? ['en']).join(', ')}
+                onChange={(e) => {
+                  const langs = e.target.value.split(',').map((s) => s.trim()).filter(Boolean);
+                  setProp((p: Record<string, unknown>) => { p.availableLanguages = langs.length > 0 ? langs : ['en']; }, 300);
+                }}
+                className={inputCls}
+                placeholder="en, es, fr"
+              />
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 };
@@ -408,6 +501,9 @@ HeaderTron.craft = {
     sticky: true,
     animationType: 'none',
     animateDelay: '0',
+    showThemeToggle: false,
+    showLanguageToggle: false,
+    availableLanguages: ['en'],
   },
   related: { settings: HeaderTronSettings },
   custom: { styleTags: ['dark', 'minimal', 'bold'], businessTags: ['startup', 'saas', 'agency', 'tech', 'finance'], featureTags: ['header', 'navigation', 'sticky'], supportsTheme: true, supportsColorPreset: true },

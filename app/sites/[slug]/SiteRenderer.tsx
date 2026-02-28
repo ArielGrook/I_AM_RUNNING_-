@@ -37,6 +37,7 @@ import {
   PricingCardBlock,
 } from '@/lib/craft/components';
 import { ThemeProvider } from '@/lib/craft/context/ThemeContext';
+import { SiteContext } from '@/lib/craft/context/SiteContext';
 
 const resolver = {
   Container,
@@ -156,6 +157,26 @@ function applyColorScheme(craftData: string, scheme: 'dark' | 'light'): string {
   }
 }
 
+function extractHeaderSettings(craftData: string) {
+  try {
+    const parsed = JSON.parse(craftData);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nodes = Object.values(parsed) as any[];
+    for (const node of nodes) {
+      if (node?.type?.resolvedName === 'HeaderTron') {
+        return {
+          showThemeToggle: node.props?.showThemeToggle ?? false,
+          showLanguageToggle: node.props?.showLanguageToggle ?? false,
+          availableLanguages: node.props?.availableLanguages ?? ['en'],
+        };
+      }
+    }
+  } catch {
+    // noop
+  }
+  return { showThemeToggle: false, showLanguageToggle: false, availableLanguages: ['en'] };
+}
+
 export function SiteRenderer({ project }: { project: Project }) {
   const spotlightRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -179,6 +200,9 @@ export function SiteRenderer({ project }: { project: Project }) {
   const [colorScheme, setColorScheme] = useState<'dark' | 'light'>(extractColorScheme(craftJson));
   const [frameKey, setFrameKey] = useState(0);
   const [activeCraftJson, setActiveCraftJson] = useState(craftJson);
+  const [language, setLanguage] = useState('en');
+
+  const headerSettings = extractHeaderSettings(craftJson);
 
   function toggleTheme() {
     const next = colorScheme === 'dark' ? 'light' : 'dark';
@@ -305,34 +329,22 @@ export function SiteRenderer({ project }: { project: Project }) {
   }, [accentColor, spotlightIntensity]);
 
   return (
-    <>
+    <SiteContext.Provider
+      value={{
+        colorScheme,
+        toggleTheme,
+        showThemeToggle: headerSettings.showThemeToggle,
+        language,
+        setLanguage,
+        availableLanguages: headerSettings.availableLanguages,
+        showLanguageToggle: headerSettings.showLanguageToggle,
+      }}
+    >
       <Editor resolver={resolver} enabled={false}>
-        <ThemeProvider>
+        <ThemeProvider initialTheme={{ accentColor, colorScheme }}>
           <Frame key={frameKey} data={activeCraftJson} />
         </ThemeProvider>
       </Editor>
-      <div style={{ position: 'fixed', top: 12, right: 80, zIndex: 10000 }}>
-        <button
-          onClick={toggleTheme}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            background: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-            border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}`,
-            color: colorScheme === 'dark' ? '#ffffff' : '#0a0a0a',
-            fontSize: 16,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          {colorScheme === 'dark' ? '☀️' : '🌙'}
-        </button>
-      </div>
       {!isMobile && (
         <div
           ref={spotlightRef}
@@ -346,6 +358,6 @@ export function SiteRenderer({ project }: { project: Project }) {
           }}
         />
       )}
-    </>
+    </SiteContext.Provider>
   );
 }
