@@ -71,15 +71,21 @@ export const Toolbar = ({
   const [exportingZip, setExportingZip] = React.useState(false);
   const [deploying, setDeploying] = React.useState(false);
   const [deployUrl, setDeployUrl] = React.useState<string | null>(null);
+  const exitAfterSave = React.useRef(false);
 
   const handleSave = async () => {
     try {
       const json = query.serialize();
       await onSave(json);
       toast('Project saved ✓');
+      if (exitAfterSave.current) {
+        exitAfterSave.current = false;
+        router.push(`/${locale}/dashboard`);
+      }
     } catch (e) {
       console.error('Serialize failed:', e);
       toast('Save failed', 'error');
+      exitAfterSave.current = false;
     }
   };
 
@@ -301,7 +307,9 @@ export const Toolbar = ({
       <button
         onClick={() => {
           if (hasUnsavedChanges) {
-            toast('Save your project before leaving — changes will be lost!', 'warning');
+            exitAfterSave.current = true;
+            toast('Saving and exiting...');
+            handleSave();
             return;
           }
           router.push(`/${locale}/dashboard`);
