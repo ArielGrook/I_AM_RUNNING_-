@@ -34,7 +34,7 @@ export const Toolbar = ({
   projectName,
   onRenameProject,
 }: {
-  onSave: (serializedJson: string) => void;
+  onSave: (serializedJson: string) => void | Promise<void>;
   onPreview: () => void;
   onAddPage: () => void;
   onDeletePage?: (pageId: string) => void;
@@ -69,10 +69,10 @@ export const Toolbar = ({
   const [deploying, setDeploying] = React.useState(false);
   const [deployUrl, setDeployUrl] = React.useState<string | null>(null);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
       const json = query.serialize();
-      onSave(json);
+      await onSave(json);
     } catch (e) {
       console.error('Serialize failed:', e);
     }
@@ -120,6 +120,7 @@ export const Toolbar = ({
     if (!projectId) return;
     setDeploying(true);
     try {
+      await handleSave();
       const res = await fetch(`/api/projects/${projectId}/deploy`, { method: 'POST' });
       const data = await res.json();
       if (data?.url) {
