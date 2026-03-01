@@ -136,7 +136,18 @@ function useTokens(): Tokens {
   };
 }
 
-// ─── Data ──────────────────────────────────────────────────────────────────────
+// ─── Category colors ──────────────────────────────────────────────────────────
+const CATEGORY_COLORS: Record<string, string> = {
+  auth:     '#a78bfa', // фиолетовый
+  contact:  '#34d399', // зелёный
+  payment:  '#fbbf24', // жёлтый
+  commerce: '#38bdf8', // голубой
+  default:  '#94a3b8', // серый
+};
+
+function getCategoryColor(category?: string): string {
+  return category && category in CATEGORY_COLORS ? CATEGORY_COLORS[category] : CATEGORY_COLORS.default;
+}
 type BlockStatus = 'pending' | 'active' | 'locked';
 type IconComp = React.FC<IconProps>;
 
@@ -146,21 +157,22 @@ interface BlockData {
   price: string;
   status: BlockStatus;
   Icon: IconComp;
+  category: string;
 }
 
 const BLOCKS: BlockData[] = [
-  { id: 'auth',    label: 'USER AUTH',     price: '$40', status: 'pending', Icon: IconLock       },
-  { id: 'contact', label: 'CONTACT FORM',  price: '$25', status: 'active',  Icon: IconEnvelope   },
-  { id: 'stripe',  label: 'STRIPE',        price: '$80', status: 'locked',  Icon: IconCreditCard },
-  { id: 'cart',    label: 'SHOPPING CART', price: '$40', status: 'pending', Icon: IconCart       },
+  { id: 'auth',    label: 'USER AUTH',     price: '$40', status: 'pending', Icon: IconLock,       category: 'auth'     },
+  { id: 'contact', label: 'CONTACT FORM',  price: '$25', status: 'active',  Icon: IconEnvelope,   category: 'contact'  },
+  { id: 'stripe',  label: 'STRIPE',        price: '$80', status: 'locked',  Icon: IconCreditCard, category: 'payment'  },
+  { id: 'cart',    label: 'SHOPPING CART', price: '$40', status: 'pending', Icon: IconCart,       category: 'commerce' },
 ];
 
 const SIDEBAR_BLOCKS = [
-  { label: 'User Auth',     price: '$40', Icon: IconLock       },
-  { label: 'Contact Form',  price: '$25', Icon: IconEnvelope   },
-  { label: 'Stripe',        price: '$80', Icon: IconCreditCard },
-  { label: 'Shopping Cart', price: '$40', Icon: IconCart       },
-  { label: 'Analytics',     price: '$30', Icon: IconChart      },
+  { label: 'User Auth',     price: '$40', Icon: IconLock,       category: 'auth'     },
+  { label: 'Contact Form',  price: '$25', Icon: IconEnvelope,   category: 'contact'  },
+  { label: 'Stripe',        price: '$80', Icon: IconCreditCard, category: 'payment'  },
+  { label: 'Shopping Cart', price: '$40', Icon: IconCart,       category: 'commerce' },
+  { label: 'Analytics',     price: '$30', Icon: IconChart,      category: 'default'  },
 ];
 
 // ─── SVG coordinate types ──────────────────────────────────────────────────────
@@ -248,28 +260,18 @@ const DatabaseCard = forwardRef<HTMLDivElement, { t: Tokens }>(function Database
 // ─── Card: Block module ────────────────────────────────────────────────────────
 const BlockCard = forwardRef<HTMLDivElement, { block: BlockData; t: Tokens }>(
   function BlockCard({ block, t }, ref) {
-    const { status, Icon } = block;
+    const { status, Icon, category } = block;
+    const categoryColor = getCategoryColor(category);
 
-    const borderColor =
-      status === 'active'  ? '#FF6B35' :
-      status === 'locked'  ? '#1e3a5f' :
-      t.cardBorderDefault;
-
-    const boxShadow =
-      status === 'active'  ? '0 0 14px rgba(255,107,53,0.14)' :
-      status === 'locked'  ? '0 0 14px rgba(30,58,95,0.14)'   :
-      'none';
-
-    const iconColor =
-      status === 'active' ? '#FF6B35' :
-      status === 'locked' ? t.textBlue :
-      t.textMuted;
+    const borderColor = categoryColor;
+    const boxShadow = `0 0 12px ${categoryColor}20`;
+    const iconColor = categoryColor;
 
     const StatusDot = () => {
       if (status === 'active') {
         return (
           <svg width="7" height="7" viewBox="0 0 7 7">
-            <circle cx="3.5" cy="3.5" r="3" fill="#FF6B35">
+            <circle cx="3.5" cy="3.5" r="3" fill={categoryColor}>
               <animate attributeName="r"       values="3;4.5;3"   dur="1.5s" repeatCount="indefinite" />
               <animate attributeName="opacity" values="1;0.3;1"   dur="1.5s" repeatCount="indefinite" />
             </circle>
@@ -277,9 +279,9 @@ const BlockCard = forwardRef<HTMLDivElement, { block: BlockData; t: Tokens }>(
         );
       }
       if (status === 'locked') {
-        return <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#1e3a5f', flexShrink: 0 }} />;
+        return <div style={{ width: 6, height: 6, borderRadius: '50%', background: categoryColor, flexShrink: 0, opacity: 0.5 }} />;
       }
-      return <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.cardBorderDefault, flexShrink: 0 }} />;
+      return <div style={{ width: 6, height: 6, borderRadius: '50%', background: categoryColor, flexShrink: 0, opacity: 0.4 }} />;
     };
 
     const statusLabel =
@@ -287,10 +289,7 @@ const BlockCard = forwardRef<HTMLDivElement, { block: BlockData; t: Tokens }>(
       status === 'locked' ? 'LOCKED' :
       'PENDING';
 
-    const statusColor =
-      status === 'active' ? '#FF6B35' :
-      status === 'locked' ? t.textBlue :
-      t.textMuted;
+    const statusColor = categoryColor;
 
     return (
       <div
@@ -310,7 +309,7 @@ const BlockCard = forwardRef<HTMLDivElement, { block: BlockData; t: Tokens }>(
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <Icon size={15} color={iconColor} />
-            <span style={{ ...MONO, fontSize: 9, color: t.textPrimary, letterSpacing: '0.07em', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 90 }}>
+            <span style={{ ...MONO, fontSize: 9, color: categoryColor, letterSpacing: '0.07em', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 90 }}>
               {block.label}
             </span>
           </div>
@@ -421,8 +420,8 @@ function LeftPanel({ t }: { t: Tokens }) {
             onMouseEnter={(e) => { e.currentTarget.style.background = t.bg; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
-            <b.Icon size={15} color={t.textMuted} />
-            <span style={{ ...MONO, fontSize: 11, color: t.textPrimary, flex: 1 }}>{b.label}</span>
+            <b.Icon size={15} color={getCategoryColor(b.category)} />
+            <span style={{ ...MONO, fontSize: 11, color: getCategoryColor(b.category), flex: 1 }}>{b.label}</span>
             <span style={{ ...MONO, fontSize: 10, color: t.textMuted }}>{b.price}</span>
           </div>
         ))}
