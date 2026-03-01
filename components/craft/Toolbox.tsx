@@ -16,10 +16,6 @@ import {
   TronContact,
   TronShowcase,
   HtmlBlock,
-  SectionBlock,
-  LayoutBlock,
-  CardBlock,
-  PricingCardBlock,
 } from '@/lib/craft/components';
 import { PRESETS } from '@/lib/craft/presets';
 import { Icons } from '@/lib/craft/icons';
@@ -34,17 +30,7 @@ const tabs: { id: TabId; label: string }[] = [
   { id: 'presets', label: '⚡ Presets' },
 ];
 
-const categories: { key: 'cicBlocks' | 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
-  {
-    key: 'cicBlocks',
-    title: 'Sections (CiC)',
-    items: [
-      { name: 'SectionBlock', label: 'Section', icon: '▣', component: SectionBlock, canvas: true },
-      { name: 'LayoutBlock', label: 'Layout', icon: '▦', component: LayoutBlock, canvas: true },
-      { name: 'CardBlock', label: 'Card', icon: '▢', component: CardBlock, canvas: false },
-      { name: 'PricingCardBlock', label: 'Pricing Card', icon: '💰', component: PricingCardBlock, canvas: false },
-    ],
-  },
+const categories: { key: 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
   {
     key: 'tronSections',
     title: 'Legacy (Tron)',
@@ -69,8 +55,8 @@ export const Toolbox = () => {
   const { t } = useEditorTheme();
   const [activeTab, setActiveTab] = useState<TabId>('components');
   const [importing, setImporting] = useState(false);
-  const [openGroups, setOpenGroups] = useState({ cicBlocks: true, tronSections: false });
-  const toggleGroup = (key: 'cicBlocks' | 'tronSections') =>
+  const [openGroups, setOpenGroups] = useState({ tronSections: true });
+  const toggleGroup = (key: 'tronSections') =>
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleZipImport = useCallback(
