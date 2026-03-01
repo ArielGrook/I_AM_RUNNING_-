@@ -17,6 +17,8 @@ export { TronFAQ, FAQItem } from './TronFAQ';
 export { TronFooter, FooterColumn } from './TronFooter';
 export { TronContact } from './TronContact';
 export { TronShowcase } from './TronShowcase';
+export { TronLogin } from './TronLogin';
+export { TronRegister } from './TronRegister';
 export { Footer } from './Footer';
 export { Testimonials } from './Testimonials';
 export { Pricing } from './Pricing';

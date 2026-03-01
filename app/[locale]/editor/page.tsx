@@ -40,6 +40,8 @@ import {
   FooterColumn,
   TronContact,
   TronShowcase,
+  TronLogin,
+  TronRegister,
   Divider,
   Video,
   HtmlBlock,
@@ -806,6 +808,26 @@ export default function EditorPage() {
     [pages, activePageId, loadedProject]
   );
 
+  // Listen for craft:addPage events dispatched by components on first drop
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ name?: string }>).detail;
+      const pageName = detail?.name ?? `Page ${pages.length + 1}`;
+      const newId = String(Date.now());
+      const slug = pageName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page';
+      setPages((prev) => [
+        ...prev,
+        { id: newId, name: pageName, slug, data: null, desktopData: null, mobileData: null },
+      ]);
+      setActivePageId(newId);
+      setFrameData(null);
+      setDesktopData(null);
+      setMobileData(null);
+    };
+    window.addEventListener('craft:addPage', handler);
+    return () => window.removeEventListener('craft:addPage', handler);
+  }, [pages.length]);
+
   // Warn on browser close/reload if unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -862,6 +884,8 @@ export default function EditorPage() {
           FooterColumn,
           TronContact,
           TronShowcase,
+          TronLogin,
+          TronRegister,
           Divider,
           Video,
           HtmlBlock,
