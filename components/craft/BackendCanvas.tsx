@@ -1,17 +1,9 @@
 'use client';
 
-import React, {
-  useRef,
-  useState,
-  useLayoutEffect,
-  useCallback,
-  CSSProperties,
-  forwardRef,
-  Fragment,
-} from 'react';
+import React, { useRef, useState, useCallback, CSSProperties, Fragment } from 'react';
 import { useEditorTheme } from './EditorThemeContext';
 
-// ─── SVG Icon components (no emoji, no external libs) ─────────────────────────
+// ─── SVG Icon components ───────────────────────────────────────────────────────
 type IconProps = { size?: number; color?: string };
 
 function IconLock({ size = 18, color = 'currentColor' }: IconProps) {
@@ -136,18 +128,20 @@ function useTokens(): Tokens {
   };
 }
 
-// ─── Category colors ──────────────────────────────────────────────────────────
+// ─── Category colors ───────────────────────────────────────────────────────────
 const CATEGORY_COLORS: Record<string, string> = {
-  auth:     '#a78bfa', // фиолетовый
-  contact:  '#34d399', // зелёный
-  payment:  '#fbbf24', // жёлтый
-  commerce: '#38bdf8', // голубой
-  default:  '#94a3b8', // серый
+  auth:     '#a78bfa',
+  contact:  '#34d399',
+  payment:  '#fbbf24',
+  commerce: '#38bdf8',
+  default:  '#94a3b8',
 };
 
 function getCategoryColor(category?: string): string {
   return category && category in CATEGORY_COLORS ? CATEGORY_COLORS[category] : CATEGORY_COLORS.default;
 }
+
+// ─── Data ──────────────────────────────────────────────────────────────────────
 type BlockStatus = 'pending' | 'active' | 'locked';
 type IconComp = React.FC<IconProps>;
 
@@ -175,206 +169,291 @@ const SIDEBAR_BLOCKS = [
   { label: 'Analytics',     price: '$30', Icon: IconChart,      category: 'default'  },
 ];
 
-// ─── SVG coordinate types ──────────────────────────────────────────────────────
-interface SvgCoords {
-  siteRight: number;
-  siteCenterY: number;
-  nodeX: number;
-  blocks: Array<{ centerY: number; left: number; right: number }>;
-  dbLeft: number;
-  dbCenterY: number;
-  topBlockY: number;
-  bottomBlockY: number;
-}
-
-// ─── Shared mono font style helper ────────────────────────────────────────────
+// ─── Constants ─────────────────────────────────────────────────────────────────
+const CARD_WIDTH = 160;
+const CARD_HEIGHT = 72;
 const MONO: CSSProperties = { fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace' };
 
-// ─── Card: YOUR SITE ──────────────────────────────────────────────────────────
-const CARD_W = 160;
-
-const SiteCard = forwardRef<HTMLDivElement, { t: Tokens }>(function SiteCard({ t }, ref) {
+// ─── Card: YOUR SITE ───────────────────────────────────────────────────────────
+function SiteCard({ t, pos }: { t: Tokens; pos: { x: number; y: number } }) {
   return (
     <div
-      ref={ref}
       style={{
-        width: CARD_W,
+        position: 'absolute',
+        left: pos.x,
+        top: pos.y,
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
         background: t.cardBg,
         border: '1px solid #FF6B35',
         borderRadius: 8,
-        padding: '12px 14px',
+        padding: '10px 12px',
         boxShadow: '0 0 24px rgba(255,107,53,0.15)',
         boxSizing: 'border-box',
-        flexShrink: 0,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
-        <IconGlobe size={22} color="#FF6B35" />
-        {/* Online pulsing dot — SVG animate */}
-        <svg width="8" height="8" viewBox="0 0 8 8">
-          <circle cx="4" cy="4" r="3" fill="#FF6B35">
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+        <IconGlobe size={20} color="#FF6B35" />
+        <svg width="7" height="7" viewBox="0 0 7 7">
+          <circle cx="3.5" cy="3.5" r="3" fill="#FF6B35">
             <animate attributeName="opacity" values="1;0.25;1" dur="2s" repeatCount="indefinite" />
           </circle>
         </svg>
       </div>
-      <div style={{ ...MONO, fontSize: 11, color: t.textOrange, letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1.4 }}>
+      <div style={{ ...MONO, fontSize: 10, color: t.textOrange, letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1.4 }}>
         YOUR SITE
       </div>
-      <div style={{ ...MONO, fontSize: 9, color: t.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 3 }}>
+      <div style={{ ...MONO, fontSize: 8, color: t.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>
         FRONTEND
       </div>
     </div>
   );
-});
+}
 
 // ─── Card: SUPABASE ────────────────────────────────────────────────────────────
-const DatabaseCard = forwardRef<HTMLDivElement, { t: Tokens }>(function DatabaseCard({ t }, ref) {
+function DatabaseCard({ t, pos }: { t: Tokens; pos: { x: number; y: number } }) {
   return (
     <div
-      ref={ref}
       style={{
-        width: CARD_W,
+        position: 'absolute',
+        left: pos.x,
+        top: pos.y,
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
         background: t.cardBg,
         border: '1px solid #1e40af',
         borderRadius: 8,
-        padding: '12px 14px',
+        padding: '10px 12px',
         boxShadow: '0 0 24px rgba(30,64,175,0.15)',
         boxSizing: 'border-box',
-        flexShrink: 0,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
-        <IconDb size={22} color={t.textBlue} />
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: t.textBlue }} />
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+        <IconDb size={20} color={t.textBlue} />
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: t.textBlue }} />
       </div>
-      <div style={{ ...MONO, fontSize: 11, color: t.textBlue, letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1.4 }}>
+      <div style={{ ...MONO, fontSize: 10, color: t.textBlue, letterSpacing: '0.1em', textTransform: 'uppercase', lineHeight: 1.4 }}>
         SUPABASE
       </div>
-      <div style={{ ...MONO, fontSize: 9, color: t.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 3 }}>
+      <div style={{ ...MONO, fontSize: 8, color: t.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>
         DATABASE
       </div>
     </div>
   );
-});
+}
 
 // ─── Card: Block module ────────────────────────────────────────────────────────
-const BlockCard = forwardRef<HTMLDivElement, { block: BlockData; t: Tokens }>(
-  function BlockCard({ block, t }, ref) {
-    const { status, Icon, category } = block;
-    const categoryColor = getCategoryColor(category);
+function BlockCard({
+  block,
+  t,
+  pos,
+  onMouseDown,
+}: {
+  block: BlockData;
+  t: Tokens;
+  pos: { x: number; y: number };
+  onMouseDown: (e: React.MouseEvent, id: string) => void;
+}) {
+  const { status, Icon, category } = block;
+  const categoryColor = getCategoryColor(category);
 
-    const borderColor = categoryColor;
-    const boxShadow = `0 0 12px ${categoryColor}20`;
-    const iconColor = categoryColor;
-
-    const StatusDot = () => {
-      if (status === 'active') {
-        return (
-          <svg width="7" height="7" viewBox="0 0 7 7">
-            <circle cx="3.5" cy="3.5" r="3" fill={categoryColor}>
-              <animate attributeName="r"       values="3;4.5;3"   dur="1.5s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="1;0.3;1"   dur="1.5s" repeatCount="indefinite" />
-            </circle>
-          </svg>
-        );
-      }
-      if (status === 'locked') {
-        return <div style={{ width: 6, height: 6, borderRadius: '50%', background: categoryColor, flexShrink: 0, opacity: 0.5 }} />;
-      }
-      return <div style={{ width: 6, height: 6, borderRadius: '50%', background: categoryColor, flexShrink: 0, opacity: 0.4 }} />;
-    };
-
-    const statusLabel =
-      status === 'active' ? 'ACTIVE' :
-      status === 'locked' ? 'LOCKED' :
-      'PENDING';
-
-    const statusColor = categoryColor;
-
+  const StatusDot = () => {
+    if (status === 'active') {
+      return (
+        <svg width="7" height="7" viewBox="0 0 7 7">
+          <circle cx="3.5" cy="3.5" r="3" fill={categoryColor}>
+            <animate attributeName="r" values="3;4.5;3" dur="1.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite" />
+          </circle>
+        </svg>
+      );
+    }
+    if (status === 'locked') {
+      return (
+        <div
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: categoryColor,
+            flexShrink: 0,
+            opacity: 0.5,
+          }}
+        />
+      );
+    }
     return (
       <div
-        ref={ref}
         style={{
-          width: CARD_W,
-          background: t.cardBg,
-          border: `1px solid ${borderColor}`,
-          borderRadius: 6,
-          padding: '10px 12px',
-          boxShadow,
-          boxSizing: 'border-box',
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: categoryColor,
           flexShrink: 0,
+          opacity: 0.4,
         }}
-      >
-        {/* Top row: icon + name + price */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <Icon size={15} color={iconColor} />
-            <span style={{ ...MONO, fontSize: 9, color: categoryColor, letterSpacing: '0.07em', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 90 }}>
-              {block.label}
-            </span>
-          </div>
-          <span style={{ ...MONO, fontSize: 9, color: t.textMuted }}>{block.price}</span>
-        </div>
-        {/* Status row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <StatusDot />
-          <span style={{ ...MONO, fontSize: 8, color: statusColor, letterSpacing: '0.06em' }}>
-            {statusLabel}
-          </span>
-        </div>
-      </div>
+      />
     );
-  }
-);
+  };
 
-// ─── SVG Lines ─────────────────────────────────────────────────────────────────
-function SvgLines({ coords, t }: { coords: SvgCoords; t: Tokens }) {
-  const { siteRight, siteCenterY, nodeX, blocks, dbLeft, dbCenterY, topBlockY, bottomBlockY } = coords;
+  const statusLabel = status === 'active' ? 'ACTIVE' : status === 'locked' ? 'LOCKED' : 'PENDING';
 
   return (
-    <>
-      {/* Site → branch node */}
+    <div
+      style={{
+        position: 'absolute',
+        left: pos.x,
+        top: pos.y,
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
+        background: t.cardBg,
+        border: `1px solid ${categoryColor}`,
+        borderRadius: 6,
+        padding: '10px 12px',
+        boxShadow: `0 0 12px ${categoryColor}20`,
+        boxSizing: 'border-box',
+        cursor: 'grab',
+        userSelect: 'none',
+      }}
+      onMouseDown={(e) => onMouseDown(e, block.id)}
+    >
+      {/* Top row */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <Icon size={15} color={categoryColor} />
+          <span
+            style={{
+              ...MONO,
+              fontSize: 9,
+              color: categoryColor,
+              letterSpacing: '0.07em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: 90,
+            }}
+          >
+            {block.label}
+          </span>
+        </div>
+        <span style={{ ...MONO, fontSize: 9, color: t.textMuted }}>{block.price}</span>
+      </div>
+      {/* Status row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <StatusDot />
+        <span
+          style={{
+            ...MONO,
+            fontSize: 8,
+            color: categoryColor,
+            letterSpacing: '0.06em',
+          }}
+        >
+          {statusLabel}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── SVG Lines ─────────────────────────────────────────────────────────────────
+function SvgLines({
+  positions,
+  t,
+}: {
+  positions: Record<string, { x: number; y: number }>;
+  t: Tokens;
+}) {
+  const half = CARD_HEIGHT / 2;
+
+  const siteOut = {
+    x: positions.site.x + CARD_WIDTH,
+    y: positions.site.y + half,
+  };
+  const dbIn = {
+    x: positions.db.x,
+    y: positions.db.y + half,
+  };
+  const nodeX = siteOut.x + 40;
+
+  const blockIds = ['auth', 'contact', 'stripe', 'cart'];
+  const blockCenters = blockIds.map((id) => ({
+    id,
+    left: { x: positions[id].x, y: positions[id].y + half },
+    right: { x: positions[id].x + CARD_WIDTH, y: positions[id].y + half },
+  }));
+
+  const topY = Math.min(...blockCenters.map((b) => b.left.y));
+  const bottomY = Math.max(...blockCenters.map((b) => b.left.y));
+
+  return (
+    <svg
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        overflow: 'visible',
+      }}
+    >
+      {/* site → nodeX */}
       <line
-        x1={siteRight} y1={siteCenterY}
-        x2={nodeX}     y2={siteCenterY}
-        stroke={t.line} strokeWidth="1.5"
+        x1={siteOut.x}
+        y1={siteOut.y}
+        x2={nodeX}
+        y2={siteOut.y}
+        stroke={t.line}
+        strokeWidth="1.5"
       />
 
-      {/* Vertical spine through all blocks */}
-      <line
-        x1={nodeX} y1={topBlockY}
-        x2={nodeX} y2={bottomBlockY}
-        stroke={t.line} strokeWidth="1.5"
-      />
+      {/* nodeX vertical spine */}
+      <line x1={nodeX} y1={topY} x2={nodeX} y2={bottomY} stroke={t.line} strokeWidth="1.5" />
 
-      {/* Per-block: junction dot + horizontal branch + right-to-DB line */}
-      {blocks.map((block, i) => (
-        <Fragment key={i}>
-          {/* Small dot at the vertical spine junction */}
-          <circle cx={nodeX} cy={block.centerY} r="2.5" fill={t.line} />
-
-          {/* Horizontal elbow → block left edge */}
+      {/* nodeX → each block */}
+      {blockCenters.map((b) => (
+        <Fragment key={b.id}>
+          <circle cx={nodeX} cy={b.left.y} r="2.5" fill={t.line} />
           <line
-            x1={nodeX}      y1={block.centerY}
-            x2={block.left} y2={block.centerY}
-            stroke={t.line} strokeWidth="1.5"
-          />
-
-          {/* Block right edge → DB (converging to DB center Y) */}
-          <line
-            x1={block.right} y1={block.centerY}
-            x2={dbLeft}      y2={dbCenterY}
-            stroke={t.line} strokeWidth="1.5" opacity="0.4"
+            x1={nodeX}
+            y1={b.left.y}
+            x2={b.left.x}
+            y2={b.left.y}
+            stroke={t.line}
+            strokeWidth="1.5"
           />
         </Fragment>
       ))}
 
-      {/* Main branch node — pulsing */}
-      <circle cx={nodeX} cy={siteCenterY} r="4" fill={t.nodeDot}>
-        <animate attributeName="r"       values="4;6;4"   dur="2.5s" repeatCount="indefinite" />
+      {/* each block → db */}
+      {blockCenters.map((b) => (
+        <line
+          key={b.id + '-db'}
+          x1={b.right.x}
+          y1={b.right.y}
+          x2={dbIn.x}
+          y2={dbIn.y}
+          stroke={t.line}
+          strokeWidth="1.5"
+          opacity="0.35"
+        />
+      ))}
+
+      {/* pulsing main node */}
+      <circle cx={nodeX} cy={siteOut.y} r="4" fill={t.nodeDot}>
+        <animate attributeName="r" values="4;6;4" dur="2.5s" repeatCount="indefinite" />
         <animate attributeName="opacity" values="1;0.35;1" dur="2.5s" repeatCount="indefinite" />
       </circle>
-    </>
+    </svg>
   );
 }
 
@@ -417,11 +496,17 @@ function LeftPanel({ t }: { t: Tokens }) {
               cursor: 'pointer',
               borderBottom: `1px solid ${t.panelBorder}`,
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = t.bg; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = t.bg;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
           >
             <b.Icon size={15} color={getCategoryColor(b.category)} />
-            <span style={{ ...MONO, fontSize: 11, color: getCategoryColor(b.category), flex: 1 }}>{b.label}</span>
+            <span style={{ ...MONO, fontSize: 11, color: getCategoryColor(b.category), flex: 1 }}>
+              {b.label}
+            </span>
             <span style={{ ...MONO, fontSize: 10, color: t.textMuted }}>{b.price}</span>
           </div>
         ))}
@@ -436,91 +521,80 @@ export function BackendCanvas() {
   const isDark = useEditorTheme().theme === 'dark';
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const transformLayerRef = useRef<HTMLDivElement>(null);
-  const siteRef      = useRef<HTMLDivElement>(null);
-  const dbRef        = useRef<HTMLDivElement>(null);
-  const blockRefs    = useRef<(HTMLDivElement | null)[]>([null, null, null, null]);
 
-  const [coords, setCoords] = useState<SvgCoords | null>(null);
+  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({
+    site: { x: 60, y: 180 },
+    auth: { x: 320, y: 60 },
+    contact: { x: 320, y: 160 },
+    stripe: { x: 320, y: 260 },
+    cart: { x: 320, y: 360 },
+    db: { x: 580, y: 180 },
+  });
+
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
-  const calculate = useCallback(() => {
-    const container = containerRef.current;
-    const site      = siteRef.current;
-    const db        = dbRef.current;
-    if (!container || !site || !db) return;
-    if (blockRefs.current.some((r) => r === null)) return;
+  const draggingCard = useRef<string | null>(null);
+  const cardDragOffset = useRef({ x: 0, y: 0 });
 
-    const cRect = container.getBoundingClientRect();
-
-    const rel = (el: HTMLElement) => {
-      const r = el.getBoundingClientRect();
-      return {
-        left:    r.left   - cRect.left,
-        right:   r.right  - cRect.left,
-        centerY: r.top + r.height / 2 - cRect.top,
-      };
-    };
-
-    const s  = rel(site);
-    const d  = rel(db);
-    const bs = (blockRefs.current as HTMLDivElement[]).map(rel);
-
-    const nodeX = s.right + (bs[0].left - s.right) / 2;
-
-    setCoords({
-      siteRight:    s.right,
-      siteCenterY:  s.centerY,
-      nodeX,
-      blocks:       bs.map((b) => ({ centerY: b.centerY, left: b.left, right: b.right })),
-      dbLeft:       d.left,
-      dbCenterY:    d.centerY,
-      topBlockY:    bs[0].centerY,
-      bottomBlockY: bs[bs.length - 1].centerY,
-    });
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setScale((prev) => Math.min(Math.max(prev * delta, 0.3), 3));
   }, []);
 
-  useLayoutEffect(() => {
-    calculate();
-    const ro = new ResizeObserver(calculate);
-    const el = containerRef.current;
-    if (el) ro.observe(el);
-    return () => ro.disconnect();
-  }, [calculate]);
-
-  const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
+  const startCardDrag = useCallback(
+    (e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
       e.preventDefault();
-      const delta = e.deltaY > 0 ? 0.9 : 1.1;
-      setScale((prev) => Math.min(Math.max(prev * delta, 0.3), 3));
+      draggingCard.current = id;
+      cardDragOffset.current = {
+        x: e.clientX / scale - positions[id].x,
+        y: e.clientY / scale - positions[id].y,
+      };
+      document.body.style.userSelect = 'none';
     },
-    []
+    [scale, positions]
   );
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    setIsPanning(true);
-    setPanStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
-    document.body.style.userSelect = 'none';
-  }, [offset]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+      document.body.style.userSelect = 'none';
+    },
+    [offset]
+  );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
+      if (draggingCard.current) {
+        setPositions((prev) => ({
+          ...prev,
+          [draggingCard.current!]: {
+            x: e.clientX / scale - cardDragOffset.current.x,
+            y: e.clientY / scale - cardDragOffset.current.y,
+          },
+        }));
+        return;
+      }
       if (!isPanning) return;
       setOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
     },
-    [isPanning, panStart]
+    [isPanning, panStart, scale]
   );
 
   const handleMouseUp = useCallback(() => {
     setIsPanning(false);
+    draggingCard.current = null;
     document.body.style.userSelect = '';
   }, []);
 
   const handleMouseLeave = useCallback(() => {
     setIsPanning(false);
+    draggingCard.current = null;
     document.body.style.userSelect = '';
   }, []);
 
@@ -540,15 +614,12 @@ export function BackendCanvas() {
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: t.bg }}>
       <LeftPanel t={t} />
 
-      {/* Main canvas with background pattern and zoom/pan */}
+      {/* Main canvas with zoom/pan */}
       <div
         ref={containerRef}
         style={{
           flex: 1,
           position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           overflow: 'hidden',
           ...bgStyle,
           cursor: isPanning ? 'grabbing' : 'grab',
@@ -559,60 +630,36 @@ export function BackendCanvas() {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Transform layer — all content (cards + lines) */}
+        {/* Transform layer — all content */}
         <div
-          ref={transformLayerRef}
           style={{
+            position: 'relative',
+            width: 900,
+            height: 500,
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
             transformOrigin: 'center center',
-            transition: isPanning ? 'none' : 'transform 0.1s ease-out',
-            position: 'absolute',
+            transition: isPanning || draggingCard.current ? 'none' : 'transform 0.1s ease-out',
+            left: '50%',
+            top: '50%',
+            marginLeft: -450,
+            marginTop: -250,
           }}
         >
-          {/* SVG overlay for lines */}
-          <svg
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              pointerEvents: 'none',
-              overflow: 'visible',
-            }}
-          >
-            {coords && <SvgLines coords={coords} t={t} />}
-          </svg>
-
-          {/* Cards row */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 80,
-              position: 'relative',
-              zIndex: 1,
-            }}
-          >
-            <SiteCard ref={siteRef} t={t} />
-
-            {/* Block modules column */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {BLOCKS.map((block, i) => (
-                <BlockCard
-                  key={block.id}
-                  ref={(el) => { blockRefs.current[i] = el; }}
-                  block={block}
-                  t={t}
-                />
-              ))}
-            </div>
-
-            <DatabaseCard ref={dbRef} t={t} />
-          </div>
+          <SvgLines positions={positions} t={t} />
+          <SiteCard t={t} pos={positions.site} />
+          <DatabaseCard t={t} pos={positions.db} />
+          {BLOCKS.map((block) => (
+            <BlockCard
+              key={block.id}
+              block={block}
+              t={t}
+              pos={positions[block.id]}
+              onMouseDown={startCardDrag}
+            />
+          ))}
         </div>
 
-        {/* Hint text — absolute, bottom-center */}
+        {/* Hint */}
         <div
           style={{
             position: 'absolute',
