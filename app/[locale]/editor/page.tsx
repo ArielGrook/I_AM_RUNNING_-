@@ -53,6 +53,7 @@ import { ThemeProvider } from '@/lib/craft/context/ThemeContext';
 import { Toolbox } from '@/components/craft/Toolbox';
 import { SettingsPanel } from '@/components/craft/SettingsPanel';
 import { Viewport } from '@/components/craft/Viewport';
+import { BackendCanvas } from '@/components/craft/BackendCanvas';
 import { Toolbar } from '@/components/craft/Toolbar';
 import { PreviewModal } from '@/components/craft/PreviewModal';
 import { RenderNode } from '@/components/craft/RenderNode';
@@ -80,6 +81,7 @@ function EditorLayout({
   setRightPanelOpen,
   previewMode,
   outlines,
+  editorMode,
   children,
 }: {
   leftPanelOpen: boolean;
@@ -88,6 +90,7 @@ function EditorLayout({
   setRightPanelOpen: (v: boolean) => void;
   previewMode: boolean;
   outlines: boolean;
+  editorMode: 'frontend' | 'backend';
   children: React.ReactNode;
 }) {
   const { theme } = useEditorTheme();
@@ -103,7 +106,7 @@ function EditorLayout({
       data-outlines={outlines ? 'true' : 'false'}
       style={{ background: areaBg }}
     >
-      {!previewMode && (
+      {!previewMode && editorMode === 'frontend' && (
         <div
           className="flex transition-all duration-200 shrink-0 overflow-visible relative"
           style={{
@@ -148,7 +151,7 @@ function EditorLayout({
           )}
         </div>
       )}
-      {!previewMode && !leftPanelOpen && (
+      {!previewMode && editorMode === 'frontend' && !leftPanelOpen && (
         <button
           type="button"
           onClick={() => setLeftPanelOpen(true)}
@@ -181,8 +184,10 @@ function EditorLayout({
           <ChevronRight size={14} />
         </button>
       )}
-      {children}
-      {!previewMode && (
+      <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
+        {children}
+      </div>
+      {!previewMode && editorMode === 'frontend' && (
         <div
           className="flex transition-all duration-200 overflow-visible relative"
           style={{
@@ -229,7 +234,7 @@ function EditorLayout({
           </div>
         </div>
       )}
-      {!previewMode && !rightPanelOpen && (
+      {!previewMode && editorMode === 'frontend' && !rightPanelOpen && (
         <button
           type="button"
           onClick={() => setRightPanelOpen(true)}
@@ -344,6 +349,7 @@ export default function EditorPage() {
   const [desktopData, setDesktopData] = useState<string | null>(null);
   const [mobileData, setMobileData] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [editorMode, setEditorMode] = useState<'frontend' | 'backend'>('frontend');
 
   const activePage = pages.find((p) => p.id === activePageId);
 
@@ -908,6 +914,8 @@ export default function EditorPage() {
           projectName={loadedProject?.name}
           onRenameProject={handleRenameProject}
           hasUnsavedChanges={hasUnsavedChanges}
+          editorMode={editorMode}
+          onModeChange={setEditorMode}
         />
         <EditorLayout
           leftPanelOpen={leftPanelOpen}
@@ -916,7 +924,9 @@ export default function EditorPage() {
           setRightPanelOpen={setRightPanelOpen}
           previewMode={previewMode}
           outlines={outlines}
+          editorMode={editorMode}
         >
+          {editorMode === 'frontend' ? (
           <Viewport
             viewport={viewport}
             setViewport={setViewport}
@@ -943,6 +953,9 @@ export default function EditorPage() {
               </div>
             )}
           </Viewport>
+          ) : (
+            <BackendCanvas />
+          )}
         </EditorLayout>
         <KeyboardShortcuts onSave={() => {
           try {

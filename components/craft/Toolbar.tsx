@@ -35,6 +35,8 @@ export const Toolbar = ({
   projectName,
   onRenameProject,
   hasUnsavedChanges,
+  editorMode = 'frontend',
+  onModeChange,
 }: {
   onSave: (serializedJson: string) => void | Promise<void>;
   onPreview: () => void;
@@ -58,6 +60,8 @@ export const Toolbar = ({
   projectName?: string;
   onRenameProject?: (newName: string) => Promise<void>;
   hasUnsavedChanges?: boolean;
+  editorMode?: 'frontend' | 'backend';
+  onModeChange?: (mode: 'frontend' | 'backend') => void;
 }) => {
   const { query, actions } = useEditor();
   const canUndo = query.history.canUndo();
@@ -72,6 +76,9 @@ export const Toolbar = ({
   const [deploying, setDeploying] = React.useState(false);
   const [deployUrl, setDeployUrl] = React.useState<string | null>(null);
   const exitAfterSave = React.useRef(false);
+  const [mode, setMode] = useState<'frontend' | 'backend'>(editorMode);
+  const activeMode = onModeChange != null ? editorMode : mode;
+  const setActiveMode = onModeChange != null ? onModeChange : setMode;
 
   const handleSave = async () => {
     try {
@@ -378,6 +385,37 @@ export const Toolbar = ({
       {/* Undo / Redo */}
       <button onClick={() => actions.history.undo()} disabled={!canUndo} className={iconBtnCls} title="Undo (Ctrl+Z)">↩</button>
       <button onClick={() => actions.history.redo()} disabled={!canRedo} className={iconBtnCls} title="Redo (Ctrl+Y)">↪</button>
+
+      <div className={dividerCls} />
+
+      {/* Mode switcher */}
+      {onModeChange != null && (
+        <>
+          <div className="w-px h-6 mx-1.5 bg-zinc-700" />
+          <button
+            type="button"
+            onClick={() => setActiveMode('frontend')}
+            className={`px-3 py-1 text-xs font-mono rounded border transition-colors ${
+              activeMode === 'frontend'
+                ? 'border-orange-500 text-orange-400 bg-orange-500/10'
+                : 'border-zinc-700 text-zinc-500 bg-transparent hover:border-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            {'<' + '/' + '>'} Frontend
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMode('backend')}
+            className={`px-3 py-1 text-xs font-mono rounded border transition-colors ${
+              activeMode === 'backend'
+                ? 'border-orange-500 text-orange-400 bg-orange-500/10'
+                : 'border-zinc-700 text-zinc-500 bg-transparent hover:border-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            ⬡ Backend
+          </button>
+        </>
+      )}
 
       <div className={dividerCls} />
 

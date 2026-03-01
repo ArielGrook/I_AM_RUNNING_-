@@ -58,6 +58,7 @@
     "react-contenteditable": "^3.3.7",
     "react-dom": "^19.0.0-rc-02c0e824-20241028",
     "react-hook-form": "^7.54.0",
+    "reactflow": "^11.11.4",
     "sanitize-html": "^2.13.1",
     "sharp": "^0.33.5",
     "tailwind-merge": "^2.5.5",
