@@ -365,6 +365,19 @@ export default function EditorPage() {
     [projectId]
   );
 
+  const handleAddPageNamed = useCallback((name: string) => {
+    const newId = String(Date.now());
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page';
+    setPages((prev) => [
+      ...prev,
+      { id: newId, name, slug, data: null, desktopData: null, mobileData: null },
+    ]);
+    setActivePageId(newId);
+    setFrameData(null);
+    setDesktopData(null);
+    setMobileData(null);
+  }, []);
+
   // Auth guard
   useEffect(() => {
     if (authLoading) return;
@@ -760,19 +773,6 @@ export default function EditorPage() {
     setDesktopData(null);
     setMobileData(null);
   };
-
-  const handleAddPageNamed = useCallback((name: string) => {
-    const newId = String(Date.now());
-    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page';
-    setPages((prev) => [
-      ...prev,
-      { id: newId, name, slug, data: null, desktopData: null, mobileData: null },
-    ]);
-    setActivePageId(newId);
-    setFrameData(null);
-    setDesktopData(null);
-    setMobileData(null);
-  }, []);
 
   const handleDeletePage = useCallback(
     async (pageId: string) => {
