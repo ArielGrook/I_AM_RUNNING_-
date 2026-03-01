@@ -504,6 +504,7 @@ export function BackendCanvas() {
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     setIsPanning(true);
     setPanStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    document.body.style.userSelect = 'none';
   }, [offset]);
 
   const handleMouseMove = useCallback(
@@ -516,10 +517,12 @@ export function BackendCanvas() {
 
   const handleMouseUp = useCallback(() => {
     setIsPanning(false);
+    document.body.style.userSelect = '';
   }, []);
 
   const handleMouseLeave = useCallback(() => {
     setIsPanning(false);
+    document.body.style.userSelect = '';
   }, []);
 
   const bgStyle: CSSProperties = isDark
