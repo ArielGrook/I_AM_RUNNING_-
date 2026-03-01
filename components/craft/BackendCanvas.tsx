@@ -415,6 +415,7 @@ function SvgLines({
 
   const topY = Math.min(...blockCenters.map((b) => b.left.y));
   const bottomY = Math.max(...blockCenters.map((b) => b.left.y));
+  const dxSite = (nodeX - siteOut.x) * 0.5;
 
   return (
     <svg
@@ -428,12 +429,10 @@ function SvgLines({
         overflow: 'visible',
       }}
     >
-      {/* site → nodeX */}
-      <line
-        x1={siteOut.x}
-        y1={siteOut.y}
-        x2={nodeX}
-        y2={siteOut.y}
+      {/* site → nodeX (soft curve) */}
+      <path
+        d={`M ${siteOut.x} ${siteOut.y} C ${siteOut.x + dxSite} ${siteOut.y}, ${nodeX - dxSite} ${siteOut.y}, ${nodeX} ${siteOut.y}`}
+        fill="none"
         stroke={t.line}
         strokeWidth="1.5"
       />
@@ -456,19 +455,20 @@ function SvgLines({
         </Fragment>
       ))}
 
-      {/* each block → db */}
-      {blockCenters.map((b) => (
-        <line
-          key={b.id + '-db'}
-          x1={b.right.x}
-          y1={b.right.y}
-          x2={dbIn.x}
-          y2={dbIn.y}
-          stroke={t.line}
-          strokeWidth="1.5"
-          opacity="0.35"
-        />
-      ))}
+      {/* each block → db (cubic bezier, fan to dbIn) */}
+      {blockCenters.map((b) => {
+        const dx = (dbIn.x - b.right.x) * 0.5;
+        return (
+          <path
+            key={b.id + '-db'}
+            d={`M ${b.right.x} ${b.right.y} C ${b.right.x + dx} ${b.right.y}, ${dbIn.x - dx} ${dbIn.y}, ${dbIn.x} ${dbIn.y}`}
+            fill="none"
+            stroke={t.line}
+            strokeWidth="1.5"
+            opacity="0.4"
+          />
+        );
+      })}
 
       {/* pulsing main node */}
       <circle cx={nodeX} cy={siteOut.y} r="4" fill={t.nodeDot}>
