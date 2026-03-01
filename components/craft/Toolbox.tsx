@@ -4,11 +4,7 @@ import { Element, useEditor } from '@craftjs/core';
 import React, { useState, useCallback } from 'react';
 import { Upload, ChevronDown } from 'lucide-react';
 import {
-  Container,
-  Text,
   HeroTron,
-  Button,
-  Image,
   HeaderTron,
   TronFeatures,
   TronStats,
@@ -19,8 +15,6 @@ import {
   TronFooter,
   TronContact,
   TronShowcase,
-  Divider,
-  Video,
   HtmlBlock,
   SectionBlock,
   LayoutBlock,
@@ -40,19 +34,7 @@ const tabs: { id: TabId; label: string }[] = [
   { id: 'presets', label: '⚡ Presets' },
 ];
 
-const categories: { key: 'basic' | 'cicBlocks' | 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
-  {
-    key: 'basic',
-    title: 'Basic',
-    items: [
-      { name: 'Container', label: 'Container', icon: '▦', component: Container, canvas: true },
-      { name: 'Text', label: 'Text', icon: 'T', component: Text, canvas: false },
-      { name: 'Button', label: 'Button', icon: '▣', component: Button, canvas: false },
-      { name: 'Image', label: 'Image', icon: '🖼', component: Image, canvas: false },
-      { name: 'Divider', label: 'Divider', icon: '—', component: Divider, canvas: false },
-      { name: 'Video', label: 'Video', icon: '▶️', component: Video, canvas: false },
-    ],
-  },
+const categories: { key: 'cicBlocks' | 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
   {
     key: 'cicBlocks',
     title: 'Sections (CiC)',
@@ -87,8 +69,8 @@ export const Toolbox = () => {
   const { t } = useEditorTheme();
   const [activeTab, setActiveTab] = useState<TabId>('components');
   const [importing, setImporting] = useState(false);
-  const [openGroups, setOpenGroups] = useState({ basic: true, cicBlocks: true, tronSections: false });
-  const toggleGroup = (key: 'basic' | 'cicBlocks' | 'tronSections') =>
+  const [openGroups, setOpenGroups] = useState({ cicBlocks: true, tronSections: false });
+  const toggleGroup = (key: 'cicBlocks' | 'tronSections') =>
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleZipImport = useCallback(
