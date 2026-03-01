@@ -18,23 +18,125 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-// ─── CSS keyframes (injected once) ────────────────────────────────────────────
+// ─── Global CSS keyframes ──────────────────────────────────────────────────────
 const TRON_STYLES = `
+@keyframes iso-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-5px); }
+}
 @keyframes tron-glow-orange {
   0%, 100% { box-shadow: 0 0 8px rgba(255,107,53,0.3), 0 0 20px rgba(255,107,53,0.1); }
-  50%       { box-shadow: 0 0 18px rgba(255,107,53,0.7), 0 0 40px rgba(255,107,53,0.25); }
+  50%       { box-shadow: 0 0 20px rgba(255,107,53,0.7), 0 0 50px rgba(255,107,53,0.25); }
 }
 @keyframes tron-glow-blue {
   0%, 100% { box-shadow: 0 0 8px rgba(59,130,246,0.3), 0 0 20px rgba(59,130,246,0.1); }
-  50%       { box-shadow: 0 0 18px rgba(59,130,246,0.7), 0 0 40px rgba(59,130,246,0.25); }
+  50%       { box-shadow: 0 0 20px rgba(59,130,246,0.7), 0 0 50px rgba(59,130,246,0.25); }
 }
 @keyframes tron-pulse {
-  0%, 100% { opacity: 1;   transform: scale(1);   }
-  50%       { opacity: 0.4; transform: scale(1.5); }
+  0%, 100% { opacity: 1;   transform: scale(1);   box-shadow: 0 0 4px currentColor; }
+  50%       { opacity: 0.5; transform: scale(1.5); box-shadow: 0 0 10px currentColor; }
 }
 `;
 
-// ─── AnimatedTronEdge ──────────────────────────────────────────────────────────
+// ─── IsoBlock — reusable 3D isometric block ────────────────────────────────────
+// The 3D transform is applied ONLY to the visual interior.
+// ReactFlow Handles must be placed outside, on the flat parent wrapper.
+interface IsoBlockProps {
+  faceW: number;
+  faceH: number;
+  depth: number;
+  topBg: string;
+  topBorder: string;
+  topGlow?: string;
+  frontBg: string;
+  rightBg: string;
+  floatDelay?: string;
+  children?: React.ReactNode;
+}
+
+function IsoBlock({
+  faceW,
+  faceH,
+  depth,
+  topBg,
+  topBorder,
+  topGlow,
+  frontBg,
+  rightBg,
+  floatDelay = '0s',
+  children,
+}: IsoBlockProps) {
+  return (
+    <div style={{ animation: `iso-float 4s ease-in-out ${floatDelay} infinite` }}>
+      {/* perspective container — flat, no 3d */}
+      <div style={{ perspective: '700px' }}>
+        {/* 3D rotation root */}
+        <div
+          style={{
+            width: faceW,
+            height: faceH,
+            position: 'relative',
+            transformStyle: 'preserve-3d',
+            transform: 'rotateX(25deg) rotateY(-18deg)',
+          }}
+        >
+          {/* ── Top face (content lives here) ── */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: topBg,
+              border: `1px solid ${topBorder}`,
+              boxShadow: topGlow ?? `inset 0 0 20px ${topBorder}20`,
+              padding: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            {children}
+          </div>
+
+          {/* ── Front / bottom extrusion ── */}
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: faceH,
+              width: faceW,
+              height: depth,
+              background: frontBg,
+              borderLeft: `1px solid ${topBorder}25`,
+              borderRight: `1px solid ${topBorder}25`,
+              borderBottom: `1px solid ${topBorder}10`,
+              transformOrigin: 'top center',
+              transform: 'rotateX(90deg)',
+            }}
+          />
+
+          {/* ── Right extrusion ── */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: faceW,
+              width: depth,
+              height: faceH,
+              background: rightBg,
+              borderTop: `1px solid ${topBorder}15`,
+              borderRight: `1px solid ${topBorder}10`,
+              borderBottom: `1px solid ${topBorder}08`,
+              transformOrigin: 'left center',
+              transform: 'rotateY(-90deg)',
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── AnimatedTronEdge (unchanged from previous version) ───────────────────────
 function AnimatedTronEdge({
   id,
   sourceX,
@@ -55,20 +157,11 @@ function AnimatedTronEdge({
   });
 
   const color: string = (data as { color?: string } | undefined)?.color ?? '#FF6B35';
-  const pathId = `edge-path-${id}`;
 
   return (
     <>
-      {/* Hidden path for animateMotion mpath reference */}
-      <path id={pathId} d={edgePath} fill="none" stroke="none" />
-
-      {/* Base dim line */}
-      <BaseEdge
-        path={edgePath}
-        style={{ stroke: color, strokeWidth: 1, opacity: 0.2 }}
-      />
-
-      {/* Glowing line */}
+      <path id={`edge-path-${id}`} d={edgePath} fill="none" stroke="none" />
+      <BaseEdge path={edgePath} style={{ stroke: color, strokeWidth: 1, opacity: 0.2 }} />
       <path
         d={edgePath}
         fill="none"
@@ -77,95 +170,147 @@ function AnimatedTronEdge({
         opacity={0.45}
         style={{ filter: `drop-shadow(0 0 3px ${color})`, pointerEvents: 'none' }}
       />
-
-      {/* 3 particles per edge */}
       {([0, 1, 2] as const).map((i) => (
         <circle
           key={i}
           r={2.5}
           fill={color}
-          style={{
-            filter: `drop-shadow(0 0 5px ${color})`,
-            opacity: 0.9,
-          }}
+          style={{ filter: `drop-shadow(0 0 5px ${color})`, opacity: 0.9 }}
         >
-          <animateMotion
-            dur="2.5s"
-            repeatCount="indefinite"
-            begin={`${i * 0.83}s`}
-            path={edgePath}
-          />
+          <animateMotion dur="2.5s" repeatCount="indefinite" begin={`${i * 0.83}s`} path={edgePath} />
         </circle>
       ))}
     </>
   );
 }
 
-// ─── Custom node: TronSiteNode ─────────────────────────────────────────────────
+// ─── TronSiteNode ──────────────────────────────────────────────────────────────
 function TronSiteNode({ data }: { data: { label?: string; sublabel?: string } }) {
   return (
-    <>
+    // Outer flat wrapper — ReactFlow drag + Handle live here
+    <div
+      style={{
+        width: 190,
+        height: 130,
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <style>{TRON_STYLES}</style>
-      <div
-        style={{
-          width: 200,
-          height: 60,
-          background: 'linear-gradient(180deg, #1a0a00 0%, #0f0f0f 100%)',
-          border: '1px solid #FF6B35',
-          borderRadius: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 8,
-          animation: 'tron-glow-orange 3s ease-in-out infinite',
-        }}
+
+      <IsoBlock
+        faceW={160}
+        faceH={90}
+        depth={35}
+        topBg="linear-gradient(135deg, #1a0800 0%, #0f0f0f 100%)"
+        topBorder="#FF6B35"
+        topGlow="inset 0 0 30px rgba(255,107,53,0.12), 0 0 22px rgba(255,107,53,0.45)"
+        frontBg="#0a0700"
+        rightBg="#080500"
+        floatDelay="0s"
       >
-        <Handle type="source" position={Position.Bottom} className="opacity-0" />
-        <span className="font-mono text-sm text-orange-400 uppercase tracking-widest">
-          {data.label ?? 'YOUR SITE'}
-        </span>
-        <span className="font-mono text-[9px] text-zinc-600 uppercase">
-          {data.sublabel ?? 'Frontend'}
-        </span>
-      </div>
-    </>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: 5,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span className="font-mono text-xs text-orange-400 uppercase tracking-widest">
+              {data.label ?? 'YOUR SITE'}
+            </span>
+            {/* Online indicator */}
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: '#FF6B35',
+                boxShadow: '0 0 8px #FF6B35',
+                flexShrink: 0,
+                animation: 'tron-pulse 2s ease-in-out infinite',
+              }}
+            />
+          </div>
+          <span className="font-mono text-[8px] text-zinc-600 uppercase tracking-wider">
+            {data.sublabel ?? 'FRONTEND'}
+          </span>
+        </div>
+      </IsoBlock>
+
+      {/* Handle outside 3D transform */}
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
+    </div>
   );
 }
 
-// ─── Custom node: TronDatabaseNode ────────────────────────────────────────────
+// ─── TronDatabaseNode ──────────────────────────────────────────────────────────
 function TronDatabaseNode({ data }: { data: { label?: string; sublabel?: string } }) {
   return (
-    <>
+    <div
+      style={{
+        width: 170,
+        height: 115,
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <style>{TRON_STYLES}</style>
-      <div
-        style={{
-          width: 200,
-          height: 60,
-          background: 'linear-gradient(180deg, #0a0a1a 0%, #0f0f0f 100%)',
-          border: '1px solid #1e40af',
-          borderRadius: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 8,
-          animation: 'tron-glow-blue 3s ease-in-out infinite',
-        }}
+
+      <IsoBlock
+        faceW={140}
+        faceH={80}
+        depth={22}
+        topBg="linear-gradient(135deg, #00001a 0%, #0f0f0f 100%)"
+        topBorder="#1e40af"
+        topGlow="inset 0 0 30px rgba(30,64,175,0.12), 0 0 22px rgba(59,130,246,0.35)"
+        frontBg="#06060e"
+        rightBg="#04040c"
+        floatDelay="2s"
       >
-        <Handle type="target" position={Position.Top} className="opacity-0" />
-        <span className="font-mono text-sm text-blue-400 uppercase tracking-widest">
-          {data.label ?? 'SUPABASE'}
-        </span>
-        <span className="font-mono text-[9px] text-zinc-600 uppercase">
-          {data.sublabel ?? 'Database'}
-        </span>
-      </div>
-    </>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: 5,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span className="font-mono text-xs text-blue-400 uppercase tracking-widest">
+              {data.label ?? 'SUPABASE'}
+            </span>
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: '#3b82f6',
+                boxShadow: '0 0 8px #3b82f6',
+                flexShrink: 0,
+              }}
+            />
+          </div>
+          <span className="font-mono text-[8px] text-zinc-600 uppercase tracking-wider">
+            {data.sublabel ?? 'DATABASE'}
+          </span>
+        </div>
+      </IsoBlock>
+
+      <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
+    </div>
   );
 }
 
-// ─── Custom node: TronBlockNode ───────────────────────────────────────────────
+// ─── TronBlockNode ─────────────────────────────────────────────────────────────
 type BlockStatus = 'pending' | 'active' | 'locked';
 
 function TronBlockNode({
@@ -174,78 +319,131 @@ function TronBlockNode({
   data: { label?: string; icon?: string; status?: BlockStatus; price?: string };
 }) {
   const status = data.status ?? 'pending';
-  const borderColor =
-    status === 'pending' ? '#3f3f3f' : status === 'active' ? '#FF6B35' : '#1a1a2e';
+
+  const topBorder =
+    status === 'pending' ? '#2a2a2a' : status === 'active' ? '#FF6B35' : '#1e3a5f';
+
+  const topBg =
+    status === 'active'
+      ? 'linear-gradient(135deg, #100800 0%, #0f0f0f 100%)'
+      : status === 'locked'
+        ? 'linear-gradient(135deg, #080818 0%, #0f0f0f 100%)'
+        : '#0f0f0f';
+
+  const topGlow =
+    status === 'active'
+      ? 'inset 0 0 20px rgba(255,107,53,0.1)'
+      : status === 'locked'
+        ? 'inset 0 0 20px rgba(30,64,175,0.06)'
+        : 'none';
+
+  const frontBg = status === 'active' ? '#0a0600' : '#090909';
+  const rightBg = status === 'active' ? '#080500' : '#070707';
 
   const statusBadge = () => {
-    if (status === 'pending') {
+    if (status === 'pending')
       return (
-        <>
-          <span
-            className="shrink-0 rounded-full"
-            style={{ width: 6, height: 6, background: '#3f3f3f' }}
-          />
-          <span className="font-mono text-[9px] text-zinc-600">NOT CONFIGURED</span>
-        </>
-      );
-    }
-    if (status === 'active') {
-      return (
-        <>
-          <style>{TRON_STYLES}</style>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span
             style={{
-              width: 6,
-              height: 6,
+              width: 5,
+              height: 5,
               borderRadius: '50%',
-              backgroundColor: '#FF6B35',
-              boxShadow: '0 0 6px #FF6B35',
-              display: 'inline-block',
-              animation: 'tron-pulse 1.5s ease-in-out infinite',
+              background: '#2a2a2a',
               flexShrink: 0,
             }}
           />
-          <span className="font-mono text-[9px] text-orange-400">ACTIVE</span>
-        </>
+          <span className="font-mono text-[8px] text-zinc-600">NOT CONFIGURED</span>
+        </div>
       );
-    }
+    if (status === 'active')
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: '#FF6B35',
+              boxShadow: '0 0 6px #FF6B35',
+              flexShrink: 0,
+              animation: 'tron-pulse 1.5s ease-in-out infinite',
+            }}
+          />
+          <span className="font-mono text-[8px] text-orange-400">ACTIVE</span>
+        </div>
+      );
     return (
-      <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
         <span
-          className="shrink-0 rounded-full"
-          style={{ width: 6, height: 6, background: '#1e3a5f' }}
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: '50%',
+            background: '#1e3a5f',
+            flexShrink: 0,
+          }}
         />
-        <span className="font-mono text-[9px] text-blue-900">LOCKED</span>
-      </>
+        <span className="font-mono text-[8px] text-blue-800">LOCKED</span>
+      </div>
     );
   };
 
   return (
     <div
       style={{
-        width: 160,
-        height: 80,
-        background: '#0f0f0f',
-        border: `1px solid ${borderColor}`,
-        borderRadius: 8,
-        padding: 10,
+        width: 155,
+        height: 115,
+        position: 'relative',
         display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      <Handle type="target" position={Position.Top} className="opacity-0" />
-      <Handle type="source" position={Position.Bottom} className="opacity-0" />
-      <div className="flex items-center gap-2">
-        <span className="text-lg">{data.icon ?? '▢'}</span>
-        <span className="font-mono text-xs text-zinc-300 uppercase tracking-widest truncate">
-          {data.label ?? 'Block'}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5">{statusBadge()}</div>
-        <span className="font-mono text-[10px] text-zinc-500 ml-auto">{data.price ?? ''}</span>
-      </div>
+      <style>{TRON_STYLES}</style>
+
+      <IsoBlock
+        faceW={120}
+        faceH={80}
+        depth={25}
+        topBg={topBg}
+        topBorder={topBorder}
+        topGlow={topGlow}
+        frontBg={frontBg}
+        rightBg={rightBg}
+      >
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 14 }}>{data.icon ?? '▢'}</span>
+            <span
+              className="font-mono text-[9px] text-zinc-300 uppercase tracking-wider"
+              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            >
+              {data.label ?? 'Block'}
+            </span>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            {statusBadge()}
+            <span className="font-mono text-[9px] text-zinc-600">{data.price ?? ''}</span>
+          </div>
+        </div>
+      </IsoBlock>
+
+      <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
     </div>
   );
 }
@@ -266,54 +464,54 @@ const initialNodes: Node[] = [
   {
     id: 'site',
     type: 'site',
-    position: { x: 350, y: 50 },
+    position: { x: 300, y: 30 },
     data: { label: 'YOUR SITE', sublabel: 'Frontend' },
     draggable: false,
   },
   {
     id: 'database',
     type: 'database',
-    position: { x: 350, y: 500 },
+    position: { x: 300, y: 470 },
     data: { label: 'SUPABASE', sublabel: 'Database' },
     draggable: false,
   },
   {
     id: 'block-1',
     type: 'block',
-    position: { x: 100, y: 270 },
+    position: { x: 80, y: 250 },
     data: { label: 'USER AUTH', icon: '🔐', status: 'pending', price: '$40' },
   },
   {
     id: 'block-2',
     type: 'block',
-    position: { x: 350, y: 270 },
+    position: { x: 300, y: 250 },
     data: { label: 'CONTACT FORM', icon: '📋', status: 'active', price: '$25' },
   },
   {
     id: 'block-3',
     type: 'block',
-    position: { x: 600, y: 270 },
+    position: { x: 520, y: 250 },
     data: { label: 'STRIPE', icon: '💳', status: 'locked', price: '$80' },
   },
 ];
 
 // ─── Initial edges ─────────────────────────────────────────────────────────────
 const initialEdges: Edge[] = [
-  { id: 'e-site-1', source: 'site',    target: 'block-1',   type: 'animatedTron', data: { color: '#FF6B35' } },
-  { id: 'e-site-2', source: 'site',    target: 'block-2',   type: 'animatedTron', data: { color: '#FF6B35' } },
-  { id: 'e-site-3', source: 'site',    target: 'block-3',   type: 'animatedTron', data: { color: '#FF6B35' } },
-  { id: 'e-1-db',   source: 'block-1', target: 'database',  type: 'animatedTron', data: { color: '#3b82f6' } },
-  { id: 'e-2-db',   source: 'block-2', target: 'database',  type: 'animatedTron', data: { color: '#3b82f6' } },
-  { id: 'e-3-db',   source: 'block-3', target: 'database',  type: 'animatedTron', data: { color: '#3b82f6' } },
+  { id: 'e-site-1', source: 'site',    target: 'block-1',  type: 'animatedTron', data: { color: '#FF6B35' } },
+  { id: 'e-site-2', source: 'site',    target: 'block-2',  type: 'animatedTron', data: { color: '#FF6B35' } },
+  { id: 'e-site-3', source: 'site',    target: 'block-3',  type: 'animatedTron', data: { color: '#FF6B35' } },
+  { id: 'e-1-db',   source: 'block-1', target: 'database', type: 'animatedTron', data: { color: '#3b82f6' } },
+  { id: 'e-2-db',   source: 'block-2', target: 'database', type: 'animatedTron', data: { color: '#3b82f6' } },
+  { id: 'e-3-db',   source: 'block-3', target: 'database', type: 'animatedTron', data: { color: '#3b82f6' } },
 ];
 
-// ─── Backend blocks sidebar ────────────────────────────────────────────────────
+// ─── Sidebar blocks ────────────────────────────────────────────────────────────
 const BACKEND_BLOCKS = [
-  { icon: '🔐', name: 'User Auth',      price: '$40' },
-  { icon: '📋', name: 'Contact Form',   price: '$25' },
-  { icon: '💳', name: 'Stripe',         price: '$80' },
-  { icon: '🛒', name: 'Shopping Cart',  price: '$40' },
-  { icon: '📊', name: 'Analytics',      price: '$30' },
+  { icon: '🔐', name: 'User Auth',     price: '$40' },
+  { icon: '📋', name: 'Contact Form',  price: '$25' },
+  { icon: '💳', name: 'Stripe',        price: '$80' },
+  { icon: '🛒', name: 'Shopping Cart', price: '$40' },
+  { icon: '📊', name: 'Analytics',     price: '$30' },
 ];
 
 // ─── BackendCanvas ─────────────────────────────────────────────────────────────
@@ -325,7 +523,7 @@ export function BackendCanvas() {
 
   return (
     <div className="h-full w-full flex relative" style={{ background: '#0a0a0a' }}>
-      {/* Left panel */}
+      {/* Left sidebar */}
       <div
         className="absolute left-0 top-0 bottom-0 z-10 flex flex-col"
         style={{ width: 240, background: '#0a0a0a', borderRight: '1px solid #1a1a1a' }}
@@ -358,19 +556,17 @@ export function BackendCanvas() {
           edgeTypes={edgeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: 0.25 }}
           minZoom={0.3}
           maxZoom={1.5}
           proOptions={{ hideAttribution: true }}
         >
-          {/* Grid lines layer */}
           <Background
             variant={BackgroundVariant.Lines}
             gap={48}
             color="#111111"
             style={{ opacity: 0.5 }}
           />
-          {/* Dots layer on top */}
           <Background
             id="dots-layer"
             variant={BackgroundVariant.Dots}
