@@ -49,7 +49,6 @@ interface TronRegisterProps {
   footerText?: string;
   footerLinkText?: string;
   animationType?: string;
-  isNewlyAdded?: boolean;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -70,20 +69,11 @@ export const TronRegister = React.memo(function TronRegister() {
     footerText = 'Already have an account?',
     footerLinkText = 'Sign in',
     animationType = 'none',
-    isNewlyAdded = false,
   } = props;
 
   const accentColor = theme.accentColor ?? '#FF6B35';
   const scheme = (theme.colorScheme ?? 'dark') as 'dark' | 'light';
   const t = buildTokens(scheme, accentColor);
-
-  // Auto-create page on first drop
-  React.useEffect(() => {
-    if (!isNewlyAdded || !enabled) return;
-    window.dispatchEvent(new CustomEvent('craft:addPage', { detail: { name: 'Register' } }));
-    setProp((p: Record<string, unknown>) => { p.isNewlyAdded = false; }, 0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType !== 'none') {
@@ -367,7 +357,6 @@ const tronRegisterCraft = {
     footerText: 'Already have an account?',
     footerLinkText: 'Sign in',
     animationType: 'none',
-    isNewlyAdded: true,
   },
   related: { settings: TronRegisterSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },

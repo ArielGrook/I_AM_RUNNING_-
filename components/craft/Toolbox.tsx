@@ -32,7 +32,7 @@ const tabs: { id: TabId; label: string }[] = [
   { id: 'presets', label: '⚡ Presets' },
 ];
 
-const categories: { key: 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean }[] }[] = [
+const categories: { key: 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean; newPageName?: string }[] }[] = [
   {
     key: 'tronSections',
     title: 'Legacy (Tron)',
@@ -48,13 +48,13 @@ const categories: { key: 'tronSections'; title: string; items: { name: string; l
       { name: 'TronFooter', label: 'Tron Footer', icon: '▬', component: TronFooter, canvas: true },
       { name: 'TronContact', label: 'Tron Contact', icon: '✉', component: TronContact, canvas: true },
       { name: 'TronShowcase', label: 'Tron Showcase', icon: '▤', component: TronShowcase, canvas: true },
-      { name: 'TronLogin', label: 'Tron Login', icon: '🔑', component: TronLogin, canvas: true },
-      { name: 'TronRegister', label: 'Tron Register', icon: '📝', component: TronRegister, canvas: true },
+      { name: 'TronLogin', label: 'Tron Login', icon: '🔑', component: TronLogin, canvas: true, newPageName: 'Login' },
+      { name: 'TronRegister', label: 'Tron Register', icon: '📝', component: TronRegister, canvas: true, newPageName: 'Register' },
     ],
   },
 ];
 
-export const Toolbox = () => {
+export const Toolbox = ({ onAddPageNamed }: { onAddPageNamed?: (name: string) => void }) => {
   const { connectors, actions, query } = useEditor();
   const { t } = useEditorTheme();
   const [activeTab, setActiveTab] = useState<TabId>('components');
@@ -102,6 +102,28 @@ export const Toolbox = () => {
       }
     },
     [query, actions]
+  );
+
+  const handleAuthComponentClick = useCallback(
+    (item: { component: React.ComponentType<any>; canvas: boolean; newPageName?: string }) => {
+      if (!item.newPageName || !onAddPageNamed) return;
+      onAddPageNamed(item.newPageName);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          try {
+            const tree = query
+              .parseReactElement(
+                React.createElement(Element, { is: item.component, canvas: item.canvas })
+              )
+              .toNodeTree();
+            actions.addNodeTree(tree, ROOT_ID, 0);
+          } catch (err) {
+            console.error('Failed to add auth component:', err);
+          }
+        });
+      });
+    },
+    [onAddPageNamed, query, actions]
   );
 
   const loadPreset = useCallback(
@@ -172,7 +194,7 @@ export const Toolbox = () => {
                       <div
                         key={item.name}
                         ref={(ref) => {
-                          if (ref) {
+                          if (ref && !item.newPageName) {
                             connectors.create(
                               ref,
                               React.createElement(Element, {
@@ -182,7 +204,8 @@ export const Toolbox = () => {
                             );
                           }
                         }}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab active:cursor-grabbing transition-colors group select-none ${t(
+                        onClick={item.newPageName ? () => handleAuthComponentClick(item) : undefined}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group select-none ${item.newPageName ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${t(
                           'hover:bg-gray-100',
                           'hover:bg-[#1a1a1a]'
                         )}`}

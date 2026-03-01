@@ -117,7 +117,7 @@ function EditorLayout({
           }}
         >
           <div className="flex min-w-0 flex-1 overflow-hidden">
-            <Toolbox />
+            <Toolbox onAddPageNamed={handleAddPageNamed} />
           </div>
           {leftPanelOpen && (
             <button
@@ -761,6 +761,19 @@ export default function EditorPage() {
     setMobileData(null);
   };
 
+  const handleAddPageNamed = useCallback((name: string) => {
+    const newId = String(Date.now());
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page';
+    setPages((prev) => [
+      ...prev,
+      { id: newId, name, slug, data: null, desktopData: null, mobileData: null },
+    ]);
+    setActivePageId(newId);
+    setFrameData(null);
+    setDesktopData(null);
+    setMobileData(null);
+  }, []);
+
   const handleDeletePage = useCallback(
     async (pageId: string) => {
       if (pages.length <= 1 || !loadedProject) return;
@@ -807,26 +820,6 @@ export default function EditorPage() {
     },
     [pages, activePageId, loadedProject]
   );
-
-  // Listen for craft:addPage events dispatched by components on first drop
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ name?: string }>).detail;
-      const pageName = detail?.name ?? `Page ${pages.length + 1}`;
-      const newId = String(Date.now());
-      const slug = pageName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page';
-      setPages((prev) => [
-        ...prev,
-        { id: newId, name: pageName, slug, data: null, desktopData: null, mobileData: null },
-      ]);
-      setActivePageId(newId);
-      setFrameData(null);
-      setDesktopData(null);
-      setMobileData(null);
-    };
-    window.addEventListener('craft:addPage', handler);
-    return () => window.removeEventListener('craft:addPage', handler);
-  }, [pages.length]);
 
   // Warn on browser close/reload if unsaved changes
   useEffect(() => {

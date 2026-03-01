@@ -47,7 +47,6 @@ interface TronLoginProps {
   footerText?: string;
   footerLinkText?: string;
   animationType?: string;
-  isNewlyAdded?: boolean;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -66,20 +65,11 @@ export const TronLogin = React.memo(function TronLogin() {
     footerText = "Don't have an account?",
     footerLinkText = 'Create one',
     animationType = 'none',
-    isNewlyAdded = false,
   } = props;
 
   const accentColor = theme.accentColor ?? '#FF6B35';
   const scheme = (theme.colorScheme ?? 'dark') as 'dark' | 'light';
   const t = buildTokens(scheme, accentColor);
-
-  // Auto-create page on first drop
-  React.useEffect(() => {
-    if (!isNewlyAdded || !enabled) return;
-    window.dispatchEvent(new CustomEvent('craft:addPage', { detail: { name: 'Login' } }));
-    setProp((p: Record<string, unknown>) => { p.isNewlyAdded = false; }, 0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType !== 'none') {
@@ -345,7 +335,6 @@ const tronLoginCraft = {
     footerText: "Don't have an account?",
     footerLinkText: 'Create one',
     animationType: 'none',
-    isNewlyAdded: true,
   },
   related: { settings: TronLoginSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
