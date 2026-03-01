@@ -84,6 +84,7 @@ function EditorLayout({
   previewMode,
   outlines,
   editorMode,
+  onAddPageNamed,
   children,
 }: {
   leftPanelOpen: boolean;
@@ -93,6 +94,7 @@ function EditorLayout({
   previewMode: boolean;
   outlines: boolean;
   editorMode: 'frontend' | 'backend';
+  onAddPageNamed?: (name: string) => void;
   children: React.ReactNode;
 }) {
   const { theme } = useEditorTheme();
@@ -117,7 +119,7 @@ function EditorLayout({
           }}
         >
           <div className="flex min-w-0 flex-1 overflow-hidden">
-            <Toolbox onAddPageNamed={handleAddPageNamed} />
+            <Toolbox onAddPageNamed={onAddPageNamed} />
           </div>
           {leftPanelOpen && (
             <button
@@ -364,19 +366,6 @@ export default function EditorPage() {
     },
     [projectId]
   );
-
-  const handleAddPageNamed = useCallback((name: string) => {
-    const newId = String(Date.now());
-    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page';
-    setPages((prev) => [
-      ...prev,
-      { id: newId, name, slug, data: null, desktopData: null, mobileData: null },
-    ]);
-    setActivePageId(newId);
-    setFrameData(null);
-    setDesktopData(null);
-    setMobileData(null);
-  }, []);
 
   // Auth guard
   useEffect(() => {
@@ -942,6 +931,15 @@ export default function EditorPage() {
           previewMode={previewMode}
           outlines={outlines}
           editorMode={editorMode}
+          onAddPageNamed={(name: string) => {
+            const newId = String(Date.now());
+            const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'page';
+            setPages((prev) => [...prev, { id: newId, name, slug, data: null, desktopData: null, mobileData: null }]);
+            setActivePageId(newId);
+            setFrameData(null);
+            setDesktopData(null);
+            setMobileData(null);
+          }}
         >
           {editorMode === 'frontend' ? (
           <Viewport
