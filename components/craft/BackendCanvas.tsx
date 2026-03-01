@@ -434,13 +434,19 @@ function LeftPanel({ t }: { t: Tokens }) {
 // ─── BackendCanvas ─────────────────────────────────────────────────────────────
 export function BackendCanvas() {
   const t = useTokens();
+  const isDark = useEditorTheme().theme === 'dark';
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const transformLayerRef = useRef<HTMLDivElement>(null);
   const siteRef      = useRef<HTMLDivElement>(null);
   const dbRef        = useRef<HTMLDivElement>(null);
   const blockRefs    = useRef<(HTMLDivElement | null)[]>([null, null, null, null]);
 
   const [coords, setCoords] = useState<SvgCoords | null>(null);
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
   const calculate = useCallback(() => {
     const container = containerRef.current;
@@ -486,11 +492,53 @@ export function BackendCanvas() {
     return () => ro.disconnect();
   }, [calculate]);
 
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      setScale((prev) => Math.min(Math.max(prev * delta, 0.3), 3));
+    },
+    []
+  );
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+  }, [offset]);
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isPanning) return;
+      setOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+    },
+    [isPanning, panStart]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsPanning(false);
+  }, []);
+
+  const bgStyle: CSSProperties = isDark
+    ? {
+        backgroundColor: '#0a0a0a',
+        backgroundImage: 'radial-gradient(circle, #1e1e1e 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+      }
+    : {
+        backgroundColor: '#f5f5f5',
+        backgroundImage: 'radial-gradient(circle, #d0d0d0 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+      };
+
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: t.bg }}>
       <LeftPanel t={t} />
 
-      {/* Main canvas */}
+      {/* Main canvas with background pattern and zoom/pan */}
       <div
         ref={containerRef}
         style={{
@@ -500,48 +548,84 @@ export function BackendCanvas() {
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
+          ...bgStyle,
+          cursor: isPanning ? 'grabbing' : 'grab',
         }}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
       >
-        {/* SVG overlay for lines — pointer-events: none */}
-        <svg
+        {/* Transform layer — all content (cards + lines) */}
+        <div
+          ref={transformLayerRef}
           style={{
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+            transformOrigin: 'center center',
+            transition: isPanning ? 'none' : 'transform 0.1s ease-out',
             position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-            overflow: 'visible',
           }}
         >
-          {coords && <SvgLines coords={coords} t={t} />}
-        </svg>
+          {/* SVG overlay for lines */}
+          <svg
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+              overflow: 'visible',
+            }}
+          >
+            {coords && <SvgLines coords={coords} t={t} />}
+          </svg>
 
-        {/* Cards row */}
+          {/* Cards row */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 80,
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            <SiteCard ref={siteRef} t={t} />
+
+            {/* Block modules column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {BLOCKS.map((block, i) => (
+                <BlockCard
+                  key={block.id}
+                  ref={(el) => { blockRefs.current[i] = el; }}
+                  block={block}
+                  t={t}
+                />
+              ))}
+            </div>
+
+            <DatabaseCard ref={dbRef} t={t} />
+          </div>
+        </div>
+
+        {/* Hint text — absolute, bottom-center */}
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 80,
-            position: 'relative',
-            zIndex: 1,
+            position: 'absolute',
+            bottom: 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            ...MONO,
+            fontSize: 9,
+            color: isDark ? '#333333' : '#bbbbbb',
+            userSelect: 'none',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
           }}
         >
-          <SiteCard ref={siteRef} t={t} />
-
-          {/* Block modules column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {BLOCKS.map((block, i) => (
-              <BlockCard
-                key={block.id}
-                ref={(el) => { blockRefs.current[i] = el; }}
-                block={block}
-                t={t}
-              />
-            ))}
-          </div>
-
-          <DatabaseCard ref={dbRef} t={t} />
+          scroll to zoom · drag to pan
         </div>
       </div>
     </div>
