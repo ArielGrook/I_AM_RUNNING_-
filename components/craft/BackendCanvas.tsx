@@ -175,7 +175,15 @@ const CARD_HEIGHT = 72;
 const MONO: CSSProperties = { fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace' };
 
 // ─── Card: YOUR SITE ───────────────────────────────────────────────────────────
-function SiteCard({ t, pos }: { t: Tokens; pos: { x: number; y: number } }) {
+function SiteCard({
+  t,
+  pos,
+  onMouseDown,
+}: {
+  t: Tokens;
+  pos: { x: number; y: number };
+  onMouseDown: (e: React.MouseEvent, id: string) => void;
+}) {
   return (
     <div
       style={{
@@ -190,7 +198,10 @@ function SiteCard({ t, pos }: { t: Tokens; pos: { x: number; y: number } }) {
         padding: '10px 12px',
         boxShadow: '0 0 24px rgba(255,107,53,0.15)',
         boxSizing: 'border-box',
+        cursor: 'grab',
+        userSelect: 'none',
       }}
+      onMouseDown={(e) => onMouseDown(e, 'site')}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
         <IconGlobe size={20} color="#FF6B35" />
@@ -211,7 +222,15 @@ function SiteCard({ t, pos }: { t: Tokens; pos: { x: number; y: number } }) {
 }
 
 // ─── Card: SUPABASE ────────────────────────────────────────────────────────────
-function DatabaseCard({ t, pos }: { t: Tokens; pos: { x: number; y: number } }) {
+function DatabaseCard({
+  t,
+  pos,
+  onMouseDown,
+}: {
+  t: Tokens;
+  pos: { x: number; y: number };
+  onMouseDown: (e: React.MouseEvent, id: string) => void;
+}) {
   return (
     <div
       style={{
@@ -226,7 +245,10 @@ function DatabaseCard({ t, pos }: { t: Tokens; pos: { x: number; y: number } }) 
         padding: '10px 12px',
         boxShadow: '0 0 24px rgba(30,64,175,0.15)',
         boxSizing: 'border-box',
+        cursor: 'grab',
+        userSelect: 'none',
       }}
+      onMouseDown={(e) => onMouseDown(e, 'db')}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
         <IconDb size={20} color={t.textBlue} />
@@ -646,8 +668,8 @@ export function BackendCanvas() {
           }}
         >
           <SvgLines positions={positions} t={t} />
-          <SiteCard t={t} pos={positions.site} />
-          <DatabaseCard t={t} pos={positions.db} />
+          <SiteCard t={t} pos={positions.site} onMouseDown={startCardDrag} />
+          <DatabaseCard t={t} pos={positions.db} onMouseDown={startCardDrag} />
           {BLOCKS.map((block) => (
             <BlockCard
               key={block.id}
