@@ -6,7 +6,14 @@ import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
 
-// ── Google Icon ───────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────
+function hexToRgb(hex: string): string {
+  const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
+  if (!m) return '255,107,53';
+  return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
+}
+
+// ── Google Icon (inline SVG) ─────────────────────────────────────────────
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
     <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -16,30 +23,32 @@ const GoogleIcon = () => (
   </svg>
 );
 
-// ── Tokens ────────────────────────────────────────────────────────────────────
-function buildTokens(scheme: 'dark' | 'light', accentColor: string) {
-  if (scheme === 'light') {
-    return {
-      pageBg: '#f8f8f8',
-      cardBg: '#ffffff',
-      border: '#e0e0e0',
-      text: '#1a1a1a',
-      textMuted: '#71717a',
-      accent: accentColor,
-    };
-  }
+// ── Tokens (bg from props darkBg/lightBg) ─────────────────────────────────
+function buildTokens(darkBg: string, lightBg: string) {
   return {
-    pageBg: '#0a0a0a',
-    cardBg: '#111111',
-    border: '#2a2a2a',
-    text: '#e4e4e4',
-    textMuted: '#71717a',
-    accent: accentColor,
+    dark: {
+      bg: darkBg ?? '#0a0a0a',
+      text: '#ffffff',
+      textSecondary: '#a1a1aa',
+      border: 'rgba(255,255,255,0.08)',
+      cardBg: 'rgba(255,255,255,0.03)',
+    },
+    light: {
+      bg: lightBg ?? '#ffffff',
+      text: '#0a0a0a',
+      textSecondary: '#52525b',
+      border: 'rgba(0,0,0,0.08)',
+      cardBg: 'rgba(0,0,0,0.02)',
+    },
   };
 }
 
-// ── Interface ─────────────────────────────────────────────────────────────────
+// ── Interfaces ───────────────────────────────────────────────────────────
 interface TronLoginProps {
+  colorScheme?: 'dark' | 'light';
+  accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
   title?: string;
   subtitle?: string;
   googleButtonText?: string;
@@ -47,17 +56,37 @@ interface TronLoginProps {
   footerText?: string;
   footerLinkText?: string;
   animationType?: string;
+  animateDelay?: string;
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Main component ───────────────────────────────────────────────────────
 export const TronLogin = React.memo(function TronLogin() {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
 
-  const props = useNode((node) => node.data.props as Partial<TronLoginProps>);
+  const containerRef = React.useRef<HTMLElement | null>(null);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const checkWidth = () => setIsMobile(el.getBoundingClientRect().width < 520);
+    checkWidth();
+    const observer = new ResizeObserver(([entry]) => {
+      setIsMobile((entry?.contentRect?.width ?? 0) < 520);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const props = useNode((node) => node.data.props as Partial<TronLoginProps>) ?? {};
   const {
+    colorScheme = 'dark',
+    accentColor: propAccent,
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
     title = 'Welcome back',
     subtitle = 'Sign in to your account',
     googleButtonText = 'Continue with Google',
@@ -65,15 +94,18 @@ export const TronLogin = React.memo(function TronLogin() {
     footerText = "Don't have an account?",
     footerLinkText = 'Create one',
     animationType = 'none',
+    animateDelay = '0',
   } = props;
 
-  const accentColor = theme.accentColor ?? '#FF6B35';
-  const scheme = (theme.colorScheme ?? 'dark') as 'dark' | 'light';
-  const t = buildTokens(scheme, accentColor);
+  const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const tokens = buildTokens(darkBg, lightBg);
+  const t = { ...tokens[scheme], accent: accentColor };
 
   const animAttrs: Record<string, string> = {};
   if (!enabled && animationType !== 'none') {
     animAttrs['data-animate'] = animationType;
+    if (animateDelay !== '0') animAttrs['data-animate-delay'] = animateDelay;
   }
 
   const inputStyle: React.CSSProperties = {
@@ -93,23 +125,30 @@ export const TronLogin = React.memo(function TronLogin() {
 
   return (
     <section
-      ref={(el) => { if (el) connect(drag(el)); }}
+      ref={(el) => {
+        if (el) {
+          connect(drag(el));
+          (containerRef as React.MutableRefObject<HTMLElement | null>).current = el;
+        }
+      }}
+      id="login"
       data-block-type="login"
-      className={`w-full max-w-full ${isSelected ? 'craft-node-selected' : ''}`}
+      className={`w-full max-w-full flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
+        background: t.bg,
         minHeight: '100vh',
-        background: t.pageBg,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
+        position: 'relative',
+        padding: isMobile ? 16 : 24,
         boxSizing: 'border-box',
       }}
     >
       <div
         style={{
+          position: 'relative',
+          zIndex: 1,
           width: '100%',
           maxWidth: 420,
+          margin: '0 auto',
           background: t.cardBg,
           border: `1px solid ${t.border}`,
           borderRadius: 12,
@@ -118,40 +157,23 @@ export const TronLogin = React.memo(function TronLogin() {
         }}
         {...animAttrs}
       >
-        {/* Title */}
         <EditableText
           value={title ?? ''}
           fieldKey="title"
           tag="h1"
-          style={{
-            fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-            fontSize: 20,
-            fontWeight: 700,
-            color: t.text,
-            marginBottom: 6,
-            marginTop: 0,
-          }}
+          style={{ fontSize: 20, fontWeight: 700, color: t.text, marginBottom: 6, marginTop: 0, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace' }}
           enabled={enabled}
           onSave={(val) => setProp((p: Record<string, unknown>) => { p.title = val; }, 0)}
         />
-
-        {/* Subtitle */}
         <EditableText
           value={subtitle ?? ''}
           fieldKey="subtitle"
           tag="p"
-          style={{
-            fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-            fontSize: 13,
-            color: t.textMuted,
-            marginBottom: 24,
-            marginTop: 0,
-          }}
+          style={{ fontSize: 13, color: t.textSecondary, marginBottom: 24, marginTop: 0, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace' }}
           enabled={enabled}
           onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
         />
 
-        {/* Google button */}
         <button
           type="button"
           style={{
@@ -170,65 +192,22 @@ export const TronLogin = React.memo(function TronLogin() {
           }}
         >
           <GoogleIcon />
-          <span
-            style={{
-              fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-              fontSize: 13,
-              color: t.text,
-            }}
-          >
+          <span style={{ fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 13, color: t.text }}>
             {enabled ? (
-              <EditableText
-                value={googleButtonText ?? ''}
-                fieldKey="googleButtonText"
-                tag="span"
-                style={{ color: t.text, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 13 }}
-                enabled={enabled}
-                onSave={(val) => setProp((p: Record<string, unknown>) => { p.googleButtonText = val; }, 0)}
-              />
+              <EditableText value={googleButtonText ?? ''} fieldKey="googleButtonText" tag="span" style={{ color: t.text, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 13 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.googleButtonText = val; }, 0)} />
             ) : googleButtonText}
           </span>
         </button>
 
-        {/* Divider */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginBottom: 20,
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <div style={{ flex: 1, height: 1, background: t.border }} />
-          <span
-            style={{
-              fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-              fontSize: 11,
-              color: t.textMuted,
-            }}
-          >
-            or
-          </span>
+          <span style={{ fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 11, color: t.textSecondary }}>or</span>
           <div style={{ flex: 1, height: 1, background: t.border }} />
         </div>
 
-        {/* Email input */}
-        <input
-          type="email"
-          placeholder="Email"
-          readOnly
-          style={{ ...inputStyle, marginBottom: 12 }}
-        />
+        <input type="email" placeholder="Email" readOnly style={{ ...inputStyle, marginBottom: 12 }} />
+        <input type="password" placeholder="Password" readOnly style={{ ...inputStyle, marginBottom: 20 }} />
 
-        {/* Password input */}
-        <input
-          type="password"
-          placeholder="Password"
-          readOnly
-          style={{ ...inputStyle, marginBottom: 20 }}
-        />
-
-        {/* Submit button */}
         <button
           type="submit"
           style={{
@@ -248,86 +227,79 @@ export const TronLogin = React.memo(function TronLogin() {
           }}
         >
           {enabled ? (
-            <EditableText
-              value={submitButtonText ?? ''}
-              fieldKey="submitButtonText"
-              tag="span"
-              style={{ color: '#ffffff', fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 13, fontWeight: 600 }}
-              enabled={enabled}
-              onSave={(val) => setProp((p: Record<string, unknown>) => { p.submitButtonText = val; }, 0)}
-            />
+            <EditableText value={submitButtonText ?? ''} fieldKey="submitButtonText" tag="span" style={{ color: '#ffffff', fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 13, fontWeight: 600 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.submitButtonText = val; }, 0)} />
           ) : submitButtonText}
         </button>
 
-        {/* Footer */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-            fontSize: 12,
-          }}
-        >
-          <EditableText
-            value={footerText ?? ''}
-            fieldKey="footerText"
-            tag="span"
-            style={{ color: t.textMuted, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 12 }}
-            enabled={enabled}
-            onSave={(val) => setProp((p: Record<string, unknown>) => { p.footerText = val; }, 0)}
-          />
-          <EditableText
-            value={footerLinkText ?? ''}
-            fieldKey="footerLinkText"
-            tag="span"
-            style={{ color: t.accent, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 12, cursor: 'pointer' }}
-            enabled={enabled}
-            onSave={(val) => setProp((p: Record<string, unknown>) => { p.footerLinkText = val; }, 0)}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 12 }}>
+          <EditableText value={footerText ?? ''} fieldKey="footerText" tag="span" style={{ color: t.textSecondary, fontSize: 12 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.footerText = val; }, 0)} />
+          <EditableText value={footerLinkText ?? ''} fieldKey="footerLinkText" tag="span" style={{ color: t.accent, fontSize: 12, cursor: 'pointer' }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.footerLinkText = val; }, 0)} />
         </div>
       </div>
     </section>
   );
 });
 
-// ── Settings ──────────────────────────────────────────────────────────────────
+// ── Settings ─────────────────────────────────────────────────────────────
 function TronLoginSettings() {
   const { actions: { setProp } } = useNode();
-  const props = useNode((node) => node.data.props as Partial<TronLoginProps>);
-  const { animationType = 'none' } = props;
+  const props = useNode((node) => node.data.props as Partial<TronLoginProps>) ?? {};
+  const { darkBg = '#0a0a0a', lightBg = '#ffffff', animationType = 'none', animateDelay = '0' } = props;
 
   return (
     <div className="p-3 space-y-0">
       <div className={`${sectionCls} first:border-t-0 first:pt-0 first:mt-0`}>
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Animation</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Colors</h3>
         <div>
-          <label className={labelCls}>Animation type</label>
-          <select
-            value={animationType}
-            onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })}
-            className={inputCls}
-          >
-            <option value="none">None</option>
-            <option value="fade-in">Fade In</option>
-            <option value="slide-up">Slide Up</option>
-            <option value="slide-down">Slide Down</option>
-            <option value="slide-left">Slide Left</option>
-            <option value="slide-right">Slide Right</option>
-            <option value="scale-in">Scale In</option>
-            <option value="blur-in">Blur In</option>
-          </select>
+          <label className={labelCls}>Background (dark mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <input type="color" value={darkBg} onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)} />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{darkBg}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (light mode)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <input type="color" value={lightBg} onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)} />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{lightBg}</span>
+          </div>
+        </div>
+      </div>
+      <div className={sectionCls}>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Animation</h3>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Animation type</label>
+            <select value={animationType} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animationType = e.target.value; })} className={inputCls}>
+              <option value="none">None</option>
+              <option value="fade-in">Fade In</option>
+              <option value="slide-up">Slide Up</option>
+              <option value="slide-down">Slide Down</option>
+              <option value="slide-left">Slide Left</option>
+              <option value="slide-right">Slide Right</option>
+              <option value="scale-in">Scale In</option>
+              <option value="blur-in">Blur In</option>
+              <option value="rotate-in">Rotate In</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Delay</label>
+            <select value={animateDelay} onChange={(e) => setProp((p: Record<string, unknown>) => { p.animateDelay = e.target.value; })} className={inputCls}>
+              {['0', '0.1', '0.2', '0.3', '0.5', '0.8', '1'].map((v) => (<option key={v} value={v}>{v}s</option>))}
+            </select>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Craft config ──────────────────────────────────────────────────────────────
+// ── Craft config ─────────────────────────────────────────────────────────
 const tronLoginCraft = {
   displayName: 'Tron Login',
   props: {
+    colorScheme: 'dark',
+    accentColor: '#FF6B35',
+    darkBg: '#0a0a0a',
+    lightBg: '#ffffff',
     title: 'Welcome back',
     subtitle: 'Sign in to your account',
     googleButtonText: 'Continue with Google',
@@ -335,13 +307,16 @@ const tronLoginCraft = {
     footerText: "Don't have an account?",
     footerLinkText: 'Create one',
     animationType: 'none',
+    animateDelay: '0',
   },
   related: { settings: TronLoginSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
   custom: {
+    block_type: 'login',
+    variant_name: 'default',
     styleTags: ['dark', 'minimal'],
-    businessTags: ['startup', 'saas', 'agency'],
-    featureTags: ['auth', 'login'],
+    businessTags: ['ecommerce', 'startup', 'saas', 'education', 'health'],
+    featureTags: ['auth'],
     supportsTheme: true,
     supportsColorPreset: true,
     supportsGradient: false,
