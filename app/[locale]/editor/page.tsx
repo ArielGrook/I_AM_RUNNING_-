@@ -357,6 +357,12 @@ export default function EditorPage() {
 
   const activePage = pages.find((p) => p.id === activePageId);
 
+  // Prevent landing dark mode from leaking into editor (toolbar, Settings Panel use Tailwind dark:)
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+    document.body.classList.remove('dark');
+  }, []);
+
   const handleRenameProject = useCallback(
     async (newName: string) => {
       if (!projectId) return;
