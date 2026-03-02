@@ -110,10 +110,16 @@ export const HeaderTron = ({
   const firstName = user?.user_metadata?.first_name ?? '';
   const lastName = user?.user_metadata?.last_name ?? '';
   const initials = `${(firstName as string)?.[0] ?? ''}${(lastName as string)?.[0] ?? ''}`.toUpperCase() || '?';
-  const showAvatar = !enabled && session;
-  const showLoginBtn = !enabled && !session && loginLink;
+  const showAvatar = !enabled && !!session;
+  const showLoginBtn = !enabled && !session && !!loginLink;
   const toHref = (slugOrUrl: string) =>
     !slugOrUrl ? '#' : slugOrUrl.startsWith('#') || slugOrUrl.startsWith('http') ? slugOrUrl : `/${slugOrUrl}`;
+  const pages = siteCtx?.pages ?? [];
+  const profileFallbackSlug =
+    profilePageLink?.trim()
+      ? undefined
+      : pages.find((p) => /profile|cabinet/i.test(p.slug || '') || /profile|cabinet/i.test(p.name || ''))?.slug ?? pages[0]?.slug ?? '';
+  const effectiveProfileHref = profilePageLink?.trim() ? toHref(profilePageLink) : (profileFallbackSlug ? toHref(profileFallbackSlug) : '#');
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     handleLinkClick(e, href, enabled, siteCtx.navigateToPage || navigateTo);
@@ -251,12 +257,12 @@ export const HeaderTron = ({
                 ))}
               </select>
             )}
-            {/* Desktop: Avatar / Login / CTA */}
+            {/* Auth: single Avatar OR Login OR CTA (one element only, visible on all viewports) */}
             {showAvatar && (
               <button
                 type="button"
-                className="hidden md:flex"
-                onClick={(e) => handleLinkClick(e, toHref(profilePageLink), enabled, siteCtx.navigateToPage)}
+                className="flex shrink-0"
+                onClick={(e) => handleLinkClick(e, effectiveProfileHref, enabled, siteCtx.navigateToPage)}
                 style={{
                   width: 36,
                   height: 36,
@@ -275,10 +281,10 @@ export const HeaderTron = ({
                 {initials}
               </button>
             )}
-            {showLoginBtn && (
+            {!showAvatar && showLoginBtn && (
               <a
                 href={toHref(loginLink)}
-                className="hidden md:block"
+                className="flex shrink-0 items-center"
                 onClick={(e) => handleLinkClick(e, toHref(loginLink), enabled, siteCtx.navigateToPage)}
                 style={{ background: t.accent, color: '#ffffff', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
               >
@@ -288,7 +294,7 @@ export const HeaderTron = ({
             {!showAvatar && !showLoginBtn && showCta && (
               <a
                 href={ctaHref}
-                className="hidden md:block"
+                className="flex shrink-0 items-center"
                 onClick={(e) => handleNavClick(e, ctaHref)}
                 onTouchEnd={(e) => handleNavClick(e as any, ctaHref)}
                 style={{ background: t.accent, color: '#ffffff', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600, transition: 'opacity 150ms ease, transform 150ms ease', textDecoration: 'none', cursor: 'pointer' }}
@@ -322,74 +328,6 @@ export const HeaderTron = ({
               >
                 {siteCtx.colorScheme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
-            )}
-            {/* Mobile: Avatar / Login / CTA (before hamburger) */}
-            {showAvatar && (
-              <button
-                type="button"
-                className="flex md:hidden"
-                onClick={(e) => handleLinkClick(e, toHref(profilePageLink), enabled, siteCtx.navigateToPage)}
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: '50%',
-                  background: t.accent,
-                  color: '#fff',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-                  fontWeight: 700,
-                  fontSize: 12,
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {initials}
-              </button>
-            )}
-            {showLoginBtn && (
-              <a
-                href={toHref(loginLink)}
-                className="flex md:hidden"
-                onClick={(e) => handleLinkClick(e, toHref(loginLink), enabled, siteCtx.navigateToPage)}
-                style={{
-                  background: t.accent,
-                  color: '#fff',
-                  padding: '7px 14px',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  flexShrink: 0,
-                }}
-              >
-                Login
-              </a>
-            )}
-            {!showAvatar && !showLoginBtn && showCta && (
-              <a
-                href={enabled ? undefined : ctaHref}
-                className="flex md:hidden"
-                onClick={(e) => { handleLinkClick(e, ctaHref ?? '#', enabled, siteCtx.navigateToPage); }}
-                onTouchEnd={(e) => { handleLinkClick(e as any, ctaHref ?? '#', enabled, siteCtx.navigateToPage); }}
-                style={{
-                  background: t.accent,
-                  color: '#fff',
-                  padding: '7px 14px',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-              >
-                {ctaText}
-              </a>
             )}
             {/* Hamburger */}
             <button

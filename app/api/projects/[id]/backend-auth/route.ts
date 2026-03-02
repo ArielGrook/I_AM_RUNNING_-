@@ -8,6 +8,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
+function getProjectRef(supabaseUrl: string): string {
+  return supabaseUrl.replace('https://', '').replace('.supabase.co', '').trim();
+}
+
+async function executeSql(
+  projectRef: string,
+  serviceRoleKey: string,
+  query: string
+): Promise<{ ok: boolean; error?: string }> {
+  const response = await fetch(
+    `https://api.supabase.com/v1/projects/${projectRef}/database/query`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    }
+  );
+  if (!response.ok) {
+    const err = await response.text();
+    console.error('[backend-auth] Migration failed:', err);
+    return { ok: false, error: err };
+  }
+  return { ok: true };
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -65,6 +93,85 @@ export async function POST(
       );
     }
 
+    const projectRef = getProjectRef(supabaseUrl);
+    const migrationsResult: Record<string, string> = {};
+
+    const s1 = await executeSql(
+      projectRef,
+      serviceRoleKey,
+      `CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  first_name TEXT,
+  last_name TEXT,
+  email TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+)`
+    );
+    migrationsResult.profiles_table = s1.ok ? 'ok' : (s1.error ?? 'fail');
+
+    const s2 = await executeSql(projectRef, serviceRoleKey, 'ALTER TABLE profiles ENABLE ROW LEVEL SECURITY');
+    migrationsResult.rls = s2.ok ? 'ok' : (s2.error ?? 'fail');
+
+    const s3 = await executeSql(
+      projectRef,
+      serviceRoleKey,
+      `DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT FROM pg_policies WHERE tablename = 'profiles'
+    AND policyname = 'Users can read own profile'
+  ) THEN
+    CREATE POLICY "Users can read own profile"
+    ON profiles FOR SELECT USING (auth.uid() = id);
+  END IF;
+END $$`
+    );
+    migrationsResult.policies = s3.ok ? 'ok' : (s3.error ?? 'fail');
+
+    const s4 = await executeSql(
+      projectRef,
+      serviceRoleKey,
+      `DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT FROM pg_policies WHERE tablename = 'profiles'
+    AND policyname = 'Users can update own profile'
+  ) THEN
+    CREATE POLICY "Users can update own profile"
+    ON profiles FOR UPDATE USING (auth.uid() = id);
+  END IF;
+END $$`
+    );
+    migrationsResult.policies = s3.ok && s4.ok ? 'ok' : (s3.error ?? s4.error ?? 'fail');
+
+    const s5 = await executeSql(
+      projectRef,
+      serviceRoleKey,
+      `CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO profiles (id, first_name, last_name, email)
+  VALUES (
+    NEW.id,
+    NEW.raw_user_meta_data->>'first_name',
+    NEW.raw_user_meta_data->>'last_name',
+    NEW.email
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER`
+    );
+    migrationsResult.trigger = s5.ok ? 'ok' : (s5.error ?? 'fail');
+
+    const s6 = await executeSql(
+      projectRef,
+      serviceRoleKey,
+      `DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION handle_new_user()`
+    );
+    migrationsResult.trigger = s5.ok && s6.ok ? 'ok' : (s5.error ?? s6.error ?? 'fail');
+
     const existingMetadata = (project.metadata as Record<string, unknown>) ?? {};
     const updatedMetadata = {
       ...existingMetadata,
@@ -89,6 +196,7 @@ export async function POST(
       success: true,
       supabaseUrl,
       supabaseAnonKey,
+      migrationsResult,
     });
   } catch (error) {
     console.error('[API backend-auth] Error:', error);

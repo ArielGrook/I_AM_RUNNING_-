@@ -33,6 +33,23 @@ export async function signUp(
     },
   });
   if (data.session) saveSession(data.session);
+  if (data.user && !error) {
+    try {
+      await client
+        .from('profiles')
+        .upsert(
+          {
+            id: data.user.id,
+            first_name: payload.firstName,
+            last_name: payload.lastName,
+            email: payload.email,
+          },
+          { onConflict: 'id' }
+        );
+    } catch {
+      // ignore – trigger may have already created profile
+    }
+  }
   return { data, error };
 }
 

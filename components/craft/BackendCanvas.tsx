@@ -494,6 +494,7 @@ function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState(false);
+  const [migrationsResult, setMigrationsResult] = useState<Record<string, string> | null>(null);
 
   const handleConnect = useCallback(async () => {
     if (!projectId || !supabaseUrl?.trim() || !supabaseAnonKey?.trim() || !serviceRoleKey?.trim()) {
@@ -515,9 +516,11 @@ function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
       const data = await res.json();
       if (!res.ok) {
         setAuthError(data.error ?? 'Connection failed');
+        setMigrationsResult(null);
         return;
       }
       setAuthSuccess(true);
+      setMigrationsResult(data.migrationsResult ?? null);
       onConnectSuccess(data.supabaseUrl, data.supabaseAnonKey);
     } catch (e) {
       setAuthError(e instanceof Error ? e.message : 'Request failed');
@@ -628,6 +631,11 @@ function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
               </button>
               {authError && (
                 <div style={{ ...MONO, fontSize: 10, color: '#f87171', marginTop: 6 }}>{authError}</div>
+              )}
+              {authSuccess && migrationsResult && (
+                <div style={{ ...MONO, fontSize: 9, color: t.textMuted, marginTop: 6 }}>
+                  {Object.entries(migrationsResult).map(([k, v]) => `${k}: ${v}`).join(' · ')}
+                </div>
               )}
             </div>
           )}

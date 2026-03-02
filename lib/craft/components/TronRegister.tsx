@@ -147,10 +147,14 @@ export const TronRegister = React.memo(function TronRegister() {
           setErrorMsg(error.message ?? 'Sign up failed');
           return;
         }
-        if (submitButtonLinkType === 'page' && submitButtonLink) {
-          siteCtx.navigateToPage(submitButtonLink);
-        } else if (submitButtonLink && submitButtonLink.startsWith('http')) {
+        if (submitButtonLinkType === 'page' && submitButtonLink?.trim()) {
+          siteCtx.navigateToPage(submitButtonLink.trim());
+        } else if (submitButtonLink?.startsWith('http')) {
           window.location.href = submitButtonLink;
+        } else {
+          const firstSlug = siteCtx.pages?.[0]?.slug;
+          if (firstSlug) siteCtx.navigateToPage(firstSlug);
+          else if (typeof window !== 'undefined') window.location.href = '/';
         }
       } finally {
         setLoading(false);
