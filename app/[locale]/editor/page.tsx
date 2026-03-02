@@ -359,8 +359,16 @@ export default function EditorPage() {
 
   // Prevent landing dark mode from leaking into editor (toolbar, Settings Panel use Tailwind dark:)
   useEffect(() => {
+    const wasDark = document.documentElement.classList.contains('dark');
     document.documentElement.classList.remove('dark');
     document.body.classList.remove('dark');
+
+    return () => {
+      if (wasDark) {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark');
+      }
+    };
   }, []);
 
   const handleRenameProject = useCallback(
