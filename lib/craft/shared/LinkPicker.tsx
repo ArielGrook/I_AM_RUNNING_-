@@ -13,10 +13,12 @@ export function LinkPicker({
   value,
   onChange,
   label = 'Link',
+  hideSection = false,
 }: {
   value: LinkValue;
   onChange: (val: LinkValue) => void;
   label?: string;
+  hideSection?: boolean;
 }) {
   const labelCls = 'block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5';
   const inputCls = 'w-full px-3 py-2 rounded-md text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:border-orange-500 mb-3';
@@ -36,29 +38,34 @@ export function LinkPicker({
       .filter((s) => s.blockType);
   }, [nodes]);
 
-  // Страницы
+  // Страницы из PagesContext
   let pages: Array<{ id: string; name: string; slug: string }> = [];
   try {
     const pagesCtx = useContext(PagesContext);
     pages = pagesCtx?.pages ?? [];
   } catch {
-    // PagesContext не доступен
+    // PagesContext не доступен (например, вне редактора)
   }
+
+  const effectiveType = hideSection && value.type === 'section' ? 'page' : value.type;
 
   return (
     <div style={{ marginBottom: 12 }}>
       <label className={labelCls}>{label}</label>
       <select
         className={inputCls}
-        value={value.type}
-        onChange={(e) => onChange({ type: e.target.value as LinkValue['type'], href: '' })}
+        value={effectiveType}
+        onChange={(e) => {
+          const type = e.target.value as LinkValue['type'];
+          onChange({ type, href: '' });
+        }}
       >
-        <option value="section">Section on page</option>
+        {!hideSection && <option value="section">Section on page</option>}
         <option value="page">Another page</option>
         <option value="external">External URL</option>
       </select>
 
-      {value.type === 'section' && (
+      {effectiveType === 'section' && (
         <select
           className={inputCls}
           value={value.href}
@@ -73,11 +80,11 @@ export function LinkPicker({
         </select>
       )}
 
-      {value.type === 'page' && (
+      {effectiveType === 'page' && (
         <select
           className={inputCls}
           value={value.href}
-          onChange={(e) => onChange({ ...value, href: e.target.value })}
+          onChange={(e) => onChange({ ...value, href: e.target.value, type: 'page' })}
         >
           <option value="">Select page...</option>
           {pages.map((p) => (
@@ -88,7 +95,7 @@ export function LinkPicker({
         </select>
       )}
 
-      {value.type === 'external' && (
+      {effectiveType === 'external' && (
         <input
           className={inputCls}
           type="text"
@@ -103,7 +110,7 @@ export function LinkPicker({
 
 // Хелпер — конвертировать простой href строку в LinkValue
 export function hrefToLinkValue(href: string): LinkValue {
-  if (!href || href === '#') return { type: 'external', href: '#' };
+  if (!href || href === '#') return { type: 'external', href: '' };
   if (href.startsWith('#')) return { type: 'section', href };
   if (href.startsWith('/')) return { type: 'page', href };
   return { type: 'external', href };

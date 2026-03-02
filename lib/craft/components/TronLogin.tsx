@@ -298,8 +298,9 @@ function TronLoginSettings() {
           </div>
           <LinkPicker
             label="Google button link"
-            value={hrefToLinkValue(googleButtonLink || '#')}
+            value={hrefToLinkValue(googleButtonLink ?? '')}
             onChange={(val) => setProp((p: Record<string, unknown>) => { p.googleButtonLink = val.href; }, 0)}
+            hideSection
           />
           <div>
             <label className={labelCls}>Submit button text</label>
@@ -307,8 +308,9 @@ function TronLoginSettings() {
           </div>
           <LinkPicker
             label="Submit button link"
-            value={hrefToLinkValue(submitButtonLink || '#')}
+            value={hrefToLinkValue(submitButtonLink ?? '')}
             onChange={(val) => setProp((p: Record<string, unknown>) => { p.submitButtonLink = val.href; }, 0)}
+            hideSection
           />
           <div>
             <label className={labelCls}>Footer text</label>
@@ -320,8 +322,9 @@ function TronLoginSettings() {
           </div>
           <LinkPicker
             label="Footer link"
-            value={hrefToLinkValue(footerLink || '#')}
+            value={hrefToLinkValue(footerLink ?? '')}
             onChange={(val) => setProp((p: Record<string, unknown>) => { p.footerLink = val.href; }, 0)}
+            hideSection
           />
         </div>
       </div>
