@@ -480,11 +480,69 @@ function SvgLines({
 }
 
 // ─── Left panel ────────────────────────────────────────────────────────────────
-function LeftPanel({ t }: { t: Tokens }) {
+type AuthPanelProps = {
+  t: Tokens;
+  projectId: string | null;
+  onConnectSuccess: (url: string, anonKey: string) => void;
+};
+
+function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
+  const [authOpen, setAuthOpen] = useState(false);
+  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
+  const [serviceRoleKey, setServiceRoleKey] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState(false);
+
+  const handleConnect = useCallback(async () => {
+    if (!projectId || !supabaseUrl?.trim() || !supabaseAnonKey?.trim() || !serviceRoleKey?.trim()) {
+      setAuthError('All fields are required');
+      return;
+    }
+    setAuthError(null);
+    setAuthLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/backend-auth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supabaseUrl: supabaseUrl.trim(),
+          supabaseAnonKey: supabaseAnonKey.trim(),
+          serviceRoleKey: serviceRoleKey.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAuthError(data.error ?? 'Connection failed');
+        return;
+      }
+      setAuthSuccess(true);
+      onConnectSuccess(data.supabaseUrl, data.supabaseAnonKey);
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : 'Request failed');
+    } finally {
+      setAuthLoading(false);
+    }
+  }, [projectId, supabaseUrl, supabaseAnonKey, serviceRoleKey, onConnectSuccess]);
+
+  const inputStyle: CSSProperties = {
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: '6px 8px',
+    marginBottom: 8,
+    ...MONO,
+    fontSize: 11,
+    color: t.textPrimary,
+    background: t.cardBg,
+    border: `1px solid ${t.panelBorder}`,
+    borderRadius: 4,
+  };
+
   return (
     <div
       style={{
-        width: 240,
+        width: 280,
         flexShrink: 0,
         background: t.panelBg,
         borderRight: `1px solid ${t.panelBorder}`,
@@ -507,7 +565,74 @@ function LeftPanel({ t }: { t: Tokens }) {
         BACKEND BLOCKS
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {SIDEBAR_BLOCKS.map((b, i) => (
+        {/* User Auth expandable */}
+        <div style={{ borderBottom: `1px solid ${t.panelBorder}` }}>
+          <div
+            role="button"
+            tabIndex={0}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '9px 16px',
+              cursor: 'pointer',
+            }}
+            onClick={() => setAuthOpen((o) => !o)}
+            onKeyDown={(e) => e.key === 'Enter' && setAuthOpen((o) => !o)}
+          >
+            <IconLock size={15} color={getCategoryColor('auth')} />
+            <span style={{ ...MONO, fontSize: 11, color: getCategoryColor('auth'), flex: 1 }}>
+              User Auth
+            </span>
+            <span style={{ ...MONO, fontSize: 10, color: t.textMuted }}>{authOpen ? '−' : '+'}</span>
+          </div>
+          {authOpen && (
+            <div style={{ padding: '0 12px 12px' }}>
+              <input
+                placeholder="Supabase URL"
+                value={supabaseUrl}
+                onChange={(e) => setSupabaseUrl(e.target.value)}
+                style={inputStyle}
+              />
+              <input
+                placeholder="Supabase Anon Key"
+                value={supabaseAnonKey}
+                onChange={(e) => setSupabaseAnonKey(e.target.value)}
+                style={inputStyle}
+              />
+              <input
+                type="password"
+                placeholder="Service Role Key"
+                value={serviceRoleKey}
+                onChange={(e) => setServiceRoleKey(e.target.value)}
+                style={inputStyle}
+              />
+              <button
+                type="button"
+                disabled={authLoading || !projectId}
+                onClick={handleConnect}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  ...MONO,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: '#fff',
+                  background: authSuccess ? '#22c55e' : getCategoryColor('auth'),
+                  border: 'none',
+                  borderRadius: 4,
+                  cursor: authLoading || !projectId ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {authLoading ? 'Connecting...' : authSuccess ? 'Connected' : 'Connect'}
+              </button>
+              {authError && (
+                <div style={{ ...MONO, fontSize: 10, color: '#f87171', marginTop: 6 }}>{authError}</div>
+              )}
+            </div>
+          )}
+        </div>
+        {SIDEBAR_BLOCKS.filter((b) => b.label !== 'User Auth').map((b, i) => (
           <div
             key={i}
             style={{
@@ -538,7 +663,13 @@ function LeftPanel({ t }: { t: Tokens }) {
 }
 
 // ─── BackendCanvas ─────────────────────────────────────────────────────────────
-export function BackendCanvas() {
+export function BackendCanvas({
+  projectId = null,
+  onConnectSuccess = () => {},
+}: {
+  projectId?: string | null;
+  onConnectSuccess?: (url: string, anonKey: string) => void;
+}) {
   const t = useTokens();
   const isDark = useEditorTheme().theme === 'dark';
 
@@ -634,7 +765,7 @@ export function BackendCanvas() {
 
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: t.bg }}>
-      <LeftPanel t={t} />
+      <LeftPanel t={t} projectId={projectId} onConnectSuccess={onConnectSuccess} />
 
       {/* Main canvas with zoom/pan */}
       <div

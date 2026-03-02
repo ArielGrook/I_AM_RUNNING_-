@@ -1,7 +1,7 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 
 const SunIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -20,6 +20,7 @@ import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
 import { LinkPicker, handleLinkClick } from '@/lib/craft/shared/LinkPicker';
+import { getStoredSession } from '@/lib/auth/clientAuthService';
 
 type NavLinkType = 'section' | 'page' | 'external';
 type NavLinkItem = { label: string; href: string; type?: NavLinkType };
@@ -62,6 +63,10 @@ export const HeaderTron = ({
   showThemeToggle = false,
   showLanguageToggle = false,
   availableLanguages = ['en'],
+  supabaseUrl = '',
+  supabaseAnonKey = '',
+  profilePageLink = '',
+  loginLink = '',
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
@@ -79,6 +84,10 @@ export const HeaderTron = ({
   showThemeToggle?: boolean;
   showLanguageToggle?: boolean;
   availableLanguages?: string[];
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
+  profilePageLink?: string;
+  loginLink?: string;
 }) => {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
@@ -87,6 +96,24 @@ export const HeaderTron = ({
   const siteCtx = useSiteContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null);
+  const [session, setSession] = useState<ReturnType<typeof getStoredSession>>(null);
+
+  useEffect(() => {
+    if (enabled) return;
+    setSession(getStoredSession());
+    const onAuthChanged = () => setSession(getStoredSession());
+    window.addEventListener('iam_auth_changed', onAuthChanged);
+    return () => window.removeEventListener('iam_auth_changed', onAuthChanged);
+  }, [enabled]);
+
+  const user = session?.user;
+  const firstName = user?.user_metadata?.first_name ?? '';
+  const lastName = user?.user_metadata?.last_name ?? '';
+  const initials = `${(firstName as string)?.[0] ?? ''}${(lastName as string)?.[0] ?? ''}`.toUpperCase() || '?';
+  const showAvatar = !enabled && session;
+  const showLoginBtn = !enabled && !session && loginLink;
+  const toHref = (slugOrUrl: string) =>
+    !slugOrUrl ? '#' : slugOrUrl.startsWith('#') || slugOrUrl.startsWith('http') ? slugOrUrl : `/${slugOrUrl}`;
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     handleLinkClick(e, href, enabled, siteCtx.navigateToPage || navigateTo);
@@ -224,8 +251,41 @@ export const HeaderTron = ({
                 ))}
               </select>
             )}
-            {/* Desktop: CTA */}
-            {showCta && (
+            {/* Desktop: Avatar / Login / CTA */}
+            {showAvatar && (
+              <button
+                type="button"
+                className="hidden md:flex"
+                onClick={(e) => handleLinkClick(e, toHref(profilePageLink), enabled, siteCtx.navigateToPage)}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: t.accent,
+                  color: '#fff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {initials}
+              </button>
+            )}
+            {showLoginBtn && (
+              <a
+                href={toHref(loginLink)}
+                className="hidden md:block"
+                onClick={(e) => handleLinkClick(e, toHref(loginLink), enabled, siteCtx.navigateToPage)}
+                style={{ background: t.accent, color: '#ffffff', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}
+              >
+                Login
+              </a>
+            )}
+            {!showAvatar && !showLoginBtn && showCta && (
               <a
                 href={ctaHref}
                 className="hidden md:block"
@@ -263,8 +323,52 @@ export const HeaderTron = ({
                 {siteCtx.colorScheme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
             )}
-            {/* Mobile: CTA (before hamburger) */}
-            {showCta && (
+            {/* Mobile: Avatar / Login / CTA (before hamburger) */}
+            {showAvatar && (
+              <button
+                type="button"
+                className="flex md:hidden"
+                onClick={(e) => handleLinkClick(e, toHref(profilePageLink), enabled, siteCtx.navigateToPage)}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '50%',
+                  background: t.accent,
+                  color: '#fff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {initials}
+              </button>
+            )}
+            {showLoginBtn && (
+              <a
+                href={toHref(loginLink)}
+                className="flex md:hidden"
+                onClick={(e) => handleLinkClick(e, toHref(loginLink), enabled, siteCtx.navigateToPage)}
+                style={{
+                  background: t.accent,
+                  color: '#fff',
+                  padding: '7px 14px',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  flexShrink: 0,
+                }}
+              >
+                Login
+              </a>
+            )}
+            {!showAvatar && !showLoginBtn && showCta && (
               <a
                 href={enabled ? undefined : ctaHref}
                 className="flex md:hidden"
@@ -336,7 +440,7 @@ export const HeaderTron = ({
 };
 
 const HeaderTronSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, ctaHrefType, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, ctaHrefType, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages, profilePageLink, loginLink } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as string,
     accentColor: node.data.props.accentColor as string,
     darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
@@ -353,6 +457,8 @@ const HeaderTronSettings = () => {
     showThemeToggle: node.data.props.showThemeToggle as boolean | undefined,
     showLanguageToggle: node.data.props.showLanguageToggle as boolean | undefined,
     availableLanguages: (node.data.props.availableLanguages as string[]) ?? ['en'],
+    profilePageLink: (node.data.props.profilePageLink as string) ?? '',
+    loginLink: (node.data.props.loginLink as string) ?? '',
   }));
   const { nodes } = useEditor((s) => ({ nodes: s.nodes }));
   const { pages } = useContext(PagesContext);
@@ -428,6 +534,8 @@ const HeaderTronSettings = () => {
               }, 0);
             }}
           />
+          <div><label className={labelCls}>Login page link (slug or URL)</label><input type="text" value={loginLink ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.loginLink = e.target.value; }, 300)} className={inputCls} placeholder="e.g. login or /login" /></div>
+          <div><label className={labelCls}>Profile page link (slug or URL)</label><input type="text" value={profilePageLink ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.profilePageLink = e.target.value; }, 300)} className={inputCls} placeholder="e.g. profile" /></div>
         </div>
       </section>
       <section>
@@ -573,6 +681,10 @@ HeaderTron.craft = {
     showThemeToggle: false,
     showLanguageToggle: false,
     availableLanguages: ['en'],
+    supabaseUrl: '',
+    supabaseAnonKey: '',
+    profilePageLink: '',
+    loginLink: '',
   },
   related: { settings: HeaderTronSettings },
   custom: { styleTags: ['dark', 'minimal', 'bold'], businessTags: ['startup', 'saas', 'agency', 'tech', 'finance'], featureTags: ['header', 'navigation', 'sticky'], supportsTheme: true, supportsColorPreset: true },

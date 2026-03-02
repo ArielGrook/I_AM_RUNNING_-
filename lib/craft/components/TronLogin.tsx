@@ -7,6 +7,7 @@ import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
 import { LinkPicker, handleLinkClick } from '@/lib/craft/shared/LinkPicker';
+import { signIn as clientSignIn } from '@/lib/auth/clientAuthService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -65,6 +66,8 @@ interface TronLoginProps {
   footerLinkType?: 'section' | 'page' | 'external';
   animationType?: string;
   animateDelay?: string;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
 }
 
 // ── Main component ───────────────────────────────────────────────────────
@@ -78,6 +81,10 @@ export const TronLogin = React.memo(function TronLogin() {
   const containerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [errorMsg, setErrorMsg] = React.useState('');
 
   React.useEffect(() => {
     const el = containerRef.current;
@@ -111,7 +118,35 @@ export const TronLogin = React.memo(function TronLogin() {
     footerLinkType = 'external',
     animationType = 'none',
     animateDelay = '0',
+    supabaseUrl = '',
+    supabaseAnonKey = '',
   } = props;
+
+  const hasCredentials = Boolean(supabaseUrl?.trim() && supabaseAnonKey?.trim());
+
+  const handleSubmit = React.useCallback(
+    async (e: React.MouseEvent) => {
+      e.preventDefault();
+      if (enabled || !hasCredentials || loading) return;
+      setErrorMsg('');
+      setLoading(true);
+      try {
+        const { error } = await clientSignIn(supabaseUrl!, supabaseAnonKey!, { email, password });
+        if (error) {
+          setErrorMsg(error.message ?? 'Sign in failed');
+          return;
+        }
+        if (submitButtonLinkType === 'page' && submitButtonLink) {
+          siteCtx.navigateToPage(submitButtonLink);
+        } else if (submitButtonLink && submitButtonLink.startsWith('http')) {
+          window.location.href = submitButtonLink;
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [enabled, hasCredentials, loading, supabaseUrl, supabaseAnonKey, email, password, submitButtonLinkType, submitButtonLink, siteCtx]
+  );
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
   const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
@@ -225,12 +260,21 @@ export const TronLogin = React.memo(function TronLogin() {
           <div style={{ flex: 1, height: 1, background: t.border }} />
         </div>
 
-        <input type="email" placeholder="Email" readOnly={enabled} style={{ ...inputStyle, marginBottom: 12 }} />
+        <input
+          type="email"
+          placeholder="Email"
+          readOnly={enabled}
+          value={enabled ? undefined : email}
+          onChange={(e) => !enabled && setEmail(e.target.value)}
+          style={{ ...inputStyle, marginBottom: 12 }}
+        />
         <div style={{ position: 'relative', marginBottom: 20 }}>
           <input
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             readOnly={enabled}
+            value={enabled ? undefined : password}
+            onChange={(e) => !enabled && setPassword(e.target.value)}
             style={{ ...inputStyle, marginBottom: 0, paddingRight: 44 }}
           />
           <button
@@ -265,35 +309,62 @@ export const TronLogin = React.memo(function TronLogin() {
           </button>
         </div>
 
-        <a
-          href={enabled ? undefined : (submitButtonLink || '#')}
-          onClick={(e) => handleLinkClick(e, submitButtonLink || '#', enabled, siteCtx.navigateToPage)}
-          onTouchEnd={(e) => handleLinkClick(e as React.TouchEvent, submitButtonLink || '#', enabled, siteCtx.navigateToPage)}
-          style={{
-            width: '100%',
-            height: 48,
-            background: t.accent,
-            border: 'none',
-            borderRadius: 8,
-            color: '#ffffff',
-            fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-            fontSize: 13,
-            fontWeight: 600,
-            letterSpacing: '0.05em',
-            cursor: enabled ? 'default' : 'pointer',
-            marginBottom: 20,
-            pointerEvents: enabled ? 'none' : 'auto',
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxSizing: 'border-box',
-          }}
-        >
-          {enabled ? (
+        {enabled ? (
+          <a
+            href="#"
+            style={{
+              width: '100%',
+              height: 48,
+              background: t.accent,
+              border: 'none',
+              borderRadius: 8,
+              color: '#ffffff',
+              fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: '0.05em',
+              cursor: 'default',
+              marginBottom: 20,
+              pointerEvents: 'none',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxSizing: 'border-box',
+            }}
+          >
             <EditableText value={submitButtonText ?? ''} fieldKey="submitButtonText" tag="span" style={{ color: '#ffffff', fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 13, fontWeight: 600 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.submitButtonText = val; }, 0)} />
-          ) : submitButtonText}
-        </a>
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled={loading || !hasCredentials}
+            onClick={handleSubmit}
+            style={{
+              width: '100%',
+              height: 48,
+              background: t.accent,
+              border: 'none',
+              borderRadius: 8,
+              color: '#ffffff',
+              fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: '0.05em',
+              cursor: loading || !hasCredentials ? 'not-allowed' : 'pointer',
+              marginBottom: errorMsg ? 8 : 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxSizing: 'border-box',
+            }}
+          >
+            {loading ? 'Signing in...' : submitButtonText}
+          </button>
+        )}
+        {!enabled && errorMsg && (
+          <p style={{ fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 12, color: '#f87171', marginBottom: 20 }}>{errorMsg}</p>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 12 }}>
           <EditableText value={footerText ?? ''} fieldKey="footerText" tag="span" style={{ color: t.textSecondary, fontSize: 12 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.footerText = val; }, 0)} />
@@ -456,6 +527,8 @@ const tronLoginCraft = {
     footerLinkType: 'external',
     animationType: 'none',
     animateDelay: '0',
+    supabaseUrl: '',
+    supabaseAnonKey: '',
   },
   related: { settings: TronLoginSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },

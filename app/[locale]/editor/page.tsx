@@ -15,6 +15,7 @@ import {
   saveProjectToSupabase,
   type LoadedProject,
 } from '@/lib/store/supabase-sync';
+import { injectSupabaseCredentialsIntoCraftJson } from '@/lib/craft/injectSupabaseCredentials';
 import {
   Container,
   Text,
@@ -746,6 +747,40 @@ export default function EditorPage() {
     [projectId, loadedProject, pages, activePageId, isSaving, viewport, desktopData, mobileData]
   );
 
+  const handleBackendAuthSuccess = useCallback(
+    async (url: string, anonKey: string) => {
+      if (!loadedProject || !url || !anonKey) return;
+      const updatedPages = pages.map((p) => {
+        const inject = (raw: string) => injectSupabaseCredentialsIntoCraftJson(raw, url, anonKey);
+        return {
+          ...p,
+          desktopData: p.desktopData
+            ? lz.compress(inject(lz.decompress(p.desktopData, { inputEncoding: 'Base64' }) as string), { outputEncoding: 'Base64' })
+            : p.desktopData,
+          mobileData: p.mobileData
+            ? lz.compress(inject(lz.decompress(p.mobileData, { inputEncoding: 'Base64' }) as string), { outputEncoding: 'Base64' })
+            : p.mobileData,
+        };
+      });
+      setPages(updatedPages);
+      const project = {
+        id: loadedProject.id,
+        name: loadedProject.name,
+        description: loadedProject.description,
+        pages: [],
+        metadata: { createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), version: '1.0.0' },
+      } as Parameters<typeof saveProjectToSupabase>[0];
+      await saveProjectToSupabase(
+        project,
+        null,
+        { craft: { schemaVersion: 2, pages: updatedPages, activePageId } },
+        null,
+        loadedProject.version
+      );
+    },
+    [loadedProject, pages, activePageId]
+  );
+
   const handlePreview = () => {
     setPreviewHTML(
       '<div style="padding:40px;text-align:center;">Preview - HTML serializer coming soon</div>'
@@ -1007,7 +1042,10 @@ export default function EditorPage() {
             )}
           </Viewport>
           ) : (
-            <BackendCanvas />
+            <BackendCanvas
+              projectId={projectId ?? null}
+              onConnectSuccess={handleBackendAuthSuccess}
+            />
           )}
         </EditorLayout>
         <KeyboardShortcuts onSave={() => {
