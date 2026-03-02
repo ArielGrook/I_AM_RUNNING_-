@@ -6,7 +6,7 @@ import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
-import { LinkPicker, handleLinkClick, hrefToLinkValue } from '@/lib/craft/shared/LinkPicker';
+import { LinkPicker, handleLinkClick } from '@/lib/craft/shared/LinkPicker';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -60,8 +60,11 @@ interface TronRegisterProps {
   footerText?: string;
   footerLinkText?: string;
   googleButtonLink?: string;
+  googleButtonLinkType?: 'section' | 'page' | 'external';
   submitButtonLink?: string;
+  submitButtonLinkType?: 'section' | 'page' | 'external';
   footerLink?: string;
+  footerLinkType?: 'section' | 'page' | 'external';
   animationType?: string;
   animateDelay?: string;
 }
@@ -104,8 +107,11 @@ export const TronRegister = React.memo(function TronRegister() {
     footerText = 'Already have an account?',
     footerLinkText = 'Sign in',
     googleButtonLink = '',
+    googleButtonLinkType = 'external',
     submitButtonLink = '',
+    submitButtonLinkType = 'external',
     footerLink = '',
+    footerLinkType = 'external',
     animationType = 'none',
     animateDelay = '0',
   } = props;
@@ -292,8 +298,11 @@ function TronRegisterSettings() {
     footerText = 'Already have an account?',
     footerLinkText = 'Sign in',
     googleButtonLink = '',
+    googleButtonLinkType = 'external',
     submitButtonLink = '',
+    submitButtonLinkType = 'external',
     footerLink = '',
+    footerLinkType = 'external',
     darkBg = '#0a0a0a',
     lightBg = '#ffffff',
     animationType = 'none',
@@ -311,8 +320,13 @@ function TronRegisterSettings() {
           </div>
           <LinkPicker
             label="Google button link"
-            value={hrefToLinkValue(googleButtonLink ?? '')}
-            onChange={(val) => setProp((p: Record<string, unknown>) => { p.googleButtonLink = val.href; }, 0)}
+            value={{ type: googleButtonLinkType, href: googleButtonLink ?? '' }}
+            onChange={(val) => {
+              setProp((p: Record<string, unknown>) => {
+                p.googleButtonLink = val.href;
+                p.googleButtonLinkType = val.type;
+              }, 0);
+            }}
             hideSection
           />
           <div>
@@ -321,8 +335,13 @@ function TronRegisterSettings() {
           </div>
           <LinkPicker
             label="Submit button link"
-            value={hrefToLinkValue(submitButtonLink ?? '')}
-            onChange={(val) => setProp((p: Record<string, unknown>) => { p.submitButtonLink = val.href; }, 0)}
+            value={{ type: submitButtonLinkType, href: submitButtonLink ?? '' }}
+            onChange={(val) => {
+              setProp((p: Record<string, unknown>) => {
+                p.submitButtonLink = val.href;
+                p.submitButtonLinkType = val.type;
+              }, 0);
+            }}
             hideSection
           />
           <div>
@@ -335,8 +354,13 @@ function TronRegisterSettings() {
           </div>
           <LinkPicker
             label="Footer link"
-            value={hrefToLinkValue(footerLink ?? '')}
-            onChange={(val) => setProp((p: Record<string, unknown>) => { p.footerLink = val.href; }, 0)}
+            value={{ type: footerLinkType, href: footerLink ?? '' }}
+            onChange={(val) => {
+              setProp((p: Record<string, unknown>) => {
+                p.footerLink = val.href;
+                p.footerLinkType = val.type;
+              }, 0);
+            }}
             hideSection
           />
         </div>
@@ -402,8 +426,11 @@ const tronRegisterCraft = {
     footerText: 'Already have an account?',
     footerLinkText: 'Sign in',
     googleButtonLink: '',
+    googleButtonLinkType: 'external',
     submitButtonLink: '',
+    submitButtonLinkType: 'external',
     footerLink: '',
+    footerLinkType: 'external',
     animationType: 'none',
     animateDelay: '0',
   },
