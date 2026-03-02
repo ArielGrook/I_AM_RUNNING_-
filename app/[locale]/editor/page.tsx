@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext, useMemo, type ReactNode } from 'react';
 import { Editor, Frame, Element, useEditor } from '@craftjs/core';
 import lz from 'lzutf8';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -50,7 +50,8 @@ import {
   CardBlock,
   PricingCardBlock,
 } from '@/lib/craft/components';
-import { PagesProvider } from '@/lib/craft/context/PagesContext';
+import { PagesProvider, PagesContext } from '@/lib/craft/context/PagesContext';
+import { SiteContext } from '@/lib/craft/context/SiteContext';
 import { ThemeProvider } from '@/lib/craft/context/ThemeContext';
 import { Toolbox } from '@/components/craft/Toolbox';
 import { SettingsPanel } from '@/components/craft/SettingsPanel';
@@ -64,6 +65,28 @@ import { EditorThemeProvider, useEditorTheme } from '@/components/craft/EditorTh
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ToastContainer } from '@/components/ui/Toast';
+
+/** Provides SiteContext in the editor so "Another page" links use PagesContext.navigateTo in Preview. */
+function EditorSiteContextBridge({ children }: { children: ReactNode }) {
+  const { pages, currentPage, navigateTo } = useContext(PagesContext);
+  const activePageSlug = pages.find((p) => p.id === currentPage)?.slug ?? '';
+  const value = useMemo(
+    () => ({
+      colorScheme: 'dark' as const,
+      toggleTheme: () => {},
+      showThemeToggle: false,
+      language: 'en',
+      setLanguage: () => {},
+      availableLanguages: ['en'],
+      showLanguageToggle: false,
+      navigateToPage: navigateTo,
+      pages,
+      activePageSlug,
+    }),
+    [pages, currentPage, navigateTo, activePageSlug]
+  );
+  return <SiteContext.Provider value={value}>{children}</SiteContext.Provider>;
+}
 
 /** Root wrapper: applies .dark class when editor theme is dark (for Settings/mini toolbar CSS). */
 function EditorRoot({ children }: { children: React.ReactNode }) {
@@ -905,6 +928,7 @@ export default function EditorPage() {
           activePageId={activePageId}
           onPageChange={handlePageChange}
         >
+        <EditorSiteContextBridge>
         <PreviewController previewMode={previewMode} />
         <DesktopToMobileSync
           viewport={viewport}
@@ -999,6 +1023,7 @@ export default function EditorPage() {
           onClose={() => setPreviewOpen(false)}
           data={previewHTML}
         />
+        </EditorSiteContextBridge>
         </PagesProvider>
         </ThemeProvider>
       </Editor>
