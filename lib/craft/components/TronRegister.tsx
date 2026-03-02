@@ -3,8 +3,10 @@
 import { useNode, useEditor } from '@craftjs/core';
 import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
+import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
+import { LinkPicker, handleLinkClick, hrefToLinkValue } from '@/lib/craft/shared/LinkPicker';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -57,6 +59,9 @@ interface TronRegisterProps {
   submitButtonText?: string;
   footerText?: string;
   footerLinkText?: string;
+  googleButtonLink?: string;
+  submitButtonLink?: string;
+  footerLink?: string;
   animationType?: string;
   animateDelay?: string;
 }
@@ -67,6 +72,7 @@ export const TronRegister = React.memo(function TronRegister() {
   const isSelected = useNode((node) => node.events.selected);
   const { enabled } = useEditor((state) => ({ enabled: state.options.enabled }));
   const { theme } = useTheme();
+  const siteCtx = useSiteContext();
 
   const containerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
@@ -97,6 +103,9 @@ export const TronRegister = React.memo(function TronRegister() {
     submitButtonText = 'Create Account',
     footerText = 'Already have an account?',
     footerLinkText = 'Sign in',
+    googleButtonLink = '',
+    submitButtonLink = '',
+    footerLink = '',
     animationType = 'none',
     animateDelay = '0',
   } = props;
@@ -178,8 +187,10 @@ export const TronRegister = React.memo(function TronRegister() {
           onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
         />
 
-        <button
-          type="button"
+        <a
+          href={enabled ? undefined : (googleButtonLink || '#')}
+          onClick={(e) => handleLinkClick(e, googleButtonLink || '#', enabled, siteCtx.navigateToPage)}
+          onTouchEnd={(e) => handleLinkClick(e as React.TouchEvent, googleButtonLink || '#', enabled, siteCtx.navigateToPage)}
           style={{
             width: '100%',
             height: 48,
@@ -193,6 +204,8 @@ export const TronRegister = React.memo(function TronRegister() {
             cursor: enabled ? 'default' : 'pointer',
             marginBottom: 20,
             pointerEvents: enabled ? 'none' : 'auto',
+            textDecoration: 'none',
+            boxSizing: 'border-box',
           }}
         >
           <GoogleIcon />
@@ -201,7 +214,7 @@ export const TronRegister = React.memo(function TronRegister() {
               <EditableText value={googleButtonText ?? ''} fieldKey="googleButtonText" tag="span" style={{ color: t.text, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 13 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.googleButtonText = val; }, 0)} />
             ) : googleButtonText}
           </span>
-        </button>
+        </a>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <div style={{ flex: 1, height: 1, background: t.border }} />
@@ -217,8 +230,10 @@ export const TronRegister = React.memo(function TronRegister() {
         <input type="email" placeholder="Email" readOnly style={{ ...inputStyle, marginBottom: 12 }} />
         <input type="password" placeholder="Password" readOnly style={{ ...inputStyle, marginBottom: 20 }} />
 
-        <button
-          type="submit"
+        <a
+          href={enabled ? undefined : (submitButtonLink || '#')}
+          onClick={(e) => handleLinkClick(e, submitButtonLink || '#', enabled, siteCtx.navigateToPage)}
+          onTouchEnd={(e) => handleLinkClick(e as React.TouchEvent, submitButtonLink || '#', enabled, siteCtx.navigateToPage)}
           style={{
             width: '100%',
             height: 48,
@@ -233,16 +248,30 @@ export const TronRegister = React.memo(function TronRegister() {
             cursor: enabled ? 'default' : 'pointer',
             marginBottom: 20,
             pointerEvents: enabled ? 'none' : 'auto',
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxSizing: 'border-box',
           }}
         >
           {enabled ? (
             <EditableText value={submitButtonText ?? ''} fieldKey="submitButtonText" tag="span" style={{ color: '#ffffff', fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 13, fontWeight: 600 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.submitButtonText = val; }, 0)} />
           ) : submitButtonText}
-        </button>
+        </a>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 12 }}>
           <EditableText value={footerText ?? ''} fieldKey="footerText" tag="span" style={{ color: t.textSecondary, fontSize: 12 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.footerText = val; }, 0)} />
-          <EditableText value={footerLinkText ?? ''} fieldKey="footerLinkText" tag="span" style={{ color: t.accent, fontSize: 12, cursor: 'pointer' }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.footerLinkText = val; }, 0)} />
+          <a
+            href={enabled ? undefined : (footerLink || '#')}
+            onClick={(e) => handleLinkClick(e, footerLink || '#', enabled, siteCtx.navigateToPage)}
+            onTouchEnd={(e) => handleLinkClick(e as React.TouchEvent, footerLink || '#', enabled, siteCtx.navigateToPage)}
+            style={{ color: t.accent, fontSize: 12, cursor: enabled ? 'default' : 'pointer', textDecoration: 'none' }}
+          >
+            {enabled ? (
+              <EditableText value={footerLinkText ?? ''} fieldKey="footerLinkText" tag="span" style={{ color: t.accent, fontSize: 12 }} enabled={enabled} onSave={(val) => setProp((p: Record<string, unknown>) => { p.footerLinkText = val; }, 0)} />
+            ) : footerLinkText}
+          </a>
         </div>
       </div>
     </section>
@@ -253,11 +282,59 @@ export const TronRegister = React.memo(function TronRegister() {
 function TronRegisterSettings() {
   const { actions: { setProp } } = useNode();
   const props = useNode((node) => node.data.props as Partial<TronRegisterProps>) ?? {};
-  const { darkBg = '#0a0a0a', lightBg = '#ffffff', animationType = 'none', animateDelay = '0' } = props;
+  const {
+    googleButtonText = 'Continue with Google',
+    submitButtonText = 'Create Account',
+    footerText = 'Already have an account?',
+    footerLinkText = 'Sign in',
+    googleButtonLink = '',
+    submitButtonLink = '',
+    footerLink = '',
+    darkBg = '#0a0a0a',
+    lightBg = '#ffffff',
+    animationType = 'none',
+    animateDelay = '0',
+  } = props;
 
   return (
     <div className="p-3 space-y-0">
       <div className={`${sectionCls} first:border-t-0 first:pt-0 first:mt-0`}>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Content</h3>
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Google button text</label>
+            <input type="text" value={googleButtonText} onChange={(e) => setProp((p: Record<string, unknown>) => { p.googleButtonText = e.target.value; }, 500)} className={inputCls} />
+          </div>
+          <LinkPicker
+            label="Google button link"
+            value={hrefToLinkValue(googleButtonLink || '#')}
+            onChange={(val) => setProp((p: Record<string, unknown>) => { p.googleButtonLink = val.href; }, 0)}
+          />
+          <div>
+            <label className={labelCls}>Submit button text</label>
+            <input type="text" value={submitButtonText} onChange={(e) => setProp((p: Record<string, unknown>) => { p.submitButtonText = e.target.value; }, 500)} className={inputCls} />
+          </div>
+          <LinkPicker
+            label="Submit button link"
+            value={hrefToLinkValue(submitButtonLink || '#')}
+            onChange={(val) => setProp((p: Record<string, unknown>) => { p.submitButtonLink = val.href; }, 0)}
+          />
+          <div>
+            <label className={labelCls}>Footer text</label>
+            <input type="text" value={footerText} onChange={(e) => setProp((p: Record<string, unknown>) => { p.footerText = e.target.value; }, 500)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Footer link text</label>
+            <input type="text" value={footerLinkText} onChange={(e) => setProp((p: Record<string, unknown>) => { p.footerLinkText = e.target.value; }, 500)} className={inputCls} />
+          </div>
+          <LinkPicker
+            label="Footer link"
+            value={hrefToLinkValue(footerLink || '#')}
+            onChange={(val) => setProp((p: Record<string, unknown>) => { p.footerLink = val.href; }, 0)}
+          />
+        </div>
+      </div>
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Colors</h3>
         <div>
           <label className={labelCls}>Background (dark mode)</label>
@@ -317,6 +394,9 @@ const tronRegisterCraft = {
     submitButtonText: 'Create Account',
     footerText: 'Already have an account?',
     footerLinkText: 'Sign in',
+    googleButtonLink: '',
+    submitButtonLink: '',
+    footerLink: '',
     animationType: 'none',
     animateDelay: '0',
   },
