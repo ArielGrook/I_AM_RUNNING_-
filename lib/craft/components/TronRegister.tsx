@@ -230,15 +230,15 @@ export const TronRegister = React.memo(function TronRegister() {
 
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, marginBottom: 12, overflow: 'hidden' }}>
           <div style={{ flex: isMobile ? undefined : 1, minWidth: 0 }}>
-            <input type="text" placeholder={firstNameLabel} readOnly style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', height: 48 }} />
+            <input type="text" placeholder={firstNameLabel} readOnly={enabled} style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', height: 48 }} />
           </div>
           <div style={{ flex: isMobile ? undefined : 1, minWidth: 0 }}>
-            <input type="text" placeholder={lastNameLabel} readOnly style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', height: 48 }} />
+            <input type="text" placeholder={lastNameLabel} readOnly={enabled} style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', height: 48 }} />
           </div>
         </div>
 
-        <input type="email" placeholder="Email" readOnly style={{ ...inputStyle, marginBottom: 12 }} />
-        <input type="password" placeholder="Password" readOnly style={{ ...inputStyle, marginBottom: 20 }} />
+        <input type="email" placeholder="Email" readOnly={enabled} style={{ ...inputStyle, marginBottom: 12 }} />
+        <input type="password" placeholder="Password" readOnly={enabled} style={{ ...inputStyle, marginBottom: 20 }} />
 
         <a
           href={enabled ? undefined : (submitButtonLink || '#')}

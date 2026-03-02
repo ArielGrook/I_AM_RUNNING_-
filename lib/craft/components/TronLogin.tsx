@@ -224,8 +224,8 @@ export const TronLogin = React.memo(function TronLogin() {
           <div style={{ flex: 1, height: 1, background: t.border }} />
         </div>
 
-        <input type="email" placeholder="Email" readOnly style={{ ...inputStyle, marginBottom: 12 }} />
-        <input type="password" placeholder="Password" readOnly style={{ ...inputStyle, marginBottom: 20 }} />
+        <input type="email" placeholder="Email" readOnly={enabled} style={{ ...inputStyle, marginBottom: 12 }} />
+        <input type="password" placeholder="Password" readOnly={enabled} style={{ ...inputStyle, marginBottom: 20 }} />
 
         <a
           href={enabled ? undefined : (submitButtonLink || '#')}
