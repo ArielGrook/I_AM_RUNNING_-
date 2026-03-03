@@ -1,12 +1,13 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useContext, useCallback } from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
+import { PagesContext } from '@/lib/craft/context/PagesContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
-import { getStoredSession } from '@/lib/auth/clientAuthService';
+import { getStoredSession, signOut } from '@/lib/auth/clientAuthService';
 
 // ── Inline SVG Icons (no emoji, no external libs) ─────────────────────────
 const UserIcon = () => (
@@ -110,6 +111,7 @@ interface TronDashboardProps {
   sectionHeight?: number;
   supabaseUrl?: string;
   supabaseAnonKey?: string;
+  loginPageSlug?: string;
   sections?: DashboardSection[];
 }
 
@@ -144,20 +146,34 @@ export const TronDashboard = React.memo(function TronDashboard() {
     return () => window.removeEventListener('iam_auth_changed', onAuthChanged);
   }, [enabled]);
 
+  React.useEffect(() => {
+    if (enabled || !loginPageSlug?.trim()) return;
+    const s = getStoredSession();
+    if (!s) {
+      window.dispatchEvent(
+        new CustomEvent('iam_navigate', {
+          detail: { page: loginPageSlug.trim().replace(/^\//, '') },
+        })
+      );
+    }
+  }, [enabled, loginPageSlug]);
+
   const props = useNode((node) => node.data.props as Partial<TronDashboardProps>) ?? {};
   const {
-    colorScheme = 'dark',
+    colorScheme: propColorScheme,
     accentColor: propAccent,
     darkBg = '#0a0a0a',
     lightBg = '#ffffff',
     sectionHeight = 80,
     supabaseUrl = '',
     supabaseAnonKey = '',
+    loginPageSlug = '',
     sections = DEFAULT_SECTIONS,
   } = props;
 
+  const colorScheme = propColorScheme ?? siteCtx?.colorScheme ?? theme.colorScheme ?? 'dark';
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const scheme = colorScheme;
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
 
@@ -166,15 +182,19 @@ export const TronDashboard = React.memo(function TronDashboard() {
 
   const handleLogout = useCallback(async () => {
     if (enabled || !supabaseUrl || !supabaseAnonKey) return;
-    const { createClient } = await import('@supabase/supabase-js');
-    const client = createClient(supabaseUrl, supabaseAnonKey);
-    await client.auth.signOut();
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('iam_client_session');
-      window.dispatchEvent(new Event('iam_auth_changed'));
-      window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+    try {
+      await signOut(supabaseUrl, supabaseAnonKey);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+      }
+    } catch {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('iam_client_session');
+        window.dispatchEvent(new Event('iam_auth_changed'));
+        window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+      }
     }
-  }, [enabled, supabaseUrl, supabaseAnonKey, siteCtx]);
+  }, [enabled, supabaseUrl, supabaseAnonKey]);
 
   const user = session?.user as { user_metadata?: { first_name?: string; last_name?: string }; email?: string } | undefined;
   const firstName = user?.user_metadata?.first_name ?? '';
@@ -196,9 +216,10 @@ export const TronDashboard = React.memo(function TronDashboard() {
       className={`w-full ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
-        minHeight: `${sectionHeight}vh`,
+        minHeight: enabled ? '60vh' : `${sectionHeight}vh`,
         display: 'flex',
         flexDirection: 'row',
+        position: 'relative',
       }}
     >
       {/* Left sidebar */}
@@ -387,7 +408,8 @@ export const TronDashboard = React.memo(function TronDashboard() {
 const TronDashboardSettings = () => {
   const { actions: { setProp } } = useNode();
   const props = useNode((node) => node.data.props as Partial<TronDashboardProps>) ?? {};
-  const { sections = DEFAULT_SECTIONS, darkBg = '#0a0a0a', lightBg = '#ffffff', sectionHeight = 80 } = props;
+  const { pages } = useContext(PagesContext);
+  const { sections = DEFAULT_SECTIONS, darkBg = '#0a0a0a', lightBg = '#ffffff', sectionHeight = 80, loginPageSlug = '' } = props;
 
   const updateSection = (index: number, field: keyof DashboardSection, value: string) => {
     setProp((p: Record<string, unknown>) => {
@@ -477,6 +499,21 @@ const TronDashboardSettings = () => {
         </div>
       </div>
       <div className={sectionCls}>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Auth</h3>
+        <div>
+          <label className={labelCls}>Login page (redirect when unauthenticated)</label>
+          <select
+            value={loginPageSlug}
+            onChange={(e) => setProp((p: Record<string, unknown>) => { p.loginPageSlug = e.target.value; }, 300)} className={inputCls}
+          >
+            <option value="">— not set —</option>
+            {(pages ?? []).map((p) => (
+              <option key={p.id} value={p.slug}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Size</h3>
         <label className={labelCls}>Section height (vh)</label>
         <input
@@ -498,6 +535,7 @@ const tronDashboardCraft = {
     lightBg: '#ffffff',
     supabaseUrl: '',
     supabaseAnonKey: '',
+    loginPageSlug: '',
     sections: DEFAULT_SECTIONS,
     sectionHeight: 80,
   },

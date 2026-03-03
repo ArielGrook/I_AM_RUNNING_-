@@ -150,8 +150,17 @@ export const TronRegister = React.memo(function TronRegister() {
         }
         setSuccessMsg('Registration successful! Redirecting...');
         setTimeout(() => {
+          const pages = siteCtx?.pages ?? [];
           if (submitButtonLink?.trim()) {
-            window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: submitButtonLink.trim() } }));
+            const trimmed = submitButtonLink.trim();
+            const slug = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+            const page = pages.find(
+              (p) =>
+                (p.slug ?? '') === slug ||
+                (p.name ?? '').toLowerCase().replace(/\s+/g, '-') === slug
+            );
+            const targetSlug = page?.slug ?? '__first__';
+            window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: targetSlug } }));
           } else {
             window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
           }
@@ -202,7 +211,7 @@ export const TronRegister = React.memo(function TronRegister() {
       className={`w-full max-w-full flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
-        minHeight: '100vh',
+        minHeight: enabled ? '60vh' : '100vh',
         position: 'relative',
         padding: isMobile ? 16 : 24,
         boxSizing: 'border-box',

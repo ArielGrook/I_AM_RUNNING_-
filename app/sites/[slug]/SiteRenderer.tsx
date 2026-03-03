@@ -269,10 +269,17 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
       const customEvent = e as CustomEvent<{ page: string }>;
       const page = customEvent.detail?.page;
       if (page === '__first__') {
-        const firstSlug = pages[0]?.slug ?? '';
+        const firstSlug = pages[0]?.slug ?? pages[0]?.name?.toLowerCase().replace(/\s+/g, '-') ?? '';
         if (firstSlug) navigateToPage(firstSlug);
       } else if (page) {
-        navigateToPage(page);
+        const targetPage = pages.find(
+          (p) =>
+            (p.slug ?? '') === page ||
+            (p.name ?? '').toLowerCase().replace(/\s+/g, '-') === page
+        );
+        if (targetPage) {
+          navigateToPage(targetPage.slug ?? targetPage.name?.toLowerCase().replace(/\s+/g, '-') ?? page);
+        }
       }
     };
     window.addEventListener('iam_navigate', handler);

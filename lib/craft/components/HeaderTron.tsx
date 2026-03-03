@@ -64,10 +64,27 @@ const DEFAULT_DROPDOWN_SECTIONS = [
   { icon: 'credit-card', label: 'Subscription', pageLink: '' },
 ];
 
-function findPageLink(label: string, pages: Array<{ id: string; name: string; slug: string }>): string {
-  const slug = label.toLowerCase();
-  const found = pages.find((p) =>
-    (p.slug ?? '').includes(slug) || p.name.toLowerCase().includes(slug)
+function findPageLink(
+  label: string,
+  pages: Array<{ id: string; name: string; slug: string }>,
+  explicitPageLink?: string
+): string {
+  if (explicitPageLink?.trim()) {
+    const trimmed = explicitPageLink.trim().replace(/^\//, '');
+    const found = pages.find(
+      (p) =>
+        (p.slug ?? '') === trimmed ||
+        (p.name ?? '').toLowerCase().replace(/\s+/g, '-') === trimmed
+    );
+    if (found) return found.slug ?? trimmed;
+  }
+  const normalized = label.toLowerCase().replace(/\s+/g, '-');
+  const found = pages.find(
+    (p) =>
+      (p.slug ?? '').toLowerCase() === normalized ||
+      (p.name ?? '').toLowerCase().replace(/\s+/g, '-') === normalized ||
+      (p.slug ?? '').toLowerCase().includes(normalized) ||
+      (p.name ?? '').toLowerCase().includes(normalized)
   );
   return found?.slug ?? '';
 }
@@ -78,19 +95,24 @@ function DashboardDropdownItem({
   href,
   onClick,
   color,
+  disabled,
 }: {
   icon: React.ReactNode;
   label: string;
   href: string;
   onClick: (e: React.MouseEvent) => void;
   color: string;
+  disabled?: boolean;
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
   return (
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
       <a
         href={href}
-        onClick={(e) => { e.preventDefault(); onClick(e); }}
+        onClick={(e) => {
+          e.preventDefault();
+          if (!disabled) onClick(e);
+        }}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
         style={{
@@ -99,14 +121,17 @@ function DashboardDropdownItem({
           borderRadius: '50%',
           background: 'transparent',
           border: 'none',
-          cursor: 'pointer',
+          cursor: disabled ? 'default' : 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color,
+          opacity: disabled ? 0.4 : 1,
           textDecoration: 'none',
         }}
-        onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+        onMouseOver={(e) => {
+          if (!disabled) e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+        }}
         onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
       >
         {icon}
@@ -422,17 +447,16 @@ export const HeaderTron = ({
                 >
                   {initials}
                 </button>
-                {avatarDropdownOpen && !enabled && (
+                {!enabled && (
                   <div
                     style={{
                       position: 'absolute',
-                      top: '100%',
+                      top: 'calc(100% + 8px)',
                       right: 0,
-                      marginTop: 8,
                       zIndex: 1000,
                       background: colorScheme === 'dark' ? 'rgba(20,20,20,0.95)' : 'rgba(255,255,255,0.95)',
                       border: `1px solid ${t.border}`,
-                      borderRadius: 12,
+                      borderRadius: 16,
                       padding: 8,
                       display: 'flex',
                       flexDirection: 'column',
@@ -440,11 +464,18 @@ export const HeaderTron = ({
                       minWidth: 44,
                       backdropFilter: 'blur(12px)',
                       boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                      opacity: avatarDropdownOpen ? 1 : 0,
+                      transform: avatarDropdownOpen ? 'translateY(0)' : 'translateY(-8px)',
+                      transition: 'opacity 0.15s ease, transform 0.15s ease',
+                      pointerEvents: avatarDropdownOpen ? 'auto' : 'none',
                     }}
                   >
                     {DEFAULT_DROPDOWN_SECTIONS.map((item, i) => {
                       const IconComp = DROPDOWN_ICONS[item.icon] ?? UserIcon;
-                      const pageLink = findPageLink(item.label, pages);
+                      const pageLink = item.pageLink
+                        ? findPageLink(item.label, pages, item.pageLink)
+                        : findPageLink(item.label, pages);
+                      const isDisabled = !pageLink || pageLink === '#';
                       const href = pageLink ? toHref(pageLink) : '#';
                       return (
                         <DashboardDropdownItem
@@ -453,9 +484,14 @@ export const HeaderTron = ({
                           label={item.label}
                           href={href}
                           onClick={(e) => {
-                            if (pageLink) handleLinkClick(e, href, enabled, siteCtx.navigateToPage);
+                            if (!isDisabled) {
+                              window.dispatchEvent(
+                                new CustomEvent('iam_navigate', { detail: { page: pageLink } })
+                              );
+                            }
                           }}
-                          color={t.text}
+                          color={isDisabled ? t.textSecondary : t.text}
+                          disabled={isDisabled}
                         />
                       );
                     })}
