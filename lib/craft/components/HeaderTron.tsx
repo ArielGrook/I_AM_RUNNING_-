@@ -415,7 +415,7 @@ export const HeaderTron = ({
               )}
               {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
               {showAvatar && (
-              <div data-avatar-dropdown style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
+                <div data-avatar-dropdown style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
                   <div
                     role="button"
                     tabIndex={0}
@@ -443,22 +443,24 @@ export const HeaderTron = ({
                     {initials}
                   </div>
                   {!enabled && avatarDropdownOpen && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '44px',
-                      right: 0,
-                      zIndex: 50,
-                      background: 'rgba(15,15,15,0.95)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      backdropFilter: 'blur(12px)',
-                      borderRadius: '0 0 20px 20px',
-                      padding: '4px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 2,
-                      minWidth: 40,
-                    }}>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '44px',
+                        right: 0,
+                        zIndex: 50,
+                        background: 'rgba(15,15,15,0.95)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        backdropFilter: 'blur(12px)',
+                        borderRadius: '0 0 20px 20px',
+                        padding: '4px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 2,
+                        minWidth: 40,
+                      }}
+                    >
                       {dropdownSections.map((section) => {
                         const IconComp = DROPDOWN_ICONS[section.icon] ?? UserIcon;
                         return (
@@ -491,8 +493,12 @@ export const HeaderTron = ({
                               cursor: 'pointer',
                               color: 'rgba(255,255,255,0.7)',
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'transparent';
+                            }}
                             title={section.label}
                           >
                             <IconComp />
@@ -522,8 +528,12 @@ export const HeaderTron = ({
                           cursor: 'pointer',
                           color: '#ff4444',
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,68,68,0.1)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(255,68,68,0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                        }}
                         title="Logout"
                       >
                         <LogoutIcon />
@@ -531,8 +541,7 @@ export const HeaderTron = ({
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
             </div>
             {/* Desktop: language select */}
             {!enabled && (showLanguageToggle || siteCtx.showLanguageToggle) && siteCtx.availableLanguages.length > 1 && (
