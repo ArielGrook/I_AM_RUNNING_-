@@ -164,17 +164,34 @@ export const TronDashboard = React.memo(function TronDashboard() {
   const activeId = activeSectionId ?? sections[0]?.id ?? null;
   const activeSection = sections.find((s) => s.id === activeId) ?? sections[0];
 
-  const handleLogout = useCallback(async () => {
-    if (enabled || !supabaseUrl || !supabaseAnonKey) return;
-    const { createClient } = await import('@supabase/supabase-js');
-    const client = createClient(supabaseUrl, supabaseAnonKey);
-    await client.auth.signOut();
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('iam_client_session');
-      window.dispatchEvent(new Event('iam_auth_changed'));
-      window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+  const handleLogout = async () => {
+    console.log('[Logout] Starting logout...');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[Logout] Missing credentials');
+      return;
     }
-  }, [enabled, supabaseUrl, supabaseAnonKey, siteCtx]);
+
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const client = createClient(supabaseUrl, supabaseAnonKey);
+      const { error } = await client.auth.signOut();
+      if (error) console.error('[Logout] Error:', error);
+      else console.log('[Logout] Supabase signOut OK');
+    } catch (e) {
+      console.error('[Logout] Exception:', e);
+    }
+
+    localStorage.removeItem('iam_client_session');
+    console.log('[Logout] Session cleared');
+    window.dispatchEvent(new Event('iam_auth_changed'));
+    window.dispatchEvent(
+      new CustomEvent('iam_navigate', {
+        detail: { page: '__first__' },
+      })
+    );
+    console.log('[Logout] Redirecting to first page...');
+  };
 
   const user = session?.user as { user_metadata?: { first_name?: string; last_name?: string }; email?: string } | undefined;
   const firstName = user?.user_metadata?.first_name ?? '';
@@ -303,7 +320,7 @@ export const TronDashboard = React.memo(function TronDashboard() {
         <button
           type="button"
           onClick={handleLogout}
-          disabled={enabled}
+          disabled={false}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -313,11 +330,11 @@ export const TronDashboard = React.memo(function TronDashboard() {
             background: 'transparent',
             border: 'none',
             borderRadius: 8,
-            cursor: enabled ? 'default' : 'pointer',
+            cursor: 'pointer',
             color: '#f87171',
             transition: 'background 0.2s ease',
           }}
-          onMouseEnter={(e) => !enabled && (e.currentTarget.style.background = 'rgba(248,113,113,0.15)')}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(248,113,113,0.15)')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
         >
           <LogoutIcon />
