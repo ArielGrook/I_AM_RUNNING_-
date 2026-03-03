@@ -1,10 +1,9 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useContext, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
-import { PagesContext } from '@/lib/craft/context/PagesContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
 import { getStoredSession, signOut } from '@/lib/auth/clientAuthService';
@@ -408,7 +407,8 @@ export const TronDashboard = React.memo(function TronDashboard() {
 const TronDashboardSettings = () => {
   const { actions: { setProp } } = useNode();
   const props = useNode((node) => node.data.props as Partial<TronDashboardProps>) ?? {};
-  const { pages } = useContext(PagesContext);
+  const siteCtx = useSiteContext();
+  const pages = siteCtx?.pages ?? [];
   const { sections = DEFAULT_SECTIONS, darkBg = '#0a0a0a', lightBg = '#ffffff', sectionHeight = 80, loginPageSlug = '' } = props;
 
   const updateSection = (index: number, field: keyof DashboardSection, value: string) => {
@@ -507,7 +507,7 @@ const TronDashboardSettings = () => {
             onChange={(e) => setProp((p: Record<string, unknown>) => { p.loginPageSlug = e.target.value; }, 300)} className={inputCls}
           >
             <option value="">— not set —</option>
-            {(pages ?? []).map((p) => (
+            {pages.map((p) => (
               <option key={p.id} value={p.slug}>{p.name}</option>
             ))}
           </select>
