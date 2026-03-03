@@ -6,7 +6,7 @@ import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
-import { getStoredSession, signOut } from '@/lib/auth/clientAuthService';
+import { getStoredSession } from '@/lib/auth/clientAuthService';
 
 // ── Inline SVG Icons (no emoji, no external libs) ─────────────────────────
 const UserIcon = () => (
@@ -146,7 +146,7 @@ export const TronDashboard = React.memo(function TronDashboard() {
 
   const props = useNode((node) => node.data.props as Partial<TronDashboardProps>) ?? {};
   const {
-    colorScheme: propColorScheme,
+    colorScheme = 'dark',
     accentColor: propAccent,
     darkBg = '#0a0a0a',
     lightBg = '#ffffff',
@@ -156,9 +156,8 @@ export const TronDashboard = React.memo(function TronDashboard() {
     sections = DEFAULT_SECTIONS,
   } = props;
 
-  const colorScheme = propColorScheme ?? siteCtx?.colorScheme ?? theme.colorScheme ?? 'dark';
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const scheme = colorScheme;
+  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
 
@@ -166,13 +165,31 @@ export const TronDashboard = React.memo(function TronDashboard() {
   const activeSection = sections.find((s) => s.id === activeId) ?? sections[0];
 
   const handleLogout = useCallback(async () => {
-    if (enabled || !supabaseUrl || !supabaseAnonKey) return;
+    if (enabled) return;
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Logout failed: missing Supabase credentials');
+      return;
+    }
     try {
-      await signOut(supabaseUrl, supabaseAnonKey);
+      console.log('[TronDashboard] Logout step 1: creating Supabase client');
+      const { createClient } = await import('@supabase/supabase-js');
+      const client = createClient(supabaseUrl, supabaseAnonKey);
+
+      console.log('[TronDashboard] Logout step 2: calling signOut');
+      await client.auth.signOut();
+
       if (typeof window !== 'undefined') {
+        console.log('[TronDashboard] Logout step 3: clearing localStorage');
+        localStorage.removeItem('iam_client_session');
+
+        console.log('[TronDashboard] Logout step 4: dispatching iam_auth_changed');
+        window.dispatchEvent(new Event('iam_auth_changed'));
+
+        console.log('[TronDashboard] Logout step 5: dispatching iam_navigate');
         window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
       }
-    } catch {
+    } catch (err) {
+      console.error('[TronDashboard] Logout error:', err);
       if (typeof window !== 'undefined') {
         localStorage.removeItem('iam_client_session');
         window.dispatchEvent(new Event('iam_auth_changed'));
@@ -201,10 +218,9 @@ export const TronDashboard = React.memo(function TronDashboard() {
       className={`w-full ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
-        minHeight: '100vh',
+        minHeight: `${sectionHeight}vh`,
         display: 'flex',
         flexDirection: 'row',
-        position: 'relative',
       }}
     >
       {/* Left sidebar */}
