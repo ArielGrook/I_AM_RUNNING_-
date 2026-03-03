@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useContext, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useContext, useMemo, useRef, type ReactNode } from 'react';
 import { Editor, Frame, Element, useEditor } from '@craftjs/core';
 import lz from 'lzutf8';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -362,6 +362,10 @@ export default function EditorPage() {
   const projectId = searchParams.get('id');
 
   const [pages, setPages] = useState<PageState[]>([defaultPage]);
+  const pagesRef = useRef<PageState[]>(pages);
+  useEffect(() => {
+    pagesRef.current = pages;
+  }, [pages]);
   const [activePageId, setActivePageId] = useState('1');
   const [loadedProject, setLoadedProject] = useState<LoadedProject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -751,16 +755,25 @@ export default function EditorPage() {
   const handleBackendAuthSuccess = useCallback(
     async (url: string, anonKey: string) => {
       if (!loadedProject || !url || !anonKey) return;
-      const updatedPages = pages.map((p) => {
-        const inject = (raw: string) => injectSupabaseCredentialsIntoCraftJson(raw, url, anonKey);
+      // Use ref so we always inject into ALL current pages (avoid stale closure)
+      const currentPages = pagesRef.current;
+      const inject = (raw: string) => injectSupabaseCredentialsIntoCraftJson(raw, url, anonKey);
+      const updatedPages = currentPages.map((p) => {
+        const rawDesktop = p.desktopData ?? p.data ?? null;
+        const rawMobile = p.mobileData ?? null;
+        const updatedDesktop =
+          rawDesktop
+            ? lz.compress(inject(lz.decompress(rawDesktop, { inputEncoding: 'Base64' }) as string), { outputEncoding: 'Base64' })
+            : rawDesktop;
+        const updatedMobile =
+          rawMobile
+            ? lz.compress(inject(lz.decompress(rawMobile, { inputEncoding: 'Base64' }) as string), { outputEncoding: 'Base64' })
+            : rawMobile;
         return {
           ...p,
-          desktopData: p.desktopData
-            ? lz.compress(inject(lz.decompress(p.desktopData, { inputEncoding: 'Base64' }) as string), { outputEncoding: 'Base64' })
-            : p.desktopData,
-          mobileData: p.mobileData
-            ? lz.compress(inject(lz.decompress(p.mobileData, { inputEncoding: 'Base64' }) as string), { outputEncoding: 'Base64' })
-            : p.mobileData,
+          data: updatedDesktop ?? p.data,
+          desktopData: updatedDesktop ?? p.desktopData,
+          mobileData: updatedMobile ?? p.mobileData,
         };
       });
       setPages(updatedPages);
@@ -779,7 +792,7 @@ export default function EditorPage() {
         loadedProject.version
       );
     },
-    [loadedProject, pages, activePageId]
+    [loadedProject, activePageId]
   );
 
   const handlePreview = () => {
