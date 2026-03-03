@@ -164,38 +164,17 @@ export const TronDashboard = React.memo(function TronDashboard() {
   const activeId = activeSectionId ?? sections[0]?.id ?? null;
   const activeSection = sections.find((s) => s.id === activeId) ?? sections[0];
 
-  const handleLogout = async () => {
-    if (enabled) return;
-    console.log('[Logout] Starting logout...');
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('[Logout] Missing Supabase credentials in props');
-      return;
+  const handleLogout = useCallback(async () => {
+    if (enabled || !supabaseUrl || !supabaseAnonKey) return;
+    const { createClient } = await import('@supabase/supabase-js');
+    const client = createClient(supabaseUrl, supabaseAnonKey);
+    await client.auth.signOut();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('iam_client_session');
+      window.dispatchEvent(new Event('iam_auth_changed'));
+      window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
     }
-
-    try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const client = createClient(supabaseUrl, supabaseAnonKey);
-      const { error } = await client.auth.signOut();
-      if (error) console.error('[Logout] Supabase signOut error:', error);
-      else console.log('[Logout] Supabase signOut OK');
-    } catch (e) {
-      console.error('[Logout] Exception:', e);
-    }
-
-    localStorage.removeItem('iam_client_session');
-    console.log('[Logout] Session cleared from localStorage');
-
-    window.dispatchEvent(new Event('iam_auth_changed'));
-    console.log('[Logout] iam_auth_changed dispatched');
-
-    window.dispatchEvent(
-      new CustomEvent('iam_navigate', {
-        detail: { page: '__first__' },
-      })
-    );
-    console.log('[Logout] iam_navigate dispatched → __first__');
-  };
+  }, [enabled, supabaseUrl, supabaseAnonKey, siteCtx]);
 
   const user = session?.user as { user_metadata?: { first_name?: string; last_name?: string }; email?: string } | undefined;
   const firstName = user?.user_metadata?.first_name ?? '';
@@ -323,7 +302,10 @@ export const TronDashboard = React.memo(function TronDashboard() {
         {/* Logout */}
         <button
           type="button"
-          onClick={handleLogout}
+          onClick={() => {
+            console.log('[Logout Button] CLICKED');
+            handleLogout();
+          }}
           disabled={enabled}
           style={{
             display: 'flex',
