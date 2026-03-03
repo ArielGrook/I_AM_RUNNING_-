@@ -415,50 +415,25 @@ export const HeaderTron = ({
               )}
               {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
               {showAvatar && (
-                <div data-avatar-dropdown style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => !enabled && setAvatarDropdownOpen(!avatarDropdownOpen)}
-                    onKeyDown={(e) => e.key === 'Enter' && !enabled && setAvatarDropdownOpen(!avatarDropdownOpen)}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: enabled ? 'default' : 'pointer',
-                      background: t.accent,
-                      flexShrink: 0,
-                      color: '#fff',
-                      fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-                      fontWeight: 700,
-                      fontSize: 14,
-                      border: 'none',
-                      zIndex: 51,
-                      position: 'relative',
-                    }}
-                  >
-                    {initials}
-                  </div>
+                <div style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
                   {!enabled && avatarDropdownOpen && (
                     <div
                       style={{
                         position: 'absolute',
-                        top: '44px',
+                        top: 0,
                         right: 0,
-                        zIndex: 50,
-                        background: 'rgba(15,15,15,0.95)',
-                        border: '1px solid rgba(255,255,255,0.1)',
+                        width: 40,
+                        background: colorScheme === 'dark' ? 'rgba(15,15,15,0.97)' : 'rgba(240,240,240,0.97)',
+                        border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
                         backdropFilter: 'blur(12px)',
-                        borderRadius: '0 0 20px 20px',
-                        padding: '4px',
+                        borderRadius: 24,
+                        paddingTop: '44px',
+                        paddingBottom: '4px',
+                        zIndex: 49,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         gap: 2,
-                        minWidth: 40,
                       }}
                     >
                       {dropdownSections.map((section) => {
@@ -491,10 +466,10 @@ export const HeaderTron = ({
                               background: 'transparent',
                               border: 'none',
                               cursor: 'pointer',
-                              color: 'rgba(255,255,255,0.7)',
+                              color: colorScheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                              e.currentTarget.style.background = colorScheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.background = 'transparent';
@@ -540,6 +515,32 @@ export const HeaderTron = ({
                       </button>
                     </div>
                   )}
+                  <div
+                    data-avatar-dropdown
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => !enabled && setAvatarDropdownOpen(!avatarDropdownOpen)}
+                    onKeyDown={(e) => e.key === 'Enter' && !enabled && setAvatarDropdownOpen(!avatarDropdownOpen)}
+                    style={{
+                      position: 'relative',
+                      zIndex: 51,
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      background: t.accent,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: enabled ? 'default' : 'pointer',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: '#fff',
+                      userSelect: 'none',
+                      fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+                    }}
+                  >
+                    {initials}
+                  </div>
                 </div>
               )}
             </div>
