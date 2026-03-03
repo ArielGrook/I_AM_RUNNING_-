@@ -164,7 +164,7 @@ export const TronDashboard = React.memo(function TronDashboard() {
   const activeId = activeSectionId ?? sections[0]?.id ?? null;
   const activeSection = sections.find((s) => s.id === activeId) ?? sections[0];
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = async () => {
     if (enabled || !supabaseUrl || !supabaseAnonKey) return;
     const { createClient } = await import('@supabase/supabase-js');
     const client = createClient(supabaseUrl, supabaseAnonKey);
@@ -174,7 +174,7 @@ export const TronDashboard = React.memo(function TronDashboard() {
       window.dispatchEvent(new Event('iam_auth_changed'));
       window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
     }
-  }, [enabled, supabaseUrl, supabaseAnonKey, siteCtx]);
+  };
 
   const user = session?.user as { user_metadata?: { first_name?: string; last_name?: string }; email?: string } | undefined;
   const firstName = user?.user_metadata?.first_name ?? '';
