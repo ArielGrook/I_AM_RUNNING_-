@@ -240,7 +240,6 @@ export const HeaderTron = ({
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null);
   const [session, setSession] = useState<ReturnType<typeof getStoredSession>>(null);
   const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
-  const avatarDropdownTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (enabled) return;
@@ -249,6 +248,15 @@ export const HeaderTron = ({
     window.addEventListener('iam_auth_changed', onAuthChanged);
     return () => window.removeEventListener('iam_auth_changed', onAuthChanged);
   }, [enabled]);
+
+  useEffect(() => {
+    if (!avatarDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as Element).closest('[data-avatar-dropdown]')) setAvatarDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [avatarDropdownOpen]);
 
   const user = session?.user;
   const firstName = user?.user_metadata?.first_name ?? '';
@@ -269,23 +277,7 @@ export const HeaderTron = ({
     handleLinkClick(e, href, enabled, siteCtx.navigateToPage || navigateTo);
   };
 
-  const handleAvatarDropdownEnter = () => {
-    if (avatarDropdownTimerRef.current) {
-      clearTimeout(avatarDropdownTimerRef.current);
-      avatarDropdownTimerRef.current = null;
-    }
-    setAvatarDropdownOpen(true);
-  };
-  const handleAvatarDropdownLeave = () => {
-    avatarDropdownTimerRef.current = setTimeout(() => setAvatarDropdownOpen(false), 150);
-  };
-
-  const handleLogout = React.useCallback(async () => {
-    if (enabled || !supabaseUrl || !supabaseAnonKey) return;
-    const { signOut } = await import('@/lib/auth/clientAuthService');
-    await signOut(supabaseUrl, supabaseAnonKey);
-    window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
-  }, [enabled, supabaseUrl, supabaseAnonKey, siteCtx]);
+  const profilePageSlug = profilePageLink?.trim() || '__first__';
 
   const tokens = {
     dark: {
@@ -419,105 +411,114 @@ export const HeaderTron = ({
                 ))}
               </select>
             )}
-            {/* Auth: single Avatar OR Login OR CTA (one element only, visible on all viewports) */}
+            {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
             {showAvatar && (
-              <div
-                style={{ position: 'relative', display: 'flex' }}
-                onMouseEnter={handleAvatarDropdownEnter}
-                onMouseLeave={handleAvatarDropdownLeave}
-              >
-                <button
-                  type="button"
-                  className="flex shrink-0"
-                  onClick={(e) => handleLinkClick(e, effectiveProfileHref, enabled, siteCtx.navigateToPage)}
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <div
+                  data-avatar-dropdown
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: '50%',
-                    background: t.accent,
-                    color: '#fff',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    zIndex: 9999,
+                    borderRadius: avatarDropdownOpen ? 20 : '50%',
+                    overflow: 'hidden',
+                    background: 'rgba(20,20,20,0.95)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    backdropFilter: 'blur(12px)',
+                    transition: 'border-radius 0.2s ease',
+                    width: 40,
                   }}
                 >
-                  {initials}
-                </button>
-                {!enabled && (
                   <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => !enabled && setAvatarDropdownOpen(!avatarDropdownOpen)}
+                    onKeyDown={(e) => e.key === 'Enter' && !enabled && setAvatarDropdownOpen(!avatarDropdownOpen)}
                     style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 8px)',
-                      right: 0,
-                      zIndex: 1000,
-                      background: colorScheme === 'dark' ? 'rgba(20,20,20,0.95)' : 'rgba(255,255,255,0.95)',
-                      border: `1px solid ${t.border}`,
-                      borderRadius: 16,
-                      padding: 8,
+                      width: 40,
+                      height: 40,
                       display: 'flex',
-                      flexDirection: 'column',
-                      gap: 4,
-                      minWidth: 44,
-                      backdropFilter: 'blur(12px)',
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                      opacity: avatarDropdownOpen ? 1 : 0,
-                      transform: avatarDropdownOpen ? 'translateY(0)' : 'translateY(-8px)',
-                      transition: 'opacity 0.15s ease, transform 0.15s ease',
-                      pointerEvents: avatarDropdownOpen ? 'auto' : 'none',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: enabled ? 'default' : 'pointer',
+                      background: t.accent,
+                      flexShrink: 0,
+                      color: '#fff',
+                      fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+                      fontWeight: 700,
+                      fontSize: 13,
+                      border: 'none',
                     }}
                   >
-                    {DEFAULT_DROPDOWN_SECTIONS.map((item, i) => {
-                      const IconComp = DROPDOWN_ICONS[item.icon] ?? UserIcon;
-                      const pageLink = item.pageLink
-                        ? findPageLink(item.label, pages, item.pageLink)
-                        : findPageLink(item.label, pages);
-                      const isDisabled = !pageLink || pageLink === '#';
-                      const href = pageLink ? toHref(pageLink) : '#';
-                      return (
-                        <DashboardDropdownItem
-                          key={i}
-                          icon={<IconComp />}
-                          label={item.label}
-                          href={href}
-                          onClick={(e) => {
-                            if (!isDisabled) {
-                              window.dispatchEvent(
-                                new CustomEvent('iam_navigate', { detail: { page: pageLink } })
-                              );
-                            }
-                          }}
-                          color={isDisabled ? t.textSecondary : t.text}
-                          disabled={isDisabled}
-                        />
-                      );
-                    })}
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: '50%',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#f87171',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(248,113,113,0.15)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                      title="Logout"
-                    >
-                      <LogoutIcon />
-                    </button>
+                    {initials}
                   </div>
-                )}
+                  {!enabled && avatarDropdownOpen && (
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {DEFAULT_DROPDOWN_SECTIONS.map((section) => {
+                        const IconComp = DROPDOWN_ICONS[section.icon] ?? UserIcon;
+                        return (
+                          <button
+                            key={section.icon}
+                            type="button"
+                            onClick={() => {
+                              setAvatarDropdownOpen(false);
+                              window.dispatchEvent(
+                                new CustomEvent('iam_navigate', {
+                                  detail: { page: profilePageSlug },
+                                })
+                              );
+                            }}
+                            style={{
+                              width: 40,
+                              height: 40,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: 'rgba(255,255,255,0.7)',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <IconComp />
+                          </button>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAvatarDropdownOpen(false);
+                          localStorage.removeItem('iam_client_session');
+                          localStorage.removeItem('iam_session');
+                          Object.keys(localStorage).forEach((key) => {
+                            if (key.includes('supabase') || key.includes('sb-')) localStorage.removeItem(key);
+                          });
+                          window.dispatchEvent(new Event('iam_auth_changed'));
+                          window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+                        }}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: '#ff4444',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,68,68,0.1)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        title="Logout"
+                      >
+                        <LogoutIcon />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {!showAvatar && showLoginBtn && (
