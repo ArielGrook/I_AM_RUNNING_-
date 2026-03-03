@@ -240,6 +240,7 @@ export const HeaderTron = ({
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null);
   const [session, setSession] = useState<ReturnType<typeof getStoredSession>>(null);
   const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
+  const [dropdownSections, setDropdownSections] = useState<Array<{ id: string; name?: string; icon: string }>>([]);
 
   useEffect(() => {
     if (enabled) return;
@@ -256,6 +257,18 @@ export const HeaderTron = ({
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, [avatarDropdownOpen]);
+
+  useEffect(() => {
+    if (avatarDropdownOpen) {
+      try {
+        const stored = localStorage.getItem('iam_dashboard_sections');
+        if (stored) setDropdownSections(JSON.parse(stored));
+        else setDropdownSections([]);
+      } catch {
+        setDropdownSections([]);
+      }
+    }
   }, [avatarDropdownOpen]);
 
   const user = session?.user;
@@ -365,7 +378,7 @@ export const HeaderTron = ({
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center shrink-0" style={{ gap: 8, alignItems: 'center' }}>
             {/* Desktop: theme toggle */}
             {!enabled && (showThemeToggle || siteCtx.showThemeToggle) && (
               <button
@@ -413,20 +426,21 @@ export const HeaderTron = ({
             )}
             {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
             {showAvatar && (
-              <div style={{ position: 'relative', display: 'inline-block' }}>
+              <div style={{ position: 'relative', display: 'inline-block', zIndex: 50 }}>
                 <div
                   data-avatar-dropdown
                   style={{
                     position: 'absolute',
                     top: 0,
                     right: 0,
-                    zIndex: 9999,
-                    borderRadius: avatarDropdownOpen ? 20 : '50%',
+                    zIndex: 50,
+                    padding: avatarDropdownOpen ? 4 : 0,
+                    borderRadius: avatarDropdownOpen ? 24 : '50%',
                     overflow: 'hidden',
-                    background: 'rgba(20,20,20,0.95)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    backdropFilter: 'blur(12px)',
-                    transition: 'border-radius 0.2s ease',
+                    background: avatarDropdownOpen ? 'rgba(15,15,15,0.95)' : 'transparent',
+                    border: avatarDropdownOpen ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                    backdropFilter: avatarDropdownOpen ? 'blur(12px)' : 'none',
+                    transition: 'border-radius 0.2s ease, padding 0.2s ease, background 0.2s ease, border 0.2s ease',
                     width: 40,
                   }}
                 >
@@ -438,6 +452,7 @@ export const HeaderTron = ({
                     style={{
                       width: 40,
                       height: 40,
+                      borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -455,19 +470,28 @@ export const HeaderTron = ({
                   </div>
                   {!enabled && avatarDropdownOpen && (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      {DEFAULT_DROPDOWN_SECTIONS.map((section) => {
+                      {dropdownSections.map((section) => {
                         const IconComp = DROPDOWN_ICONS[section.icon] ?? UserIcon;
+                        const label = section.name ?? section.id;
                         return (
                           <button
-                            key={section.icon}
+                            key={section.id}
                             type="button"
+                            title={label}
                             onClick={() => {
                               setAvatarDropdownOpen(false);
                               window.dispatchEvent(
                                 new CustomEvent('iam_navigate', {
-                                  detail: { page: profilePageSlug },
+                                  detail: { page: profilePageSlug || '__first__' },
                                 })
                               );
+                              setTimeout(() => {
+                                window.dispatchEvent(
+                                  new CustomEvent('iam_dashboard_open_section', {
+                                    detail: { sectionId: section.id },
+                                  })
+                                );
+                              }, 100);
                             }}
                             style={{
                               width: 40,

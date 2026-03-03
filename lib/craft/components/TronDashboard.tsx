@@ -1,7 +1,7 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
@@ -161,24 +161,30 @@ export const TronDashboard = React.memo(function TronDashboard() {
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
 
+  React.useEffect(() => {
+    if (enabled || !sections?.length) return;
+    try {
+      const payload = sections.map((s) => ({ id: s.id, name: s.label, icon: s.icon }));
+      localStorage.setItem('iam_dashboard_sections', JSON.stringify(payload));
+    } catch {
+      // ignore
+    }
+  }, [enabled, sections]);
+
   const activeId = activeSectionId ?? sections[0]?.id ?? null;
   const activeSection = sections.find((s) => s.id === activeId) ?? sections[0];
 
-  const handleLogout = () => {
-    localStorage.removeItem('iam_client_session');
-    localStorage.removeItem('iam_session');
-    Object.keys(localStorage).forEach((key) => {
-      if (key.includes('supabase') || key.includes('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
-    window.dispatchEvent(new Event('iam_auth_changed'));
-    window.dispatchEvent(
-      new CustomEvent('iam_navigate', {
-        detail: { page: '__first__' },
-      })
-    );
-  };
+  const handleLogout = useCallback(async () => {
+    if (enabled || !supabaseUrl || !supabaseAnonKey) return;
+    const { createClient } = await import('@supabase/supabase-js');
+    const client = createClient(supabaseUrl, supabaseAnonKey);
+    await client.auth.signOut();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('iam_client_session');
+      window.dispatchEvent(new Event('iam_auth_changed'));
+      window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+    }
+  }, [enabled, supabaseUrl, supabaseAnonKey, siteCtx]);
 
   const user = session?.user as { user_metadata?: { first_name?: string; last_name?: string }; email?: string } | undefined;
   const firstName = user?.user_metadata?.first_name ?? '';
