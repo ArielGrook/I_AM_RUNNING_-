@@ -420,6 +420,9 @@ export const HeaderTron = ({
                   data-avatar-dropdown
                   style={{
                     position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                     zIndex: 50,
                     padding: avatarDropdownOpen ? 4 : 0,
                     borderRadius: avatarDropdownOpen ? 24 : '50%',
