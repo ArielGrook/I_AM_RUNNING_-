@@ -1,7 +1,7 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
@@ -302,10 +302,7 @@ export const TronDashboard = React.memo(function TronDashboard() {
         {/* Logout */}
         <button
           type="button"
-          onClick={() => {
-            console.log('[Logout Button] CLICKED');
-            handleLogout();
-          }}
+          onClick={handleLogout}
           disabled={enabled}
           style={{
             display: 'flex',
