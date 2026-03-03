@@ -201,7 +201,7 @@ export const TronDashboard = React.memo(function TronDashboard() {
       className={`w-full ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
-        minHeight: enabled ? '60vh' : `${sectionHeight}vh`,
+        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'row',
         position: 'relative',

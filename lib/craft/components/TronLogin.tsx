@@ -200,7 +200,7 @@ export const TronLogin = React.memo(function TronLogin() {
       className={`w-full max-w-full flex flex-col justify-center ${isSelected ? 'craft-node-selected' : ''}`}
       style={{
         background: t.bg,
-        minHeight: enabled ? '60vh' : '100vh',
+        minHeight: '100vh',
         position: 'relative',
         padding: isMobile ? 16 : 24,
         boxSizing: 'border-box',
