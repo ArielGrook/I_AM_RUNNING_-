@@ -1,33 +1,133 @@
 /**
  * Backend Auth - save Supabase credentials for a project and run migrations.
- * POST body: { supabaseUrl, supabaseAnonKey, serviceRoleKey }
- * Service role key is NEVER stored or logged; used only to validate and run migrations.
+ * POST body: { supabaseUrl, supabaseAnonKey, serviceRoleKey, dbPassword }
+ * dbPassword is used only for migrations (direct pg connection), never stored.
+ * GET returns saved credentials from project.backend_blocks.user_auth.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { Client } from 'pg';
 
-async function executeSql(
+async function runMigrations(
   supabaseUrl: string,
-  serviceRoleKey: string,
-  query: string
-): Promise<{ ok: boolean; error?: string }> {
-  const url = `${supabaseUrl.replace(/\/$/, '')}/pg/query`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ query }),
+  dbPassword: string
+): Promise<Record<string, string>> {
+  const projectRef = supabaseUrl
+    .replace('https://', '')
+    .replace('.supabase.co', '')
+    .replace(/\/$/, '');
+  const client = new Client({
+    connectionString: `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`,
+    ssl: { rejectUnauthorized: false },
   });
-  if (!response.ok) {
-    const err = await response.text();
-    return { ok: false, error: err };
+  await client.connect();
+
+  const statements: { key: string; sql: string }[] = [
+    {
+      key: 'profiles_table',
+      sql: `CREATE TABLE IF NOT EXISTS profiles (
+        id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+        first_name TEXT, last_name TEXT, email TEXT, avatar_url TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )`,
+    },
+    { key: 'rls', sql: `ALTER TABLE profiles ENABLE ROW LEVEL SECURITY` },
+    {
+      key: 'policy_select',
+      sql: `DO $$ BEGIN
+        IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename='profiles'
+          AND policyname='Users can read own profile')
+        THEN CREATE POLICY "Users can read own profile"
+          ON profiles FOR SELECT USING (auth.uid() = id);
+        END IF; END $$`,
+    },
+    {
+      key: 'policy_update',
+      sql: `DO $$ BEGIN
+        IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename='profiles'
+          AND policyname='Users can update own profile')
+        THEN CREATE POLICY "Users can update own profile"
+          ON profiles FOR UPDATE USING (auth.uid() = id);
+        END IF; END $$`,
+    },
+    {
+      key: 'function',
+      sql: `CREATE OR REPLACE FUNCTION handle_new_user()
+        RETURNS TRIGGER AS $$
+        BEGIN
+          INSERT INTO profiles (id, first_name, last_name, email)
+          VALUES (NEW.id, NEW.raw_user_meta_data->>'first_name',
+                  NEW.raw_user_meta_data->>'last_name', NEW.email)
+          ON CONFLICT (id) DO NOTHING;
+          RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql SECURITY DEFINER`,
+    },
+    {
+      key: 'trigger',
+      sql: `DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+        CREATE TRIGGER on_auth_user_created
+        AFTER INSERT ON auth.users
+        FOR EACH ROW EXECUTE FUNCTION handle_new_user()`,
+    },
+  ];
+
+  const results: Record<string, string> = {};
+  for (const { key, sql } of statements) {
+    try {
+      await client.query(sql);
+      results[key] = 'ok';
+    } catch (err) {
+      console.error(`[backend-auth] Migration ${key} failed:`, err);
+      results[key] = err instanceof Error ? err.message : 'error';
+    }
   }
-  return { ok: true };
+  await client.end();
+  return results;
+}
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: projectId } = await params;
+    if (!projectId) {
+      return NextResponse.json({ error: 'Project ID required' }, { status: 400 });
+    }
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const { data: project, error } = await supabase
+      .from('projects')
+      .select('backend_blocks')
+      .eq('id', projectId)
+      .eq('user_id', user.id)
+      .single();
+    if (error || !project) {
+      return NextResponse.json(
+        { error: error?.message ?? 'Project not found' },
+        { status: error?.code === 'PGRST116' ? 404 : 500 }
+      );
+    }
+    const blocks = (project.backend_blocks as Record<string, unknown>) ?? {};
+    const userAuth = blocks.user_auth as Record<string, unknown> | undefined;
+    if (!userAuth) {
+      return NextResponse.json({});
+    }
+    return NextResponse.json({
+      supabaseUrl: userAuth.supabaseUrl ?? null,
+      supabaseAnonKey: userAuth.supabaseAnonKey ?? null,
+      serviceRoleKey: userAuth.supabaseServiceKey ?? null,
+    });
+  } catch (e) {
+    console.error('[API backend-auth GET] Error:', e);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
 }
 
 export async function POST(
@@ -47,10 +147,11 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { supabaseUrl, supabaseAnonKey, serviceRoleKey } = body as {
+    const { supabaseUrl, supabaseAnonKey, serviceRoleKey, dbPassword } = body as {
       supabaseUrl?: string;
       supabaseAnonKey?: string;
       serviceRoleKey?: string;
+      dbPassword?: string;
     };
 
     if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
@@ -59,10 +160,16 @@ export async function POST(
         { status: 400 }
       );
     }
+    if (!dbPassword || !String(dbPassword).trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Database password is required for migrations' },
+        { status: 400 }
+      );
+    }
 
     const { data: project, error: fetchError } = await supabase
       .from('projects')
-      .select('id, metadata')
+      .select('id, metadata, backend_blocks')
       .eq('id', projectId)
       .eq('user_id', user.id)
       .single();
@@ -87,101 +194,31 @@ export async function POST(
       );
     }
 
-    const migrationsResult: Record<string, string> = {};
+    const migrationsResult = await runMigrations(supabaseUrl.trim(), String(dbPassword).trim());
 
-    const s1 = await executeSql(
-      supabaseUrl,
-      serviceRoleKey,
-      `CREATE TABLE IF NOT EXISTS profiles (
-  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  first_name TEXT,
-  last_name TEXT,
-  email TEXT,
-  avatar_url TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-)`
-    );
-    migrationsResult.profiles_table = s1.ok ? 'ok' : (s1.error ?? 'fail');
-    console.error('[backend-auth] Step profiles_table:', s1.ok ? 'ok' : s1.error);
-
-    const s2 = await executeSql(supabaseUrl, serviceRoleKey, 'ALTER TABLE profiles ENABLE ROW LEVEL SECURITY');
-    migrationsResult.rls = s2.ok ? 'ok' : (s2.error ?? 'fail');
-    console.error('[backend-auth] Step rls:', s2.ok ? 'ok' : s2.error);
-
-    const s3 = await executeSql(
-      supabaseUrl,
-      serviceRoleKey,
-      `DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT FROM pg_policies WHERE tablename = 'profiles'
-    AND policyname = 'Users can read own profile'
-  ) THEN
-    CREATE POLICY "Users can read own profile"
-    ON profiles FOR SELECT USING (auth.uid() = id);
-  END IF;
-END $$`
-    );
-    migrationsResult.policies = s3.ok ? 'ok' : (s3.error ?? 'fail');
-    console.error('[backend-auth] Step policy_select:', s3.ok ? 'ok' : s3.error);
-
-    const s4 = await executeSql(
-      supabaseUrl,
-      serviceRoleKey,
-      `DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT FROM pg_policies WHERE tablename = 'profiles'
-    AND policyname = 'Users can update own profile'
-  ) THEN
-    CREATE POLICY "Users can update own profile"
-    ON profiles FOR UPDATE USING (auth.uid() = id);
-  END IF;
-END $$`
-    );
-    migrationsResult.policies = s3.ok && s4.ok ? 'ok' : (s3.error ?? s4.error ?? 'fail');
-    console.error('[backend-auth] Step policy_update:', s4.ok ? 'ok' : s4.error);
-
-    const s5 = await executeSql(
-      supabaseUrl,
-      serviceRoleKey,
-      `CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO profiles (id, first_name, last_name, email)
-  VALUES (
-    NEW.id,
-    NEW.raw_user_meta_data->>'first_name',
-    NEW.raw_user_meta_data->>'last_name',
-    NEW.email
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER`
-    );
-    migrationsResult.trigger = s5.ok ? 'ok' : (s5.error ?? 'fail');
-    console.error('[backend-auth] Step trigger_function:', s5.ok ? 'ok' : s5.error);
-
-    const s6 = await executeSql(
-      supabaseUrl,
-      serviceRoleKey,
-      `DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-AFTER INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION handle_new_user()`
-    );
-    migrationsResult.trigger = s5.ok && s6.ok ? 'ok' : (s5.error ?? s6.error ?? 'fail');
-    console.error('[backend-auth] Step trigger:', s6.ok ? 'ok' : s6.error);
+    const existingBlocks = (project.backend_blocks as Record<string, unknown>) ?? {};
+    const updatedBackendBlocks = {
+      ...existingBlocks,
+      user_auth: {
+        enabled: true,
+        supabaseUrl: supabaseUrl.trim(),
+        supabaseAnonKey: supabaseAnonKey.trim(),
+        supabaseServiceKey: serviceRoleKey.trim(),
+      },
+    };
 
     const existingMetadata = (project.metadata as Record<string, unknown>) ?? {};
     const updatedMetadata = {
       ...existingMetadata,
-      supabase_url: supabaseUrl,
-      supabase_anon_key: supabaseAnonKey,
+      supabase_url: supabaseUrl.trim(),
+      supabase_anon_key: supabaseAnonKey.trim(),
     };
 
     const { error: updateError } = await supabase
       .from('projects')
       .update({
         metadata: updatedMetadata,
+        backend_blocks: updatedBackendBlocks,
         updated_at: new Date().toISOString(),
       })
       .eq('id', projectId)
@@ -193,8 +230,8 @@ FOR EACH ROW EXECUTE FUNCTION handle_new_user()`
 
     return NextResponse.json({
       success: true,
-      supabaseUrl,
-      supabaseAnonKey,
+      supabaseUrl: supabaseUrl.trim(),
+      supabaseAnonKey: supabaseAnonKey.trim(),
       migrationsResult,
     });
   } catch (error) {

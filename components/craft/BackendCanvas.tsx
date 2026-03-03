@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useCallback, CSSProperties, Fragment } from 'react';
+import React, { useRef, useState, useCallback, useEffect, CSSProperties, Fragment } from 'react';
 import { useEditorTheme } from './EditorThemeContext';
 
 // ─── SVG Icon components ───────────────────────────────────────────────────────
@@ -491,14 +491,31 @@ function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
   const [supabaseUrl, setSupabaseUrl] = useState('');
   const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
   const [serviceRoleKey, setServiceRoleKey] = useState('');
+  const [dbPassword, setDbPassword] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState(false);
   const [migrationsResult, setMigrationsResult] = useState<Record<string, string> | null>(null);
 
+  useEffect(() => {
+    if (!projectId || !authOpen) return;
+    fetch(`/api/projects/${projectId}/backend-auth`)
+      .then((r) => r.json())
+      .then((data: { supabaseUrl?: string; supabaseAnonKey?: string; serviceRoleKey?: string }) => {
+        if (data.supabaseUrl) setSupabaseUrl(data.supabaseUrl);
+        if (data.supabaseAnonKey) setSupabaseAnonKey(data.supabaseAnonKey);
+        if (data.serviceRoleKey) setServiceRoleKey(data.serviceRoleKey);
+      })
+      .catch(() => {});
+  }, [projectId, authOpen]);
+
   const handleConnect = useCallback(async () => {
     if (!projectId || !supabaseUrl?.trim() || !supabaseAnonKey?.trim() || !serviceRoleKey?.trim()) {
-      setAuthError('All fields are required');
+      setAuthError('URL, Anon Key and Service Role Key are required');
+      return;
+    }
+    if (!dbPassword?.trim()) {
+      setAuthError('Database password is required for migrations');
       return;
     }
     setAuthError(null);
@@ -511,6 +528,7 @@ function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
           supabaseUrl: supabaseUrl.trim(),
           supabaseAnonKey: supabaseAnonKey.trim(),
           serviceRoleKey: serviceRoleKey.trim(),
+          dbPassword: dbPassword.trim(),
         }),
       });
       const data = await res.json();
@@ -527,7 +545,7 @@ function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
     } finally {
       setAuthLoading(false);
     }
-  }, [projectId, supabaseUrl, supabaseAnonKey, serviceRoleKey, onConnectSuccess]);
+  }, [projectId, supabaseUrl, supabaseAnonKey, serviceRoleKey, dbPassword, onConnectSuccess]);
 
   const inputStyle: CSSProperties = {
     width: '100%',
@@ -609,6 +627,14 @@ function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
                 value={serviceRoleKey}
                 onChange={(e) => setServiceRoleKey(e.target.value)}
                 style={inputStyle}
+              />
+              <input
+                type="password"
+                placeholder="Database Password"
+                value={dbPassword}
+                onChange={(e) => setDbPassword(e.target.value)}
+                style={inputStyle}
+                title="From Supabase → Settings → Database → Connection string (postgres:[PASSWORD]@). Not stored."
               />
               <button
                 type="button"
