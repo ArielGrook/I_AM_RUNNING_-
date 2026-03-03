@@ -27,50 +27,61 @@ async function runMigrations(
   const statements: { key: string; sql: string }[] = [
     {
       key: 'profiles_table',
-      sql: `CREATE TABLE IF NOT EXISTS profiles (
+      sql: `CREATE TABLE IF NOT EXISTS public.profiles (
         id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-        first_name TEXT, last_name TEXT, email TEXT, avatar_url TEXT,
+        first_name TEXT DEFAULT '',
+        last_name TEXT DEFAULT '',
+        email TEXT DEFAULT '',
+        avatar_url TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )`,
     },
-    { key: 'rls', sql: `ALTER TABLE profiles ENABLE ROW LEVEL SECURITY` },
+    { key: 'rls', sql: `ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY` },
     {
       key: 'policy_select',
       sql: `DO $$ BEGIN
-        IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename='profiles'
+        IF NOT EXISTS (SELECT FROM pg_policies WHERE schemaname='public' AND tablename='profiles'
           AND policyname='Users can read own profile')
         THEN CREATE POLICY "Users can read own profile"
-          ON profiles FOR SELECT USING (auth.uid() = id);
+          ON public.profiles FOR SELECT USING (auth.uid() = id);
         END IF; END $$`,
     },
     {
       key: 'policy_update',
       sql: `DO $$ BEGIN
-        IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename='profiles'
+        IF NOT EXISTS (SELECT FROM pg_policies WHERE schemaname='public' AND tablename='profiles'
           AND policyname='Users can update own profile')
         THEN CREATE POLICY "Users can update own profile"
-          ON profiles FOR UPDATE USING (auth.uid() = id);
+          ON public.profiles FOR UPDATE USING (auth.uid() = id);
         END IF; END $$`,
     },
     {
       key: 'function',
       sql: `CREATE OR REPLACE FUNCTION handle_new_user()
-        RETURNS TRIGGER AS $$
-        BEGIN
-          INSERT INTO profiles (id, first_name, last_name, email)
-          VALUES (NEW.id, NEW.raw_user_meta_data->>'first_name',
-                  NEW.raw_user_meta_data->>'last_name', NEW.email)
-          ON CONFLICT (id) DO NOTHING;
-          RETURN NEW;
-        END;
-        $$ LANGUAGE plpgsql SECURITY DEFINER`,
+RETURNS TRIGGER AS $$
+BEGIN
+  BEGIN
+    INSERT INTO public.profiles (id, first_name, last_name, email)
+    VALUES (
+      NEW.id,
+      COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
+      COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+      COALESCE(NEW.email, '')
+    )
+    ON CONFLICT (id) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'handle_new_user error: %', SQLERRM;
+  END;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER`,
     },
     {
       key: 'trigger',
       sql: `DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-        CREATE TRIGGER on_auth_user_created
-        AFTER INSERT ON auth.users
-        FOR EACH ROW EXECUTE FUNCTION handle_new_user()`,
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user()`,
     },
   ];
 

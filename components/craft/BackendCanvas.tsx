@@ -492,6 +492,7 @@ function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
   const [supabaseAnonKey, setSupabaseAnonKey] = useState('');
   const [serviceRoleKey, setServiceRoleKey] = useState('');
   const [dbPassword, setDbPassword] = useState('');
+  const [showFields, setShowFields] = useState({ anon: false, service: false, db: false });
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState(false);
@@ -615,27 +616,127 @@ function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
                 onChange={(e) => setSupabaseUrl(e.target.value)}
                 style={inputStyle}
               />
-              <input
-                placeholder="Supabase Anon Key"
-                value={supabaseAnonKey}
-                onChange={(e) => setSupabaseAnonKey(e.target.value)}
-                style={inputStyle}
-              />
-              <input
-                type="password"
-                placeholder="Service Role Key"
-                value={serviceRoleKey}
-                onChange={(e) => setServiceRoleKey(e.target.value)}
-                style={inputStyle}
-              />
-              <input
-                type="password"
-                placeholder="Database Password"
-                value={dbPassword}
-                onChange={(e) => setDbPassword(e.target.value)}
-                style={inputStyle}
-                title="From Supabase → Settings → Database → Connection string (postgres:[PASSWORD]@). Not stored."
-              />
+              <div style={{ position: 'relative', marginBottom: 8 }}>
+                <input
+                  type={showFields.anon ? 'text' : 'password'}
+                  placeholder="Supabase Anon Key"
+                  value={supabaseAnonKey}
+                  onChange={(e) => setSupabaseAnonKey(e.target.value)}
+                  style={{ ...inputStyle, marginBottom: 0, paddingRight: 36 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowFields((s) => ({ ...s, anon: !s.anon }))}
+                  style={{
+                    position: 'absolute',
+                    right: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: t.textMuted,
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  aria-label={showFields.anon ? 'Hide' : 'Show'}
+                >
+                  {showFields.anon ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <div style={{ position: 'relative', marginBottom: 8 }}>
+                <input
+                  type={showFields.service ? 'text' : 'password'}
+                  placeholder="Service Role Key"
+                  value={serviceRoleKey}
+                  onChange={(e) => setServiceRoleKey(e.target.value)}
+                  style={{ ...inputStyle, marginBottom: 0, paddingRight: 36 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowFields((s) => ({ ...s, service: !s.service }))}
+                  style={{
+                    position: 'absolute',
+                    right: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: t.textMuted,
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  aria-label={showFields.service ? 'Hide' : 'Show'}
+                >
+                  {showFields.service ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <div style={{ position: 'relative', marginBottom: 8 }}>
+                <input
+                  type={showFields.db ? 'text' : 'password'}
+                  placeholder="Database Password"
+                  value={dbPassword}
+                  onChange={(e) => setDbPassword(e.target.value)}
+                  style={{ ...inputStyle, marginBottom: 0, paddingRight: 36 }}
+                  title="From Supabase → Settings → Database → Connection string (postgres:[PASSWORD]@). Not stored."
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowFields((s) => ({ ...s, db: !s.db }))}
+                  style={{
+                    position: 'absolute',
+                    right: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: t.textMuted,
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  aria-label={showFields.db ? 'Hide' : 'Show'}
+                >
+                  {showFields.db ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
               <button
                 type="button"
                 disabled={authLoading || !projectId}
