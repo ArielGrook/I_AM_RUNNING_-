@@ -1,7 +1,6 @@
 /**
  * Backend Auth - save Supabase credentials for a project and run migrations.
  * POST body: { supabaseUrl, supabaseAnonKey, serviceRoleKey, dbPassword }
- * dbPassword is used only for migrations (direct pg connection), never stored.
  * GET returns saved credentials from project.backend_blocks.user_auth.
  */
 
@@ -134,6 +133,7 @@ export async function GET(
       supabaseUrl: userAuth.supabaseUrl ?? null,
       supabaseAnonKey: userAuth.supabaseAnonKey ?? null,
       serviceRoleKey: userAuth.supabaseServiceKey ?? null,
+      dbPassword: userAuth.dbPassword ?? null,
     });
   } catch (e) {
     console.error('[API backend-auth GET] Error:', e);
@@ -215,6 +215,7 @@ export async function POST(
         supabaseUrl: supabaseUrl.trim(),
         supabaseAnonKey: supabaseAnonKey.trim(),
         supabaseServiceKey: serviceRoleKey.trim(),
+        dbPassword: dbPassword.trim(),
       },
     };
 

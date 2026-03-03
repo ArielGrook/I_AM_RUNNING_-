@@ -502,10 +502,11 @@ function LeftPanel({ t, projectId, onConnectSuccess }: AuthPanelProps) {
     if (!projectId || !authOpen) return;
     fetch(`/api/projects/${projectId}/backend-auth`)
       .then((r) => r.json())
-      .then((data: { supabaseUrl?: string; supabaseAnonKey?: string; serviceRoleKey?: string }) => {
+      .then((data: { supabaseUrl?: string; supabaseAnonKey?: string; serviceRoleKey?: string; dbPassword?: string }) => {
         if (data.supabaseUrl) setSupabaseUrl(data.supabaseUrl);
         if (data.supabaseAnonKey) setSupabaseAnonKey(data.supabaseAnonKey);
         if (data.serviceRoleKey) setServiceRoleKey(data.serviceRoleKey);
+        if (data.dbPassword) setDbPassword(data.dbPassword);
       })
       .catch(() => {});
   }, [projectId, authOpen]);
