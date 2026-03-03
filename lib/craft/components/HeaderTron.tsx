@@ -380,53 +380,39 @@ export const HeaderTron = ({
             ))}
           </nav>
           <div className="flex items-center gap-3 shrink-0">
-            {/* Desktop: theme toggle */}
-            {!enabled && (showThemeToggle || siteCtx.showThemeToggle) && (
-              <button
-                onClick={siteCtx.toggleTheme}
-                className="hidden md:flex"
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
-                  border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
-                  color: t.text,
-                  cursor: 'pointer',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(${hexToRgb(accentColor)}, 0.2)`; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = `rgba(${hexToRgb(accentColor)}, 0.1)`; }}
-              >
-                {siteCtx.colorScheme === 'dark' ? <SunIcon /> : <MoonIcon />}
-              </button>
-            )}
-            {/* Desktop: language select */}
-            {!enabled && (showLanguageToggle || siteCtx.showLanguageToggle) && siteCtx.availableLanguages.length > 1 && (
-              <select
-                value={siteCtx.language}
-                onChange={(e) => siteCtx.setLanguage(e.target.value)}
-                className="hidden md:block"
-                style={{
-                  background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
-                  border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
-                  color: t.text,
-                  borderRadius: 8,
-                  padding: '6px 10px',
-                  fontSize: 13,
-                  cursor: 'pointer',
-                  outline: 'none',
-                }}
-              >
-                {siteCtx.availableLanguages.map((lang) => (
-                  <option key={lang} value={lang}>{lang.toUpperCase()}</option>
-                ))}
-              </select>
-            )}
-            {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
-            {showAvatar && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                position: 'relative',
+              }}
+            >
+              {/* Desktop: theme toggle */}
+              {!enabled && (showThemeToggle || siteCtx.showThemeToggle) && (
+                <button
+                  onClick={siteCtx.toggleTheme}
+                  className="hidden md:flex"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
+                    border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
+                    color: t.text,
+                    cursor: 'pointer',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(${hexToRgb(accentColor)}, 0.2)`; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = `rgba(${hexToRgb(accentColor)}, 0.1)`; }}
+                >
+                  {siteCtx.colorScheme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                </button>
+              )}
+              {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
+              {showAvatar && (
               <div style={{ position: 'relative', display: 'inline-block' }}>
                 <div
                   data-avatar-dropdown
@@ -542,6 +528,29 @@ export const HeaderTron = ({
                   )}
                 </div>
               </div>
+            )}
+            </div>
+            {/* Desktop: language select */}
+            {!enabled && (showLanguageToggle || siteCtx.showLanguageToggle) && siteCtx.availableLanguages.length > 1 && (
+              <select
+                value={siteCtx.language}
+                onChange={(e) => siteCtx.setLanguage(e.target.value)}
+                className="hidden md:block"
+                style={{
+                  background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
+                  border: `1px solid rgba(${hexToRgb(accentColor)}, 0.2)`,
+                  color: t.text,
+                  borderRadius: 8,
+                  padding: '6px 10px',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                {siteCtx.availableLanguages.map((lang) => (
+                  <option key={lang} value={lang}>{lang.toUpperCase()}</option>
+                ))}
+              </select>
             )}
             {!showAvatar && showLoginBtn && (
               <a
