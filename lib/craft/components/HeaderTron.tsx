@@ -415,23 +415,7 @@ export const HeaderTron = ({
               )}
               {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
               {showAvatar && (
-              <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
-                <div
-                  data-avatar-dropdown
-                  style={{
-                    position: 'relative',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    zIndex: 50,
-                    padding: avatarDropdownOpen ? 4 : 0,
-                    borderRadius: avatarDropdownOpen ? 24 : '50%',
-                    background: avatarDropdownOpen ? 'rgba(15,15,15,0.95)' : 'transparent',
-                    border: avatarDropdownOpen ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                    backdropFilter: avatarDropdownOpen ? 'blur(12px)' : 'none',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
+              <div data-avatar-dropdown style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
                   <div
                     role="button"
                     tabIndex={0}
@@ -450,14 +434,31 @@ export const HeaderTron = ({
                       color: '#fff',
                       fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
                       fontWeight: 700,
-                      fontSize: 13,
+                      fontSize: 14,
                       border: 'none',
+                      zIndex: 51,
+                      position: 'relative',
                     }}
                   >
                     {initials}
                   </div>
                   {!enabled && avatarDropdownOpen && (
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '44px',
+                      right: 0,
+                      zIndex: 50,
+                      background: 'rgba(15,15,15,0.95)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      backdropFilter: 'blur(12px)',
+                      borderRadius: '0 0 20px 20px',
+                      padding: '4px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 2,
+                      minWidth: 40,
+                    }}>
                       {dropdownSections.map((section) => {
                         const IconComp = DROPDOWN_ICONS[section.icon] ?? UserIcon;
                         return (
