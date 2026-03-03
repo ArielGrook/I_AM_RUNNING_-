@@ -17,6 +17,7 @@ import {
   TronShowcase,
   TronLogin,
   TronRegister,
+  TronDashboard,
   HtmlBlock,
 } from '@/lib/craft/components';
 import { PRESETS } from '@/lib/craft/presets';
@@ -50,6 +51,7 @@ const categories: { key: 'tronSections'; title: string; items: { name: string; l
       { name: 'TronShowcase', label: 'Tron Showcase', icon: '▤', component: TronShowcase, canvas: true },
       { name: 'TronLogin', label: 'Tron Login', icon: '🔑', component: TronLogin, canvas: true, newPageName: 'Login' },
       { name: 'TronRegister', label: 'Tron Register', icon: '📝', component: TronRegister, canvas: true, newPageName: 'Register' },
+      { name: 'TronDashboard', label: 'Tron Dashboard', icon: '▦', component: TronDashboard, canvas: true, newPageName: 'Dashboard' },
     ],
   },
 ];

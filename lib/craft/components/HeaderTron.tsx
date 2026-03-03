@@ -15,6 +15,109 @@ const MoonIcon = () => (
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
   </svg>
 );
+
+const UserIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+  </svg>
+);
+const SettingsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+const CreditCardIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+);
+const BellIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+);
+const ShieldIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+const LogoutIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+const DROPDOWN_ICONS: Record<string, () => React.ReactElement> = {
+  user: UserIcon,
+  settings: SettingsIcon,
+  'credit-card': CreditCardIcon,
+  bell: BellIcon,
+  shield: ShieldIcon,
+  logout: LogoutIcon,
+};
+
+function DashboardDropdownItem({
+  icon,
+  label,
+  href,
+  onClick,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  href: string;
+  onClick: (e: React.MouseEvent) => void;
+  color: string;
+}) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <a
+        href={href}
+        onClick={(e) => { e.preventDefault(); onClick(e); }}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color,
+          textDecoration: 'none',
+        }}
+        onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+        onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}
+      >
+        {icon}
+      </a>
+      {showTooltip && (
+        <span
+          style={{
+            position: 'absolute',
+            left: '100%',
+            marginLeft: 8,
+            whiteSpace: 'nowrap',
+            fontSize: 12,
+            color,
+            background: 'rgba(0,0,0,0.8)',
+            padding: '4px 8px',
+            borderRadius: 4,
+            zIndex: 1001,
+          }}
+        >
+          {label}
+        </span>
+      )}
+    </div>
+  );
+}
 import { PagesContext } from '@/lib/craft/context/PagesContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
@@ -67,6 +170,7 @@ export const HeaderTron = ({
   supabaseAnonKey = '',
   profilePageLink = '',
   loginLink = '',
+  dashboardSections = [],
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
@@ -88,6 +192,7 @@ export const HeaderTron = ({
   supabaseAnonKey?: string;
   profilePageLink?: string;
   loginLink?: string;
+  dashboardSections?: { icon: string; label: string; pageLink: string }[];
 }) => {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
@@ -97,6 +202,8 @@ export const HeaderTron = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null);
   const [session, setSession] = useState<ReturnType<typeof getStoredSession>>(null);
+  const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
+  const avatarDropdownTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (enabled) return;
@@ -124,6 +231,30 @@ export const HeaderTron = ({
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     handleLinkClick(e, href, enabled, siteCtx.navigateToPage || navigateTo);
   };
+
+  const handleAvatarDropdownEnter = () => {
+    if (avatarDropdownTimerRef.current) {
+      clearTimeout(avatarDropdownTimerRef.current);
+      avatarDropdownTimerRef.current = null;
+    }
+    setAvatarDropdownOpen(true);
+  };
+  const handleAvatarDropdownLeave = () => {
+    avatarDropdownTimerRef.current = setTimeout(() => setAvatarDropdownOpen(false), 150);
+  };
+
+  const handleLogout = React.useCallback(async () => {
+    if (enabled || !supabaseUrl || !supabaseAnonKey) return;
+    const { signOut } = await import('@/lib/auth/clientAuthService');
+    await signOut(supabaseUrl, supabaseAnonKey);
+    window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: 'home' } }));
+    const firstSlug = siteCtx?.pages?.[0]?.slug;
+    if (firstSlug && siteCtx?.navigateToPage) {
+      siteCtx.navigateToPage(firstSlug);
+    } else if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
+  }, [enabled, supabaseUrl, supabaseAnonKey, siteCtx]);
 
   const tokens = {
     dark: {
@@ -259,27 +390,89 @@ export const HeaderTron = ({
             )}
             {/* Auth: single Avatar OR Login OR CTA (one element only, visible on all viewports) */}
             {showAvatar && (
-              <button
-                type="button"
-                className="flex shrink-0"
-                onClick={(e) => handleLinkClick(e, effectiveProfileHref, enabled, siteCtx.navigateToPage)}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  background: t.accent,
-                  color: '#fff',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+              <div
+                style={{ position: 'relative', display: 'flex' }}
+                onMouseEnter={handleAvatarDropdownEnter}
+                onMouseLeave={handleAvatarDropdownLeave}
               >
-                {initials}
-              </button>
+                <button
+                  type="button"
+                  className="flex shrink-0"
+                  onClick={(e) => handleLinkClick(e, effectiveProfileHref, enabled, siteCtx.navigateToPage)}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    background: t.accent,
+                    color: '#fff',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {initials}
+                </button>
+                {avatarDropdownOpen && !enabled && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      marginTop: 8,
+                      zIndex: 1000,
+                      background: t.bg,
+                      border: `1px solid ${t.border}`,
+                      borderRadius: 8,
+                      padding: 8,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      minWidth: 44,
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                    }}
+                  >
+                    {(dashboardSections ?? []).map((item, i) => {
+                      const IconComp = DROPDOWN_ICONS[item.icon] ?? UserIcon;
+                      const href = toHref(item.pageLink);
+                      return (
+                        <DashboardDropdownItem
+                          key={i}
+                          icon={<IconComp />}
+                          label={item.label}
+                          href={href}
+                          onClick={(e) => handleLinkClick(e, href, enabled, siteCtx.navigateToPage)}
+                          color={t.text}
+                        />
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#f87171',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(248,113,113,0.15)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                      title="Logout"
+                    >
+                      <LogoutIcon />
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
             {!showAvatar && showLoginBtn && (
               <a
@@ -378,7 +571,7 @@ export const HeaderTron = ({
 };
 
 const HeaderTronSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, ctaHrefType, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages, profilePageLink, loginLink } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, ctaHrefType, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages, profilePageLink, loginLink, dashboardSections } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as string,
     accentColor: node.data.props.accentColor as string,
     darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
@@ -397,6 +590,7 @@ const HeaderTronSettings = () => {
     availableLanguages: (node.data.props.availableLanguages as string[]) ?? ['en'],
     profilePageLink: (node.data.props.profilePageLink as string) ?? '',
     loginLink: (node.data.props.loginLink as string) ?? '',
+    dashboardSections: (node.data.props.dashboardSections as { icon: string; label: string; pageLink: string }[]) ?? [],
   }));
   const { nodes } = useEditor((s) => ({ nodes: s.nodes }));
   const { pages } = useContext(PagesContext);
@@ -474,6 +668,21 @@ const HeaderTronSettings = () => {
           />
           <div><label className={labelCls}>Login page link (slug or URL)</label><input type="text" value={loginLink ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.loginLink = e.target.value; }, 300)} className={inputCls} placeholder="e.g. login or /login" /></div>
           <div><label className={labelCls}>Profile page link (slug or URL)</label><input type="text" value={profilePageLink ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.profilePageLink = e.target.value; }, 300)} className={inputCls} placeholder="e.g. profile" /></div>
+          <div className="mt-3">
+            <label className={labelCls}>Avatar dropdown sections (JSON: icon, label, pageLink)</label>
+            <textarea
+              value={JSON.stringify(dashboardSections ?? [], null, 2)}
+              onChange={(e) => {
+                try {
+                  const arr = JSON.parse(e.target.value || '[]');
+                  if (Array.isArray(arr)) setProp((p: Record<string, unknown>) => { p.dashboardSections = arr; }, 300);
+                } catch {}
+              }}
+              className={inputCls}
+              rows={4}
+              placeholder='[{"icon":"user","label":"Account","pageLink":"profile"}]'
+            />
+          </div>
         </div>
       </section>
       <section>
@@ -623,6 +832,7 @@ HeaderTron.craft = {
     supabaseAnonKey: '',
     profilePageLink: '',
     loginLink: '',
+    dashboardSections: [] as { icon: string; label: string; pageLink: string }[],
   },
   related: { settings: HeaderTronSettings },
   custom: { styleTags: ['dark', 'minimal', 'bold'], businessTags: ['startup', 'saas', 'agency', 'tech', 'finance'], featureTags: ['header', 'navigation', 'sticky'], supportsTheme: true, supportsColorPreset: true },
