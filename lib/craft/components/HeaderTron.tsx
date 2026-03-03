@@ -240,7 +240,7 @@ export const HeaderTron = ({
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null);
   const [session, setSession] = useState<ReturnType<typeof getStoredSession>>(null);
   const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
-  const [dropdownSections, setDropdownSections] = useState<Array<{ id: string; name?: string; icon: string }>>([]);
+  const [dropdownSections, setDropdownSections] = useState<Array<{ id: string; icon: string; label: string }>>(DEFAULT_DROPDOWN_SECTIONS);
 
   useEffect(() => {
     if (enabled) return;
@@ -260,14 +260,15 @@ export const HeaderTron = ({
   }, [avatarDropdownOpen]);
 
   useEffect(() => {
-    if (avatarDropdownOpen) {
-      try {
-        const stored = localStorage.getItem('iam_dashboard_sections');
-        if (stored) setDropdownSections(JSON.parse(stored));
-        else setDropdownSections([]);
-      } catch {
-        setDropdownSections([]);
+    if (!avatarDropdownOpen) return;
+    try {
+      const stored = localStorage.getItem('iam_dashboard_sections');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) setDropdownSections(parsed);
       }
+    } catch {
+      // noop
     }
   }, [avatarDropdownOpen]);
 
@@ -378,7 +379,7 @@ export const HeaderTron = ({
               </a>
             ))}
           </nav>
-          <div className="flex items-center shrink-0" style={{ gap: 8, alignItems: 'center' }}>
+          <div className="flex items-center gap-3 shrink-0">
             {/* Desktop: theme toggle */}
             {!enabled && (showThemeToggle || siteCtx.showThemeToggle) && (
               <button
@@ -426,7 +427,7 @@ export const HeaderTron = ({
             )}
             {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
             {showAvatar && (
-              <div style={{ position: 'relative', display: 'inline-block', zIndex: 50 }}>
+              <div style={{ position: 'relative', display: 'inline-block' }}>
                 <div
                   data-avatar-dropdown
                   style={{
@@ -436,12 +437,10 @@ export const HeaderTron = ({
                     zIndex: 50,
                     padding: avatarDropdownOpen ? 4 : 0,
                     borderRadius: avatarDropdownOpen ? 24 : '50%',
-                    overflow: 'hidden',
                     background: avatarDropdownOpen ? 'rgba(15,15,15,0.95)' : 'transparent',
                     border: avatarDropdownOpen ? '1px solid rgba(255,255,255,0.1)' : 'none',
                     backdropFilter: avatarDropdownOpen ? 'blur(12px)' : 'none',
-                    transition: 'border-radius 0.2s ease, padding 0.2s ease, background 0.2s ease, border 0.2s ease',
-                    width: 40,
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   <div
@@ -472,17 +471,15 @@ export const HeaderTron = ({
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       {dropdownSections.map((section) => {
                         const IconComp = DROPDOWN_ICONS[section.icon] ?? UserIcon;
-                        const label = section.name ?? section.id;
                         return (
                           <button
                             key={section.id}
                             type="button"
-                            title={label}
                             onClick={() => {
                               setAvatarDropdownOpen(false);
                               window.dispatchEvent(
                                 new CustomEvent('iam_navigate', {
-                                  detail: { page: profilePageSlug || '__first__' },
+                                  detail: { page: profilePageSlug },
                                 })
                               );
                               setTimeout(() => {
@@ -506,6 +503,7 @@ export const HeaderTron = ({
                             }}
                             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
                             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                            title={section.label}
                           >
                             <IconComp />
                           </button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useNode, useEditor } from '@craftjs/core';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
@@ -160,16 +160,6 @@ export const TronDashboard = React.memo(function TronDashboard() {
   const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
-
-  React.useEffect(() => {
-    if (enabled || !sections?.length) return;
-    try {
-      const payload = sections.map((s) => ({ id: s.id, name: s.label, icon: s.icon }));
-      localStorage.setItem('iam_dashboard_sections', JSON.stringify(payload));
-    } catch {
-      // ignore
-    }
-  }, [enabled, sections]);
 
   const activeId = activeSectionId ?? sections[0]?.id ?? null;
   const activeSection = sections.find((s) => s.id === activeId) ?? sections[0];
