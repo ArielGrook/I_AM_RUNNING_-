@@ -265,6 +265,21 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
   }, []);
 
   useEffect(() => {
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent<{ page: string }>;
+      const page = customEvent.detail?.page;
+      if (page === '__first__') {
+        const firstSlug = pages[0]?.slug ?? '';
+        if (firstSlug) navigateToPage(firstSlug);
+      } else if (page) {
+        navigateToPage(page);
+      }
+    };
+    window.addEventListener('iam_navigate', handler);
+    return () => window.removeEventListener('iam_navigate', handler);
+  }, [pages]);
+
+  useEffect(() => {
     const initAnimations = async () => {
       try {
         const gsapModule = await import('gsap');

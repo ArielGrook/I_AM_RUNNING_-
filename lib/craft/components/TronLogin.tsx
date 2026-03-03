@@ -85,6 +85,7 @@ export const TronLogin = React.memo(function TronLogin() {
   const [password, setPassword] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState('');
+  const [successMsg, setSuccessMsg] = React.useState('');
 
   React.useEffect(() => {
     const el = containerRef.current;
@@ -136,15 +137,14 @@ export const TronLogin = React.memo(function TronLogin() {
           setErrorMsg(error.message ?? 'Sign in failed');
           return;
         }
-        if (submitButtonLinkType === 'page' && submitButtonLink?.trim()) {
-          siteCtx.navigateToPage(submitButtonLink.trim());
-        } else if (submitButtonLink?.startsWith('http')) {
-          window.location.href = submitButtonLink;
-        } else {
-          const firstSlug = siteCtx.pages?.[0]?.slug;
-          if (firstSlug) siteCtx.navigateToPage(firstSlug);
-          else if (typeof window !== 'undefined') window.location.href = '/';
-        }
+        setSuccessMsg('Welcome back! Redirecting...');
+        setTimeout(() => {
+          if (submitButtonLink?.trim()) {
+            window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: submitButtonLink.trim() } }));
+          } else {
+            window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+          }
+        }, 1000);
       } finally {
         setLoading(false);
       }
@@ -368,6 +368,9 @@ export const TronLogin = React.memo(function TronLogin() {
         )}
         {!enabled && errorMsg && (
           <p style={{ fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 12, color: '#f87171', marginBottom: 20 }}>{errorMsg}</p>
+        )}
+        {!enabled && successMsg && (
+          <p style={{ fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 12, color: '#34d399', marginBottom: 20 }}>{successMsg}</p>
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace', fontSize: 12 }}>

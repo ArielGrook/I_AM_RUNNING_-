@@ -58,6 +58,20 @@ const DROPDOWN_ICONS: Record<string, () => React.ReactElement> = {
   logout: LogoutIcon,
 };
 
+const DEFAULT_DROPDOWN_SECTIONS = [
+  { icon: 'user', label: 'Account', pageLink: '' },
+  { icon: 'settings', label: 'Settings', pageLink: '' },
+  { icon: 'credit-card', label: 'Subscription', pageLink: '' },
+];
+
+function findPageLink(label: string, pages: Array<{ id: string; name: string; slug: string }>): string {
+  const slug = label.toLowerCase();
+  const found = pages.find((p) =>
+    (p.slug ?? '').includes(slug) || p.name.toLowerCase().includes(slug)
+  );
+  return found?.slug ?? '';
+}
+
 function DashboardDropdownItem({
   icon,
   label,
@@ -170,7 +184,6 @@ export const HeaderTron = ({
   supabaseAnonKey = '',
   profilePageLink = '',
   loginLink = '',
-  dashboardSections = [],
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
@@ -192,7 +205,6 @@ export const HeaderTron = ({
   supabaseAnonKey?: string;
   profilePageLink?: string;
   loginLink?: string;
-  dashboardSections?: { icon: string; label: string; pageLink: string }[];
 }) => {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
@@ -247,13 +259,7 @@ export const HeaderTron = ({
     if (enabled || !supabaseUrl || !supabaseAnonKey) return;
     const { signOut } = await import('@/lib/auth/clientAuthService');
     await signOut(supabaseUrl, supabaseAnonKey);
-    window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: 'home' } }));
-    const firstSlug = siteCtx?.pages?.[0]?.slug;
-    if (firstSlug && siteCtx?.navigateToPage) {
-      siteCtx.navigateToPage(firstSlug);
-    } else if (typeof window !== 'undefined') {
-      window.location.href = '/';
-    }
+    window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
   }, [enabled, supabaseUrl, supabaseAnonKey, siteCtx]);
 
   const tokens = {
@@ -421,30 +427,34 @@ export const HeaderTron = ({
                     style={{
                       position: 'absolute',
                       top: '100%',
-                      left: 0,
+                      right: 0,
                       marginTop: 8,
                       zIndex: 1000,
-                      background: t.bg,
+                      background: colorScheme === 'dark' ? 'rgba(20,20,20,0.95)' : 'rgba(255,255,255,0.95)',
                       border: `1px solid ${t.border}`,
-                      borderRadius: 8,
+                      borderRadius: 12,
                       padding: 8,
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 4,
                       minWidth: 44,
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                      backdropFilter: 'blur(12px)',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
                     }}
                   >
-                    {(dashboardSections ?? []).map((item, i) => {
+                    {DEFAULT_DROPDOWN_SECTIONS.map((item, i) => {
                       const IconComp = DROPDOWN_ICONS[item.icon] ?? UserIcon;
-                      const href = toHref(item.pageLink);
+                      const pageLink = findPageLink(item.label, pages);
+                      const href = pageLink ? toHref(pageLink) : '#';
                       return (
                         <DashboardDropdownItem
                           key={i}
                           icon={<IconComp />}
                           label={item.label}
                           href={href}
-                          onClick={(e) => handleLinkClick(e, href, enabled, siteCtx.navigateToPage)}
+                          onClick={(e) => {
+                            if (pageLink) handleLinkClick(e, href, enabled, siteCtx.navigateToPage);
+                          }}
                           color={t.text}
                         />
                       );
@@ -571,7 +581,7 @@ export const HeaderTron = ({
 };
 
 const HeaderTronSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, ctaHrefType, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages, profilePageLink, loginLink, dashboardSections } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, ctaHrefType, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages, profilePageLink, loginLink } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as string,
     accentColor: node.data.props.accentColor as string,
     darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
@@ -590,7 +600,6 @@ const HeaderTronSettings = () => {
     availableLanguages: (node.data.props.availableLanguages as string[]) ?? ['en'],
     profilePageLink: (node.data.props.profilePageLink as string) ?? '',
     loginLink: (node.data.props.loginLink as string) ?? '',
-    dashboardSections: (node.data.props.dashboardSections as { icon: string; label: string; pageLink: string }[]) ?? [],
   }));
   const { nodes } = useEditor((s) => ({ nodes: s.nodes }));
   const { pages } = useContext(PagesContext);
@@ -666,22 +675,35 @@ const HeaderTronSettings = () => {
               }, 0);
             }}
           />
-          <div><label className={labelCls}>Login page link (slug or URL)</label><input type="text" value={loginLink ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.loginLink = e.target.value; }, 300)} className={inputCls} placeholder="e.g. login or /login" /></div>
-          <div><label className={labelCls}>Profile page link (slug or URL)</label><input type="text" value={profilePageLink ?? ''} onChange={(e) => setProp((p: Record<string, unknown>) => { p.profilePageLink = e.target.value; }, 300)} className={inputCls} placeholder="e.g. profile" /></div>
-          <div className="mt-3">
-            <label className={labelCls}>Avatar dropdown sections (JSON: icon, label, pageLink)</label>
-            <textarea
-              value={JSON.stringify(dashboardSections ?? [], null, 2)}
-              onChange={(e) => {
-                try {
-                  const arr = JSON.parse(e.target.value || '[]');
-                  if (Array.isArray(arr)) setProp((p: Record<string, unknown>) => { p.dashboardSections = arr; }, 300);
-                } catch {}
-              }}
+          <div>
+            <label className={labelCls}>Login Page</label>
+            <select
+              value={loginLink ?? ''}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.loginLink = e.target.value; }, 300)}
               className={inputCls}
-              rows={4}
-              placeholder='[{"icon":"user","label":"Account","pageLink":"profile"}]'
-            />
+            >
+              <option value="">— not set —</option>
+              {pages.map((page) => (
+                <option key={page.id} value={page.slug}>
+                  {page.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Profile Page</label>
+            <select
+              value={profilePageLink ?? ''}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.profilePageLink = e.target.value; }, 300)}
+              className={inputCls}
+            >
+              <option value="">— not set —</option>
+              {pages.map((page) => (
+                <option key={page.id} value={page.slug}>
+                  {page.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </section>
@@ -832,7 +854,6 @@ HeaderTron.craft = {
     supabaseAnonKey: '',
     profilePageLink: '',
     loginLink: '',
-    dashboardSections: [] as { icon: string; label: string; pageLink: string }[],
   },
   related: { settings: HeaderTronSettings },
   custom: { styleTags: ['dark', 'minimal', 'bold'], businessTags: ['startup', 'saas', 'agency', 'tech', 'finance'], featureTags: ['header', 'navigation', 'sticky'], supportsTheme: true, supportsColorPreset: true },

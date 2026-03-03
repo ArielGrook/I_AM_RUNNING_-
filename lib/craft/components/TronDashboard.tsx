@@ -172,13 +172,7 @@ export const TronDashboard = React.memo(function TronDashboard() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('iam_client_session');
       window.dispatchEvent(new Event('iam_auth_changed'));
-      window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: 'home' } }));
-      const firstSlug = siteCtx?.pages?.[0]?.slug;
-      if (firstSlug && siteCtx?.navigateToPage) {
-        siteCtx.navigateToPage(firstSlug);
-      } else {
-        window.location.href = '/';
-      }
+      window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
     }
   }, [enabled, supabaseUrl, supabaseAnonKey, siteCtx]);
 
