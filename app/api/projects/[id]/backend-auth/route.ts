@@ -8,29 +8,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
-function getProjectRef(supabaseUrl: string): string {
-  return supabaseUrl.replace('https://', '').replace('.supabase.co', '').trim();
-}
-
 async function executeSql(
-  projectRef: string,
+  supabaseUrl: string,
   serviceRoleKey: string,
   query: string
 ): Promise<{ ok: boolean; error?: string }> {
-  const response = await fetch(
-    `https://api.supabase.com/v1/projects/${projectRef}/database/query`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${serviceRoleKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query }),
-    }
-  );
+  const url = `${supabaseUrl.replace(/\/$/, '')}/pg/query`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query }),
+  });
   if (!response.ok) {
     const err = await response.text();
-    console.error('[backend-auth] Migration failed:', err);
     return { ok: false, error: err };
   }
   return { ok: true };
@@ -93,11 +87,10 @@ export async function POST(
       );
     }
 
-    const projectRef = getProjectRef(supabaseUrl);
     const migrationsResult: Record<string, string> = {};
 
     const s1 = await executeSql(
-      projectRef,
+      supabaseUrl,
       serviceRoleKey,
       `CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
@@ -109,12 +102,14 @@ export async function POST(
 )`
     );
     migrationsResult.profiles_table = s1.ok ? 'ok' : (s1.error ?? 'fail');
+    console.error('[backend-auth] Step profiles_table:', s1.ok ? 'ok' : s1.error);
 
-    const s2 = await executeSql(projectRef, serviceRoleKey, 'ALTER TABLE profiles ENABLE ROW LEVEL SECURITY');
+    const s2 = await executeSql(supabaseUrl, serviceRoleKey, 'ALTER TABLE profiles ENABLE ROW LEVEL SECURITY');
     migrationsResult.rls = s2.ok ? 'ok' : (s2.error ?? 'fail');
+    console.error('[backend-auth] Step rls:', s2.ok ? 'ok' : s2.error);
 
     const s3 = await executeSql(
-      projectRef,
+      supabaseUrl,
       serviceRoleKey,
       `DO $$ BEGIN
   IF NOT EXISTS (
@@ -127,9 +122,10 @@ export async function POST(
 END $$`
     );
     migrationsResult.policies = s3.ok ? 'ok' : (s3.error ?? 'fail');
+    console.error('[backend-auth] Step policy_select:', s3.ok ? 'ok' : s3.error);
 
     const s4 = await executeSql(
-      projectRef,
+      supabaseUrl,
       serviceRoleKey,
       `DO $$ BEGIN
   IF NOT EXISTS (
@@ -142,9 +138,10 @@ END $$`
 END $$`
     );
     migrationsResult.policies = s3.ok && s4.ok ? 'ok' : (s3.error ?? s4.error ?? 'fail');
+    console.error('[backend-auth] Step policy_update:', s4.ok ? 'ok' : s4.error);
 
     const s5 = await executeSql(
-      projectRef,
+      supabaseUrl,
       serviceRoleKey,
       `CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
@@ -161,9 +158,10 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER`
     );
     migrationsResult.trigger = s5.ok ? 'ok' : (s5.error ?? 'fail');
+    console.error('[backend-auth] Step trigger_function:', s5.ok ? 'ok' : s5.error);
 
     const s6 = await executeSql(
-      projectRef,
+      supabaseUrl,
       serviceRoleKey,
       `DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -171,6 +169,7 @@ AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION handle_new_user()`
     );
     migrationsResult.trigger = s5.ok && s6.ok ? 'ok' : (s5.error ?? s6.error ?? 'fail');
+    console.error('[backend-auth] Step trigger:', s6.ok ? 'ok' : s6.error);
 
     const existingMetadata = (project.metadata as Record<string, unknown>) ?? {};
     const updatedMetadata = {
