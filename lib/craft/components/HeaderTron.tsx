@@ -379,7 +379,7 @@ export const HeaderTron = ({
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-row items-center gap-3 shrink-0" style={{ flexDirection: 'row' }}>
             <div
               style={{
                 display: 'flex',
@@ -387,6 +387,7 @@ export const HeaderTron = ({
                 alignItems: 'center',
                 gap: '8px',
                 position: 'relative',
+                flexShrink: 0,
               }}
             >
               {/* Desktop: theme toggle */}
@@ -414,7 +415,7 @@ export const HeaderTron = ({
               )}
               {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
               {showAvatar && (
-              <div style={{ position: 'relative', display: 'inline-block' }}>
+              <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
                 <div
                   data-avatar-dropdown
                   style={{
