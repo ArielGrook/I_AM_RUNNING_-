@@ -383,6 +383,7 @@ export const HeaderTron = ({
             <div
               style={{
                 display: 'flex',
+                flexDirection: 'row',
                 alignItems: 'center',
                 gap: '8px',
                 position: 'relative',
