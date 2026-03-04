@@ -71,13 +71,11 @@ const ICON_MAP: Record<string, () => React.ReactElement> = {
   logout: LogoutIcon,
 };
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Helpers (pattern from HeroTron / TronFeatures) ─────────────────────────
 function hexToRgb(hex: string): string {
-  const h = (hex ?? '#000000').replace(/^#/, '');
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `${r},${g},${b}`;
+  const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
+  if (!m) return '255,107,53';
+  return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
 }
 
 function buildTokens(darkBg: string, lightBg: string) {
@@ -85,9 +83,9 @@ function buildTokens(darkBg: string, lightBg: string) {
     dark: {
       bg: darkBg ?? '#0a0a0a',
       text: '#ffffff',
-      textSecondary: 'rgba(255,255,255,0.6)',
-      cardBg: 'rgba(255,255,255,0.04)',
+      textSecondary: '#a1a1aa',
       border: 'rgba(255,255,255,0.08)',
+      cardBg: 'rgba(255,255,255,0.03)',
       gridColor: 'rgba(255,255,255,0.03)',
       inputBg: 'rgba(255,255,255,0.06)',
       inputBorder: 'rgba(255,255,255,0.12)',
@@ -95,10 +93,10 @@ function buildTokens(darkBg: string, lightBg: string) {
     light: {
       bg: lightBg ?? '#ffffff',
       text: '#0a0a0a',
-      textSecondary: 'rgba(0,0,0,0.6)',
-      cardBg: 'rgba(0,0,0,0.03)',
+      textSecondary: '#52525b',
       border: 'rgba(0,0,0,0.08)',
-      gridColor: 'rgba(0,0,0,0.04)',
+      cardBg: 'rgba(0,0,0,0.02)',
+      gridColor: 'rgba(0,0,0,0.06)',
       inputBg: 'rgba(0,0,0,0.04)',
       inputBorder: 'rgba(0,0,0,0.12)',
     },
@@ -139,11 +137,13 @@ function ToggleSwitch({
   onChange,
   disabled,
   accentColor,
+  thumbColor = '#fff',
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
   accentColor: string;
+  thumbColor?: string;
 }) {
   return (
     <button
@@ -173,7 +173,7 @@ function ToggleSwitch({
           width: 20,
           height: 20,
           borderRadius: '50%',
-          background: '#fff',
+          background: thumbColor,
           transition: 'left 0.2s ease',
           boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
         }}
@@ -360,7 +360,7 @@ function AccountSection({
             borderRadius: 8,
             background: accentColor,
             border: 'none',
-            color: '#fff',
+            color: t.text,
             fontSize: 14,
             fontWeight: 600,
             cursor: enabled ? 'default' : 'pointer',
@@ -548,6 +548,7 @@ function SettingsSection({
           checked={emailNotif}
           onChange={(v) => { setEmailNotif(v); persist({ emailNotif: v }); }}
           accentColor={accentColor}
+          thumbColor={t.text}
           disabled={enabled}
         />
       </div>
@@ -562,6 +563,7 @@ function SettingsSection({
           checked={marketingEmails}
           onChange={(v) => { setMarketingEmails(v); persist({ marketingEmails: v }); }}
           accentColor={accentColor}
+          thumbColor={t.text}
           disabled={enabled}
         />
       </div>
@@ -628,7 +630,7 @@ function BillingSection({
             borderRadius: 8,
             background: accentColor,
             border: 'none',
-            color: '#fff',
+            color: t.text,
             fontSize: 13,
             fontWeight: 600,
             cursor: enabled ? 'default' : 'pointer',
@@ -756,7 +758,7 @@ function NotificationsSection({
           <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>Push Notifications</div>
           <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>Browser push notifications</div>
         </div>
-        <ToggleSwitch checked={pushEnabled} onChange={setPushEnabled} accentColor={accentColor} disabled={enabled} />
+        <ToggleSwitch checked={pushEnabled} onChange={setPushEnabled} accentColor={accentColor} thumbColor={t.text} disabled={enabled} />
       </div>
 
       <div style={rowStyle}>
@@ -764,7 +766,7 @@ function NotificationsSection({
           <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>Email Notifications</div>
           <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>Receive updates via email</div>
         </div>
-        <ToggleSwitch checked={emailEnabled} onChange={setEmailEnabled} accentColor={accentColor} disabled={enabled} />
+        <ToggleSwitch checked={emailEnabled} onChange={setEmailEnabled} accentColor={accentColor} thumbColor={t.text} disabled={enabled} />
       </div>
 
       <div style={rowStyle}>
@@ -772,7 +774,7 @@ function NotificationsSection({
           <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>SMS Notifications</div>
           <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>Coming soon</div>
         </div>
-        <ToggleSwitch checked={false} onChange={() => {}} accentColor={accentColor} disabled />
+        <ToggleSwitch checked={false} onChange={() => {}} accentColor={accentColor} thumbColor={t.text} disabled />
       </div>
 
       <div style={{ paddingTop: 20 }}>
@@ -894,7 +896,7 @@ function PrivacySection({
             <div style={{ fontSize: 14, fontWeight: 500, color: t.text }}>Analytics Cookies</div>
             <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>Help us improve the product</div>
           </div>
-          <ToggleSwitch checked={cookiesAccepted} onChange={setCookiesAccepted} accentColor={accentColor} disabled={enabled} />
+          <ToggleSwitch checked={cookiesAccepted} onChange={setCookiesAccepted} accentColor={accentColor} thumbColor={t.text} disabled={enabled} />
         </div>
       </div>
     </div>
@@ -1077,7 +1079,7 @@ export const TronHub = React.memo(function TronHub() {
           zIndex: 1,
           width: sidebarWidth,
           flexShrink: 0,
-          background: colorScheme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+          background: t.cardBg,
           borderRight: `1px solid ${t.border}`,
           display: 'flex',
           flexDirection: 'column',
