@@ -420,13 +420,14 @@ export const HeaderTron = ({
                     <div
                       style={{
                         position: 'absolute',
-                        top: 0,
+                        top: 'calc(100%)',
                         right: 0,
+                        marginTop: 0,
                         width: 40,
                         background: colorScheme === 'dark' ? 'rgba(15,15,15,0.97)' : 'rgba(240,240,240,0.97)',
                         border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
                         backdropFilter: 'blur(12px)',
-                        borderRadius: 24,
+                        borderRadius: '0 0 12px 12px',
                         paddingTop: '44px',
                         paddingBottom: '4px',
                         zIndex: 49,
@@ -434,6 +435,7 @@ export const HeaderTron = ({
                         flexDirection: 'column',
                         alignItems: 'center',
                         gap: 2,
+                        overflow: 'hidden',
                       }}
                     >
                       {dropdownSections.map((section) => {
@@ -526,7 +528,7 @@ export const HeaderTron = ({
                       zIndex: 51,
                       width: 40,
                       height: 40,
-                      borderRadius: '50%',
+                      borderRadius: avatarDropdownOpen ? '12px 12px 0 0' : '50%',
                       background: t.accent,
                       display: 'flex',
                       alignItems: 'center',
