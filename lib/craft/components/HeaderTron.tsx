@@ -452,7 +452,7 @@ export const HeaderTron = ({
               {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
               {showAvatar && (
                 <div
-                  style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}
+                  style={{ position: 'relative', width: 36, height: 40, flexShrink: 0, pointerEvents: 'auto' }}
                   onMouseEnter={handleAvatarDropdownEnter}
                   onMouseLeave={handleAvatarDropdownLeave}
                 >
@@ -461,11 +461,11 @@ export const HeaderTron = ({
                     <div
                       style={{
                         position: 'absolute',
-                        top: 0,
+                        top: -4,
                         left: '50%',
                         transform: 'translateX(-50%)',
                         width: 44,
-                        paddingTop: 40,
+                        paddingTop: 44,
                         paddingBottom: 8,
                         background: colorScheme === 'dark' ? 'rgba(15,15,15,0.97)' : 'rgba(245,245,245,0.97)',
                         border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
@@ -477,6 +477,7 @@ export const HeaderTron = ({
                         alignItems: 'center',
                         gap: 2,
                         overflow: 'hidden',
+                        pointerEvents: 'auto',
                       }}
                     >
                       {dropdownSections.map((section) => {
