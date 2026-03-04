@@ -190,6 +190,7 @@ function AccountSection({
   session,
   userData,
   setUserData,
+  isMobile,
 }: {
   t: ReturnType<typeof buildTokens>['dark'];
   accentColor: string;
@@ -197,6 +198,7 @@ function AccountSection({
   session: ReturnType<typeof getStoredSession>;
   userData: { avatarUrl: string | null } | null;
   setUserData: React.Dispatch<React.SetStateAction<{ avatarUrl: string | null } | null>>;
+  isMobile: boolean;
 }) {
   const user = session?.user as { user_metadata?: { first_name?: string; last_name?: string; avatar_url?: string }; email?: string; id?: string } | undefined;
   const [firstName, setFirstName] = React.useState(user?.user_metadata?.first_name ?? '');
@@ -234,7 +236,7 @@ function AccountSection({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: isMobile ? '100%' : 480 }}>
       {/* Avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
         <div
@@ -282,6 +284,7 @@ function AccountSection({
           fontSize: 13,
           fontWeight: 500,
           transition: 'opacity 0.2s ease',
+          alignSelf: 'flex-start',
         }}
         onMouseEnter={(e) => { if (!enabled) e.currentTarget.style.opacity = '0.85'; }}
         onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
@@ -1025,7 +1028,7 @@ export const TronHub = React.memo(function TronHub() {
 
   const renderContent = () => {
     const id = activeSection?.id ?? 'account';
-    if (id === 'account') return <AccountSection t={t} accentColor={accentColor} enabled={enabled} session={session} userData={userData} setUserData={setUserData} />;
+    if (id === 'account') return <AccountSection t={t} accentColor={accentColor} enabled={enabled} session={session} userData={userData} setUserData={setUserData} isMobile={isMobile} />;
     if (id === 'settings') return <SettingsSection t={t} accentColor={accentColor} enabled={enabled} />;
     if (id === 'billing') return <BillingSection t={t} accentColor={accentColor} enabled={enabled} />;
     if (id === 'notifications') return <NotificationsSection t={t} accentColor={accentColor} enabled={enabled} />;
