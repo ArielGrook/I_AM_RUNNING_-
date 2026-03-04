@@ -8,11 +8,11 @@ const AUTH_COMPONENT_NAMES = new Set([
   'Tron Login',
   'Tron Register',
   'Header Tron',
-  'Tron Dashboard',
+  'Tron Hub',
   'TronLogin',
   'TronRegister',
   'HeaderTron',
-  'TronDashboard',
+  'TronHub',
 ]);
 
 interface CraftNodeLike {

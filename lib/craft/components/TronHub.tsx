@@ -74,7 +74,7 @@ const ICON_MAP: Record<string, () => React.ReactElement> = {
 // ── Helpers (pattern from HeroTron / TronFeatures) ─────────────────────────
 function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
-  if (!m) return '255,107,53';
+  if (!m) return '128,128,128';
   return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
 }
 

@@ -19,7 +19,6 @@ export { TronContact } from './TronContact';
 export { TronShowcase } from './TronShowcase';
 export { TronLogin } from './TronLogin';
 export { TronRegister } from './TronRegister';
-export { TronDashboard } from './TronDashboard';
 export { TronHub } from './TronHub';
 export { Footer } from './Footer';
 export { Testimonials } from './Testimonials';
