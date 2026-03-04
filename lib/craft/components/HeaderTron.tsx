@@ -471,7 +471,7 @@ export const HeaderTron = ({
                         border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
                         backdropFilter: 'blur(12px)',
                         borderRadius: 22,
-                        zIndex: 49,
+                        zIndex: 52,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
