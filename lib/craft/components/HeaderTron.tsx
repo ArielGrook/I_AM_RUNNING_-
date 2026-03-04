@@ -487,6 +487,7 @@ export const HeaderTron = ({
                             key={section.id}
                             type="button"
                             onClick={() => {
+                              console.log('SECTION CLICK', section.id, section.label);
                               setAvatarDropdownOpen(false);
                               
                               // Step 1: navigate to dashboard page
