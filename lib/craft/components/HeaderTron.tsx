@@ -453,12 +453,12 @@ export const HeaderTron = ({
               {showAvatar && (
                 <div
                   style={{ position: 'relative', width: 36, height: 40, flexShrink: 0, pointerEvents: 'auto' }}
-                  onMouseEnter={handleAvatarDropdownEnter}
-                  onMouseLeave={handleAvatarDropdownLeave}
                 >
                   {/* Island background — sits BEHIND avatar, grows downward */}
                   {avatarDropdownOpen && !enabled && (
                     <div
+                      onMouseEnter={handleAvatarDropdownEnter}
+                      onMouseLeave={handleAvatarDropdownLeave}
                       style={{
                         position: 'absolute',
                         top: -4,
@@ -476,7 +476,7 @@ export const HeaderTron = ({
                         flexDirection: 'column',
                         alignItems: 'center',
                         gap: 2,
-                        overflow: 'hidden',
+                        overflow: 'visible',
                         pointerEvents: 'auto',
                       }}
                     >
@@ -558,6 +558,8 @@ export const HeaderTron = ({
                     type="button"
                     data-avatar-dropdown
                     onClick={() => setAvatarDropdownOpen(!avatarDropdownOpen)}
+                    onMouseEnter={handleAvatarDropdownEnter}
+                    onMouseLeave={handleAvatarDropdownLeave}
                     style={{
                       position: 'relative',
                       zIndex: 51,
