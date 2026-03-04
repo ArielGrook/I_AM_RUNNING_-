@@ -156,6 +156,28 @@ export const TronDashboard = React.memo(function TronDashboard() {
     sections = DEFAULT_SECTIONS,
   } = props;
 
+  // Сохранять секции в localStorage при монтировании
+  React.useEffect(() => {
+    if (enabled) return;
+    const sectionsData = (props.sections ?? DEFAULT_SECTIONS).map((s) => ({
+      id: s.id,
+      icon: s.icon,
+      label: s.label,
+    }));
+    localStorage.setItem('iam_dashboard_sections', JSON.stringify(sectionsData));
+  }, [enabled, props.sections]);
+
+  // Слушать событие открытия секции от HeaderTron
+  React.useEffect(() => {
+    if (enabled) return;
+    const onOpenSection = (e: Event) => {
+      const sectionId = (e as CustomEvent).detail?.sectionId;
+      if (sectionId) setActiveSectionId(sectionId);
+    };
+    window.addEventListener('iam_dashboard_open_section', onOpenSection);
+    return () => window.removeEventListener('iam_dashboard_open_section', onOpenSection);
+  }, [enabled]);
+
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
   const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
   const tokens = buildTokens(darkBg, lightBg);
