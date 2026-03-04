@@ -1088,6 +1088,37 @@ export const TronHub = React.memo(function TronHub() {
           transition: 'width 0.2s ease',
         }}
       >
+        {/* Back button */}
+        {!isMobile && (
+          <button
+            type="button"
+            onClick={() => {
+              if (enabled) return;
+              window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+            }}
+            onMouseEnter={(e) => { if (!enabled) e.currentTarget.style.background = t.cardBg; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 12px',
+              marginBottom: 16,
+              background: 'transparent',
+              border: 'none',
+              borderRadius: 8,
+              cursor: enabled ? 'default' : 'pointer',
+              color: t.textSecondary,
+              fontSize: 13,
+              transition: 'background 0.18s ease',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            {!isMobile && <span>Back</span>}
+          </button>
+        )}
         {/* Avatar + name (desktop) */}
         {!isMobile && (
           <div style={{ marginBottom: 20, paddingLeft: 8 }}>
@@ -1163,33 +1194,33 @@ export const TronHub = React.memo(function TronHub() {
               </button>
             );
           })}
-        </div>
 
-        {/* Logout */}
-        <button
-          type="button"
-          onClick={handleLogout}
-          onMouseEnter={(e) => { if (!enabled) e.currentTarget.style.background = 'rgba(248,113,113,0.12)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: isMobile ? 0 : 10,
-            padding: isMobile ? '12px' : '10px 12px',
-            justifyContent: isMobile ? 'center' : 'flex-start',
-            background: 'transparent',
-            border: 'none',
-            borderLeft: '3px solid transparent',
-            borderRadius: 8,
-            cursor: enabled ? 'default' : 'pointer',
-            color: '#f87171',
-            transition: 'background 0.18s ease',
-            width: '100%',
-          }}
-        >
-          <LogoutIcon />
-          {!isMobile && <span style={{ fontSize: 14, fontWeight: 400 }}>Logout</span>}
-        </button>
+          {/* Logout — внутри блока секций */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            onMouseEnter={(e) => { if (!enabled) e.currentTarget.style.background = 'rgba(248,113,113,0.12)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: isMobile ? 0 : 10,
+              padding: isMobile ? '12px' : '10px 12px',
+              justifyContent: isMobile ? 'center' : 'flex-start',
+              background: 'transparent',
+              border: 'none',
+              borderLeft: '3px solid transparent',
+              borderRadius: 8,
+              cursor: enabled ? 'default' : 'pointer',
+              color: '#f87171',
+              transition: 'background 0.18s ease',
+              width: '100%',
+            }}
+          >
+            <LogoutIcon />
+            {!isMobile && <span style={{ fontSize: 14, fontWeight: 400 }}>Logout</span>}
+          </button>
+        </div>
       </aside>
 
       {/* Content area */}
