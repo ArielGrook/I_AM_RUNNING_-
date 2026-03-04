@@ -253,15 +253,6 @@ export const HeaderTron = ({
 
   useEffect(() => {
     if (!avatarDropdownOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (!(e.target as Element).closest('[data-avatar-dropdown]')) setAvatarDropdownOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [avatarDropdownOpen]);
-
-  useEffect(() => {
-    if (!avatarDropdownOpen) return;
     try {
       const stored = localStorage.getItem('iam_dashboard_sections');
       if (stored) setDropdownSections(JSON.parse(stored));
@@ -325,6 +316,23 @@ export const HeaderTron = ({
     });
     window.dispatchEvent(new Event('iam_auth_changed'));
     window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+  };
+
+  const handleSectionClick = (section: { id: string; icon: string; label: string }) => {
+    setAvatarDropdownOpen(false);
+    console.log('SECTION CLICK', section.id);
+    const dashPage = pages?.find(
+      (p) =>
+        p.name?.toLowerCase().includes('dashboard') ||
+        p.slug?.toLowerCase().includes('dashboard')
+    );
+    const dashSlug = dashPage?.slug ?? '__first__';
+    window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: dashSlug } }));
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('iam_dashboard_open_section', { detail: { sectionId: section.id } })
+      );
+    }, 300);
   };
 
   const profilePageSlug = profilePageLink?.trim() || '__first__';
@@ -449,139 +457,115 @@ export const HeaderTron = ({
                   {siteCtx.colorScheme === 'dark' ? <SunIcon /> : <MoonIcon />}
                 </button>
               )}
-              {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
+              {/* Auth: avatar island (hover to open) or Login or CTA */}
               {showAvatar && (
                 <div
-                  style={{ position: 'relative', width: 36, height: 40, flexShrink: 0, pointerEvents: 'auto' }}
+                  style={{ position: 'relative', width: 44, minHeight: 44, flexShrink: 0 }}
+                  onMouseEnter={handleAvatarDropdownEnter}
+                  onMouseLeave={handleAvatarDropdownLeave}
                 >
-                  {/* Island background — sits BEHIND avatar, grows downward */}
-                  {avatarDropdownOpen && !enabled && (
-                    <div
-                      onMouseEnter={handleAvatarDropdownEnter}
-                      onMouseLeave={handleAvatarDropdownLeave}
-                      style={{
-                        position: 'absolute',
-                        top: -4,
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        width: 44,
-                        paddingTop: 44,
-                        paddingBottom: 8,
-                        background: colorScheme === 'dark' ? 'rgba(15,15,15,0.97)' : 'rgba(245,245,245,0.97)',
-                        border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
-                        backdropFilter: 'blur(12px)',
-                        borderRadius: 22,
-                        zIndex: 52,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: 2,
-                        overflow: 'visible',
-                        pointerEvents: 'auto',
-                      }}
-                    >
-                      {dropdownSections.map((section) => {
-                        const IconComp = DROPDOWN_ICONS[section.icon] ?? UserIcon;
-                        return (
-                          <button
-                            key={section.id}
-                            type="button"
-                            onClick={() => {
-                              console.log('SECTION CLICK', section.id, section.label);
-                              setAvatarDropdownOpen(false);
-                              
-                              // Step 1: navigate to dashboard page
-                              const profileSlug = profilePageLink?.trim() || 
-                                pages.find(p => /dashboard|profile|cabinet/i.test(p.slug || '') || 
-                                                /dashboard|profile|cabinet/i.test(p.name || ''))?.slug || 
-                                pages[0]?.slug || '__first__';
-                              
-                              window.dispatchEvent(new CustomEvent('iam_navigate', {
-                                detail: { page: profileSlug }
-                              }));
-                              
-                              // Step 2: after navigation, tell dashboard which section to open
-                              setTimeout(() => {
-                                window.dispatchEvent(new CustomEvent('iam_dashboard_open_section', {
-                                  detail: { sectionId: section.id }
-                                }));
-                              }, 300);
-                            }}
-                            title={section.label}
-                            style={{
-                              width: 36,
-                              height: 36,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              background: 'transparent',
-                              border: 'none',
-                              cursor: 'pointer',
-                              borderRadius: '50%',
-                              color: colorScheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
-                              flexShrink: 0,
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = colorScheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                          >
-                            <IconComp />
-                          </button>
-                        );
-                      })}
-                      {/* Logout */}
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        title="Logout"
-                        style={{
-                          width: 36,
-                          height: 36,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          borderRadius: '50%',
-                          color: '#f87171',
-                          flexShrink: 0,
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(248,113,113,0.12)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                      >
-                        <LogoutIcon />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Avatar circle — always on top, always round */}
-                  <button
-                    type="button"
-                    data-avatar-dropdown
-                    onClick={() => setAvatarDropdownOpen(!avatarDropdownOpen)}
-                    onMouseEnter={handleAvatarDropdownEnter}
-                    onMouseLeave={handleAvatarDropdownLeave}
+                  <div
                     style={{
-                      position: 'relative',
-                      zIndex: 51,
-                      width: 36,
-                      height: 36,
-                      borderRadius: '50%',
-                      background: t.accent,
-                      color: '#fff',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-                      fontWeight: 700,
-                      fontSize: 13,
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
+                      background:
+                        colorScheme === 'dark' ? 'rgba(15,15,15,0.97)' : 'rgba(245,245,245,0.97)',
+                      border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                      borderRadius: 22,
+                      padding: 4,
+                      zIndex: 50,
+                      overflow: 'hidden',
+                      height: avatarDropdownOpen ? 'auto' : 44,
+                      transition: 'height 0.15s ease',
                     }}
                   >
-                    {initials}
-                  </button>
+                    {/* Avatar — not clickable, visual only */}
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        background: t.accent,
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+                        fontWeight: 700,
+                        fontSize: 13,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {initials}
+                    </div>
+
+                    {avatarDropdownOpen && (
+                      <>
+                        {(dropdownSections.length > 0 ? dropdownSections : DEFAULT_DROPDOWN_SECTIONS.map((s, i) => ({ id: String(i), icon: s.icon, label: s.label }))).map((section) => {
+                          const IconComp = DROPDOWN_ICONS[section.icon] ?? UserIcon;
+                          return (
+                            <button
+                              key={section.id}
+                              type="button"
+                              onClick={() => handleSectionClick(section)}
+                              title={section.label}
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: '50%',
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: colorScheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+                                marginTop: 2,
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = colorScheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'transparent';
+                              }}
+                            >
+                              <IconComp />
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          title="Logout"
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: '50%',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#f87171',
+                            marginTop: 2,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(248,113,113,0.12)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <LogoutIcon />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
