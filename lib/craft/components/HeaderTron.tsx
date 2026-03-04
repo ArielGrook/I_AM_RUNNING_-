@@ -291,8 +291,6 @@ export const HeaderTron = ({
     handleLinkClick(e, href, enabled, siteCtx.navigateToPage || navigateTo);
   };
 
-  const profilePageSlug = profilePageLink?.trim() || '__first__';
-
   const tokens = {
     dark: {
       bg: darkBg ?? '#0a0a0a',
