@@ -934,7 +934,10 @@ export const TronHub = React.memo(function TronHub() {
   } = props;
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const colorScheme = propScheme ?? siteCtx.colorScheme ?? theme.colorScheme ?? 'dark';
+  // На деплое (enabled=false) приоритет у siteCtx, в редакторе — у propScheme
+  const colorScheme = enabled
+    ? (propScheme ?? theme.colorScheme ?? 'dark')
+    : (siteCtx.colorScheme ?? propScheme ?? theme.colorScheme ?? 'dark');
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[colorScheme], accent: accentColor };
 
