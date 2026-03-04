@@ -462,7 +462,8 @@ export const HeaderTron = ({
                       style={{
                         position: 'absolute',
                         top: 0,
-                        right: 0,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
                         width: 44,
                         paddingTop: 40,
                         paddingBottom: 8,
