@@ -6,6 +6,7 @@ import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { getStoredSession } from '@/lib/auth/clientAuthService';
+import { MediaLibrary } from '@/components/craft/MediaLibrary';
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 const UserIcon = () => (
@@ -72,9 +73,11 @@ const ICON_MAP: Record<string, () => React.ReactElement> = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
-  const m = (hex ?? '#000000').replace(/^#/, '').match(/^(..)(..)(..)$/);
-  if (!m) return '255,107,53';
-  return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
+  const h = (hex ?? '#000000').replace(/^#/, '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `${r},${g},${b}`;
 }
 
 function buildTokens(darkBg: string, lightBg: string) {
@@ -185,20 +188,26 @@ function AccountSection({
   accentColor,
   enabled,
   session,
+  userData,
+  setUserData,
 }: {
   t: ReturnType<typeof buildTokens>['dark'];
   accentColor: string;
   enabled: boolean;
   session: ReturnType<typeof getStoredSession>;
+  userData: { avatarUrl: string | null } | null;
+  setUserData: React.Dispatch<React.SetStateAction<{ avatarUrl: string | null } | null>>;
 }) {
-  const user = session?.user as { user_metadata?: { first_name?: string; last_name?: string; avatar_url?: string }; email?: string } | undefined;
+  const user = session?.user as { user_metadata?: { first_name?: string; last_name?: string; avatar_url?: string }; email?: string; id?: string } | undefined;
   const [firstName, setFirstName] = React.useState(user?.user_metadata?.first_name ?? '');
   const [lastName, setLastName] = React.useState(user?.user_metadata?.last_name ?? '');
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
   const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [showMediaLibrary, setShowMediaLibrary] = React.useState(false);
   const email = user?.email ?? '';
   const initials = `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || '?';
+  const avatarUrl = userData?.avatarUrl ?? user?.user_metadata?.avatar_url ?? null;
 
   const handleSave = () => {
     if (enabled) return;
@@ -230,10 +239,10 @@ function AccountSection({
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
         <div
           style={{
-            width: 72,
-            height: 72,
+            width: 80,
+            height: 80,
             borderRadius: '50%',
-            background: `rgba(${hexToRgb(accentColor)}, 0.15)`,
+            background: avatarUrl ? 'transparent' : `rgba(${hexToRgb(accentColor)}, 0.15)`,
             border: `2px solid ${accentColor}`,
             display: 'flex',
             alignItems: 'center',
@@ -243,9 +252,14 @@ function AccountSection({
             fontSize: 24,
             color: accentColor,
             flexShrink: 0,
+            overflow: 'hidden',
           }}
         >
-          {initials}
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
+          ) : (
+            initials
+          )}
         </div>
         <div>
           <div style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 4 }}>
@@ -254,6 +268,40 @@ function AccountSection({
           <div style={{ fontSize: 13, color: t.textSecondary }}>{email || 'user@example.com'}</div>
         </div>
       </div>
+      <button
+        type="button"
+        onClick={() => !enabled && setShowMediaLibrary(true)}
+        style={{
+          marginTop: 8,
+          padding: '8px 16px',
+          background: `rgba(${hexToRgb(accentColor)}, 0.1)`,
+          border: `1px solid ${accentColor}`,
+          borderRadius: 8,
+          color: accentColor,
+          cursor: enabled ? 'default' : 'pointer',
+          fontSize: 13,
+          fontWeight: 500,
+          transition: 'opacity 0.2s ease',
+        }}
+        onMouseEnter={(e) => { if (!enabled) e.currentTarget.style.opacity = '0.85'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+      >
+        Change Photo
+      </button>
+      {showMediaLibrary && session?.user?.id && (
+        <MediaLibrary
+          userId={session.user.id}
+          accept="image"
+          onSelect={(url) => {
+            setUserData((prev) => (prev ? { ...prev, avatarUrl: url } : { avatarUrl: url }));
+            if (typeof window !== 'undefined' && session?.user?.id) {
+              localStorage.setItem(`iam_user_avatar_${session.user.id}`, url);
+            }
+            setShowMediaLibrary(false);
+          }}
+          onClose={() => setShowMediaLibrary(false)}
+        />
+      )}
 
       {/* Fields */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -865,6 +913,7 @@ export const TronHub = React.memo(function TronHub() {
   const [isMobile, setIsMobile] = React.useState(false);
   const [activeSectionId, setActiveSectionId] = React.useState('account');
   const [session, setSession] = React.useState<ReturnType<typeof getStoredSession>>(null);
+  const [userData, setUserData] = React.useState<{ avatarUrl: string | null } | null>(null);
   const [hoveredNav, setHoveredNav] = React.useState<string | null>(null);
   const [contentKey, setContentKey] = React.useState(0);
 
@@ -905,6 +954,21 @@ export const TronHub = React.memo(function TronHub() {
     window.addEventListener('iam_auth_changed', onAuthChanged);
     return () => window.removeEventListener('iam_auth_changed', onAuthChanged);
   }, [enabled]);
+
+  // Load avatar from localStorage when session is available
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !session?.user?.id) {
+      setUserData(null);
+      return;
+    }
+    try {
+      const stored = localStorage.getItem(`iam_user_avatar_${session.user.id}`);
+      const metaUrl = (session.user as { user_metadata?: { avatar_url?: string } }).user_metadata?.avatar_url;
+      setUserData({ avatarUrl: stored ?? metaUrl ?? null });
+    } catch {
+      setUserData(null);
+    }
+  }, [session?.user?.id]);
 
   // Save sections to localStorage for HeaderTron dropdown
   React.useEffect(() => {
@@ -959,7 +1023,7 @@ export const TronHub = React.memo(function TronHub() {
 
   const renderContent = () => {
     const id = activeSection?.id ?? 'account';
-    if (id === 'account') return <AccountSection t={t} accentColor={accentColor} enabled={enabled} session={session} />;
+    if (id === 'account') return <AccountSection t={t} accentColor={accentColor} enabled={enabled} session={session} userData={userData} setUserData={setUserData} />;
     if (id === 'settings') return <SettingsSection t={t} accentColor={accentColor} enabled={enabled} />;
     if (id === 'billing') return <BillingSection t={t} accentColor={accentColor} enabled={enabled} />;
     if (id === 'notifications') return <NotificationsSection t={t} accentColor={accentColor} enabled={enabled} />;
@@ -1030,7 +1094,7 @@ export const TronHub = React.memo(function TronHub() {
                 width: 48,
                 height: 48,
                 borderRadius: '50%',
-                background: `rgba(${hexToRgb(accentColor)}, 0.15)`,
+                background: userData?.avatarUrl ? 'transparent' : `rgba(${hexToRgb(accentColor)}, 0.15)`,
                 border: `2px solid rgba(${hexToRgb(accentColor)}, 0.4)`,
                 display: 'flex',
                 alignItems: 'center',
@@ -1040,9 +1104,14 @@ export const TronHub = React.memo(function TronHub() {
                 fontSize: 16,
                 color: accentColor,
                 marginBottom: 10,
+                overflow: 'hidden',
               }}
             >
-              {initials}
+              {userData?.avatarUrl ? (
+                <img src={userData.avatarUrl} alt="" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                initials
+              )}
             </div>
             <div style={{ fontSize: 14, fontWeight: 600, color: t.text, lineHeight: 1.3 }}>{displayName}</div>
             <div style={{ fontSize: 12, color: t.textSecondary, marginTop: 2 }}>{user?.email ?? ''}</div>
