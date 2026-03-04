@@ -164,16 +164,40 @@ export const TronDashboard = React.memo(function TronDashboard() {
   const activeId = activeSectionId ?? sections[0]?.id ?? null;
   const activeSection = sections.find((s) => s.id === activeId) ?? sections[0];
 
-  const handleLogout = async () => {
-    if (enabled || !supabaseUrl || !supabaseAnonKey) return;
-    const { createClient } = await import('@supabase/supabase-js');
-    const client = createClient(supabaseUrl, supabaseAnonKey);
-    await client.auth.signOut();
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('iam_client_session');
-      window.dispatchEvent(new Event('iam_auth_changed'));
-      window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const sectionId = (e as CustomEvent).detail?.sectionId as string | undefined;
+      if (!sectionId) return;
+      const found = sections.find((s) => s.id === sectionId);
+      if (found) setActiveSectionId(sectionId);
+    };
+    window.addEventListener('iam_dashboard_open_section', handler);
+    return () => window.removeEventListener('iam_dashboard_open_section', handler);
+  }, [sections]);
+
+  React.useEffect(() => {
+    if (!enabled) {
+      localStorage.setItem(
+        'iam_dashboard_sections',
+        JSON.stringify(
+          sections.map((s) => ({
+            id: s.id,
+            icon: s.icon,
+            label: (s as DashboardSection & { name?: string }).name || s.label || s.id,
+          }))
+        )
+      );
     }
+  }, [sections, enabled]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('iam_client_session');
+    localStorage.removeItem('iam_session');
+    Object.keys(localStorage).forEach((key) => {
+      if (key.includes('supabase') || key.includes('sb-')) localStorage.removeItem(key);
+    });
+    window.dispatchEvent(new Event('iam_auth_changed'));
+    window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
   };
 
   const user = session?.user as { user_metadata?: { first_name?: string; last_name?: string }; email?: string } | undefined;

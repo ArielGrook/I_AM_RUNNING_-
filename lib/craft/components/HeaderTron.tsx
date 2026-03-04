@@ -466,14 +466,23 @@ export const HeaderTron = ({
                             type="button"
                             onClick={() => {
                               setAvatarDropdownOpen(false);
+                              
+                              // Step 1: navigate to dashboard page
+                              const profileSlug = profilePageLink?.trim() || 
+                                pages.find(p => /dashboard|profile|cabinet/i.test(p.slug || '') || 
+                                                /dashboard|profile|cabinet/i.test(p.name || ''))?.slug || 
+                                pages[0]?.slug || '__first__';
+                              
                               window.dispatchEvent(new CustomEvent('iam_navigate', {
-                                detail: { page: effectiveProfileHref.replace('/', '') }
+                                detail: { page: profileSlug }
                               }));
+                              
+                              // Step 2: after navigation, tell dashboard which section to open
                               setTimeout(() => {
                                 window.dispatchEvent(new CustomEvent('iam_dashboard_open_section', {
                                   detail: { sectionId: section.id }
                                 }));
-                              }, 100);
+                              }, 300);
                             }}
                             title={section.label}
                             style={{
