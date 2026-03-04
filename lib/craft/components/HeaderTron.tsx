@@ -240,7 +240,7 @@ export const HeaderTron = ({
   const [hoveredNavIndex, setHoveredNavIndex] = useState<number | null>(null);
   const [session, setSession] = useState<ReturnType<typeof getStoredSession>>(null);
   const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
-  const [dropdownSections, setDropdownSections] = useState<Array<{ id: string; icon: string; label: string }>>(DEFAULT_DROPDOWN_SECTIONS);
+  const [dropdownSections, setDropdownSections] = useState<Array<{id:string,icon:string,label:string}>>([]);
 
   useEffect(() => {
     if (enabled) return;
@@ -263,12 +263,10 @@ export const HeaderTron = ({
     if (!avatarDropdownOpen) return;
     try {
       const stored = localStorage.getItem('iam_dashboard_sections');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) setDropdownSections(parsed);
-      }
+      if (stored) setDropdownSections(JSON.parse(stored));
+      else setDropdownSections(DEFAULT_DROPDOWN_SECTIONS.map((s,i) => ({ id: String(i), icon: s.icon, label: s.label })));
     } catch {
-      // noop
+      setDropdownSections(DEFAULT_DROPDOWN_SECTIONS.map((s,i) => ({ id: String(i), icon: s.icon, label: s.label })));
     }
   }, [avatarDropdownOpen]);
 
@@ -290,6 +288,26 @@ export const HeaderTron = ({
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     handleLinkClick(e, href, enabled, siteCtx.navigateToPage || navigateTo);
   };
+
+  const handleAvatarDropdownEnter = () => {
+    if (!enabled) setAvatarDropdownOpen(true);
+  };
+
+  const handleAvatarDropdownLeave = () => {
+    if (!enabled) setAvatarDropdownOpen(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('iam_client_session');
+    localStorage.removeItem('iam_session');
+    Object.keys(localStorage).forEach((key) => {
+      if (key.includes('supabase') || key.includes('sb-')) localStorage.removeItem(key);
+    });
+    window.dispatchEvent(new Event('iam_auth_changed'));
+    window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
+  };
+
+  const profilePageSlug = profilePageLink?.trim() || '__first__';
 
   const tokens = {
     dark: {
@@ -413,21 +431,25 @@ export const HeaderTron = ({
               )}
               {/* Auth: single Avatar OR Login OR CTA — avatar + dropdown as one connected island */}
               {showAvatar && (
-                <div style={{ position: 'relative', width: 40, height: 40, flexShrink: 0 }}>
-                  {!enabled && avatarDropdownOpen && (
+                <div
+                  style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}
+                  onMouseEnter={handleAvatarDropdownEnter}
+                  onMouseLeave={handleAvatarDropdownLeave}
+                >
+                  {/* Island background — sits BEHIND avatar, grows downward */}
+                  {avatarDropdownOpen && !enabled && (
                     <div
                       style={{
                         position: 'absolute',
-                        top: 'calc(100%)',
+                        top: 0,
                         right: 0,
-                        marginTop: 0,
-                        width: 40,
-                        background: colorScheme === 'dark' ? 'rgba(15,15,15,0.97)' : 'rgba(240,240,240,0.97)',
+                        width: 44,
+                        paddingTop: 40,
+                        paddingBottom: 8,
+                        background: colorScheme === 'dark' ? 'rgba(15,15,15,0.97)' : 'rgba(245,245,245,0.97)',
                         border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
                         backdropFilter: 'blur(12px)',
-                        borderRadius: '0 0 12px 12px',
-                        paddingTop: '44px',
-                        paddingBottom: '4px',
+                        borderRadius: 22,
                         zIndex: 49,
                         display: 'flex',
                         flexDirection: 'column',
@@ -444,103 +466,88 @@ export const HeaderTron = ({
                             type="button"
                             onClick={() => {
                               setAvatarDropdownOpen(false);
-                              window.dispatchEvent(
-                                new CustomEvent('iam_navigate', {
-                                  detail: { page: profilePageSlug },
-                                })
-                              );
+                              window.dispatchEvent(new CustomEvent('iam_navigate', {
+                                detail: { page: effectiveProfileHref.replace('/', '') }
+                              }));
                               setTimeout(() => {
-                                window.dispatchEvent(
-                                  new CustomEvent('iam_dashboard_open_section', {
-                                    detail: { sectionId: section.id },
-                                  })
-                                );
+                                window.dispatchEvent(new CustomEvent('iam_dashboard_open_section', {
+                                  detail: { sectionId: section.id }
+                                }));
                               }, 100);
                             }}
+                            title={section.label}
                             style={{
-                              width: 40,
-                              height: 40,
+                              width: 36,
+                              height: 36,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               background: 'transparent',
                               border: 'none',
                               cursor: 'pointer',
+                              borderRadius: '50%',
                               color: colorScheme === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
+                              flexShrink: 0,
                             }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = colorScheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'transparent';
-                            }}
-                            title={section.label}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = colorScheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                           >
                             <IconComp />
                           </button>
                         );
                       })}
+                      {/* Logout */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setAvatarDropdownOpen(false);
-                          localStorage.removeItem('iam_client_session');
-                          localStorage.removeItem('iam_session');
-                          Object.keys(localStorage).forEach((key) => {
-                            if (key.includes('supabase') || key.includes('sb-')) localStorage.removeItem(key);
-                          });
-                          window.dispatchEvent(new Event('iam_auth_changed'));
-                          window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: '__first__' } }));
-                        }}
+                        onClick={handleLogout}
+                        title="Logout"
                         style={{
-                          width: 40,
-                          height: 40,
+                          width: 36,
+                          height: 36,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           background: 'transparent',
                           border: 'none',
                           cursor: 'pointer',
-                          color: '#ff4444',
+                          borderRadius: '50%',
+                          color: '#f87171',
+                          flexShrink: 0,
                         }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgba(255,68,68,0.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent';
-                        }}
-                        title="Logout"
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(248,113,113,0.12)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                       >
                         <LogoutIcon />
                       </button>
                     </div>
                   )}
-                  <div
+
+                  {/* Avatar circle — always on top, always round */}
+                  <button
+                    type="button"
                     data-avatar-dropdown
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => !enabled && setAvatarDropdownOpen(!avatarDropdownOpen)}
-                    onKeyDown={(e) => e.key === 'Enter' && !enabled && setAvatarDropdownOpen(!avatarDropdownOpen)}
+                    onClick={() => setAvatarDropdownOpen(!avatarDropdownOpen)}
                     style={{
                       position: 'relative',
                       zIndex: 51,
-                      width: 40,
-                      height: 40,
-                      borderRadius: avatarDropdownOpen ? '12px 12px 0 0' : '50%',
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
                       background: t.accent,
+                      color: '#fff',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+                      fontWeight: 700,
+                      fontSize: 13,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: enabled ? 'default' : 'pointer',
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: '#fff',
-                      userSelect: 'none',
-                      fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+                      flexShrink: 0,
                     }}
                   >
                     {initials}
-                  </div>
+                  </button>
                 </div>
               )}
             </div>
