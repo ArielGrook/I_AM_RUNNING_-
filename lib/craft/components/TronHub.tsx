@@ -1417,6 +1417,8 @@ const TronHubSettings = () => {
 TronHub.craft = {
   displayName: 'Tron Hub',
   props: {
+    colorScheme: 'dark' as const,
+    accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',
     sectionHeight: 100,
