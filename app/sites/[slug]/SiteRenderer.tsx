@@ -284,7 +284,7 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
     };
     window.addEventListener('iam_navigate', handler);
     return () => window.removeEventListener('iam_navigate', handler);
-  }, [pages]);
+  }, [pages, colorScheme]);
 
   useEffect(() => {
     const initAnimations = async () => {
