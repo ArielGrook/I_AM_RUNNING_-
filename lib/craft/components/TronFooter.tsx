@@ -6,26 +6,7 @@ import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
 import { LinkPicker, hrefToLinkValue } from '@/lib/craft/shared/LinkPicker';
-
-// ── Tokens (darkBg/lightBg from props, like TronContact) ─────────────────
-function buildTokens(darkBg: string, lightBg: string) {
-  return {
-    dark: {
-      bg: darkBg ?? '#0a0a0a',
-      text: '#ffffff',
-      textSecondary: '#a1a1aa',
-      border: 'rgba(255,255,255,0.08)',
-      cardBg: 'rgba(255,255,255,0.03)',
-    },
-    light: {
-      bg: lightBg ?? '#ffffff',
-      text: '#0a0a0a',
-      textSecondary: '#52525b',
-      border: 'rgba(0,0,0,0.08)',
-      cardBg: 'rgba(0,0,0,0.02)',
-    },
-  };
-}
+import { buildBaseTokens as buildTokens } from '../tokens';
 
 // ── Social SVG Icons ─────────────────────────────────────────────────────
 const SOCIAL_ICONS: Record<string, React.ReactNode> = {

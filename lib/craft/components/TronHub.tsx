@@ -7,6 +7,7 @@ import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { getStoredSession } from '@/lib/auth/clientAuthService';
 import { MediaLibrary } from '@/components/craft/MediaLibrary';
+import { buildInputTokens as buildTokens } from '../tokens';
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 const UserIcon = () => (
@@ -76,31 +77,6 @@ function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
   if (!m) return '128,128,128';
   return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
-}
-
-function buildTokens(darkBg: string, lightBg: string) {
-  return {
-    dark: {
-      bg: darkBg ?? '#0a0a0a',
-      text: '#ffffff',
-      textSecondary: '#a1a1aa',
-      border: 'rgba(255,255,255,0.08)',
-      cardBg: 'rgba(255,255,255,0.03)',
-      gridColor: 'rgba(255,255,255,0.03)',
-      inputBg: 'rgba(255,255,255,0.06)',
-      inputBorder: 'rgba(255,255,255,0.12)',
-    },
-    light: {
-      bg: lightBg ?? '#ffffff',
-      text: '#0a0a0a',
-      textSecondary: '#52525b',
-      border: 'rgba(0,0,0,0.08)',
-      cardBg: 'rgba(0,0,0,0.02)',
-      gridColor: 'rgba(0,0,0,0.06)',
-      inputBg: 'rgba(0,0,0,0.04)',
-      inputBorder: 'rgba(0,0,0,0.12)',
-    },
-  };
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────

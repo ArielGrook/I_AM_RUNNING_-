@@ -33,13 +33,6 @@ const tokens = {
   },
 };
 
-function buildTokens(darkBg: string, lightBg: string) {
-  return {
-    dark: { ...tokens.dark, bg: darkBg ?? '#0a0a0a' },
-    light: { ...tokens.light, bg: lightBg ?? '#ffffff' },
-  };
-}
-
 // ── Feature Icons ──────────────────────────────────────────────────────────
 const FEATURE_ICONS: Record<string, React.ReactNode> = {
   zap: (

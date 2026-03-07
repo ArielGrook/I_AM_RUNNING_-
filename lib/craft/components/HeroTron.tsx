@@ -7,34 +7,13 @@ import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
 import { LinkPicker, handleLinkClick } from '@/lib/craft/shared/LinkPicker';
+import { buildGridTokens as buildTokens } from '../tokens';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
   const m = hex.replace(/^#/, '').match(/^(..)(..)(..)$/);
   if (!m) return '255,107,53';
   return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
-}
-
-// ── Tokens (darkBg/lightBg from props, like TronContact) ───────────────────
-function buildTokens(darkBg: string, lightBg: string) {
-  return {
-    dark: {
-      bg: darkBg ?? '#0a0a0a',
-      text: '#ffffff',
-      textSecondary: '#a1a1aa',
-      border: 'rgba(255,255,255,0.08)',
-      cardBg: 'rgba(255,255,255,0.03)',
-      gridColor: 'rgba(255,255,255,0.03)',
-    },
-    light: {
-      bg: lightBg ?? '#ffffff',
-      text: '#0a0a0a',
-      textSecondary: '#52525b',
-      border: 'rgba(0,0,0,0.08)',
-      cardBg: 'rgba(0,0,0,0.02)',
-      gridColor: 'rgba(0,0,0,0.06)',
-    },
-  };
 }
 
 // ── Interfaces ───────────────────────────────────────────────────────────

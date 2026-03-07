@@ -8,6 +8,7 @@ import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
 import { LinkPicker, handleLinkClick } from '@/lib/craft/shared/LinkPicker';
 import { signIn as clientSignIn } from '@/lib/auth/clientAuthService';
+import { buildBaseTokens as buildTokens } from '../tokens';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
@@ -25,26 +26,6 @@ const GoogleIcon = () => (
     <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z" fill="#EA4335"/>
   </svg>
 );
-
-// ── Tokens (bg from props darkBg/lightBg) ─────────────────────────────────
-function buildTokens(darkBg: string, lightBg: string) {
-  return {
-    dark: {
-      bg: darkBg ?? '#0a0a0a',
-      text: '#ffffff',
-      textSecondary: '#a1a1aa',
-      border: 'rgba(255,255,255,0.08)',
-      cardBg: 'rgba(255,255,255,0.03)',
-    },
-    light: {
-      bg: lightBg ?? '#ffffff',
-      text: '#0a0a0a',
-      textSecondary: '#52525b',
-      border: 'rgba(0,0,0,0.08)',
-      cardBg: 'rgba(0,0,0,0.02)',
-    },
-  };
-}
 
 // ── Interfaces ───────────────────────────────────────────────────────────
 interface TronLoginProps {
