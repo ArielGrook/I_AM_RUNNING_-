@@ -5,6 +5,7 @@ import { join } from 'path';
 import { execSync } from 'child_process';
 import { executeTool } from '@/lib/dev-agent/tool-executor';
 import { getProvider, type AIMessage } from '@/lib/dev-agent/ai-provider';
+import { loadConfig } from '@/lib/dev-agent/config';
 
 // Разрешить длительное выполнение (build может занять 60+ секунд)
 export const maxDuration = 120;
@@ -149,7 +150,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
       );
     }
 
-    if (DEVELOPER_USER_ID && user.id !== DEVELOPER_USER_ID) {
+    const devConfig = await loadConfig();
+    const devUserId = DEVELOPER_USER_ID || devConfig.developerUserId;
+    if (devUserId && user.id !== devUserId) {
       return NextResponse.json(
         { success: false, log, finalText: null, tokens: { input: 0, output: 0 }, error: 'Access denied' },
         { status: 403 }
@@ -174,7 +177,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
 
     // ── INIT PROVIDER ──
     log.push({ time: timestamp(), type: 'status', message: `Using ${providerName} / ${model}` });
-    const provider = getProvider(providerName);
+    let apiKey: string | undefined;
+    switch (providerName) {
+      case 'claude': apiKey = devConfig.anthropicApiKey; break;
+      case 'openai': apiKey = devConfig.openaiApiKey; break;
+      case 'deepseek': apiKey = devConfig.deepseekApiKey; break;
+    }
+    const provider = getProvider(providerName, apiKey);
 
     // ── BUILD MESSAGES ──
     const messages: AIMessage[] = [

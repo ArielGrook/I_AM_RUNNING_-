@@ -4,6 +4,7 @@ env
 .env.local
 .env.production
 .env.development
+.dev-agent-config.json
 
 # Dependencies
 node_modules/

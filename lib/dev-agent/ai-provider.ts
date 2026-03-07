@@ -102,9 +102,9 @@ function buildClaudeMessages(messages: AIMessage[]): {
   return { system, messages: apiMessages };
 }
 
-export function createClaudeProvider(): AIProvider {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
+export function createClaudeProvider(apiKeyOverride?: string): AIProvider {
+  const apiKey = apiKeyOverride || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set. Add it in Dev Console settings.');
 
   return {
     name: 'claude',
@@ -292,9 +292,9 @@ function createOpenAICompatibleProvider(config: OpenAIProviderConfig): AIProvide
   };
 }
 
-export function createOpenAIProvider(): AIProvider {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OPENAI_API_KEY not set');
+export function createOpenAIProvider(apiKeyOverride?: string): AIProvider {
+  const apiKey = apiKeyOverride || process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('OPENAI_API_KEY not set. Add it in Dev Console settings.');
   return createOpenAICompatibleProvider({
     name: 'openai',
     apiKey,
@@ -302,9 +302,9 @@ export function createOpenAIProvider(): AIProvider {
   });
 }
 
-export function createDeepSeekProvider(): AIProvider {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) throw new Error('DEEPSEEK_API_KEY not set');
+export function createDeepSeekProvider(apiKeyOverride?: string): AIProvider {
+  const apiKey = apiKeyOverride || process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) throw new Error('DEEPSEEK_API_KEY not set. Add it in Dev Console settings.');
   return createOpenAICompatibleProvider({
     name: 'deepseek',
     apiKey,
@@ -316,14 +316,14 @@ export function createDeepSeekProvider(): AIProvider {
 // ФАБРИКА ПРОВАЙДЕРОВ
 // ─────────────────────────────────────────────
 
-export function getProvider(providerName: string): AIProvider {
+export function getProvider(providerName: string, apiKey?: string): AIProvider {
   switch (providerName) {
     case 'claude':
-      return createClaudeProvider();
+      return createClaudeProvider(apiKey);
     case 'openai':
-      return createOpenAIProvider();
+      return createOpenAIProvider(apiKey);
     case 'deepseek':
-      return createDeepSeekProvider();
+      return createDeepSeekProvider(apiKey);
     default:
       throw new Error(`Unknown provider: ${providerName}`);
   }
