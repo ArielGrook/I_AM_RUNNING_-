@@ -19,6 +19,7 @@ import { injectSupabaseCredentialsIntoCraftJson } from '@/lib/craft/injectSupaba
 import {
   Container,
   Text,
+  Hero,
   HeroTron,
   HeroTronHeading,
   HeroTronSubheading,
@@ -930,6 +931,7 @@ export default function EditorPage() {
         resolver={{
           Container,
           Text,
+          Hero,
           HeroTron,
           HeroTronHeading,
           HeroTronSubheading,

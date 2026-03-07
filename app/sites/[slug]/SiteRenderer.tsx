@@ -6,6 +6,7 @@ import lz from 'lzutf8';
 import {
   Container,
   Text,
+  Hero,
   HeroTron,
   HeroTronHeading,
   HeroTronSubheading,
@@ -45,6 +46,7 @@ import { SiteContext } from '@/lib/craft/context/SiteContext';
 const resolver = {
   Container,
   Text,
+  Hero,
   HeroTron,
   HeroTronHeading,
   HeroTronSubheading,
