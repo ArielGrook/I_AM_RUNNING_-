@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i-am-running';
+const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 const CONFIG_PATH = join(PROJECT_ROOT, '.dev-agent-config.json');
 
 export interface DevAgentConfig {

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { loadConfig } from '@/lib/dev-agent/config';
 import { execSync } from 'child_process';
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i-am-running';
+const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 const DEVELOPER_USER_ID = process.env.DEVELOPER_USER_ID;
 const PM2_PROCESS_NAME = process.env.PM2_PROCESS_NAME || 'I-AM-RUNNING';
 

@@ -6,7 +6,7 @@ import { execSync } from 'child_process';
 // КОНФИГУРАЦИЯ
 // ─────────────────────────────────────────────
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i-am-running';
+const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 
 // Файлы/папки которые ЗАПРЕЩЕНО модифицировать (write/patch)
 const BLOCKED_WRITE_PATHS = [
