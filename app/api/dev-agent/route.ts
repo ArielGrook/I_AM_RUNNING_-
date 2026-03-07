@@ -26,6 +26,7 @@ interface LogEntry {
   time: string;
   type: 'status' | 'tool_call' | 'tool_result' | 'ai_text' | 'deploy' | 'error';
   message: string;
+  full?: string;
 }
 
 interface DevAgentRequest {
@@ -39,6 +40,7 @@ interface DevAgentResponse {
   success: boolean;
   log: LogEntry[];
   finalText: string | null;
+  aiOutputs: string[];
   tokens: { input: number; output: number };
   error?: string;
 }
@@ -135,6 +137,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
   const log: LogEntry[] = [];
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
+  const aiOutputs: string[] = [];
 
   try {
     // ── AUTH ──
@@ -145,7 +148,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
 
     if (!user) {
       return NextResponse.json(
-        { success: false, log, finalText: null, tokens: { input: 0, output: 0 }, error: 'Not authenticated' },
+        { success: false, log, finalText: null, aiOutputs: [], tokens: { input: 0, output: 0 }, error: 'Not authenticated' },
         { status: 401 }
       );
     }
@@ -154,7 +157,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
     const devUserId = DEVELOPER_USER_ID || devConfig.developerUserId;
     if (devUserId && user.id !== devUserId) {
       return NextResponse.json(
-        { success: false, log, finalText: null, tokens: { input: 0, output: 0 }, error: 'Access denied' },
+        { success: false, log, finalText: null, aiOutputs: [], tokens: { input: 0, output: 0 }, error: 'Access denied' },
         { status: 403 }
       );
     }
@@ -165,7 +168,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
 
     if (!prompt || !providerName || !model) {
       return NextResponse.json(
-        { success: false, log, finalText: null, tokens: { input: 0, output: 0 }, error: 'Missing prompt, provider, or model' },
+        { success: false, log, finalText: null, aiOutputs: [], tokens: { input: 0, output: 0 }, error: 'Missing prompt, provider, or model' },
         { status: 400 }
       );
     }
@@ -206,7 +209,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
       // Сохранить текстовый ответ
       if (response.text) {
         finalText = response.text;
-        log.push({ time: timestamp(), type: 'ai_text', message: response.text.substring(0, 500) });
+        aiOutputs.push(response.text);
+        log.push({ time: timestamp(), type: 'ai_text', message: response.text.substring(0, 300) + (response.text.length > 300 ? '... (see Output panel)' : '') });
       }
 
       // Если нет tool calls — модель закончила
@@ -232,12 +236,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
 
         const result = await executeTool({ name: toolCall.name, args: toolCall.args });
 
-        // Сокращаем результат для лога (полный уходит модели)
-        const logResult = result.success
-          ? (result.data || 'OK').substring(0, 200)
-          : `ERROR: ${result.error}`;
+        const fullResult = result.success ? (result.data || 'OK') : `ERROR: ${result.error}`;
+        const shortResult = fullResult.length > 200
+          ? fullResult.substring(0, 200) + `... (${fullResult.length} chars total)`
+          : fullResult;
 
-        log.push({ time: timestamp(), type: 'tool_result', message: logResult });
+        log.push({
+          time: timestamp(),
+          type: 'tool_result',
+          message: shortResult,
+          full: fullResult,
+        });
 
         // Добавить tool result в историю для следующего вызова
         messages.push({
@@ -267,6 +276,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
           success: false,
           log,
           finalText,
+          aiOutputs,
           tokens: { input: totalInputTokens, output: totalOutputTokens },
           error: deployResult.error,
         });
@@ -282,6 +292,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
       success: true,
       log,
       finalText,
+      aiOutputs,
       tokens: { input: totalInputTokens, output: totalOutputTokens },
     });
 
@@ -292,6 +303,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
       success: false,
       log,
       finalText: null,
+      aiOutputs: [],
       tokens: { input: totalInputTokens, output: totalOutputTokens },
       error: message,
     }, { status: 500 });

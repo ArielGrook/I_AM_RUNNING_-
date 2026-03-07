@@ -27,12 +27,14 @@ interface LogEntry {
   time: string;
   type: 'status' | 'tool_call' | 'tool_result' | 'ai_text' | 'deploy' | 'error';
   message: string;
+  full?: string;
 }
 
 interface DevAgentResponse {
   success: boolean;
   log: LogEntry[];
   finalText: string | null;
+  aiOutputs: string[];
   tokens: { input: number; output: number };
   error?: string;
 }
@@ -121,6 +123,8 @@ export default function DevConsolePage() {
   const [tokens, setTokens] = useState<{ input: number; output: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRollingBack, setIsRollingBack] = useState(false);
+  const [aiOutputs, setAiOutputs] = useState<string[]>([]);
+  const [expandedLines, setExpandedLines] = useState<Set<number>>(new Set());
 
   const [showSettings, setShowSettings] = useState(false);
   const [configValues, setConfigValues] = useState({
@@ -217,6 +221,8 @@ export default function DevConsolePage() {
 
     setIsRunning(true);
     setLog([]);
+    setAiOutputs([]);
+    setExpandedLines(new Set());
     setTokens(null);
     setError(null);
     abortRef.current = new AbortController();
@@ -232,6 +238,7 @@ export default function DevConsolePage() {
       const data: DevAgentResponse = await response.json();
 
       setLog(data.log);
+      setAiOutputs(data.aiOutputs || []);
       setTokens(data.tokens);
 
       if (!data.success) {
@@ -556,15 +563,61 @@ export default function DevConsolePage() {
               <div className="p-4 space-y-1 font-mono text-xs">
                 {log.map((entry, i) => {
                   const style = getLogStyle(entry.type);
+                  const isExpanded = expandedLines.has(i);
+                  const hasFullContent = entry.full && entry.full.length > entry.message.length;
+
                   return (
-                    <div key={i} className="flex items-start gap-2">
-                      <span className="text-zinc-600 flex-shrink-0 w-[65px]">{entry.time}</span>
-                      <span className={`flex-shrink-0 mt-0.5 ${style.color}`}>{style.icon}</span>
-                      <span className={`${style.color} break-all`}>{entry.message}</span>
+                    <div key={i}>
+                      <div
+                        className={`flex items-start gap-2 ${hasFullContent ? 'cursor-pointer hover:bg-zinc-800/50 rounded px-1 -mx-1' : ''}`}
+                        onClick={() => {
+                          if (hasFullContent) {
+                            setExpandedLines(prev => {
+                              const next = new Set(prev);
+                              if (next.has(i)) next.delete(i);
+                              else next.add(i);
+                              return next;
+                            });
+                          }
+                        }}
+                      >
+                        <span className="text-zinc-600 flex-shrink-0 w-[65px]">{entry.time}</span>
+                        <span className={`flex-shrink-0 mt-0.5 ${style.color}`}>{style.icon}</span>
+                        <span className={`${style.color} break-all`}>
+                          {entry.message}
+                          {hasFullContent && !isExpanded && (
+                            <span className="text-zinc-600 ml-1">▸ click to expand</span>
+                          )}
+                        </span>
+                      </div>
+                      {isExpanded && entry.full && (
+                        <pre className="ml-[85px] mt-1 mb-2 p-3 rounded bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs overflow-x-auto max-h-[400px] overflow-y-auto whitespace-pre-wrap">
+                          {entry.full}
+                        </pre>
+                      )}
                     </div>
                   );
                 })}
                 <div ref={logEndRef} />
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+
+        {/* AI Output panel */}
+        {aiOutputs.length > 0 && (
+          <div className="rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden">
+            <div className="px-4 py-2 border-b border-zinc-800 flex items-center gap-2 text-xs text-zinc-500">
+              <Bot className="w-3 h-3" />
+              <span>AI Output</span>
+            </div>
+            <ScrollArea className="max-h-[500px]">
+              <div className="p-4 space-y-4">
+                {aiOutputs.map((output, i) => (
+                  <div key={i} className="text-sm text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
+                    {output}
+                  </div>
+                ))}
               </div>
             </ScrollArea>
           </div>
