@@ -10,6 +10,8 @@ export interface AIMessage {
   // Для tool results (отправка результатов обратно модели)
   tool_call_id?: string;
   name?: string;
+  // Для assistant: tool calls которые модель запросила
+  toolCalls?: AIToolCall[];
 }
 
 export interface AIToolCall {
@@ -77,9 +79,19 @@ function buildClaudeMessages(messages: AIMessage[]): {
     }
 
     if (msg.role === 'assistant') {
-      // Если это assistant message с tool_calls — нужно восстановить формат
-      // Простой текстовый ответ
-      apiMessages.push({ role: 'assistant', content: msg.content });
+      // Assistant с toolCalls → content как массив (text block + tool_use blocks)
+      if (msg.toolCalls && msg.toolCalls.length > 0) {
+        const blocks: Array<{ type: 'text'; text: string } | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }> = [];
+        if (msg.content) {
+          blocks.push({ type: 'text', text: msg.content });
+        }
+        for (const tc of msg.toolCalls) {
+          blocks.push({ type: 'tool_use', id: tc.id, name: tc.name, input: tc.args });
+        }
+        apiMessages.push({ role: 'assistant', content: blocks });
+      } else {
+        apiMessages.push({ role: 'assistant', content: msg.content });
+      }
       continue;
     }
 
@@ -186,6 +198,19 @@ function buildOpenAIMessages(
         content: msg.content,
         tool_call_id: msg.tool_call_id,
         name: msg.name,
+      });
+      continue;
+    }
+
+    if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
+      apiMessages.push({
+        role: 'assistant',
+        content: msg.content || null,
+        tool_calls: msg.toolCalls.map(tc => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: { name: tc.name, arguments: JSON.stringify(tc.args) },
+        })),
       });
       continue;
     }
