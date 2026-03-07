@@ -16,6 +16,7 @@ import {
   Wrench,
   Bot,
   DollarSign,
+  Settings,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -121,6 +122,19 @@ export default function DevConsolePage() {
   const [error, setError] = useState<string | null>(null);
   const [isRollingBack, setIsRollingBack] = useState(false);
 
+  const [showSettings, setShowSettings] = useState(false);
+  const [configValues, setConfigValues] = useState({
+    anthropicApiKey: '',
+    openaiApiKey: '',
+    deepseekApiKey: '',
+    githubToken: '',
+    githubRepo: '',
+    developerUserId: '',
+  });
+  const [configMasked, setConfigMasked] = useState<Record<string, string>>({});
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [configSaved, setConfigSaved] = useState(false);
+
   const logEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -136,6 +150,66 @@ export default function DevConsolePage() {
       setModel(models[0].value);
     }
   }, [provider]);
+
+  // ── SETTINGS ──
+  async function loadSettings() {
+    try {
+      const res = await fetch('/api/dev-agent/config');
+      const data = await res.json();
+      if (data.config) {
+        setConfigMasked(data.config);
+      }
+    } catch (err) {
+      console.error('Failed to load config:', err);
+    }
+  }
+
+  async function saveSettings() {
+    setIsSavingConfig(true);
+    setConfigSaved(false);
+    try {
+      const payload: Record<string, string> = {};
+      for (const [key, value] of Object.entries(configValues)) {
+        if (value.trim()) {
+          payload[key] = value.trim();
+        }
+      }
+
+      if (Object.keys(payload).length === 0) {
+        setIsSavingConfig(false);
+        return;
+      }
+
+      const res = await fetch('/api/dev-agent/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setConfigMasked(data.config);
+        setConfigValues({
+          anthropicApiKey: '',
+          openaiApiKey: '',
+          deepseekApiKey: '',
+          githubToken: '',
+          githubRepo: '',
+          developerUserId: '',
+        });
+        setConfigSaved(true);
+        setTimeout(() => setConfigSaved(false), 3000);
+      }
+    } catch (err) {
+      console.error('Failed to save config:', err);
+    } finally {
+      setIsSavingConfig(false);
+    }
+  }
+
+  useEffect(() => {
+    if (showSettings) loadSettings();
+  }, [showSettings]);
 
   // ── EXECUTE ──
   async function handleExecute() {
@@ -236,13 +310,136 @@ export default function DevConsolePage() {
           <Terminal className="w-5 h-5 text-orange-500" />
           <h1 className="text-lg font-semibold">Dev Console</h1>
         </div>
-        {tokens && (
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-            <DollarSign className="w-3 h-3" />
-            <span>{tokens.input.toLocaleString()} in / {tokens.output.toLocaleString()} out</span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {tokens && (
+            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+              <DollarSign className="w-3 h-3" />
+              <span>{tokens.input.toLocaleString()} in / {tokens.output.toLocaleString()} out</span>
+            </div>
+          )}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="text-zinc-400 hover:text-white transition-colors ml-3"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        </div>
       </header>
+
+      {/* Settings Panel */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowSettings(false)}
+          />
+          <div className="relative w-full max-w-md bg-zinc-900 border-l border-zinc-800 overflow-y-auto">
+            <div className="p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-zinc-100">Settings</h2>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="text-zinc-500 hover:text-zinc-300"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <p className="text-xs text-zinc-500">
+                API keys are stored on the server. Leave fields empty to keep current values.
+              </p>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                  Anthropic API Key
+                </label>
+                <input
+                  type="password"
+                  value={configValues.anthropicApiKey}
+                  onChange={(e) => setConfigValues(prev => ({ ...prev, anthropicApiKey: e.target.value }))}
+                  placeholder={configMasked.anthropicApiKey || 'sk-ant-...'}
+                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                  OpenAI API Key
+                </label>
+                <input
+                  type="password"
+                  value={configValues.openaiApiKey}
+                  onChange={(e) => setConfigValues(prev => ({ ...prev, openaiApiKey: e.target.value }))}
+                  placeholder={configMasked.openaiApiKey || 'sk-...'}
+                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                  DeepSeek API Key
+                </label>
+                <input
+                  type="password"
+                  value={configValues.deepseekApiKey}
+                  onChange={(e) => setConfigValues(prev => ({ ...prev, deepseekApiKey: e.target.value }))}
+                  placeholder={configMasked.deepseekApiKey || 'sk-...'}
+                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div className="border-t border-zinc-800" />
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                  GitHub Token
+                </label>
+                <input
+                  type="password"
+                  value={configValues.githubToken}
+                  onChange={(e) => setConfigValues(prev => ({ ...prev, githubToken: e.target.value }))}
+                  placeholder={configMasked.githubToken || 'ghp_...'}
+                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                  GitHub Repo URL
+                </label>
+                <input
+                  type="text"
+                  value={configValues.githubRepo}
+                  onChange={(e) => setConfigValues(prev => ({ ...prev, githubRepo: e.target.value }))}
+                  placeholder={configMasked.githubRepo || 'https://github.com/user/repo.git'}
+                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                  Developer User ID (Supabase UUID)
+                </label>
+                <input
+                  type="text"
+                  value={configValues.developerUserId}
+                  onChange={(e) => setConfigValues(prev => ({ ...prev, developerUserId: e.target.value }))}
+                  placeholder={configMasked.developerUserId || 'uuid-from-supabase'}
+                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <Button
+                onClick={saveSettings}
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                disabled={isSavingConfig}
+              >
+                {isSavingConfig ? 'Saving...' : configSaved ? '✓ Saved' : 'Save Settings'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col p-6 gap-4 max-w-5xl mx-auto w-full">
