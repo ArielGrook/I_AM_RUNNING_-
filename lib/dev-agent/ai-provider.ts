@@ -1,0 +1,323 @@
+import { TOOL_DEFINITIONS } from './tool-executor';
+
+// ─────────────────────────────────────────────
+// ТИПЫ
+// ─────────────────────────────────────────────
+
+export interface AIMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  // Для tool results (отправка результатов обратно модели)
+  tool_call_id?: string;
+  name?: string;
+}
+
+export interface AIToolCall {
+  id: string;          // уникальный ID вызова (от провайдера)
+  name: string;        // имя инструмента (read_file, write_file и т.д.)
+  args: Record<string, unknown>; // аргументы
+}
+
+export interface AIResponse {
+  text: string | null;        // текстовый ответ модели (может быть null если только tool calls)
+  toolCalls: AIToolCall[];    // запросы на вызов инструментов
+  done: boolean;              // true если модель закончила (нет tool calls)
+  inputTokens: number;        // использовано входных токенов
+  outputTokens: number;       // использовано выходных токенов
+}
+
+export interface AIProvider {
+  name: string;
+  call(messages: AIMessage[], model: string): Promise<AIResponse>;
+}
+
+// ─────────────────────────────────────────────
+// CLAUDE (ANTHROPIC) АДАПТЕР
+// ─────────────────────────────────────────────
+
+function buildClaudeTools() {
+  return TOOL_DEFINITIONS.map(tool => ({
+    name: tool.name,
+    description: tool.description,
+    input_schema: {
+      type: tool.parameters.type,
+      properties: tool.parameters.properties,
+      required: tool.parameters.required,
+    },
+  }));
+}
+
+function buildClaudeMessages(messages: AIMessage[]): {
+  system: string;
+  messages: Array<{ role: string; content: unknown }>;
+} {
+  // Отделить system message от остальных
+  let system = '';
+  const apiMessages: Array<{ role: string; content: unknown }> = [];
+
+  for (const msg of messages) {
+    if (msg.role === 'system') {
+      system += (system ? '\n\n' : '') + msg.content;
+      continue;
+    }
+
+    if (msg.role === 'tool') {
+      // Claude: tool results отправляются как role: 'user' с type: 'tool_result'
+      apiMessages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: msg.tool_call_id,
+            content: msg.content,
+          },
+        ],
+      });
+      continue;
+    }
+
+    if (msg.role === 'assistant') {
+      // Если это assistant message с tool_calls — нужно восстановить формат
+      // Простой текстовый ответ
+      apiMessages.push({ role: 'assistant', content: msg.content });
+      continue;
+    }
+
+    // user messages
+    apiMessages.push({ role: 'user', content: msg.content });
+  }
+
+  return { system, messages: apiMessages };
+}
+
+export function createClaudeProvider(): AIProvider {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
+
+  return {
+    name: 'claude',
+
+    async call(messages: AIMessage[], model: string): Promise<AIResponse> {
+      const { system, messages: apiMessages } = buildClaudeMessages(messages);
+      const tools = buildClaudeTools();
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 16384,
+          system,
+          messages: apiMessages,
+          tools,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Claude API error ${response.status}: ${errorBody}`);
+      }
+
+      const data = await response.json();
+
+      // Парсить ответ Claude
+      let text: string | null = null;
+      const toolCalls: AIToolCall[] = [];
+
+      for (const block of data.content) {
+        if (block.type === 'text') {
+          text = (text || '') + block.text;
+        } else if (block.type === 'tool_use') {
+          toolCalls.push({
+            id: block.id,
+            name: block.name,
+            args: block.input,
+          });
+        }
+      }
+
+      return {
+        text,
+        toolCalls,
+        done: data.stop_reason === 'end_turn',
+        inputTokens: data.usage?.input_tokens || 0,
+        outputTokens: data.usage?.output_tokens || 0,
+      };
+    },
+  };
+}
+
+// ─────────────────────────────────────────────
+// OPENAI АДАПТЕР
+// (Совместим с OpenAI, DeepSeek, и другими
+//  провайдерами с OpenAI-совместимым API)
+// ─────────────────────────────────────────────
+
+function buildOpenAITools() {
+  return TOOL_DEFINITIONS.map(tool => ({
+    type: 'function' as const,
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    },
+  }));
+}
+
+function buildOpenAIMessages(
+  messages: AIMessage[]
+): Array<{ role: string; content: string | null; tool_calls?: unknown[]; tool_call_id?: string; name?: string }> {
+  const apiMessages: Array<{
+    role: string;
+    content: string | null;
+    tool_calls?: unknown[];
+    tool_call_id?: string;
+    name?: string;
+  }> = [];
+
+  for (const msg of messages) {
+    if (msg.role === 'tool') {
+      apiMessages.push({
+        role: 'tool',
+        content: msg.content,
+        tool_call_id: msg.tool_call_id,
+        name: msg.name,
+      });
+      continue;
+    }
+
+    apiMessages.push({ role: msg.role, content: msg.content });
+  }
+
+  return apiMessages;
+}
+
+interface OpenAIProviderConfig {
+  name: string;
+  apiKey: string;
+  baseUrl: string;
+}
+
+function createOpenAICompatibleProvider(config: OpenAIProviderConfig): AIProvider {
+  return {
+    name: config.name,
+
+    async call(messages: AIMessage[], model: string): Promise<AIResponse> {
+      const apiMessages = buildOpenAIMessages(messages);
+      const tools = buildOpenAITools();
+
+      const response = await fetch(`${config.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: apiMessages,
+          tools,
+          tool_choice: 'auto',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`${config.name} API error ${response.status}: ${errorBody}`);
+      }
+
+      const data = await response.json();
+      const choice = data.choices?.[0];
+
+      if (!choice) {
+        throw new Error(`${config.name}: no choices in response`);
+      }
+
+      const msg = choice.message;
+      const text = msg.content || null;
+      const toolCalls: AIToolCall[] = [];
+
+      if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
+        for (const tc of msg.tool_calls) {
+          let args: Record<string, unknown> = {};
+          try {
+            args = JSON.parse(tc.function?.arguments || '{}');
+          } catch {
+            args = { _raw: tc.function?.arguments };
+          }
+          toolCalls.push({
+            id: tc.id,
+            name: tc.function?.name || 'unknown',
+            args,
+          });
+        }
+      }
+
+      return {
+        text,
+        toolCalls,
+        done: choice.finish_reason === 'stop',
+        inputTokens: data.usage?.prompt_tokens || 0,
+        outputTokens: data.usage?.completion_tokens || 0,
+      };
+    },
+  };
+}
+
+export function createOpenAIProvider(): AIProvider {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('OPENAI_API_KEY not set');
+  return createOpenAICompatibleProvider({
+    name: 'openai',
+    apiKey,
+    baseUrl: 'https://api.openai.com/v1',
+  });
+}
+
+export function createDeepSeekProvider(): AIProvider {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) throw new Error('DEEPSEEK_API_KEY not set');
+  return createOpenAICompatibleProvider({
+    name: 'deepseek',
+    apiKey,
+    baseUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1',
+  });
+}
+
+// ─────────────────────────────────────────────
+// ФАБРИКА ПРОВАЙДЕРОВ
+// ─────────────────────────────────────────────
+
+export function getProvider(providerName: string): AIProvider {
+  switch (providerName) {
+    case 'claude':
+      return createClaudeProvider();
+    case 'openai':
+      return createOpenAIProvider();
+    case 'deepseek':
+      return createDeepSeekProvider();
+    default:
+      throw new Error(`Unknown provider: ${providerName}`);
+  }
+}
+
+// Доступные модели для UI (dropdown в Dev Console)
+export const AVAILABLE_MODELS: Record<string, string[]> = {
+  claude: [
+    'claude-sonnet-4-20250514',
+    'claude-opus-4-20250115',
+  ],
+  openai: [
+    'gpt-4o',
+    'gpt-4o-mini',
+    'o1',
+    'o3',
+  ],
+  deepseek: [
+    'deepseek-chat',
+    'deepseek-reasoner',
+  ],
+};
