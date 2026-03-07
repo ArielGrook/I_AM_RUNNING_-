@@ -13,7 +13,7 @@ export const runtime = 'nodejs';
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 const DEVELOPER_USER_ID = process.env.DEVELOPER_USER_ID;
-const PM2_PROCESS_NAME = process.env.PM2_PROCESS_NAME || 'I-AM-RUNNING';
+const PM2_PROCESS_NAME = process.env.PM2_PROCESS_NAME || 'i-am-running';
 const GIT_BRANCH = process.env.GIT_BRANCH || 'main';
 const MAX_TOOL_ITERATIONS = 25;
 const CONTEXT_CORE_DIR = join(PROJECT_ROOT, 'context-core');

@@ -2,6 +2,7 @@ export { Container } from './Container';
 export { Text } from './Text';
 export { Hero } from './Hero';
 export { HeroTron, HeroTronHeading, HeroTronSubheading, HeroTronButton } from './HeroTron';
+export { HeroDefault } from './HeroDefault';
 export { Button } from './Button';
 export { Image } from './Image';
 export { Header } from './Header';
