@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Search,
   Globe,
+  Terminal,
 } from 'lucide-react';
 import { subscribeToProjects, unsubscribe, type ProjectUpdate } from '@/lib/supabase/realtime';
 import { createSupabaseClient } from '@/lib/supabase/client';
@@ -307,6 +308,13 @@ export default function AdminPage() {
               >
                 <Globe className="w-4 h-4" />
                 SEO Settings
+              </Link>
+              <Link
+                href={`/${locale}/admin/dev-console`}
+                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
+              >
+                <Terminal className="w-4 h-4" />
+                Dev Console
               </Link>
             </div>
           </div>
