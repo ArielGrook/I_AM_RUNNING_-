@@ -1,0 +1,274 @@
+[33mfdf9e4c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m feat(craft): Tron decomposition into clickable sub-nodes
+[33m9819657[m feat(craft): TronFeatures cards as editable Craft.js nodes (FeatureCard)
+[33ma788dfd[m fix(craft): light mode for all Tron components + editor getNode guard
+[33med88712[m fix(craft): color presets show real gradients in accent circles
+[33md4b9d81[m refactor(craft): TronPricing cards as editable Craft.js nodes
+[33m7488011[m feat(craft): add 4 gradient color presets
+[33m451b692[m refactor(craft): TronTestimonials carousel full width, double row, directions
+[33m4e63d6d[m feat(viewport): spotlight color follows color preset
+[33ma5aff6a[m feat(craft): TronTestimonials auto carousel and TronPricing per-card animations
+[33m257d4df[m refactor(craft): TRON toolbox group and global cursor spotlight
+[33m7e06315[m fix(editor): preview animations dark canvas and scroll-trigger once
+[33m9a5fefe[m feat(craft): add 5 Tron components with cursor spotlight
+[33m45bc342[m refactor(craft): Header2/Hero2 -> HeaderTron/HeroTron, TronPortfolio image upload
+[33m7670567[m feat(craft): add Tron components and Tron preset
+[33mfe06b9b[m feat(Hero2): add spotlight intensity and show grid settings
+[33m8ebb410[m feat(craft): add Hero 2 block with cursor spotlight
+[33m04b90f7[m fix(canvas): hide Craft.js drop indicator and renderer pseudo-elements
+[33m1128de7[m style(canvas): remove diagonal dashed background from drop zone
+[33m615e5e5[m fix(canvas): restore canvas scroll, refine dashed-outline selector
+[33m4edecdc[m fix(canvas): remove dashed outlines on canvas
+[33m3d13873[m refactor(seo): move SEO settings from dashboard to admin panel
+[33m29fffeb[m feat(seo): SEO metadata from admin and dynamic meta
+[33m6580d03[m feat(editor): connect theme toggle to Settings and mini toolbar
+[33md727b15[m fix(editor): Settings panel dark inputs + mini toolbar class
+[33m39a152f[m fix(editor): remove dashed outlines; style: mini toolbar + dark inputs in Settings
+[33m1a9f857[m feat(editor): РѕС‚РґРµР»СЊРЅС‹Рµ СЃРѕСЃС‚РѕСЏРЅРёСЏ РєР°РЅРІС‹ РґР»СЏ desktop Рё mobile viewport
+[33m8c5ab7a[m feat(editor): secondary toolbar redesign with viewport pill, color presets, zoom
+[33mb7a7962[m fix(editor): mobile canvas containment and Header2 dropdown
+[33m92ce53a[m feat(editor): viewport mobile emulation and Header2 dynamic nav links
+[33m26e1747[m feat(craft): add Header 2 Dark Red v2 mobile-responsive header
+[33mfd7fd21[m refactor(editor): GSAP preview fromTo+inViewport, run only in preview mode
+[33m21bbcd7[m fix(next): transpile ESM packages to fix Unexpected token export in layout
+[33mc5b5b7e[m fix(preview): show backgrounds in preview mode
+[33m27e73f2[m fix(craft): useEditor enabled selector so data-animate renders in preview
+[33m26fcd5a[m chore(hero): add temporary debug log for data-animate in preview
+[33m22caaac[m fix(editor,craft): GSAP timing and animation settings in all components
+[33m4574909[m fix(craft): IconProps type for build - optional object member syntax
+[33m329b8f0[m feat(craft): replace Toolbox emoji icons with minimal SVG icons
+[33m243af5f[m fix(editor): preview animations + Replay button, narrow left panel
+[33m6e12460[m fix(editor): GSAP animations in preview mode
+[33m5346811[m fix(components): mobile-first responsive layout
+[33m09a46be[m refactor(editor): remove Layers panel, Toolbox takes full left sidebar
+[33m95fb443[m style(editor): replace bluish tints with neutral gray palette
+[33m442afe2[m fix(editor): remove dividers and scrollbars
+[33m2bdb692[m fix(editor): remove white stripes at canvas edges, round sidebar toggles
+[33mab32e2a[m fix(editor): UX fixes - dark mode, scroll, delete, layers, toolbox, mobile
+[33m12a874b[m fix(editor): save/load project from Supabase
+[33m23cbafb[m fix(editor): UX improvements - rename, clear, panels, animations
+[33m3b39f2e[m feat(editor): Add HtmlBlock + ZIP parser integration
+[33mc22d33e[m refactor(craft): unify all components to dark premium style (Hero reference)
+[33m48b9fbb[m feat(toolbox): Presets tab and Dark Launch preset
+[33m4f659d4[m feat(editor): inline edit buttons, delete via trash only, GSAP in preview
+[33maaf1b45[m feat(hero): inline editing for title, titleAccent, subtitle
+[33m56736fa[m feat(hero): rewrite Hero as Stripe/Linear-style landing block
+[33m760a656[m fix(editor): Craft.js setOptions expects updater function, not object
+[33m055ebc2[m feat(editor): preview mode disables editing, setProp throttle, duplicate node
+[33m8c231eb[m refactor(editor): Remove mandatory Container wrapper between ROOT and sections
+[33m3e83b21[m fix(editor): Fix drag-and-drop + add alignment grid
+[33mcebfacc[m feat(editor): Free drag-and-drop everywhere + 5 new components
+[33m9b64ab0[m feat(editor): Major editor overhaul — canvas mechanics, panels, navigation
+[33mc14a64a[m feat(editor): Light/dark theme toggle + free drag-and-drop for all components
+[33m6e6114b[m feat(editor): Full UI polish + crash fixes + keyboard shortcuts — Phase 2.5
+[33m9b54d20[m fix(editor): Bug fixes & UX polishing — Phase 2
+[33m6cab0b9[m feat(editor): Deep Editor Refinement — Phase 1 Foundation
+[33mcf5e5aa[m fix(craft): LayersPanel crash - undefined parent access
+[33m58d96da[m feat(craft): Craft.js Editor Extension - 6 components, Toolbox categories, Undo/Redo, LayersPanel, PreviewModal
+[33mf624732[m refactor(editor): migrate from Puck to Craft.js
+[33m63d302b[m feat(editor): extend Puck with components, layers panel, preview modal
+[33m5df1ab8[m refactor(editor): clean slate Puck editor - remove GrapesJS mix
+[33mbdd642c[m feat(editor): Puck custom fields, right panel overrides, undo/redo, theming
+[33m1d4459f[m feat(editor): Puck custom fields, right panel overrides, undo/redo, theming and i18n doc
+[33mb53f032[m feat(editor): Puck production ready - right panel removed, Pages tab, editor-puck removed
+[33m1f57239[m feat(editor): replace GrapesJS with Puck — full migration (Phases 1-4)
+[33m6b0400b[m feat(editor): upload ZIP images to Supabase Storage instead of base64
+[33m48e9841[m feat(components): F03 premium component library Phase 1 (9 components)
+[33m3b4d0da[m feat(editor): UX overhaul - TraitsPanel, LayersPanel, GradientBuilder
+[33m28a75b8[m feat(editor): add Traits Panel (P7) - context-aware attribute editor
+[33mfe0b2c3[m fix(editor): Windsurf improvements - styles, undo/redo, preview, i18n
+[33mca21bdf[m feat(editor): add Layers panel (component tree) to left sidebar
+[33mda8ddf2[m fix(editor): rebuild slider component and fix CSS conflicts causing misalignment and invisible elements
+[33mb576f5b[m fix(editor): stabilize sliders and swatches across themes
+[33m6de75c1[m style(editor): unify right panel styles across themes
+[33m26852f8[m fix(editor): widen style panel and improve background image upload UX
+[33mafa2a80[m fix(editor): background image upload uses project Supabase client
+[33m548fc94[m fix(editor): fix StyleManager bg upload client and init crash
+[33m30f5226[m feat(editor): add background image controls to StyleManager
+[33mc7b2e30[m Merge origin/main into main (resolve GrapeEditor.tsx)
+[33m1c59dfb[m fix(editor): enable canvas device scaling
+[33m6347238[m fix(editor): restore canvas device scaling behavior
+[33m1a00329[m fix(editor): device scale commands and toolbar gaps
+[33mb7216e5[m fix(editor): toolbar layout, language button size, device scale buttons
+[33m80dd937[m Merge origin/main into main (resolve toolbar conflicts)
+[33m717e986[m refactor(editor): redesign toolbar and project name editing
+[33m48303ef[m feat(editor): remove grid buttons and add editable project name
+[33me74d26a[m feat(editor): remove grid buttons, add editable project name
+[33mb645750[m feat(editor): add Page and Hide grid buttons
+[33mf970cd1[m feat(editor): canvas drop zones + grid toggle
+[33mc11c55b[m fix(editor): load Tailwind CSS correctly in GrapesJS canvas
+[33m396c02f[m fix(components): add React import to library components for sync script
+[33m5d8b640[m feat(components): implement F03 frontend components library
+[33m5ef1cdb[m fix(projects): fix version increment on save
+[33m05a45db[m feat(projects): implement multi-page support and metadata (F05)
+[33m687f304[m fix(editor): canvas full width, panels w-64, orange accents everywhere
+[33m48b93ce[m fix(editor): canvas width + properties panel contrast
+[33mc37793f[m feat(dashboard): complete Hebrew translations
+[33md2a0536[m fix(editor): remove RTL layout for Hebrew - same layout as English
+[33m896a787[m fix(landing): remove RTL layout for Hebrew - same layout as English
+[33m0fad461[m fix(ui): remove RTL layout and fix editor dark mode contrast
+[33m59c0575[m fix(ui): contrast fixes + remove fake AI chat
+[33m9cc60ee[m style(dashboard): gray/orange color scheme + i18n support
+[33maea3cd0[m feat(dashboard): modern UI, dark mode, multi-page save fix
+[33m754c914[m feat(dashboard): add Project Dashboard with full flow
+[33mc19e043[m feat(editor): implement One-Way Ejection architecture
+[33mbdbe65b[m fix(editor): load project data into GrapesJS canvas after Supabase load
+[33m53abada[m feat(editor): add project LOAD from Supabase on editor open
+[33mf323a80[m feat(editor): connect Save button to Supabase
+[33m56f6e84[m feat(projects): add contract support to supabase-sync
+[33mbd4cedb[m feat(admin): complete admin panel with user management
+[33m1b10f63[m fix(admin): update admin panel to use users table
+[33m84637b9[m fix(auth): migrate to users table and update admin panel auth
+[33mbe54168[m fix(components): extract only component-specific CSS, not entire page
+[33m1db4034[m fix(parser): correct script load order - head scripts before body content
+[33mf9b8d7e[m feat(parser): expand CDN maps with animation and interaction libraries
+[33m4be8fb5[m fix: remove duplicate grapesEditor variable declaration
+[33mc75d559[m fix: preserve all HTML elements during ZIP import
+[33mb8add31[m fix: eliminate JS duplication + add fonts/imports processing
+[33m2755c93[m fix: DOM parser for JS files + localStorage cleanup + CSS backgrounds
+[33m5136461[m fix: convert local JS to base64 and clear page tabs
+[33mb69831a[m feat: preserve JavaScript in templates with CDN conversion
+[33m3825b8e[m feat(parser): add multi-page template support with page tabs
+[33m3cff937[m fix: migrate from Parser V2 to SimpleParser V3
+[33m37248bd[m fix: clear localStorage before ZIP import
+[33m65b363e[m fix(editor): resolve SimpleParser type error in GrapeEditor
+[33m4c3dfdb[m fix(parser): add path replacement for assets in CSS and HTML
+[33m65497a1[m debug(parser): add extensive logging to zip-extractor for asset detection debugging
+[33mfb39428[m feat(parser): add Parser V2 core modules - Complete ZIP parser rewrite with 10 specialized modules
+[33m0c15693[m feat(editor): integrate Parser V2 with progress UI - Replace handleImport with parseZipProject, add 8-stage tracking with icons
+[33m09fe086[m cleanup: remove projects API routes (reverting to localStorage)
+[33m4fd31e0[m feat(supabase): add server-side client for API routes
+[33m063ef2c[m feat(api): add projects CRUD API routes with RLS protection
+[33mb893daf[m refactor(auth): use user_metadata cache + dual-write pattern for role updates
+[33m5ef970f[m perf(auth): reduce profile fetch timeout to 3 seconds
+[33m7b7d704[m fix(auth): add 5-second timeout to profile fetch to prevent infinite hang
+[33maa087d1[m feat(auth): fetch profile from database on SIGNED_IN instead of user_metadata
+[33m5acc407[m fix(auth-ui): refresh metadata on sign-in + close user menu - P1
+[33m5f8abc5[m fix(auth): Fix infinite loading in Google OAuth - add missing else block
+[33mcdeda4f[m fix(auth+ui): Force refresh user metadata on login + Fix mobile user menu
+[33m283f3f3[m fix(editor): Fix subscription redirects, mobile responsiveness, and i18n
+[33m1568db9[m feat(subscription): Update subscription page styling and plan pricing
+[33m9e3aee8[m feat(auth,subscription): Google OAuth flow + subscription plans - clean
+[33mf73eccb[m Revert "chore(repo): Cleanup assets and add subscription plans - bulk update"
+[33md67689f[m chore(repo): Cleanup assets and add subscription plans - bulk update
+[33mdb81082[m fix(auth): Enhance mobile confirmation handling and refine Google OAuth - Critical mobile bug fix
+[33m2216c96[m [fix](auth): add Google OAuth + mobile confirm fix - critical
+[33mbf36463[m [fix](ui): auth success icon + mobile responsiveness - high
+[33me7090a3[m [fix](auth-ui): remove debug output and green checkmark - quick UI
+[33ma37bc2e[m [fix](auth): remove debug text from signup success screen - production ready
+[33mfc01f39[m [debug](auth): comprehensive diagnostics + fix LoadingProvider blocking success screen
+[33m7c18db7[m [fix](auth): success screen now renders above loading overlay - critical bugfix
+[33m5ef49a2[m [debug](auth): add comprehensive diagnostic logging to signup flow
+[33m61b76c5[m [fix](auth): clear loading state after signup to show success screen - critical bugfix
+[33m08288e5[m [fix](auth): visual tweaks only - green checkmark and localized thank-you text
+[33mbfacd1f[m Revert "[fix](auth): tweak success visuals - low risk"
+[33m6018610[m [fix](auth): tweak success visuals - low risk
+[33m49198df[m Revert "[fix](auth): finalize auth ui - high priority - signup success localized; callback green check; clear messaging no spinner"
+[33m2f743c9[m [fix](auth): finalize auth ui - high priority - signup success localized; callback green check; clear messaging no spinner
+[33me79cb82[m fix(auth): finalize auth ui flow
+[33me1d14f7[m fix(auth): Complete signup and email confirmation flow fixes
+[33mf7df687[m fix(auth): Complete auth flow improvements - signup, confirmation, and button text
+[33m7f65a97[m feat(auth): Show success message after email confirmation sent
+[33m97fb2e3[m feat(auth): Add email confirmation callback page
+[33m5be99f4[m fix: Add missing router.push in editor button handler
+[33mac72d68[m fix(auth): Fix editor access for role 5 + signup hanging issues
+[33mbbdfbaf[m refactor(auth): Use user metadata for profile - remove database queries
+[33m82bf50f[m feat(auth): Implement complete 5-tier role-based access system
+[33m63b89c8[m fix(auth): Fix role-based editor access - users with role >= 1 can now access editor
+[33m8874769[m fix(auth): Implement aggressive profile caching strategy
+[33m867a377[m perf(auth): Speed up auth with localStorage caching and fix loading timing
+[33m258c405[m fix(auth): Complete rewrite - fixed infinite loadProfile() hang with timeout protection
+[33m65d5a1d[m refactor(auth): remove createProfile, use database trigger - simplified auth flow
+[33m446dc7b[m refactor(auth): radical simplification - remove all timeouts, reduce 160 lines
+[33m70c7c32[m fix(auth): increase timeouts to 10s for loadProfile/createProfile, 12s defensive
+[33m5180bd7[m feat(auth): optimize loading screen - auth happens during load
+[33m52a7fef[m fix(auth): add 5s timeout to loadProfile/createProfile + fallback default profile
+[33mdb222d8[m fix(auth): remove artificial timeouts from sign-in/sign-up
+[33m0ba775d[m fix(auth): add defensive 3s timeout to clear loading state on auth pages
+[33mc25f600[m fix(auth): remove refreshAuth timeout on init, implement Supabase singleton
+[33mb54e7f4[m fix(auth): Consolidate auth provider to stop timeout races - critical
+[33mdd5bbc8[m fix(auth): Resolve authentication race condition bug
+[33m225e048[m fix(auth): clear auth timeout on errors - hotfix
+[33ma8318dc[m fix(auth): improve error handling and timeout cleanup in auth functions
+[33m8a2a2a9[m fix(auth): resolve cookieConsent undefined error in useAuth hook
+[33mf8ae211[m fix(auth): resolve infinite loading race conditions in useAuth hook
+[33m7d41f57[m fix(auth): Resolve authentication errors and multiple client instances
+[33m4a221e5[m feat(auth): Fix authentication loading bugs and mobile responsiveness
+[33mdeea64e[m fix: Emergency infinite loading loop fix - disabled problematic auth initialization
+[33mf9811e5[m fix: Emergency fix for infinite loading loop - simplified auth logic
+[33m97f9c3d[m fix(auth): Complete authentication system overhaul with Google OAuth
+[33m1e54896[m feat(auth): Complete authentication system with cookie consent & UI improvements
+[33m1cee13e[m style(chat): Major sizing and positioning improvements - enhanced UX
+[33m25efd1d[m style(chat): Interface sizing refinements - improved readability and comfort
+[33m05e5f7b[m polish(chat): Final UX refinements - borderless interface with navigation
+[33m6506a94[m feat(chat): Claude-style chat interface redesign - professional UX upgrade
+[33me95412d[m feat(theme): complete dark theme with specific color palette - #262626 and #525151
+[33mdfe4ba4[m feat(theme): complete dark theme integration - loading screen, chat page, and GrapesJS editor
+[33mfbe5c27[m fix: correct keyword highlighting in landing page description - fixed duplicate words and color consistency
+[33m29aaffe[m feat(ui): complete frontend UI/UX fixes - loading screen, custom icons, editor themes, chat page, auth improvements
+[33m4ef3708[m feat: complete authentication system and theme overhaul - added user avatars, profile dropdown, theme improvements
+[33m8863806[m feat(ui): enhance landing page authentication and navigation flow
+[33m043480c[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m022427c[m feat(auth): implement complete authentication system with role-based access - Module 1.1
+[33m3d6f429[m fix(storage): reliable save/load fast-path first - urgent
+[33m896a4cd[m fix(slider): immediate onInput updates - urgent
+[33m9b6a2cb[m fix(editor): restore slider updates and reliable restore - urgent
+[33m37e1b0f[m feat(storage): compress and chunk saves for any size - urgent
+[33m16c1521[m fix(editor): sync manual save status with store - n/a
+[33mcb8a14b[m feat: real-time slider updates + manual save button
+[33m7cf7fe8[m merge: Resolve conflicts - keep clean minimal fixes
+[33m24dc5c6[m fix(editor): Slider smoothness + UndoManager init + Auto-save - Clean minimal fixes
+[33mcb96741[m fix(editor): Critical performance regressions - drag lag, ZIP import hang, auto-save
+[33m1cb7bf2[m feat(editor): Fix slider performance + Undo/Redo init + Auto-save system - Tasks 1.2 & 1.3 complete
+[33m6da51f2[m feat(editor): Smooth sliders + Undo/Redo toolbar relocation - Task 1.2 complete
+[33ma47091f[m feat(editor): Fix slider colors and expand right panel - Task 1.1 complete
+[33m88b8082[m fix: Add missing slider component to complete f4f6aa5 - ETALON BUILD
+[33mf4f6aa5[m feat(editor): Clean right panel UI and add advanced gradient builder
+[33mb437884[m fix(editor): UX improvements - contrast, drag, style manager, undo/redo
+[33mc32866a[m fix(editor): UX improvements - undo/redo, image resize, UI visibility, translations, chat styling
+[33m3825b0b[m[33m ([m[1;32mfix-zip-issues[m[33m)[m Fix: restore reliable drag/move for components
+[33m2b7013f[m Editor polish: smooth drag, working resize handles
+[33mf098c8e[m Editor polish: responsive preview, devices, smooth drag/resize
+[33m21167df[m Adopt improved ZIP version with multilingual support and black backgrounds
+[33ma8fff44[m Export: Standalone landing page ZIP package for editor import
+[33mc2db1eb[m Hero fix: Restore bright orange, fix translation display
+[33m8e6ce59[m Hero fixes: Remove clutter, soften colors, correct text hierarchy
+[33mf00f944[m Complete website redesign: 6 content blocks, new Hero, full translations en/ru/he
+[33mf893044[m Phase 2 Core: Typewriter effects, animated counters, assembly, parallax scaffolds
+[33mcd698b3[m Phase 1: Core animations foundation with performance optimization
+[33mf7bf6d0[m Emergency Fix: Recreate corrupted translation JSON files
+[33mfb9c830[m Fix: Resolve JSON parsing errors in translation files
+[33m70cf42a[m Design Corrections: Orange-red palette + animations + localization fix
+[33md11cc4c[m Phase A: Landing foundation with running theme and user profile schema
+[33m26dfb1b[m Fix: FINAL solution for JSON serialization - found real root cause
+[33mf330345[m Fix: Complete solution for component JSON serialization issue
+[33m7f3efdd[m Fix: Components loading as JSON instead of HTML on canvas
+[33m6616098[m Fix: Resolve HTML attribute corruption root cause in sanitization
+[33m848501d[m Fix: Resolve HTML attribute corruption in SVG components
+[33mdf3c874[m Fix: Resolve HTML extraction bug in component saving
+[33mb4067a4[m Fix: Resolve CSS rendering issue in component system
+[33me4693fa[m Phase 2: Component saving cleanup and UX improvements
+[33m5eaa7ab[m Phase 1: Structured component saving with StyleSelector, TagSelector, and smart navigation auto-detection
+[33ma5479b1[m Rewrite ZIP import to client-side processing - fix FileReader and localStorage issues
+[33mcfb0211[m Fix localStorage QuotaExceededError for large ZIP imports
+[33ma00d178[m[33m ([m[1;33mtag: [m[1;33mv1.0-zip-working[m[33m)[m 🎉 MAJOR BREAKTHROUGH: ZIP import working! Extracting 3 components successfully
+[33m8682256[m Add detailed extractComponent() error logging and element inspection
+[33mb4d5b3c[m Capture parser logs in API response - make server-side logs visible in browser console
+[33m10f74ae[m Add detailed HTML structure analysis logging to identify component extraction issues
+[33m14a74eb[m Add detailed component extraction logging - track why componentsCount = 0
+[33m4ac8a37[m Add comprehensive logging to ZIP import workflow - track import from UI to API to parser
+[33ma56076d[m Fix HTML content extraction in ZIP import - use element.toString() for full HTML structure
+[33m06303c3[m Fix HTML content loss in ZIP import - fix node-html-parser outerHTML extraction and add debugging
+[33mb8908fa[m Fix ZIP import CSS - convert CSS classes to inline styles (matching working legacy approach)
+[33m31e8dbd[m Fix debug page to show imported site properly - clear default blocks, load HTML, fix images
+[33mdf03d5d[m Fix CSS parsing issue - use inline styles instead of canvas.styles array for CSS strings
+[33me37d7be[m Fix middleware to allow debug routes without locale prefix
+[33m43f104e[m Fix debug page block content - add proper HTML for Simple Test
+[33m21d3463[m Fix ZipParseError import and verify debug page
+[33mefc5f58[m Fix missing Russian i18n translations and add GrapesJS debug test
+[33m20cc578[m Fix: Canvas CSS loading, add real ZIP components, restore clear button
+[33me21f5c5[m Fix: Identify and resolve GrapesJS init config issue - minimal config with debugging
+[33m8eba24b[m Fix: Register blocks during init config instead of after (matching legacy pattern)
+[33m8e21c4b[m Fix: Move block registration after canvas is fully ready
+[33m7ef665d[m Fix: Use canvas:frame:loaded event instead of load event
+[33mafa519a[m Fix: Canvas initialization timing - wrap load callback in setTimeout
+[33mde47688[m Fix: GrapesJS black canvas - add HTML sanitization and legacy config

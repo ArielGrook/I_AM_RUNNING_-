@@ -1,0 +1,596 @@
+/**
+ * SimpleParser V3 - Clean, single-file template parser
+ * 
+ * Purpose: Parse ZIP templates and convert to GrapesJS-compatible format
+ * Author: Ariel / I AM RUNNING project
+ * 
+ * Key features:
+ * - Single file, easy to debug
+ * - Context-aware path resolution (fixes V2 issues)
+ * - All assets converted to base64
+ * - CSS injected into HTML
+ * - Comprehensive logging
+ */
+
+import JSZip from 'jszip';
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+interface ExtractedFiles {
+  all: Map<string, Uint8Array>;
+  html: string[];
+  css: string[];
+  images: string[];
+  fonts: string[];
+  js: string[];
+  rootPath: string;  // Detected template root
+}
+
+interface ParseResult {
+  html: string;      // Body content for GrapesJS
+  css: string;       // All CSS merged
+  fullHtml: string;  // Complete HTML document (for preview)
+}
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const MIME_TYPES: Record<string, string> = {
+  // Images
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.bmp': 'image/bmp',
+  
+  // Fonts
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.eot': 'application/vnd.ms-fontobject',
+};
+
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico', '.bmp'];
+const FONT_EXTENSIONS = ['.woff', '.woff2', '.ttf', '.otf', '.eot'];
+
+// =============================================================================
+// MAIN CLASS
+// =============================================================================
+
+export class SimpleParser {
+  private files: ExtractedFiles | null = null;
+  private assetMap: Map<string, string> = new Map();
+  private debug: boolean;
+
+  constructor(debug: boolean = true) {
+    this.debug = debug;
+  }
+
+  // ---------------------------------------------------------------------------
+  // PUBLIC API
+  // ---------------------------------------------------------------------------
+
+  async parse(zipFile: File | Blob): Promise<ParseResult> {
+    this.log('🚀 Starting parse...');
+    const startTime = Date.now();
+
+    try {
+      // Step 1: Extract ZIP
+      this.files = await this.extractZip(zipFile);
+      this.log(`📦 Extracted: ${this.files.all.size} files`);
+      this.log(`   HTML: ${this.files.html.length}, CSS: ${this.files.css.length}`);
+      this.log(`   Images: ${this.files.images.length}, Fonts: ${this.files.fonts.length}`);
+      this.log(`   Root path: "${this.files.rootPath}"`);
+
+      // Step 2: Find index.html
+      const indexPath = this.findIndexHtml();
+      this.log(`📄 Main HTML: ${indexPath}`);
+
+      // Step 3: Build asset map (images + fonts → base64)
+      this.assetMap = await this.buildAssetMap();
+      this.log(`🖼️ Asset map built: ${this.assetMap.size} entries`);
+
+      // Step 4: Process all CSS files (with context-aware path resolution)
+      const processedCSS = this.processAllCSS();
+      this.log(`🎨 CSS processed: ${processedCSS.length} chars`);
+
+      // Step 5: Process HTML (inject CSS, replace assets)
+      const processedHTML = this.processHTML(indexPath, processedCSS);
+      this.log(`📝 HTML processed: ${processedHTML.length} chars`);
+
+      // Step 6: Extract body content for GrapesJS
+      const result = this.extractForGrapesJS(processedHTML, processedCSS);
+
+      const elapsed = Date.now() - startTime;
+      this.log(`✅ Parse complete in ${elapsed}ms`);
+      this.log(`   Body HTML: ${result.html.length} chars`);
+      this.log(`   CSS: ${result.css.length} chars`);
+
+      return result;
+
+    } catch (error) {
+      this.log(`❌ Parse failed: ${error}`);
+      throw error;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // STEP 1: EXTRACT ZIP
+  // ---------------------------------------------------------------------------
+
+  private async extractZip(zipFile: File | Blob): Promise<ExtractedFiles> {
+    const zip = await JSZip.loadAsync(zipFile);
+    
+    const all = new Map<string, Uint8Array>();
+    const html: string[] = [];
+    const css: string[] = [];
+    const images: string[] = [];
+    const fonts: string[] = [];
+    const js: string[] = [];
+
+    // Extract all files
+    const promises: Promise<void>[] = [];
+    
+    zip.forEach((relativePath, zipEntry) => {
+      // Skip directories and hidden files
+      if (zipEntry.dir || relativePath.startsWith('__MACOSX') || relativePath.includes('.DS_Store')) {
+        return;
+      }
+
+      const promise = zipEntry.async('uint8array').then(content => {
+        // Normalize path (remove leading ./)
+        const normalizedPath = relativePath.replace(/^\.\//, '');
+        all.set(normalizedPath, content);
+
+        // Classify by extension
+        const ext = this.getExtension(normalizedPath);
+        
+        if (ext === '.html' || ext === '.htm') {
+          html.push(normalizedPath);
+        } else if (ext === '.css') {
+          css.push(normalizedPath);
+        } else if (IMAGE_EXTENSIONS.includes(ext)) {
+          images.push(normalizedPath);
+        } else if (FONT_EXTENSIONS.includes(ext)) {
+          fonts.push(normalizedPath);
+        } else if (ext === '.js') {
+          js.push(normalizedPath);
+        }
+      });
+
+      promises.push(promise);
+    });
+
+    await Promise.all(promises);
+
+    // Detect root path
+    const rootPath = this.detectRootPath(html);
+
+    return { all, html, css, images, fonts, js, rootPath };
+  }
+
+  // ---------------------------------------------------------------------------
+  // STEP 2: FIND INDEX.HTML
+  // ---------------------------------------------------------------------------
+
+  private findIndexHtml(): string {
+    if (!this.files) throw new Error('Files not extracted');
+
+    const { html, rootPath } = this.files;
+
+    if (html.length === 0) {
+      throw new Error('No HTML files found in ZIP');
+    }
+
+    // Priority order for finding main HTML:
+    // 1. index.html at root level
+    // 2. index.html anywhere
+    // 3. First HTML file
+
+    // Try exact root + index.html
+    const rootIndex = rootPath ? `${rootPath}/index.html` : 'index.html';
+    if (html.includes(rootIndex)) {
+      return rootIndex;
+    }
+
+    // Try just index.html (case-insensitive)
+    const indexFile = html.find(f => f.toLowerCase().endsWith('index.html'));
+    if (indexFile) {
+      return indexFile;
+    }
+
+    // Fallback to first HTML
+    this.log(`⚠️ No index.html found, using first HTML: ${html[0]}`);
+    return html[0];
+  }
+
+  // ---------------------------------------------------------------------------
+  // STEP 3: BUILD ASSET MAP
+  // ---------------------------------------------------------------------------
+
+  private async buildAssetMap(): Promise<Map<string, string>> {
+    if (!this.files) throw new Error('Files not extracted');
+
+    const map = new Map<string, string>();
+    const { all, images, fonts, rootPath } = this.files;
+
+    const allAssets = [...images, ...fonts];
+
+    for (const assetPath of allAssets) {
+      const content = all.get(assetPath);
+      if (!content) continue;
+
+      const ext = this.getExtension(assetPath);
+      const mimeType = MIME_TYPES[ext] || 'application/octet-stream';
+      const base64 = this.toBase64(content, mimeType);
+
+      // Add with FULL path
+      map.set(assetPath, base64);
+      this.log(`   📎 ${assetPath}`);
+
+      // Add ALL possible path variations for matching
+      const variations = this.generatePathVariations(assetPath, rootPath);
+      for (const variation of variations) {
+        if (!map.has(variation)) {
+          map.set(variation, base64);
+        }
+      }
+    }
+
+    return map;
+  }
+
+  /**
+   * Generate all possible path variations that might appear in CSS/HTML
+   * This is the KEY FIX for path matching issues!
+   */
+  private generatePathVariations(fullPath: string, rootPath: string): string[] {
+    const variations: string[] = [];
+    const parts = fullPath.split('/');
+
+    // Remove root prefix if exists
+    // "templatemo_524/images/logo.png" → "images/logo.png"
+    if (rootPath && fullPath.startsWith(rootPath + '/')) {
+      const withoutRoot = fullPath.substring(rootPath.length + 1);
+      variations.push(withoutRoot);
+    }
+
+    // Generate progressively shorter paths
+    // "images/icons/logo.png" → ["icons/logo.png", "logo.png"]
+    for (let i = 1; i < parts.length; i++) {
+      variations.push(parts.slice(i).join('/'));
+    }
+
+    // Add with ./ prefix
+    variations.push('./' + fullPath);
+    if (rootPath && fullPath.startsWith(rootPath + '/')) {
+      variations.push('./' + fullPath.substring(rootPath.length + 1));
+    }
+
+    return variations;
+  }
+
+  // ---------------------------------------------------------------------------
+  // STEP 4: PROCESS ALL CSS
+  // ---------------------------------------------------------------------------
+
+  private processAllCSS(): string {
+    if (!this.files) throw new Error('Files not extracted');
+
+    const { all, css } = this.files;
+    const processedParts: string[] = [];
+
+    for (const cssPath of css) {
+      const content = all.get(cssPath);
+      if (!content) continue;
+
+      const cssText = this.uint8ArrayToString(content);
+      
+      // Process this CSS file WITH ITS PATH CONTEXT
+      const processed = this.processSingleCSS(cssText, cssPath);
+      
+      processedParts.push(`/* Source: ${cssPath} */\n${processed}`);
+      this.log(`   🎨 Processed: ${cssPath}`);
+    }
+
+    return processedParts.join('\n\n');
+  }
+
+  /**
+   * Process a single CSS file with context-aware path resolution
+   * THIS IS THE KEY FIX - we know where the CSS file is located!
+   */
+  private processSingleCSS(css: string, cssFilePath: string): string {
+    // Pattern to match url() in CSS
+    const urlPattern = /url\(\s*['"]?([^'")]+)['"]?\s*\)/gi;
+
+    return css.replace(urlPattern, (match, assetPath) => {
+      // Skip data: URLs and external URLs
+      if (assetPath.startsWith('data:') || assetPath.startsWith('http://') || assetPath.startsWith('https://')) {
+        return match;
+      }
+
+      // Remove query strings and hashes
+      const cleanPath = assetPath.split('?')[0].split('#')[0];
+
+      // RESOLVE PATH RELATIVE TO CSS FILE LOCATION
+      const resolvedPath = this.resolvePath(cssFilePath, cleanPath);
+      
+      // Look up in asset map
+      const base64 = this.findInAssetMap(resolvedPath, cleanPath);
+
+      if (base64) {
+        this.log(`      ✅ ${cleanPath} → base64`);
+        return `url(${base64})`;
+      } else {
+        this.log(`      ⚠️ Not found: ${cleanPath} (resolved: ${resolvedPath})`);
+        return match;
+      }
+    });
+  }
+
+  /**
+   * Resolve a relative path based on the CSS file location
+   * 
+   * Example:
+   *   cssFilePath = "css/style.css"
+   *   assetPath = "../images/logo.png"
+   *   Result = "images/logo.png"
+   */
+  private resolvePath(basePath: string, relativePath: string): string {
+    // Get directory of base file
+    const parts = basePath.split('/');
+    parts.pop(); // Remove filename, keep directory
+
+    // Process relative path
+    const relParts = relativePath.split('/');
+    
+    for (const part of relParts) {
+      if (part === '..') {
+        parts.pop(); // Go up one level
+      } else if (part !== '.' && part !== '') {
+        parts.push(part); // Go into directory
+      }
+    }
+
+    return parts.join('/');
+  }
+
+  /**
+   * Find base64 in asset map, trying multiple path variations
+   */
+  private findInAssetMap(resolvedPath: string, originalPath: string): string | undefined {
+    // Try resolved path first
+    if (this.assetMap.has(resolvedPath)) {
+      return this.assetMap.get(resolvedPath);
+    }
+
+    // Try original path
+    if (this.assetMap.has(originalPath)) {
+      return this.assetMap.get(originalPath);
+    }
+
+    // Try without leading ./
+    const withoutDot = originalPath.replace(/^\.\//, '');
+    if (this.assetMap.has(withoutDot)) {
+      return this.assetMap.get(withoutDot);
+    }
+
+    // Try with root prefix
+    if (this.files?.rootPath) {
+      const withRoot = `${this.files.rootPath}/${resolvedPath}`;
+      if (this.assetMap.has(withRoot)) {
+        return this.assetMap.get(withRoot);
+      }
+    }
+
+    return undefined;
+  }
+
+  // ---------------------------------------------------------------------------
+  // STEP 5: PROCESS HTML
+  // ---------------------------------------------------------------------------
+
+  private processHTML(htmlPath: string, processedCSS: string): string {
+    if (!this.files) throw new Error('Files not extracted');
+
+    const content = this.files.all.get(htmlPath);
+    if (!content) throw new Error(`HTML file not found: ${htmlPath}`);
+
+    let html = this.uint8ArrayToString(content);
+    const htmlDir = htmlPath.split('/').slice(0, -1).join('/');
+
+    // Step 5.1: Remove all <link rel="stylesheet"> tags
+    const linksBefore = (html.match(/<link[^>]*>/gi) || []).length;
+    html = html.replace(/<link[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi, '');
+    const linksAfter = (html.match(/<link[^>]*>/gi) || []).length;
+    this.log(`   🔗 Removed ${linksBefore - linksAfter} stylesheet links`);
+
+    // Step 5.2: Inject processed CSS before </head>
+    if (processedCSS.trim()) {
+      const styleTag = `<style>\n${processedCSS}\n</style>`;
+      if (html.includes('</head>')) {
+        html = html.replace('</head>', `${styleTag}\n</head>`);
+      } else {
+        // No </head>, try to add after opening tags
+        html = styleTag + '\n' + html;
+      }
+      this.log(`   💉 Injected CSS (${processedCSS.length} chars)`);
+    }
+
+    // Step 5.3: Replace all src="" attributes with base64
+    html = this.replaceHTMLAssets(html, htmlDir, 'src');
+    
+    // Step 5.4: Replace href="" for images (favicon, etc.)
+    html = this.replaceHTMLAssets(html, htmlDir, 'href', true);
+
+    // Step 5.5: Remove external <script src=""> tags
+    const scriptsBefore = (html.match(/<script[^>]*src\s*=[^>]*>/gi) || []).length;
+    html = html.replace(/<script[^>]*src\s*=\s*["'][^"']+["'][^>]*>\s*<\/script>/gi, '');
+    const scriptsAfter = (html.match(/<script[^>]*src\s*=[^>]*>/gi) || []).length;
+    this.log(`   📜 Removed ${scriptsBefore - scriptsAfter} external scripts`);
+
+    return html;
+  }
+
+  /**
+   * Replace asset references in HTML attributes
+   */
+  private replaceHTMLAssets(
+    html: string, 
+    htmlDir: string, 
+    attribute: 'src' | 'href',
+    imageOnly: boolean = false
+  ): string {
+    const pattern = new RegExp(`${attribute}\\s*=\\s*["']([^"']+)["']`, 'gi');
+    let replacements = 0;
+
+    html = html.replace(pattern, (match, assetPath) => {
+      // Skip data URLs, external URLs, and anchors
+      if (
+        assetPath.startsWith('data:') || 
+        assetPath.startsWith('http://') || 
+        assetPath.startsWith('https://') ||
+        assetPath.startsWith('#') ||
+        assetPath.startsWith('javascript:')
+      ) {
+        return match;
+      }
+
+      // For href, only replace image files (for favicons, etc.)
+      if (imageOnly) {
+        const ext = this.getExtension(assetPath);
+        if (!IMAGE_EXTENSIONS.includes(ext)) {
+          return match;
+        }
+      }
+
+      // Clean and resolve path
+      const cleanPath = assetPath.split('?')[0].split('#')[0];
+      const resolvedPath = htmlDir ? this.resolvePath(htmlDir + '/dummy', cleanPath) : cleanPath;
+
+      // Find in asset map
+      const base64 = this.findInAssetMap(resolvedPath, cleanPath);
+
+      if (base64) {
+        replacements++;
+        return `${attribute}="${base64}"`;
+      }
+
+      return match;
+    });
+
+    this.log(`   🔄 Replaced ${replacements} ${attribute} attributes`);
+    return html;
+  }
+
+  // ---------------------------------------------------------------------------
+  // STEP 6: EXTRACT FOR GRAPESJS
+  // ---------------------------------------------------------------------------
+
+  private extractForGrapesJS(fullHtml: string, css: string): ParseResult {
+    // Extract body content
+    const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    const bodyContent = bodyMatch ? bodyMatch[1].trim() : fullHtml;
+
+    // Clean up the body content
+    let html = bodyContent;
+    
+    // Remove inline scripts (security)
+    html = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+    
+    // Remove comments
+    html = html.replace(/<!--[\s\S]*?-->/g, '');
+
+    return {
+      html: html.trim(),
+      css: css.trim(),
+      fullHtml: fullHtml,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // UTILITIES
+  // ---------------------------------------------------------------------------
+
+  private detectRootPath(htmlFiles: string[]): string {
+    if (htmlFiles.length === 0) return '';
+
+    // Find common prefix
+    const paths = htmlFiles.map(f => f.split('/'));
+    if (paths.length === 1 && paths[0].length > 1) {
+      // Single HTML file in subdirectory
+      return paths[0].slice(0, -1).join('/');
+    }
+
+    // Find shortest common prefix
+    let prefix: string[] = [];
+    if (paths[0].length > 1) {
+      prefix = paths[0].slice(0, -1);
+      
+      for (const pathParts of paths.slice(1)) {
+        const newPrefix: string[] = [];
+        for (let i = 0; i < Math.min(prefix.length, pathParts.length - 1); i++) {
+          if (prefix[i] === pathParts[i]) {
+            newPrefix.push(prefix[i]);
+          } else {
+            break;
+          }
+        }
+        prefix = newPrefix;
+      }
+    }
+
+    return prefix.join('/');
+  }
+
+  private getExtension(path: string): string {
+    const match = path.match(/\.[^.]+$/);
+    return match ? match[0].toLowerCase() : '';
+  }
+
+  private toBase64(content: Uint8Array, mimeType: string): string {
+    // Convert Uint8Array to base64 (browser-compatible)
+    let binary = '';
+    const len = content.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(content[i]);
+    }
+    const base64 = btoa(binary);
+    return `data:${mimeType};base64,${base64}`;
+  }
+
+  private uint8ArrayToString(arr: Uint8Array): string {
+    // Handle UTF-8 properly
+    const decoder = new TextDecoder('utf-8');
+    return decoder.decode(arr);
+  }
+
+  private log(message: string): void {
+    if (this.debug) {
+      console.log(`[SimpleParser] ${message}`);
+    }
+  }
+}
+
+// =============================================================================
+// EXPORT CONVENIENCE FUNCTION
+// =============================================================================
+
+export async function parseTemplate(zipFile: File | Blob, debug: boolean = true): Promise<ParseResult> {
+  const parser = new SimpleParser(debug);
+  return parser.parse(zipFile);
+}
+
+// =============================================================================
+// DEFAULT EXPORT
+// =============================================================================
+
+export default SimpleParser;
