@@ -209,6 +209,9 @@ export const HeaderTron = ({
   supabaseAnonKey = '',
   profilePageLink = '',
   loginLink = '',
+  previewLoggedIn = false,
+  avatarStyle = 'compact',
+  showUsernameInHeader = false,
 }: {
   colorScheme?: 'dark' | 'light';
   accentColor?: string;
@@ -230,6 +233,9 @@ export const HeaderTron = ({
   supabaseAnonKey?: string;
   profilePageLink?: string;
   loginLink?: string;
+  previewLoggedIn?: boolean;
+  avatarStyle?: 'compact' | 'wide';
+  showUsernameInHeader?: boolean;
 }) => {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
@@ -242,6 +248,18 @@ export const HeaderTron = ({
   const [avatarDropdownOpen, setAvatarDropdownOpen] = useState(false);
   const avatarDropdownTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dropdownSections, setDropdownSections] = useState<Array<{ id: string; icon: string; label: string }>>([]);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 519px)');
+    const handler = () => setIsMobile(mq.matches);
+    handler();
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const effectiveAvatarStyle = isMobile ? 'compact' : avatarStyle;
 
   useEffect(() => {
     if (enabled) return;
@@ -266,7 +284,16 @@ export const HeaderTron = ({
   const firstName = user?.user_metadata?.first_name ?? '';
   const lastName = user?.user_metadata?.last_name ?? '';
   const initials = `${(firstName as string)?.[0] ?? ''}${(lastName as string)?.[0] ?? ''}`.toUpperCase() || '?';
-  const showAvatar = !enabled && !!session;
+  const displayName = enabled && previewLoggedIn && !session
+    ? 'Username'
+    : `${firstName} ${lastName}`.trim() || 'User';
+  const displayEmail = enabled && previewLoggedIn && !session
+    ? 'email@example.com'
+    : (user?.email ?? '');
+  const effectiveInitials = enabled && previewLoggedIn && !session
+    ? 'U'
+    : initials;
+  const showAvatar = !enabled ? !!session : !!previewLoggedIn;
   const showLoginBtn = !enabled && !session && !!loginLink;
   const toHref = (slugOrUrl: string) =>
     !slugOrUrl ? '#' : slugOrUrl.startsWith('#') || slugOrUrl.startsWith('http') ? slugOrUrl : `/${slugOrUrl}`;
@@ -461,7 +488,14 @@ export const HeaderTron = ({
               {/* Auth: avatar island (hover to open) or Login or CTA */}
               {showAvatar && (
                 <div
-                  style={{ position: 'relative', width: 44, minHeight: 44, flexShrink: 0 }}
+                  style={{
+                    position: 'relative',
+                    ...(effectiveAvatarStyle === 'compact'
+                      ? (showUsernameInHeader ? { minWidth: 44, width: 'auto' } : { width: 44, minWidth: 44 })
+                      : { minWidth: 220, width: 'auto' }),
+                    minHeight: 44,
+                    flexShrink: 0,
+                  }}
                   onMouseEnter={handleAvatarDropdownEnter}
                   onMouseLeave={handleAvatarDropdownLeave}
                 >
@@ -472,43 +506,89 @@ export const HeaderTron = ({
                       right: 0,
                       display: 'flex',
                       flexDirection: 'column',
-                      alignItems: 'center',
+                      alignItems: effectiveAvatarStyle === 'compact' ? 'center' : 'stretch',
+                      gap: effectiveAvatarStyle === 'wide' ? 4 : undefined,
+                      padding: effectiveAvatarStyle === 'wide' ? '8px 12px' : 4,
+                      borderRadius: effectiveAvatarStyle === 'wide' ? 16 : 22,
                       background:
                         colorScheme === 'dark' ? 'rgba(15,15,15,0.97)' : 'rgba(245,245,245,0.97)',
                       border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
-                      borderRadius: 22,
-                      padding: 4,
                       zIndex: 50,
                       overflow: 'hidden',
                       height: avatarDropdownOpen ? 'auto' : 44,
                       transition: 'height 0.15s ease',
                     }}
                   >
-                    {/* Avatar — not clickable, visual only */}
-                    <div
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: '50%',
-                        background: t.accent,
-                        color: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-                        fontWeight: 700,
-                        fontSize: 13,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {initials}
+                    {/* Avatar row — avatar + optional name/email */}
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: effectiveAvatarStyle === 'wide' ? 12 : (showUsernameInHeader ? 8 : 0) }}>
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: '50%',
+                          background: t.accent,
+                          color: '#fff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+                          fontWeight: 700,
+                          fontSize: 13,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {effectiveInitials}
+                      </div>
+                      {effectiveAvatarStyle === 'compact' && showUsernameInHeader && (
+                        <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>
+                          {displayName}
+                        </span>
+                      )}
+                      {effectiveAvatarStyle === 'wide' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: t.text, whiteSpace: 'nowrap' }}>
+                            {displayName}
+                          </span>
+                          <span style={{ fontSize: 11, color: t.textSecondary, whiteSpace: 'nowrap' }}>
+                            {displayEmail}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {avatarDropdownOpen && (
                       <>
                         {(dropdownSections.length > 0 ? dropdownSections : DEFAULT_DROPDOWN_SECTIONS.map((s, i) => ({ id: String(i), icon: s.icon, label: s.label }))).map((section) => {
                           const IconComp = DROPDOWN_ICONS[section.icon] ?? UserIcon;
-                          return (
+                          return effectiveAvatarStyle === 'wide' ? (
+                            <button
+                              key={section.id}
+                              type="button"
+                              onClick={() => handleSectionClick(section)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                width: '100%',
+                                padding: '8px 12px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: t.text,
+                                cursor: 'pointer',
+                                borderRadius: 8,
+                                fontSize: 13,
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = colorScheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'transparent';
+                              }}
+                            >
+                              <IconComp />
+                              <span>{section.label}</span>
+                            </button>
+                          ) : (
                             <button
                               key={section.id}
                               type="button"
@@ -538,32 +618,61 @@ export const HeaderTron = ({
                             </button>
                           );
                         })}
-                        <button
-                          type="button"
-                          onClick={handleLogout}
-                          title="Logout"
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: '50%',
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#f87171',
-                            marginTop: 2,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(248,113,113,0.12)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'transparent';
-                          }}
-                        >
-                          <LogoutIcon />
-                        </button>
+                        {effectiveAvatarStyle === 'wide' ? (
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              width: '100%',
+                              padding: '8px 12px',
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#f87171',
+                              cursor: 'pointer',
+                              borderRadius: 8,
+                              fontSize: 13,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(248,113,113,0.12)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            <LogoutIcon />
+                            <span>Logout</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            title="Logout"
+                            style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: '50%',
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#f87171',
+                              marginTop: 2,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(248,113,113,0.12)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            <LogoutIcon />
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
@@ -689,7 +798,7 @@ export const HeaderTron = ({
 };
 
 const HeaderTronSettings = () => {
-  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, ctaHrefType, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages, profilePageLink, loginLink } = useNode((node) => ({
+  const { actions: { setProp }, colorScheme, accentColor, darkBg, lightBg, logoText, ctaText, ctaHref, ctaHrefType, navLinks, showCta, sticky, animationType, animateDelay, showThemeToggle, showLanguageToggle, availableLanguages, profilePageLink, loginLink, previewLoggedIn, avatarStyle, showUsernameInHeader } = useNode((node) => ({
     colorScheme: node.data.props.colorScheme as string,
     accentColor: node.data.props.accentColor as string,
     darkBg: (node.data.props.darkBg as string) ?? '#0a0a0a',
@@ -708,6 +817,9 @@ const HeaderTronSettings = () => {
     availableLanguages: (node.data.props.availableLanguages as string[]) ?? ['en'],
     profilePageLink: (node.data.props.profilePageLink as string) ?? '',
     loginLink: (node.data.props.loginLink as string) ?? '',
+    previewLoggedIn: node.data.props.previewLoggedIn as boolean | undefined,
+    avatarStyle: (node.data.props.avatarStyle as 'compact' | 'wide') ?? 'compact',
+    showUsernameInHeader: node.data.props.showUsernameInHeader as boolean | undefined,
   }));
   const { nodes } = useEditor((s) => ({ nodes: s.nodes }));
   const { pages } = useContext(PagesContext);
@@ -910,6 +1022,33 @@ const HeaderTronSettings = () => {
               onChange={(e) => setProp((p: Record<string, unknown>) => { p.showLanguageToggle = e.target.checked; })}
             />
           </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: '#d4d4d8' }}>Preview: Logged In state</span>
+            <input
+              type="checkbox"
+              checked={previewLoggedIn ?? false}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.previewLoggedIn = e.target.checked; })}
+            />
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <label className={labelCls}>Avatar Style</label>
+            <select
+              value={avatarStyle ?? 'compact'}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.avatarStyle = e.target.value; })}
+              className={inputCls}
+            >
+              <option value="compact">Compact</option>
+              <option value="wide">Wide</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 12, color: '#d4d4d8' }}>Show username in header</span>
+            <input
+              type="checkbox"
+              checked={showUsernameInHeader ?? false}
+              onChange={(e) => setProp((p: Record<string, unknown>) => { p.showUsernameInHeader = e.target.checked; })}
+            />
+          </div>
           {showLanguageToggle && (
             <div>
               <label className={labelCls}>Available Languages (comma-separated)</label>
@@ -962,6 +1101,9 @@ HeaderTron.craft = {
     supabaseAnonKey: '',
     profilePageLink: '',
     loginLink: '',
+    previewLoggedIn: false,
+    avatarStyle: 'compact' as const,
+    showUsernameInHeader: false,
   },
   related: { settings: HeaderTronSettings },
   custom: { styleTags: ['dark', 'minimal', 'bold'], businessTags: ['startup', 'saas', 'agency', 'tech', 'finance'], featureTags: ['header', 'navigation', 'sticky'], supportsTheme: true, supportsColorPreset: true },
