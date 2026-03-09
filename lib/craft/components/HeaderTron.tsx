@@ -515,7 +515,7 @@ export const HeaderTron = ({
                       border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
                       zIndex: 50,
                       overflow: 'hidden',
-                      height: avatarDropdownOpen ? 'auto' : 44,
+                      height: (avatarDropdownOpen || effectiveAvatarStyle === 'wide') ? 'auto' : 44,
                       transition: 'height 0.15s ease',
                     }}
                   >
