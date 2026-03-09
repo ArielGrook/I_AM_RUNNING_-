@@ -327,6 +327,7 @@ export const HeaderTron = ({
         p.slug?.toLowerCase().includes('dashboard')
     );
     const dashSlug = dashPage?.slug ?? '__first__';
+    (window as any).__pendingDashboardSection = section.id;
     window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: dashSlug } }));
     setTimeout(() => {
       window.dispatchEvent(

@@ -892,7 +892,15 @@ export const TronHub = React.memo(function TronHub() {
 
   const containerRef = React.useRef<HTMLElement | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
-  const [activeSectionId, setActiveSectionId] = React.useState('account');
+  const [activeSectionId, setActiveSectionId] = React.useState<string>(() => {
+    if (typeof window === 'undefined') return 'account';
+    const pending = (window as any).__pendingDashboardSection;
+    if (pending) {
+      (window as any).__pendingDashboardSection = null;
+      return pending;
+    }
+    return 'account';
+  });
   const [session, setSession] = React.useState<ReturnType<typeof getStoredSession>>(null);
   const [userData, setUserData] = React.useState<{ avatarUrl: string | null } | null>(null);
   const [hoveredNav, setHoveredNav] = React.useState<string | null>(null);
