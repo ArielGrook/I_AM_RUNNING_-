@@ -5,7 +5,6 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
-import { createClient } from '@supabase/supabase-js';
 import { getStoredSession, saveSession } from '@/lib/auth/clientAuthService';
 import { MediaLibrary } from '@/components/craft/MediaLibrary';
 import { buildInputTokens as buildTokens } from '../tokens';
@@ -200,38 +199,61 @@ function AccountSection({
     try {
       const raw = localStorage.getItem('iam_client_session');
       const stored = raw ? JSON.parse(raw) : null;
-      if (!stored?.access_token || !stored?.refresh_token) {
-        throw new Error('No session found');
-      }
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('No Supabase credentials in component props');
-      }
-      const client = createClient(supabaseUrl, supabaseAnonKey);
-      await client.auth.setSession({
-        access_token: stored.access_token,
-        refresh_token: stored.refresh_token,
+      const accessToken = stored?.access_token;
+      const userId = stored?.user?.id;
+      if (!accessToken) throw new Error('No access token');
+      if (!supabaseUrl || !supabaseAnonKey) throw new Error('No Supabase credentials');
+
+      // 1. Обновляем user_metadata через Supabase Auth REST API
+      const authRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({
+          data: { first_name: firstName, last_name: lastName },
+        }),
       });
-      const { error } = await client.auth.updateUser({
-        data: { first_name: firstName, last_name: lastName },
-      });
-      if (error) throw error;
-      // Sync to profiles table
-      try {
-        const { data: { user: currentUser } } = await client.auth.getUser();
-        const userId = currentUser?.id ?? stored?.user?.id;
-        if (userId) {
-          await client
-            .from('profiles')
-            .upsert(
-              { id: userId, first_name: firstName, last_name: lastName },
-              { onConflict: 'id' }
-            );
+      if (!authRes.ok) {
+        const err = await authRes.json();
+        throw new Error(err.message ?? 'Auth update failed');
+      }
+      const updatedUser = await authRes.json();
+
+      // 2. Синхронизируем profiles через Supabase REST API
+      if (userId) {
+        try {
+          await fetch(`${supabaseUrl}/rest/v1/profiles`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+              'apikey': supabaseAnonKey,
+              'Prefer': 'resolution=merge-duplicates',
+            },
+            body: JSON.stringify({
+              id: userId,
+              first_name: firstName,
+              last_name: lastName,
+            }),
+          });
+        } catch (profileErr) {
+          console.error('[TronHub] profiles sync failed:', profileErr);
         }
-      } catch (profileErr) {
-        console.error('[TronHub] profiles sync failed:', profileErr);
       }
-      const { data: { session: newSession } } = await client.auth.getSession();
-      if (newSession) saveSession(newSession);
+
+      // 3. Обновляем локальную сессию
+      if (stored && updatedUser) {
+        const userData = updatedUser?.user ?? updatedUser;
+        const newSession = {
+          ...stored,
+          user: { ...stored.user, ...userData },
+        };
+        saveSession(newSession);
+      }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
