@@ -42,6 +42,7 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   // CRITICAL FIX: Only show loading screen during INITIAL page load
   // Once initial load is complete, NEVER show loading screen again
   // This prevents blocking the signup success screen
+  if (pathname?.startsWith('/sites/')) return <>{children}</>;
   const showLoading = !initialLoadComplete && (!minTimeElapsed || authLoading);
 
   useEffect(() => {
