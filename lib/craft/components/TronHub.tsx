@@ -199,10 +199,34 @@ function AccountSection({
     try {
       const raw = localStorage.getItem('iam_client_session');
       const stored = raw ? JSON.parse(raw) : null;
-      const accessToken = stored?.access_token;
+      let accessToken = stored?.access_token;
       const userId = stored?.user?.id;
       if (!accessToken) throw new Error('No access token');
       if (!supabaseUrl || !supabaseAnonKey) throw new Error('No Supabase credentials');
+
+      // Обновляем токен через refresh_token
+      if (stored?.refresh_token) {
+        try {
+          const refreshRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': supabaseAnonKey,
+            },
+            body: JSON.stringify({ refresh_token: stored.refresh_token }),
+          });
+          if (refreshRes.ok) {
+            const refreshed = await refreshRes.json();
+            if (refreshed.access_token) {
+              accessToken = refreshed.access_token;
+              // Сохраняем обновлённую сессию
+              saveSession({ ...stored, ...refreshed });
+            }
+          }
+        } catch {
+          // Если refresh не вышел — пробуем со старым токеном
+        }
+      }
 
       // 1. Обновляем user_metadata через Supabase Auth REST API
       const authRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
