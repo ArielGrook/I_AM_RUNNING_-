@@ -5,7 +5,8 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
-import { getStoredSession } from '@/lib/auth/clientAuthService';
+import { getStoredSession, saveSession } from '@/lib/auth/clientAuthService';
+import { getSupabaseClient } from '@/lib/supabase/client';
 import { MediaLibrary } from '@/components/craft/MediaLibrary';
 import { buildInputTokens as buildTokens } from '../tokens';
 
@@ -187,14 +188,37 @@ function AccountSection({
   const initials = `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || '?';
   const avatarUrl = userData?.avatarUrl ?? user?.user_metadata?.avatar_url ?? null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (enabled) return;
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      const supabase = getSupabaseClient();
+      // Restore session from iam_client_session (used by deployed sites)
+      try {
+        const raw = localStorage.getItem('iam_client_session');
+        const stored = raw ? JSON.parse(raw) : null;
+        if (stored?.access_token && stored?.refresh_token) {
+          await supabase.auth.setSession({ access_token: stored.access_token, refresh_token: stored.refresh_token });
+        }
+      } catch { /* ignore */ }
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+        },
+      });
+      if (error) throw error;
+      const { data: { session: newSession } } = await supabase.auth.getSession();
+      if (newSession) {
+        saveSession(newSession);
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    }, 800);
+    } catch (err) {
+      console.error('[TronHub] Save failed:', err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const fieldStyle: React.CSSProperties = {
