@@ -6,7 +6,6 @@ import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { getStoredSession, saveSession } from '@/lib/auth/clientAuthService';
-import { getSupabaseClient } from '@/lib/supabase/client';
 import { MediaLibrary } from '@/components/craft/MediaLibrary';
 import { buildInputTokens as buildTokens } from '../tokens';
 
@@ -192,26 +191,44 @@ function AccountSection({
     if (enabled) return;
     setSaving(true);
     try {
-      const supabase = getSupabaseClient();
-      // Restore session from iam_client_session (used by deployed sites)
-      try {
-        const raw = localStorage.getItem('iam_client_session');
-        const stored = raw ? JSON.parse(raw) : null;
-        if (stored?.access_token && stored?.refresh_token) {
-          await supabase.auth.setSession({ access_token: stored.access_token, refresh_token: stored.refresh_token });
-        }
-      } catch { /* ignore */ }
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          first_name: firstName,
-          last_name: lastName,
+      // Берём токен напрямую из localStorage
+      const raw = localStorage.getItem('iam_client_session');
+      const stored = raw ? JSON.parse(raw) : null;
+      const accessToken = stored?.access_token;
+      if (!accessToken) throw new Error('No access token');
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': supabaseKey!,
         },
+        body: JSON.stringify({
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          },
+        }),
       });
-      if (error) throw error;
-      const { data: { session: newSession } } = await supabase.auth.getSession();
-      if (newSession) {
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message ?? 'Update failed');
+      }
+
+      const updated = await res.json();
+
+      // Обновляем сессию в localStorage с новыми user_metadata
+      if (stored && updated) {
+        const updatedUser = updated?.user ?? updated;
+        const newSession = { ...stored, user: { ...stored.user, ...updatedUser } };
         saveSession(newSession);
       }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
