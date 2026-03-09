@@ -1251,23 +1251,11 @@ export const TronHub = React.memo(function TronHub() {
         </div>
 
         {/* Section content — fade in on change */}
-        <div
-          key={contentKey}
-          style={{
-            animation: 'tronhub-fadein 0.22s ease',
-          }}
-        >
+        <div key={contentKey}>
           {renderContent()}
         </div>
       </div>
 
-      {/* Fade-in keyframe injected once */}
-      <style>{`
-        @keyframes tronhub-fadein {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </section>
   );
 });
