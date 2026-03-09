@@ -418,6 +418,7 @@ function SettingsSection({
   accentColor: string;
   enabled: boolean;
 }) {
+  const siteCtx = useSiteContext();
   const [localTheme, setLocalTheme] = React.useState<'dark' | 'light'>('dark');
   const [language, setLanguage] = React.useState('en');
   const [emailNotif, setEmailNotif] = React.useState(true);
@@ -467,7 +468,13 @@ function SettingsSection({
             <button
               key={scheme}
               type="button"
-              onClick={() => { if (!enabled) { setLocalTheme(scheme); persist({ theme: scheme }); } }}
+              onClick={() => {
+                if (!enabled) {
+                  setLocalTheme(scheme);
+                  persist({ theme: scheme });
+                  if (siteCtx.colorScheme !== scheme) siteCtx.toggleTheme();
+                }
+              }}
               style={{
                 padding: '6px 14px',
                 borderRadius: 6,
