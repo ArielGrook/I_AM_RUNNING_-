@@ -992,6 +992,13 @@ export const TronHub = React.memo(function TronHub() {
     return () => observer.disconnect();
   }, []);
 
+  // Sync active section to window for toggleTheme remount preservation
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__activeDashboardSection = activeSectionId;
+    }
+  }, [activeSectionId]);
+
   // Auth session
   React.useEffect(() => {
     if (enabled) return;
