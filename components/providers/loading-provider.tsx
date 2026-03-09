@@ -42,7 +42,6 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   // CRITICAL FIX: Only show loading screen during INITIAL page load
   // Once initial load is complete, NEVER show loading screen again
   // This prevents blocking the signup success screen
-  if (pathname?.startsWith('/sites/')) return <>{children}</>;
   const showLoading = !initialLoadComplete && (!minTimeElapsed || authLoading);
 
   useEffect(() => {
@@ -51,6 +50,12 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
       console.log('✅ [LOADING-PROVIDER] Loading screen hiding');
     }
   }, [showLoading]);
+
+  // Skip loader on /sites/ routes AND on subdomains (*.iamrunning.online)
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isClientSite = pathname?.startsWith('/sites/') ||
+    (hostname.includes('.iamrunning.online') && hostname !== 'iamrunning.online');
+  if (isClientSite) return <>{children}</>;
 
   if (showLoading) {
     console.log('[LOADING-PROVIDER] ⏳ SHOWING LOADING SCREEN');
