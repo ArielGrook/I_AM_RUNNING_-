@@ -901,7 +901,9 @@ export const TronHub = React.memo(function TronHub() {
     }
     return 'account';
   });
-  const [session, setSession] = React.useState<ReturnType<typeof getStoredSession>>(null);
+  const [session, setSession] = React.useState<ReturnType<typeof getStoredSession>>(
+    () => (typeof window !== 'undefined' && !enabled) ? getStoredSession() : null
+  );
   const [userData, setUserData] = React.useState<{ avatarUrl: string | null } | null>(null);
   const [hoveredNav, setHoveredNav] = React.useState<string | null>(null);
   const [contentKey, setContentKey] = React.useState(0);
