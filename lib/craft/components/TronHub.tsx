@@ -215,6 +215,20 @@ function AccountSection({
         data: { first_name: firstName, last_name: lastName },
       });
       if (error) throw error;
+      // Sync to profiles table
+      try {
+        const userId = stored?.user?.id;
+        if (userId) {
+          await client
+            .from('profiles')
+            .upsert(
+              { id: userId, first_name: firstName, last_name: lastName },
+              { onConflict: 'id' }
+            );
+        }
+      } catch {
+        // ignore — profiles may not exist on this project
+      }
       const { data: { session: newSession } } = await client.auth.getSession();
       if (newSession) saveSession(newSession);
       setSaved(true);
