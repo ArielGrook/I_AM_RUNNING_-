@@ -211,7 +211,6 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
   const spotlightRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const pages = project.data?.craft?.pages ?? [];
 
@@ -252,7 +251,6 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
         p.name.toLowerCase().replace(/\s+/g, '-') === pageSlug
     );
     if (!page) return;
-    setIsTransitioning(true);
     setActivePage(page);
     const newCraftJson = decompressPage(page);
     setCraftJson(newCraftJson);
@@ -356,11 +354,9 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (ScrollTrigger as any).refresh();
         setIsLoaded(true);
-        setIsTransitioning(false);
       } catch (e) {
         console.error('[GSAP] Error:', e);
         setIsLoaded(true);
-        setIsTransitioning(false);
       }
     };
 
@@ -479,8 +475,6 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
       <Editor resolver={resolver} enabled={false}>
         <ThemeProvider>
           <div style={{
-  opacity: isTransitioning ? 0 : 1,
-  transition: 'opacity 0.2s ease',
   minHeight: '100vh',
   background: colorScheme === 'light' ? '#ffffff' : '#0a0a0a',
 }}>
