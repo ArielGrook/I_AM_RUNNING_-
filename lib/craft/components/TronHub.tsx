@@ -217,7 +217,8 @@ function AccountSection({
       if (error) throw error;
       // Sync to profiles table
       try {
-        const userId = stored?.user?.id;
+        const { data: { user: currentUser } } = await client.auth.getUser();
+        const userId = currentUser?.id ?? stored?.user?.id;
         if (userId) {
           await client
             .from('profiles')
@@ -226,8 +227,8 @@ function AccountSection({
               { onConflict: 'id' }
             );
         }
-      } catch {
-        // ignore — profiles may not exist on this project
+      } catch (profileErr) {
+        console.error('[TronHub] profiles sync failed:', profileErr);
       }
       const { data: { session: newSession } } = await client.auth.getSession();
       if (newSession) saveSession(newSession);
