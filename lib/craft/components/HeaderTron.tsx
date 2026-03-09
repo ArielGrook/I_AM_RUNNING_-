@@ -508,7 +508,7 @@ export const HeaderTron = ({
                       flexDirection: 'column',
                       alignItems: effectiveAvatarStyle === 'compact' ? 'center' : 'stretch',
                       gap: effectiveAvatarStyle === 'wide' ? 4 : undefined,
-                      padding: effectiveAvatarStyle === 'wide' ? '8px 12px' : 4,
+                      padding: effectiveAvatarStyle === 'wide' ? '4px 10px' : 4,
                       borderRadius: effectiveAvatarStyle === 'wide' ? 16 : 22,
                       background:
                         colorScheme === 'dark' ? 'rgba(15,15,15,0.97)' : 'rgba(245,245,245,0.97)',
@@ -520,21 +520,21 @@ export const HeaderTron = ({
                     }}
                   >
                     {/* Avatar row — avatar + optional name/email */}
-                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: effectiveAvatarStyle === 'wide' ? 12 : (showUsernameInHeader ? 8 : 0) }}>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: effectiveAvatarStyle === 'wide' ? 8 : (showUsernameInHeader ? 8 : 0) }}>
                       <div
                         style={{
-                          width: 36,
-                          height: 36,
+                          width: effectiveAvatarStyle === 'wide' ? 28 : 36,
+                          height: effectiveAvatarStyle === 'wide' ? 28 : 36,
                           borderRadius: '50%',
                           background: t.accent,
                           color: '#fff',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
-                          fontWeight: 700,
-                          fontSize: 13,
-                          flexShrink: 0,
+                        fontFamily: 'ui-monospace, "Cascadia Code", "Fira Mono", monospace',
+                        fontWeight: 700,
+                        fontSize: effectiveAvatarStyle === 'wide' ? 11 : 13,
+                        flexShrink: 0,
                         }}
                       >
                         {effectiveInitials}
@@ -546,10 +546,10 @@ export const HeaderTron = ({
                       )}
                       {effectiveAvatarStyle === 'wide' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: t.text, whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: t.text, whiteSpace: 'nowrap' }}>
                             {displayName}
                           </span>
-                          <span style={{ fontSize: 11, color: t.textSecondary, whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: 10, color: t.textSecondary, whiteSpace: 'nowrap' }}>
                             {displayEmail}
                           </span>
                         </div>
