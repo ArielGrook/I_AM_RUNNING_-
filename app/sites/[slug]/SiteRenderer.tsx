@@ -241,7 +241,6 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
     const next = colorScheme === 'dark' ? 'light' : 'dark';
     setColorScheme(next);
     setActiveCraftJson(applyColorScheme(craftJson, next));
-    setFrameKey((k) => k + 1);
   }
 
   function navigateToPage(pageSlug: string) {
