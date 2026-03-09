@@ -241,6 +241,12 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
     const next = colorScheme === 'dark' ? 'light' : 'dark';
     setColorScheme(next);
     setActiveCraftJson(applyColorScheme(craftJson, next));
+    // Сохраняем активную секцию дашборда перед ремаунтом
+    const currentSection = (window as any).__activeDashboardSection;
+    if (currentSection) {
+      (window as any).__pendingDashboardSection = currentSection;
+    }
+    setFrameKey((k) => k + 1);
   }
 
   function navigateToPage(pageSlug: string) {
