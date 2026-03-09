@@ -407,6 +407,10 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
   }, [accentColor, spotlightIntensity]);
 
   return (
+    <div style={{
+      minHeight: '100vh',
+      background: colorScheme === 'light' ? '#ffffff' : '#0a0a0a',
+    }}>
     <SiteContext.Provider
       value={{
         colorScheme,
@@ -499,5 +503,6 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
         />
       )}
     </SiteContext.Provider>
+    </div>
   );
 }
