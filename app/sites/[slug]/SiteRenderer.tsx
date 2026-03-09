@@ -474,7 +474,12 @@ export function SiteRenderer({ project, initialPageSlug }: { project: Project; i
 
       <Editor resolver={resolver} enabled={false}>
         <ThemeProvider>
-          <div style={{ opacity: isTransitioning ? 0 : 1, transition: 'opacity 0.3s ease' }}>
+          <div style={{
+  opacity: isTransitioning ? 0 : 1,
+  transition: 'opacity 0.2s ease',
+  minHeight: '100vh',
+  background: colorScheme === 'light' ? '#ffffff' : '#0a0a0a',
+}}>
             <Frame key={frameKey} data={activeCraftJson} />
           </div>
         </ThemeProvider>
