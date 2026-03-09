@@ -5,6 +5,7 @@ import React from 'react';
 import { useTheme } from '@/lib/craft/context/ThemeContext';
 import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
+import { createClient } from '@supabase/supabase-js';
 import { getStoredSession, saveSession } from '@/lib/auth/clientAuthService';
 import { MediaLibrary } from '@/components/craft/MediaLibrary';
 import { buildInputTokens as buildTokens } from '../tokens';
@@ -105,6 +106,8 @@ interface TronHubProps {
   animationType?: string;
   animateDelay?: string;
   sections?: HubSection[];
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
 }
 
 // ── Toggle Switch ──────────────────────────────────────────────────────────
@@ -167,6 +170,8 @@ function AccountSection({
   userData,
   setUserData,
   isMobile,
+  supabaseUrl = '',
+  supabaseAnonKey = '',
 }: {
   t: ReturnType<typeof buildTokens>['dark'];
   accentColor: string;
@@ -175,6 +180,8 @@ function AccountSection({
   userData: { avatarUrl: string | null } | null;
   setUserData: React.Dispatch<React.SetStateAction<{ avatarUrl: string | null } | null>>;
   isMobile: boolean;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
 }) {
   const user = session?.user as { user_metadata?: { first_name?: string; last_name?: string; avatar_url?: string }; email?: string; id?: string } | undefined;
   const [firstName, setFirstName] = React.useState(user?.user_metadata?.first_name ?? '');
@@ -191,44 +198,25 @@ function AccountSection({
     if (enabled) return;
     setSaving(true);
     try {
-      // Берём токен напрямую из localStorage
       const raw = localStorage.getItem('iam_client_session');
       const stored = raw ? JSON.parse(raw) : null;
-      const accessToken = stored?.access_token;
-      if (!accessToken) throw new Error('No access token');
-
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'apikey': supabaseKey!,
-        },
-        body: JSON.stringify({
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-          },
-        }),
+      if (!stored?.access_token || !stored?.refresh_token) {
+        throw new Error('No session found');
+      }
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('No Supabase credentials in component props');
+      }
+      const client = createClient(supabaseUrl, supabaseAnonKey);
+      await client.auth.setSession({
+        access_token: stored.access_token,
+        refresh_token: stored.refresh_token,
       });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message ?? 'Update failed');
-      }
-
-      const updated = await res.json();
-
-      // Обновляем сессию в localStorage с новыми user_metadata
-      if (stored && updated) {
-        const updatedUser = updated?.user ?? updated;
-        const newSession = { ...stored, user: { ...stored.user, ...updatedUser } };
-        saveSession(newSession);
-      }
-
+      const { error } = await client.auth.updateUser({
+        data: { first_name: firstName, last_name: lastName },
+      });
+      if (error) throw error;
+      const { data: { session: newSession } } = await client.auth.getSession();
+      if (newSession) saveSession(newSession);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -965,6 +953,8 @@ export const TronHub = React.memo(function TronHub() {
     sectionHeight = 100,
     showGrid = true,
     sections = DEFAULT_SECTIONS,
+    supabaseUrl = '',
+    supabaseAnonKey = '',
   } = props;
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
@@ -1065,7 +1055,7 @@ export const TronHub = React.memo(function TronHub() {
 
   const renderContent = () => {
     const id = activeSection?.id ?? 'account';
-    if (id === 'account') return <AccountSection t={t} accentColor={accentColor} enabled={enabled} session={session} userData={userData} setUserData={setUserData} isMobile={isMobile} />;
+    if (id === 'account') return <AccountSection t={t} accentColor={accentColor} enabled={enabled} session={session} userData={userData} setUserData={setUserData} isMobile={isMobile} supabaseUrl={supabaseUrl} supabaseAnonKey={supabaseAnonKey} />;
     if (id === 'settings') return <SettingsSection t={t} accentColor={accentColor} enabled={enabled} />;
     if (id === 'billing') return <BillingSection t={t} accentColor={accentColor} enabled={enabled} />;
     if (id === 'notifications') return <NotificationsSection t={t} accentColor={accentColor} enabled={enabled} />;
@@ -1485,6 +1475,8 @@ TronHub.craft = {
     animationType: 'fade',
     animateDelay: '0',
     sections: DEFAULT_SECTIONS,
+    supabaseUrl: '',
+    supabaseAnonKey: '',
   },
   related: { settings: TronHubSettings },
   rules: {
