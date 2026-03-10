@@ -4,7 +4,6 @@ import { Element, useEditor } from '@craftjs/core';
 import React, { useState, useCallback } from 'react';
 import { Upload, ChevronDown } from 'lucide-react';
 import {
-  Hero,
   HeroTron,
   HeaderTron,
   TronFeatures,
@@ -40,7 +39,6 @@ const categories: { key: 'tronSections'; title: string; items: { name: string; l
     title: 'Legacy (Tron)',
     items: [
       { name: 'HeaderTron', label: 'Header Tron', icon: '▣', component: HeaderTron, canvas: true },
-      { name: 'Hero', label: 'Hero Default', icon: '⬡', component: Hero, canvas: true },
       { name: 'HeroTron', label: 'Hero Tron', icon: '◎', component: HeroTron, canvas: true },
       { name: 'TronFeatures', label: 'Tron Features', icon: '◇', component: TronFeatures, canvas: true },
       { name: 'TronStats', label: 'Tron Stats', icon: '▢', component: TronStats, canvas: true },

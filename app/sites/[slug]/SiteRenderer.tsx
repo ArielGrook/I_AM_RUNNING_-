@@ -5,14 +5,10 @@ import { Editor, Frame } from '@craftjs/core';
 import lz from 'lzutf8';
 import {
   Container,
-  Text,
-  Hero,
   HeroTron,
   HeroTronHeading,
   HeroTronSubheading,
   HeroTronButton,
-  Button,
-  Image,
   HeaderTron,
   TronFeatures,
   FeatureCard,
@@ -32,27 +28,17 @@ import {
   TronRegister,
   TronHub,
   TronShowcase,
-  Divider,
-  Video,
   HtmlBlock,
-  SectionBlock,
-  LayoutBlock,
-  CardBlock,
-  PricingCardBlock,
 } from '@/lib/craft/components';
 import { ThemeProvider } from '@/lib/craft/context/ThemeContext';
 import { SiteContext } from '@/lib/craft/context/SiteContext';
 
 const resolver = {
   Container,
-  Text,
-  Hero,
   HeroTron,
   HeroTronHeading,
   HeroTronSubheading,
   HeroTronButton,
-  Button,
-  Image,
   HeaderTron,
   TronFeatures,
   FeatureCard,
@@ -72,13 +58,7 @@ const resolver = {
   TronRegister,
   TronHub,
   TronShowcase,
-  Divider,
-  Video,
   HtmlBlock,
-  SectionBlock,
-  LayoutBlock,
-  CardBlock,
-  PricingCardBlock,
 };
 
 type Project = {
