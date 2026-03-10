@@ -189,6 +189,7 @@ function AccountSection({
   const [saved, setSaved] = React.useState(false);
   const [confirmDelete, setConfirmDelete] = React.useState(false);
   const [showMediaLibrary, setShowMediaLibrary] = React.useState(false);
+  const [freshAccessToken, setFreshAccessToken] = React.useState<string | null>(null);
   const email = user?.email ?? '';
   const initials = `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase() || '?';
   const avatarUrl = userData?.avatarUrl ?? user?.user_metadata?.avatar_url ?? null;
@@ -338,7 +339,32 @@ function AccountSection({
       </div>
       <button
         type="button"
-        onClick={() => !enabled && setShowMediaLibrary(true)}
+        onClick={async () => {
+          if (enabled) return;
+          try {
+            const raw = localStorage.getItem('iam_client_session');
+            const stored = raw ? JSON.parse(raw) : null;
+            let token = stored?.access_token;
+            if (stored?.refresh_token && supabaseUrl && supabaseAnonKey) {
+              const refreshRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'apikey': supabaseAnonKey },
+                body: JSON.stringify({ refresh_token: stored.refresh_token }),
+              });
+              if (refreshRes.ok) {
+                const refreshed = await refreshRes.json();
+                if (refreshed.access_token) {
+                  token = refreshed.access_token;
+                  saveSession({ ...stored, ...refreshed });
+                }
+              }
+            }
+            setFreshAccessToken(token ?? null);
+          } catch {
+            setFreshAccessToken(null);
+          }
+          setShowMediaLibrary(true);
+        }}
         style={{
           marginTop: 8,
           padding: '8px 16px',
@@ -363,7 +389,7 @@ function AccountSection({
           accept="image"
           supabaseUrl={supabaseUrl}
           supabaseAnonKey={supabaseAnonKey}
-          accessToken={(() => {
+          accessToken={freshAccessToken ?? (() => {
             try {
               const raw = localStorage.getItem('iam_client_session');
               return raw ? JSON.parse(raw)?.access_token : undefined;
