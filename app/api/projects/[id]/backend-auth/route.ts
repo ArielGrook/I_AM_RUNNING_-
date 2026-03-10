@@ -91,6 +91,27 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user()`,
     },
+    {
+      key: 'storage_select',
+      sql: `DO $$ BEGIN
+        IF NOT EXISTS (SELECT FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can view own media')
+        THEN CREATE POLICY "Users can view own media" ON storage.objects FOR SELECT USING (bucket_id = 'media' AND auth.uid()::text = (storage.foldername(name))[1]);
+        END IF; END $$`,
+    },
+    {
+      key: 'storage_insert',
+      sql: `DO $$ BEGIN
+        IF NOT EXISTS (SELECT FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can upload own media')
+        THEN CREATE POLICY "Users can upload own media" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'media' AND auth.uid()::text = (storage.foldername(name))[1]);
+        END IF; END $$`,
+    },
+    {
+      key: 'storage_delete',
+      sql: `DO $$ BEGIN
+        IF NOT EXISTS (SELECT FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can delete own media')
+        THEN CREATE POLICY "Users can delete own media" ON storage.objects FOR DELETE USING (bucket_id = 'media' AND auth.uid()::text = (storage.foldername(name))[1]);
+        END IF; END $$`,
+    },
   ];
 
   const results: Record<string, string> = {};
