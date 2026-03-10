@@ -51,7 +51,16 @@ async function runMigrations(
         IF NOT EXISTS (SELECT FROM pg_policies WHERE schemaname='public' AND tablename='profiles'
           AND policyname='Users can update own profile')
         THEN CREATE POLICY "Users can update own profile"
-          ON public.profiles FOR UPDATE USING (auth.uid() = id);
+          ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+        END IF; END $$`,
+    },
+    {
+      key: 'policy_insert',
+      sql: `DO $$ BEGIN
+        IF NOT EXISTS (SELECT FROM pg_policies WHERE schemaname='public' AND tablename='profiles'
+          AND policyname='Users can insert own profile')
+        THEN CREATE POLICY "Users can insert own profile"
+          ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
         END IF; END $$`,
     },
     {
