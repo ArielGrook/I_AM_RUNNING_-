@@ -490,6 +490,7 @@ function HeroTronSettings() {
                 window.dispatchEvent(new CustomEvent('iam_color_preset_changed', {
                   detail: { accentColor: e.target.value, darkBg: darkBg ?? '#0a0a0a', lightBg: lightBg ?? '#ffffff' }
                 }));
+                console.log('[HeroTron] dispatched iam_color_preset_changed', e.target.value);
               }}
             />
             <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{accentColor ?? '#FF6B35'}</span>
@@ -504,6 +505,7 @@ function HeroTronSettings() {
                 window.dispatchEvent(new CustomEvent('iam_color_preset_changed', {
                   detail: { accentColor: accentColor ?? '#FF6B35', darkBg: e.target.value, lightBg: lightBg ?? '#ffffff' }
                 }));
+                console.log('[HeroTron] dispatched iam_color_preset_changed (darkBg)', e.target.value);
               }}
             />
             <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{darkBg ?? '#0a0a0a'}</span>
@@ -518,6 +520,7 @@ function HeroTronSettings() {
                 window.dispatchEvent(new CustomEvent('iam_color_preset_changed', {
                   detail: { accentColor: accentColor ?? '#FF6B35', darkBg: darkBg ?? '#0a0a0a', lightBg: e.target.value }
                 }));
+                console.log('[HeroTron] dispatched iam_color_preset_changed (lightBg)', e.target.value);
               }}
             />
             <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{lightBg ?? '#ffffff'}</span>
