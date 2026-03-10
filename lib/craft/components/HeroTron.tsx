@@ -480,12 +480,31 @@ function HeroTronSettings() {
       <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-500 mb-3">Colors</h3>
         <div>
-          <label className={labelCls}>Background (dark mode)</label>
+          <label className={labelCls}>Accent color</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <input
+              type="color"
+              value={accentColor ?? '#FF6B35'}
+              onChange={(e) => {
+                setProp((p: Record<string, unknown>) => { p.accentColor = e.target.value; }, 300);
+                window.dispatchEvent(new CustomEvent('iam_color_preset_changed', {
+                  detail: { accentColor: e.target.value, darkBg: darkBg ?? '#0a0a0a', lightBg: lightBg ?? '#ffffff' }
+                }));
+              }}
+            />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{accentColor ?? '#FF6B35'}</span>
+          </div>
+          <label className={labelCls} style={{ marginTop: 12 }}>Background (dark mode)</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <input
               type="color"
               value={darkBg ?? '#0a0a0a'}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300)}
+              onChange={(e) => {
+                setProp((p: Record<string, unknown>) => { p.darkBg = e.target.value; }, 300);
+                window.dispatchEvent(new CustomEvent('iam_color_preset_changed', {
+                  detail: { accentColor: accentColor ?? '#FF6B35', darkBg: e.target.value, lightBg: lightBg ?? '#ffffff' }
+                }));
+              }}
             />
             <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{darkBg ?? '#0a0a0a'}</span>
           </div>
@@ -494,7 +513,12 @@ function HeroTronSettings() {
             <input
               type="color"
               value={lightBg ?? '#ffffff'}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300)}
+              onChange={(e) => {
+                setProp((p: Record<string, unknown>) => { p.lightBg = e.target.value; }, 300);
+                window.dispatchEvent(new CustomEvent('iam_color_preset_changed', {
+                  detail: { accentColor: accentColor ?? '#FF6B35', darkBg: darkBg ?? '#0a0a0a', lightBg: e.target.value }
+                }));
+              }}
             />
             <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{lightBg ?? '#ffffff'}</span>
           </div>
