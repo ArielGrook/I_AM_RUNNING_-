@@ -216,6 +216,24 @@ export async function POST(
 
     const migrationsResult = await runMigrations(supabaseUrl.trim(), String(dbPassword).trim());
 
+    // Создаём Storage бакет media если не существует
+    const adminClient = createSupabaseClient(supabaseUrl.trim(), serviceRoleKey.trim(), {
+      auth: { persistSession: false },
+    });
+    try {
+      const { data: buckets } = await adminClient.storage.listBuckets();
+      const mediaExists = buckets?.some((b) => b.name === 'media');
+      if (!mediaExists) {
+        await adminClient.storage.createBucket('media', {
+          public: true,
+          fileSizeLimit: 10485760, // 10MB
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4'],
+        });
+      }
+    } catch (bucketErr) {
+      console.error('[backend-auth] Storage bucket creation failed:', bucketErr);
+    }
+
     const existingBlocks = (project.backend_blocks as Record<string, unknown>) ?? {};
     const updatedBackendBlocks = {
       ...existingBlocks,
