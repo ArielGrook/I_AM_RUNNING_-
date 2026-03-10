@@ -92,6 +92,10 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION handle_new_user()`,
     },
     {
+      key: 'storage_rls',
+      sql: `ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY`,
+    },
+    {
       key: 'storage_select',
       sql: `DO $$ BEGIN
         IF NOT EXISTS (SELECT FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname='Users can view own media')
