@@ -526,8 +526,8 @@ export const HeaderTron = ({
                     <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: effectiveAvatarStyle === 'wide' ? 8 : (showUsernameInHeader ? 8 : 0) }}>
                       <div
                         style={{
-                          width: effectiveAvatarStyle === 'wide' ? 28 : 36,
-                          height: effectiveAvatarStyle === 'wide' ? 28 : 36,
+                          width: 40,
+                          height: 40,
                           borderRadius: '50%',
                           background: effectiveAvatarUrl ? 'transparent' : t.accent,
                           color: '#fff',
