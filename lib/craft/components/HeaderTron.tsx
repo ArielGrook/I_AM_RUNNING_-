@@ -293,6 +293,9 @@ export const HeaderTron = ({
   const effectiveInitials = enabled && previewLoggedIn && !session
     ? 'U'
     : initials;
+  const avatarUrl = (session?.user as { user_metadata?: { avatar_url?: string } })
+    ?.user_metadata?.avatar_url ?? null;
+  const effectiveAvatarUrl = (enabled && previewLoggedIn && !session) ? null : avatarUrl;
   const showAvatar = !enabled ? !!session : !!previewLoggedIn;
   const showLoginBtn = !enabled && !session && !!loginLink;
   const toHref = (slugOrUrl: string) =>
@@ -526,7 +529,7 @@ export const HeaderTron = ({
                           width: effectiveAvatarStyle === 'wide' ? 28 : 36,
                           height: effectiveAvatarStyle === 'wide' ? 28 : 36,
                           borderRadius: '50%',
-                          background: t.accent,
+                          background: effectiveAvatarUrl ? 'transparent' : t.accent,
                           color: '#fff',
                           display: 'flex',
                           alignItems: 'center',
@@ -535,9 +538,13 @@ export const HeaderTron = ({
                         fontWeight: 700,
                         fontSize: effectiveAvatarStyle === 'wide' ? 11 : 13,
                         flexShrink: 0,
+                        overflow: 'hidden',
                         }}
                       >
-                        {effectiveInitials}
+                        {effectiveAvatarUrl
+                          ? <img src={effectiveAvatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                          : effectiveInitials
+                        }
                       </div>
                       {effectiveAvatarStyle === 'compact' && showUsernameInHeader && (
                         <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>
