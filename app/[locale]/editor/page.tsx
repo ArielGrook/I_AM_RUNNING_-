@@ -927,7 +927,6 @@ export default function EditorPage() {
   // Listen for color preset changes and apply to all pages
   useEffect(() => {
     const handler = (e: Event) => {
-      console.log('[editor] received iam_color_preset_changed', (e as CustomEvent).detail);
       const { accentColor, darkBg, lightBg } = (e as CustomEvent).detail;
       setPages((prev) => {
         const updated = applyColorPresetToAllPages(prev, accentColor, darkBg, lightBg);
