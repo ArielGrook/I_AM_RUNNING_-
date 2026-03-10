@@ -511,14 +511,14 @@ export const HeaderTron = ({
                       flexDirection: 'column',
                       alignItems: effectiveAvatarStyle === 'compact' ? 'center' : 'stretch',
                       gap: effectiveAvatarStyle === 'wide' ? 4 : undefined,
-                      padding: effectiveAvatarStyle === 'wide' ? '4px 10px' : 4,
+                      padding: effectiveAvatarStyle === 'wide' ? '4px 8px' : '4px',
                       borderRadius: effectiveAvatarStyle === 'wide' ? 16 : 22,
                       background:
                         colorScheme === 'dark' ? 'rgba(15,15,15,0.97)' : 'rgba(245,245,245,0.97)',
                       border: `1px solid ${colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
                       zIndex: 50,
                       overflow: 'hidden',
-                      height: (avatarDropdownOpen || effectiveAvatarStyle === 'wide') ? 'auto' : 44,
+                      height: (avatarDropdownOpen || effectiveAvatarStyle === 'wide') ? 'auto' : 48,
                       transition: 'height 0.15s ease',
                     }}
                   >
