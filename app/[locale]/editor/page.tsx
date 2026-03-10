@@ -930,6 +930,16 @@ export default function EditorPage() {
       const { accentColor, darkBg, lightBg } = (e as CustomEvent).detail;
       setPages((prev) => {
         const updated = applyColorPresetToAllPages(prev, accentColor, darkBg, lightBg);
+        // Перезагружаем активную страницу в Frame
+        const activePage = updated.find((p) => p.id === activePageIdRef.current);
+        const dataToLoad = activePage?.desktopData ?? activePage?.data ?? null;
+        if (dataToLoad) {
+          try {
+            const json = lz.decompress(dataToLoad, { inputEncoding: 'Base64' }) as string;
+            // Используем setTimeout чтобы дать setPages завершиться
+            setTimeout(() => setFrameData(json), 0);
+          } catch { /* ignore */ }
+        }
         return updated;
       });
       setHasUnsavedChanges(true);
