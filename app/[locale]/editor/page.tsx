@@ -344,6 +344,39 @@ function DesktopToMobileSync({
   return null;
 }
 
+/** Applies color preset (accentColor, darkBg, lightBg) to all pages */
+function applyColorPresetToAllPages(
+  pages: PageState[],
+  accentColor: string,
+  darkBg: string,
+  lightBg: string
+): PageState[] {
+  return pages.map((page) => {
+    const applyToData = (compressed: string | null | undefined): string | null => {
+      if (!compressed) return compressed ?? null;
+      try {
+        const json = lz.decompress(compressed, { inputEncoding: 'Base64' }) as string;
+        const parsed = JSON.parse(json);
+        Object.values(parsed).forEach((node: unknown) => {
+          const n = node as { props?: Record<string, unknown> };
+          if (!n?.props) return;
+          if ('accentColor' in n.props) n.props.accentColor = accentColor;
+          if ('darkBg' in n.props) n.props.darkBg = darkBg;
+          if ('lightBg' in n.props) n.props.lightBg = lightBg;
+        });
+        return lz.compress(JSON.stringify(parsed), { outputEncoding: 'Base64' }) as string;
+      } catch {
+        return compressed;
+      }
+    };
+    return {
+      ...page,
+      desktopData: applyToData(page.desktopData),
+      mobileData: applyToData(page.mobileData),
+      data: applyToData(page.data),
+    };
+  });
+}
 
 export default function EditorPage() {
   const router = useRouter();
@@ -358,6 +391,10 @@ export default function EditorPage() {
     pagesRef.current = pages;
   }, [pages]);
   const [activePageId, setActivePageId] = useState('1');
+  const activePageIdRef = useRef<string>(activePageId);
+  useEffect(() => {
+    activePageIdRef.current = activePageId;
+  }, [activePageId]);
   const [loadedProject, setLoadedProject] = useState<LoadedProject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -886,6 +923,20 @@ export default function EditorPage() {
     },
     [pages, activePageId, loadedProject]
   );
+
+  // Listen for color preset changes and apply to all pages
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { accentColor, darkBg, lightBg } = (e as CustomEvent).detail;
+      setPages((prev) => {
+        const updated = applyColorPresetToAllPages(prev, accentColor, darkBg, lightBg);
+        return updated;
+      });
+      setHasUnsavedChanges(true);
+    };
+    window.addEventListener('iam_color_preset_changed', handler);
+    return () => window.removeEventListener('iam_color_preset_changed', handler);
+  }, []);
 
   // Warn on browser close/reload if unsaved changes
   useEffect(() => {
