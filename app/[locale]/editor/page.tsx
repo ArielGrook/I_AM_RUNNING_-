@@ -317,6 +317,46 @@ function PreviewController({ previewMode }: { previewMode: boolean }) {
   return null;
 }
 
+/** Applies color preset to all nodes in the current Frame via Craft.js actions. */
+function ColorPresetSync() {
+  const { actions, query } = useEditor();
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { accentColor, darkBg, lightBg } = (e as CustomEvent).detail;
+      try {
+        const json = query.serialize();
+        const nodes = JSON.parse(json) as Record<string, { props?: Record<string, unknown> }>;
+        Object.entries(nodes).forEach(([id, node]) => {
+          const props = node.props as Record<string, unknown>;
+          if (!props) return;
+          if ('accentColor' in props) {
+            actions.history.ignore().setProp(id, (p: Record<string, unknown>) => {
+              p.accentColor = accentColor;
+            });
+          }
+          if ('darkBg' in props) {
+            actions.history.ignore().setProp(id, (p: Record<string, unknown>) => {
+              p.darkBg = darkBg;
+            });
+          }
+          if ('lightBg' in props) {
+            actions.history.ignore().setProp(id, (p: Record<string, unknown>) => {
+              p.lightBg = lightBg;
+            });
+          }
+        });
+      } catch (err) {
+        console.error('[ColorPresetSync] failed:', err);
+      }
+    };
+    window.addEventListener('iam_color_preset_changed', handler);
+    return () => window.removeEventListener('iam_color_preset_changed', handler);
+  }, [actions, query]);
+
+  return null;
+}
+
 /** Syncs desktop canvas to mobile in real-time when mobileData is empty. */
 function DesktopToMobileSync({
   viewport,
@@ -928,20 +968,7 @@ export default function EditorPage() {
   useEffect(() => {
     const handler = (e: Event) => {
       const { accentColor, darkBg, lightBg } = (e as CustomEvent).detail;
-      setPages((prev) => {
-        const updated = applyColorPresetToAllPages(prev, accentColor, darkBg, lightBg);
-        // Перезагружаем активную страницу в Frame
-        const activePage = updated.find((p) => p.id === activePageIdRef.current);
-        const dataToLoad = activePage?.desktopData ?? activePage?.data ?? null;
-        if (dataToLoad) {
-          try {
-            const json = lz.decompress(dataToLoad, { inputEncoding: 'Base64' }) as string;
-            // Используем setTimeout чтобы дать setPages завершиться
-            setTimeout(() => setFrameData(json), 0);
-          } catch { /* ignore */ }
-        }
-        return updated;
-      });
+      setPages((prev) => applyColorPresetToAllPages(prev, accentColor, darkBg, lightBg));
       setHasUnsavedChanges(true);
     };
     window.addEventListener('iam_color_preset_changed', handler);
@@ -1023,6 +1050,7 @@ export default function EditorPage() {
         >
         <EditorSiteContextBridge>
         <PreviewController previewMode={previewMode} />
+        <ColorPresetSync />
         <DesktopToMobileSync
           viewport={viewport}
           mobileData={mobileData}
