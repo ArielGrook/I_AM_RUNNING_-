@@ -8,6 +8,8 @@ interface MediaLibraryProps {
   onSelect: (url: string, type: 'image' | 'video') => void;
   onClose: () => void;
   accept?: 'image' | 'video' | 'all';
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
 }
 
 export function MediaLibrary({
@@ -15,9 +17,11 @@ export function MediaLibrary({
   onSelect,
   onClose,
   accept = 'all',
+  supabaseUrl,
+  supabaseAnonKey,
 }: MediaLibraryProps) {
   const { files, uploading, loading, fetchFiles, uploadFile, deleteFile } =
-    useMediaLibrary(userId);
+    useMediaLibrary(userId, supabaseUrl, supabaseAnonKey);
   const [dragOver, setDragOver] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 

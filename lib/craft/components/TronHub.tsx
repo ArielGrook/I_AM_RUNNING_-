@@ -361,6 +361,8 @@ function AccountSection({
         <MediaLibrary
           userId={session.user.id}
           accept="image"
+          supabaseUrl={supabaseUrl}
+          supabaseAnonKey={supabaseAnonKey}
           onSelect={(url) => {
             setUserData((prev) => (prev ? { ...prev, avatarUrl: url } : { avatarUrl: url }));
             if (typeof window !== 'undefined' && session?.user?.id) {
