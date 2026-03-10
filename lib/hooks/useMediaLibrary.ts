@@ -13,16 +13,18 @@ export interface MediaFile {
   createdAt: string;
 }
 
-export function useMediaLibrary(userId: string, supabaseUrl?: string, supabaseAnonKey?: string) {
+export function useMediaLibrary(userId: string, supabaseUrl?: string, supabaseAnonKey?: string, accessToken?: string) {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const supabase = useMemo(
     () => (supabaseUrl && supabaseAnonKey)
-      ? createClient(supabaseUrl, supabaseAnonKey)
+      ? createClient(supabaseUrl, supabaseAnonKey, {
+          global: accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {},
+        })
       : getSupabaseClient(),
-    [supabaseUrl, supabaseAnonKey]
+    [supabaseUrl, supabaseAnonKey, accessToken]
   );
 
   const fetchFiles = useCallback(async () => {
