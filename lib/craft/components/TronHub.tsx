@@ -422,7 +422,7 @@ function AccountSection({
                   }
                 }
                 if (accessToken) {
-                  await fetch(`${supabaseUrl}/auth/v1/user`, {
+                  const putRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
                     method: 'PUT',
                     headers: {
                       'Content-Type': 'application/json',
@@ -431,6 +431,18 @@ function AccountSection({
                     },
                     body: JSON.stringify({ data: { avatar_url: url } }),
                   });
+                  if (putRes.ok) {
+                    const updatedUser = await putRes.json();
+                    // Обновляем сессию с новым user_metadata включая avatar_url
+                    const currentRaw = localStorage.getItem('iam_client_session');
+                    const currentStored = currentRaw ? JSON.parse(currentRaw) : null;
+                    if (currentStored && updatedUser) {
+                      saveSession({
+                        ...currentStored,
+                        user: { ...currentStored.user, ...updatedUser },
+                      });
+                    }
+                  }
                 }
               } catch (err) {
                 console.error('[TronHub] avatar save failed:', err);
