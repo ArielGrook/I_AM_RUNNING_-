@@ -10,6 +10,7 @@ interface MediaLibraryProps {
   accept?: 'image' | 'video' | 'all';
   supabaseUrl?: string;
   supabaseAnonKey?: string;
+  accessToken?: string;
 }
 
 export function MediaLibrary({
@@ -19,9 +20,10 @@ export function MediaLibrary({
   accept = 'all',
   supabaseUrl,
   supabaseAnonKey,
+  accessToken,
 }: MediaLibraryProps) {
   const { files, uploading, loading, fetchFiles, uploadFile, deleteFile } =
-    useMediaLibrary(userId, supabaseUrl, supabaseAnonKey);
+    useMediaLibrary(userId, supabaseUrl, supabaseAnonKey, accessToken);
   const [dragOver, setDragOver] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 

@@ -363,6 +363,12 @@ function AccountSection({
           accept="image"
           supabaseUrl={supabaseUrl}
           supabaseAnonKey={supabaseAnonKey}
+          accessToken={(() => {
+            try {
+              const raw = localStorage.getItem('iam_client_session');
+              return raw ? JSON.parse(raw)?.access_token : undefined;
+            } catch { return undefined; }
+          })()}
           onSelect={async (url) => {
             setUserData((prev) => (prev ? { ...prev, avatarUrl: url } : { avatarUrl: url }));
             if (typeof window !== 'undefined' && session?.user?.id) {
