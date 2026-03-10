@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 export interface MediaFile {
@@ -12,12 +13,14 @@ export interface MediaFile {
   createdAt: string;
 }
 
-export function useMediaLibrary(userId: string) {
+export function useMediaLibrary(userId: string, supabaseUrl?: string, supabaseAnonKey?: string) {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const supabase = getSupabaseClient();
+  const supabase = (supabaseUrl && supabaseAnonKey)
+    ? createClient(supabaseUrl, supabaseAnonKey)
+    : getSupabaseClient();
 
   const fetchFiles = useCallback(async () => {
     setLoading(true);

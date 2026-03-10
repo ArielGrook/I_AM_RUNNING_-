@@ -361,12 +361,49 @@ function AccountSection({
         <MediaLibrary
           userId={session.user.id}
           accept="image"
-          onSelect={(url) => {
+          supabaseUrl={supabaseUrl}
+          supabaseAnonKey={supabaseAnonKey}
+          onSelect={async (url) => {
             setUserData((prev) => (prev ? { ...prev, avatarUrl: url } : { avatarUrl: url }));
             if (typeof window !== 'undefined' && session?.user?.id) {
               localStorage.setItem(`iam_user_avatar_${session.user.id}`, url);
             }
             setShowMediaLibrary(false);
+            // Сохраняем в user_metadata
+            if (supabaseUrl && supabaseAnonKey) {
+              try {
+                const raw = localStorage.getItem('iam_client_session');
+                const stored = raw ? JSON.parse(raw) : null;
+                let accessToken = stored?.access_token;
+                if (stored?.refresh_token) {
+                  const refreshRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'apikey': supabaseAnonKey },
+                    body: JSON.stringify({ refresh_token: stored.refresh_token }),
+                  });
+                  if (refreshRes.ok) {
+                    const refreshed = await refreshRes.json();
+                    if (refreshed.access_token) {
+                      accessToken = refreshed.access_token;
+                      saveSession({ ...stored, ...refreshed });
+                    }
+                  }
+                }
+                if (accessToken) {
+                  await fetch(`${supabaseUrl}/auth/v1/user`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${accessToken}`,
+                      'apikey': supabaseAnonKey,
+                    },
+                    body: JSON.stringify({ data: { avatar_url: url } }),
+                  });
+                }
+              } catch (err) {
+                console.error('[TronHub] avatar save failed:', err);
+              }
+            }
           }}
           onClose={() => setShowMediaLibrary(false)}
         />
