@@ -18,14 +18,10 @@ import {
 import { injectSupabaseCredentialsIntoCraftJson } from '@/lib/craft/injectSupabaseCredentials';
 import {
   Container,
-  Text,
-  Hero,
   HeroTron,
   HeroTronHeading,
   HeroTronSubheading,
   HeroTronButton,
-  Button,
-  Image,
   HeaderTron,
   TronFeatures,
   FeatureCard,
@@ -45,13 +41,7 @@ import {
   TronLogin,
   TronRegister,
   TronHub,
-  Divider,
-  Video,
   HtmlBlock,
-  SectionBlock,
-  LayoutBlock,
-  CardBlock,
-  PricingCardBlock,
 } from '@/lib/craft/components';
 import { PagesProvider, PagesContext } from '@/lib/craft/context/PagesContext';
 import { SiteContext } from '@/lib/craft/context/SiteContext';
@@ -930,14 +920,10 @@ export default function EditorPage() {
       <Editor
         resolver={{
           Container,
-          Text,
-          Hero,
           HeroTron,
           HeroTronHeading,
           HeroTronSubheading,
           HeroTronButton,
-          Button,
-          Image,
           HeaderTron,
           TronFeatures,
           FeatureCard,
@@ -957,13 +943,7 @@ export default function EditorPage() {
           TronLogin,
           TronRegister,
           TronHub,
-          Divider,
-          Video,
           HtmlBlock,
-          SectionBlock,
-          LayoutBlock,
-          CardBlock,
-          PricingCardBlock,
         }}
         onRender={RenderNode}
         indicator={{
