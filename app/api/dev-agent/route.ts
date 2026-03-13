@@ -185,6 +185,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
       case 'claude': apiKey = devConfig.anthropicApiKey; break;
       case 'openai': apiKey = devConfig.openaiApiKey; break;
       case 'deepseek': apiKey = devConfig.deepseekApiKey; break;
+      case 'gemini': apiKey = devConfig.geminiApiKey; break;
     }
     const provider = getProvider(providerName, apiKey);
 
