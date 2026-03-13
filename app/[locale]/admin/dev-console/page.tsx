@@ -208,6 +208,7 @@ export default function DevConsolePage() {
         setConfigValues({
           anthropicApiKey: '',
           openaiApiKey: '',
+          geminiApiKey: '',
           deepseekApiKey: '',
           githubToken: '',
           githubRepo: '',
@@ -404,6 +405,19 @@ export default function DevConsolePage() {
                   onChange={(e) => setConfigValues(prev => ({ ...prev, deepseekApiKey: e.target.value }))}
                   placeholder={configMasked.deepseekApiKey || 'sk-...'}
                   className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                  Gemini API Key
+                </label>
+                <input
+                  type="password"
+                  value={configValues.geminiApiKey}
+                  onChange={(e) => setConfigValues(prev => ({ ...prev, geminiApiKey: e.target.value }))}
+                  placeholder={configMasked.geminiApiKey || 'AIza...'}
+                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
                 />
               </div>
 

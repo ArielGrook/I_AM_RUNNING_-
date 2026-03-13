@@ -312,6 +312,91 @@ export function createDeepSeekProvider(apiKeyOverride?: string): AIProvider {
   });
 }
 
+export function createGeminiProvider(apiKeyOverride?: string): AIProvider {
+  const apiKey = apiKeyOverride || process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY not set. Add it in Dev Console settings.');
+
+  return {
+    name: 'gemini',
+
+    async call(messages: AIMessage[], model: string): Promise<AIResponse> {
+      const tools = buildOpenAITools();
+      const systemMsg = messages.find(m => m.role === 'system');
+      const userMessages = messages.filter(m => m.role !== 'system');
+
+      const geminiMessages = userMessages.map(msg => {
+        if (typeof msg.content === 'string') {
+          return { role: msg.role === 'assistant' ? 'model' : 'user', parts: [{ text: msg.content }] };
+        }
+        if (Array.isArray(msg.content)) {
+          const parts: unknown[] = [];
+          for (const block of msg.content) {
+            if ((block as { type: string }).type === 'text') parts.push({ text: (block as { text: string }).text });
+            if ((block as { type: string }).type === 'tool_result') {
+              parts.push({ text: JSON.stringify((block as { content: unknown }).content) });
+            }
+            if ((block as { type: string }).type === 'tool_use') {
+              parts.push({ functionCall: { name: (block as { name: string }).name, args: (block as { input: unknown }).input } });
+            }
+          }
+          return { role: msg.role === 'assistant' ? 'model' : 'user', parts };
+        }
+        return { role: 'user', parts: [{ text: String(msg.content) }] };
+      });
+
+      const body: Record<string, unknown> = {
+        contents: geminiMessages,
+        tools: [{ functionDeclarations: tools.map((t: { function: { name: string; description: string; parameters: unknown } }) => ({
+          name: t.function.name,
+          description: t.function.description,
+          parameters: t.function.parameters,
+        })) }],
+        generationConfig: { maxOutputTokens: 8192 },
+      };
+
+      if (systemMsg) {
+        body.systemInstruction = { parts: [{ text: typeof systemMsg.content === 'string' ? systemMsg.content : JSON.stringify(systemMsg.content) }] };
+      }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      );
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Gemini API error ${response.status}: ${err}`);
+      }
+
+      const data = await response.json();
+      const candidate = data.candidates?.[0];
+      const parts = candidate?.content?.parts || [];
+
+      let text: string | null = null;
+      const toolCalls: AIToolCall[] = [];
+
+      for (const part of parts) {
+        if (part.text) text = (text || '') + part.text;
+        if (part.functionCall) {
+          toolCalls.push({
+            id: `gemini-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            name: part.functionCall.name,
+            args: part.functionCall.args || {},
+          });
+        }
+      }
+
+      return {
+        text,
+        toolCalls,
+        done: toolCalls.length === 0,
+        inputTokens: data.usageMetadata?.promptTokenCount || 0,
+        outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
+      };
+    },
+  };
+}
+
 // ─────────────────────────────────────────────
 // ФАБРИКА ПРОВАЙДЕРОВ
 // ─────────────────────────────────────────────
@@ -324,6 +409,8 @@ export function getProvider(providerName: string, apiKey?: string): AIProvider {
       return createOpenAIProvider(apiKey);
     case 'deepseek':
       return createDeepSeekProvider(apiKey);
+    case 'gemini':
+      return createGeminiProvider(apiKey);
     default:
       throw new Error(`Unknown provider: ${providerName}`);
   }
@@ -332,14 +419,22 @@ export function getProvider(providerName: string, apiKey?: string): AIProvider {
 // Доступные модели для UI (dropdown в Dev Console)
 export const AVAILABLE_MODELS: Record<string, string[]> = {
   claude: [
-    'claude-sonnet-4-20250514',
-    'claude-opus-4-20250115',
+    'claude-sonnet-4-6',
+    'claude-opus-4-6',
+    'claude-haiku-4-5-20251001',
   ],
   openai: [
     'gpt-4o',
     'gpt-4o-mini',
     'o1',
-    'o3',
+    'o1-mini',
+    'o3-mini',
+  ],
+  gemini: [
+    'gemini-2.5-pro',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
   ],
   deepseek: [
     'deepseek-chat',
