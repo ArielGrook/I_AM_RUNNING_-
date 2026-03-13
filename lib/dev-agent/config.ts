@@ -7,6 +7,7 @@ const CONFIG_PATH = join(PROJECT_ROOT, '.dev-agent-config.json');
 export interface DevAgentConfig {
   anthropicApiKey?: string;
   openaiApiKey?: string;
+  geminiApiKey?: string;
   deepseekApiKey?: string;
   githubToken?: string;
   githubRepo?: string;
@@ -16,6 +17,7 @@ export interface DevAgentConfig {
 const DEFAULT_CONFIG: DevAgentConfig = {
   anthropicApiKey: '',
   openaiApiKey: '',
+  geminiApiKey: '',
   deepseekApiKey: '',
   githubToken: '',
   githubRepo: '',
@@ -60,6 +62,7 @@ export function maskConfig(config: DevAgentConfig): DevAgentConfig {
   return {
     anthropicApiKey: mask(config.anthropicApiKey),
     openaiApiKey: mask(config.openaiApiKey),
+    geminiApiKey: mask(config.geminiApiKey),
     deepseekApiKey: mask(config.deepseekApiKey),
     githubToken: mask(config.githubToken),
     githubRepo: config.githubRepo, // repo URL не секретный
