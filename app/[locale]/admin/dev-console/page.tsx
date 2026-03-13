@@ -47,8 +47,9 @@ const PROVIDERS: Record<string, { label: string; models: { value: string; label:
   claude: {
     label: 'Claude',
     models: [
-      { value: 'claude-sonnet-4-20250514', label: 'Sonnet 4' },
-      { value: 'claude-opus-4-20250115', label: 'Opus 4' },
+      { value: 'claude-sonnet-4-6', label: 'Sonnet 4.6' },
+      { value: 'claude-opus-4-6', label: 'Opus 4.6' },
+      { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5' },
     ],
   },
   openai: {
@@ -57,14 +58,24 @@ const PROVIDERS: Record<string, { label: string; models: { value: string; label:
       { value: 'gpt-4o', label: 'GPT-4o' },
       { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
       { value: 'o1', label: 'o1' },
-      { value: 'o3', label: 'o3' },
+      { value: 'o1-mini', label: 'o1 Mini' },
+      { value: 'o3-mini', label: 'o3 Mini' },
+    ],
+  },
+  gemini: {
+    label: 'Gemini',
+    models: [
+      { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+      { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+      { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash-Lite' },
     ],
   },
   deepseek: {
     label: 'DeepSeek',
     models: [
-      { value: 'deepseek-chat', label: 'Chat' },
-      { value: 'deepseek-reasoner', label: 'Reasoner' },
+      { value: 'deepseek-chat', label: 'DeepSeek V3' },
+      { value: 'deepseek-reasoner', label: 'DeepSeek R1' },
     ],
   },
 };
@@ -130,6 +141,7 @@ export default function DevConsolePage() {
   const [configValues, setConfigValues] = useState({
     anthropicApiKey: '',
     openaiApiKey: '',
+    geminiApiKey: '',
     deepseekApiKey: '',
     githubToken: '',
     githubRepo: '',
@@ -611,7 +623,7 @@ export default function DevConsolePage() {
               <Bot className="w-3 h-3" />
               <span>AI Output</span>
             </div>
-            <ScrollArea className="max-h-[500px]">
+            <ScrollArea className="h-[500px]">
               <div className="p-4 space-y-4">
                 {aiOutputs.map((output, i) => (
                   <div key={i} className="text-sm text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
