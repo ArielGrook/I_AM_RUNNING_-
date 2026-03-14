@@ -327,6 +327,18 @@ export async function executeTool(call: ToolCall): Promise<ToolResult> {
     case 'git_snapshot':
       return gitSnapshot(call.args.message as string);
 
+    case 'delete_file': {
+      const delPath = resolveSafePath(call.args.path as string);
+      const recursive = call.args.recursive as boolean || false;
+      const { rmSync } = await import('fs');
+      try {
+        rmSync(delPath, { recursive, force: true });
+        return { success: true, data: `Deleted: ${call.args.path}` };
+      } catch (e) {
+        return { success: false, error: `delete_file failed: ${e instanceof Error ? e.message : String(e)}` };
+      }
+    }
+
     default:
       return { success: false, error: `Unknown tool: ${call.name}` };
   }
@@ -444,6 +456,24 @@ export const TOOL_DEFINITIONS = [
         },
       },
       required: ['message'],
+    },
+  },
+  {
+    name: 'delete_file',
+    description: 'Delete a file or empty directory from the project. Use with caution — prefer git_snapshot before deleting.',
+    parameters: {
+      type: 'object' as const,
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Relative path to file or directory to delete',
+        },
+        recursive: {
+          type: 'boolean',
+          description: 'If true, delete directory and all contents (like rm -rf). Default false.',
+        },
+      },
+      required: ['path'],
     },
   },
 ];
