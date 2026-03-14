@@ -63,7 +63,7 @@ export function HeroSection() {
           className="text-center sm:text-left"
         >
           <div className="text-xl font-black tracking-wide">I AM RUNNING</div>
-          <div className="text-xs text-white/80">AI-Powered Builder</div>
+          <div className="text-xs text-white/80">Next generation development platform</div>
         </motion.div>
 
         <div className="flex items-center gap-3 flex-wrap justify-center">
