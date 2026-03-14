@@ -325,23 +325,48 @@ export function createGeminiProvider(apiKeyOverride?: string): AIProvider {
       const userMessages = messages.filter(m => m.role !== 'system');
 
       const geminiMessages = userMessages.map(msg => {
-        if (typeof msg.content === 'string') {
-          return { role: msg.role === 'assistant' ? 'model' : 'user', parts: [{ text: msg.content }] };
+        // Handle tool results as separate 'function' role messages
+        if (msg.role === 'tool') {
+          return {
+            role: 'function' as const,
+            parts: [{
+              functionResponse: {
+                name: msg.name || 'unknown',
+                response: { content: msg.content }
+              }
+            }]
+          };
         }
-        if (Array.isArray(msg.content)) {
+
+        // Handle assistant messages (may contain text and/or tool calls)
+        if (msg.role === 'assistant') {
           const parts: unknown[] = [];
-          for (const block of msg.content) {
-            if ((block as { type: string }).type === 'text') parts.push({ text: (block as { text: string }).text });
-            if ((block as { type: string }).type === 'tool_result') {
-              parts.push({ text: JSON.stringify((block as { content: unknown }).content) });
-            }
-            if ((block as { type: string }).type === 'tool_use') {
-              parts.push({ functionCall: { name: (block as { name: string }).name, args: (block as { input: unknown }).input } });
+          
+          // Add text if present
+          if (msg.content && typeof msg.content === 'string') {
+            parts.push({ text: msg.content });
+          }
+          
+          // Add tool calls if present
+          if (msg.toolCalls && msg.toolCalls.length > 0) {
+            for (const tc of msg.toolCalls) {
+              parts.push({ 
+                functionCall: { 
+                  name: tc.name, 
+                  args: tc.args 
+                } 
+              });
             }
           }
-          return { role: msg.role === 'assistant' ? 'model' : 'user', parts };
+          
+          return { role: 'model' as const, parts };
         }
-        return { role: 'user', parts: [{ text: String(msg.content) }] };
+
+        // Handle user messages (simple text)
+        return { 
+          role: 'user' as const, 
+          parts: [{ text: typeof msg.content === 'string' ? msg.content : String(msg.content) }] 
+        };
       });
 
       const body: Record<string, unknown> = {
