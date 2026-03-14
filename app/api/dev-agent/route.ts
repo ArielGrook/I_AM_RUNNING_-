@@ -122,7 +122,7 @@ function deploy(log: LogEntry[], summary: string): { success: boolean; error?: s
   }
 
   // pm2 restart
-  if (!run(`pm2 restart ${PM2_PROCESS_NAME}`, 'pm2 restart')) {
+  if (!run(`sudo /usr/local/bin/iam-deploy.sh`, 'pm2 restart')) {
     return { success: false, error: 'pm2 restart failed. Build succeeded — try manual restart.' };
   }
 
