@@ -968,12 +968,35 @@ export default function EditorPage() {
   useEffect(() => {
     const handler = (e: Event) => {
       const { accentColor, darkBg, lightBg } = (e as CustomEvent).detail;
-      setPages((prev) => applyColorPresetToAllPages(prev, accentColor, darkBg, lightBg));
+      setPages((prev) => {
+        const updated = applyColorPresetToAllPages(prev, accentColor, darkBg, lightBg);
+        // Reload current Frame with updated data
+        const currentPage = updated.find((p) => p.id === activePageId);
+        if (currentPage) {
+          const dataToLoad = viewport === 'desktop' 
+            ? (currentPage.desktopData ?? currentPage.data) 
+            : (currentPage.mobileData ?? currentPage.desktopData ?? currentPage.data);
+          if (dataToLoad) {
+            try {
+              const json = lz.decompress(dataToLoad, { inputEncoding: 'Base64' }) as string;
+              setFrameData(json);
+            } catch {
+              // ignore
+            }
+          }
+          if (viewport === 'desktop') {
+            setDesktopData(currentPage.desktopData ?? currentPage.data ?? null);
+          } else {
+            setMobileData(currentPage.mobileData ?? null);
+          }
+        }
+        return updated;
+      });
       setHasUnsavedChanges(true);
     };
     window.addEventListener('iam_color_preset_changed', handler);
     return () => window.removeEventListener('iam_color_preset_changed', handler);
-  }, []);
+  }, [activePageId, viewport]);
 
   // Warn on browser close/reload if unsaved changes
   useEffect(() => {
