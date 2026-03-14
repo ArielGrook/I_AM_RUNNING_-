@@ -41,36 +41,6 @@ export async function POST() {
     steps.push('git pull ✅');
     steps.push('npm run build ✅');
     steps.push('pm2 restart ✅');
-
-    // Health check — wait for server to respond
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    let healthy = false;
-    for (let i = 0; i < HEALTH_CHECK_RETRIES; i++) {
-      try {
-        const res = await fetch(HEALTH_CHECK_URL, { signal: AbortSignal.timeout(5000) });
-        if (res.ok) { healthy = true; break; }
-      } catch {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-    }
-
-    if (!healthy) {
-      // Auto-rollback
-      steps.push('health check ❌ — rolling back...');
-      execSync('git reset --hard HEAD~1', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 15000 });
-      const rollbackResult = spawnSync('sudo', ['/usr/local/bin/iam-deploy.sh'], {
-        cwd: PROJECT_ROOT,
-        encoding: 'utf-8',
-        timeout: 180000,
-      });
-      if (rollbackResult.status !== 0) {
-        throw new Error(rollbackResult.stderr || rollbackResult.stdout || 'Rollback deploy failed');
-      }
-      steps.push('rollback complete ✅');
-      return NextResponse.json({ success: false, error: 'Health check failed — auto-rollback applied', steps }, { status: 500 });
-    }
-
-    steps.push('health check ✅');
     return NextResponse.json({ success: true, steps });
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : String(err);
