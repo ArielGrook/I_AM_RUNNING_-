@@ -35,9 +35,7 @@ export async function POST() {
       encoding: 'utf-8',
       timeout: 180000,
     });
-    if (deployResult.status !== 0) {
-      throw new Error(deployResult.stderr || deployResult.stdout || 'Deploy script failed');
-    }
+      if (deployResult.status !== 0) throw new Error(deployResult.stdout || "Deploy script failed");
     steps.push('git pull ✅');
     steps.push('npm run build ✅');
     steps.push('pm2 restart ✅');
