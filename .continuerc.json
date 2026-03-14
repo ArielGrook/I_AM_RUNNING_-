@@ -1,0 +1,16 @@
+{
+  "docs": [
+    {
+      "name": "Project Core",
+      "startUrl": "./context-core/"
+    }
+  ],
+  "contextProviders": [
+    {
+      "name": "files",
+      "params": {
+        "directories": ["./context-core/"]
+      }
+    }
+  ]
+}

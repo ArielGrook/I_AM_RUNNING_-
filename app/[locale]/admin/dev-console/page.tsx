@@ -127,7 +127,7 @@ export default function DevConsolePage() {
   // State
   const [prompt, setPrompt] = useState('');
   const [provider, setProvider] = useState('claude');
-  const [model, setModel] = useState('claude-sonnet-4-20250514');
+  const [model, setModel] = useState('claude-sonnet-4-6');
   const [autoDeploy, setAutoDeploy] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
   const [log, setLog] = useState<LogEntry[]>([]);

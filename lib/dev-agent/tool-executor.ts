@@ -1,6 +1,6 @@
 import { readFile as fsReadFile, writeFile as fsWriteFile, mkdir } from 'fs/promises';
 import { resolve, relative, dirname } from 'path';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 
 // ─────────────────────────────────────────────
 // КОНФИГУРАЦИЯ
@@ -205,29 +205,49 @@ async function searchFiles(
   filePattern?: string
 ): Promise<ToolResult> {
   try {
-    const excludeArgs = EXCLUDED_DIRS.map(d => `--exclude-dir="${d}"`).join(' ');
-    const includeArg = filePattern ? `--include="${filePattern}"` : '';
-    const cmd = `grep -rn ${excludeArgs} ${includeArg} "${query.replace(/"/g, '\\"')}" "${PROJECT_ROOT}" | head -50`;
+    // Build grep arguments safely without shell interpolation
+    const args = ['-rn'];
+    
+    // Add exclude directories
+    for (const dir of EXCLUDED_DIRS) {
+      args.push(`--exclude-dir=${dir}`);
+    }
+    
+    // Add file pattern if provided
+    if (filePattern) {
+      args.push(`--include=${filePattern}`);
+    }
+    
+    // Add query and path (no shell escaping needed with spawnSync)
+    args.push(query);
+    args.push(PROJECT_ROOT);
 
-    const output = execSync(cmd, {
+    const result = spawnSync('grep', args, {
       encoding: 'utf-8',
-      cwd: PROJECT_ROOT,
       timeout: 15000,
+      maxBuffer: 1024 * 1024 * 10, // 10MB buffer
     });
 
-    // Превратить абсолютные пути в относительные
-    const lines = output
+    // Handle grep output
+    if (result.error) {
+      throw result.error;
+    }
+
+    // grep exit code 1 means no matches found (not an error)
+    if (result.status === 1 || !result.stdout) {
+      return { success: true, data: 'No matches found' };
+    }
+
+    // Limit to first 50 lines and convert absolute paths to relative
+    const lines = result.stdout
       .trim()
       .split('\n')
+      .slice(0, 50)
       .map(line => line.replace(PROJECT_ROOT + '/', ''))
       .filter(line => line.length > 0);
 
     return { success: true, data: lines.join('\n') || 'No matches found' };
   } catch (err: unknown) {
-    // grep возвращает exit code 1 если ничего не найдено — это не ошибка
-    if (err && typeof err === 'object' && 'status' in err && err.status === 1) {
-      return { success: true, data: 'No matches found' };
-    }
     const message = err instanceof Error ? err.message : String(err);
     return { success: false, error: `search_files failed: ${message}` };
   }
