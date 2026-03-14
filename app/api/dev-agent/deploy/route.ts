@@ -30,13 +30,9 @@ export async function POST() {
 
     const steps: string[] = [];
 
-    execSync(`git pull origin ${GIT_BRANCH}`, { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 30000 });
+    execSync('sudo /usr/local/bin/iam-deploy.sh', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 180000 });
     steps.push('git pull ✅');
-
-    execSync('npm run build', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 120000 });
     steps.push('npm run build ✅');
-
-    execSync(`/usr/bin/pm2 restart ${PM2_PROCESS_NAME}`, { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 30000 });
     steps.push('pm2 restart ✅');
 
     // Health check — wait for server to respond
@@ -55,8 +51,7 @@ export async function POST() {
       // Auto-rollback
       steps.push('health check ❌ — rolling back...');
       execSync('git reset --hard HEAD~1', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 15000 });
-      execSync('npm run build', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 120000 });
-      execSync(`/usr/bin/pm2 restart ${PM2_PROCESS_NAME}`, { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 30000 });
+      execSync('sudo /usr/local/bin/iam-deploy.sh', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 180000 });
       steps.push('rollback complete ✅');
       return NextResponse.json({ success: false, error: 'Health check failed — auto-rollback applied', steps }, { status: 500 });
     }
