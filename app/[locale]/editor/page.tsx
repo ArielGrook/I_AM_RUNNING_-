@@ -970,24 +970,19 @@ export default function EditorPage() {
       const { accentColor, darkBg, lightBg } = (e as CustomEvent).detail;
       setPages((prev) => {
         const updated = applyColorPresetToAllPages(prev, accentColor, darkBg, lightBg);
-        // Reload current Frame with updated data
+        // Schedule Frame reload AFTER state update completes
         const currentPage = updated.find((p) => p.id === activePageId);
         if (currentPage) {
-          const dataToLoad = viewport === 'desktop' 
-            ? (currentPage.desktopData ?? currentPage.data) 
+          const dataToLoad = viewport === 'desktop'
+            ? (currentPage.desktopData ?? currentPage.data)
             : (currentPage.mobileData ?? currentPage.desktopData ?? currentPage.data);
           if (dataToLoad) {
             try {
               const json = lz.decompress(dataToLoad, { inputEncoding: 'Base64' }) as string;
-              setFrameData(json);
+              setTimeout(() => setFrameData(json), 0);
             } catch {
               // ignore
             }
-          }
-          if (viewport === 'desktop') {
-            setDesktopData(currentPage.desktopData ?? currentPage.data ?? null);
-          } else {
-            setMobileData(currentPage.mobileData ?? null);
           }
         }
         return updated;
