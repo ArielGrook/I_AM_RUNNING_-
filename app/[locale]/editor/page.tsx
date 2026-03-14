@@ -445,6 +445,7 @@ export default function EditorPage() {
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [frameData, setFrameData] = useState<string | null>(null);
+  const [frameKey, setFrameKey] = useState<number>(0);
   const [frameReady, setFrameReady] = useState(false);
   const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [desktopData, setDesktopData] = useState<string | null>(null);
@@ -979,7 +980,10 @@ export default function EditorPage() {
           if (dataToLoad) {
             try {
               const json = lz.decompress(dataToLoad, { inputEncoding: 'Base64' }) as string;
-              setTimeout(() => setFrameData(json), 0);
+              setTimeout(() => {
+                setFrameData(json);
+                setFrameKey((k) => k + 1);
+              }, 0);
             } catch {
               // ignore
             }
@@ -1130,7 +1134,7 @@ export default function EditorPage() {
           >
             {frameReady && (
               <div style={{ width: '100%', minHeight: '100vh', background: '#ffffff' }}>
-                <Frame key={activePageId} data={frameData ?? undefined}>
+                <Frame key={`${activePageId}-${frameKey}`} data={frameData ?? undefined}>
                   <Element
                     is={Container}
                     canvas
