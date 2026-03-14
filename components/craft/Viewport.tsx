@@ -202,6 +202,18 @@ export const Viewport = ({
         const accent = preset.accent;
         const state = query.getState();
         const nodes = state?.nodes ?? {};
+
+        // Get current darkBg/lightBg from first node that has them
+        let darkBg = '#0a0a0a';
+        let lightBg = '#ffffff';
+        Object.keys(nodes).forEach((id) => {
+          if (id === 'ROOT') return;
+          const props = nodes[id]?.data?.props;
+          if (props && 'darkBg' in props && props.darkBg) darkBg = props.darkBg as string;
+          if (props && 'lightBg' in props && props.lightBg) lightBg = props.lightBg as string;
+        });
+
+        // Update current Frame nodes
         Object.keys(nodes).forEach((id) => {
           if (id === 'ROOT') return;
           const node = nodes[id];
@@ -212,8 +224,14 @@ export const Viewport = ({
             });
           }
         });
+
         setActivePresetId(preset.id);
         setAccentColor(accent);
+
+        // Dispatch event so all other pages get updated too
+        window.dispatchEvent(new CustomEvent('iam_color_preset_changed', {
+          detail: { accentColor: accent, darkBg, lightBg }
+        }));
       } catch {
         // noop
       }
