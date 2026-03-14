@@ -147,7 +147,7 @@ export function HeroSection() {
               <Button
                 onClick={handleEditorClick}
                 size="lg"
-                className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-green-500 text-white hover:bg-green-600 shadow-lg hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] transition-all duration-300 rounded-full sm:min-w-[200px]"
+                className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full sm:min-w-[200px]"
               >
                 {t('enterEditor')}
                 <ArrowRight className="h-5 w-5 ml-2" />
