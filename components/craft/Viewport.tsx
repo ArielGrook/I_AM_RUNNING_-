@@ -417,6 +417,24 @@ export const Viewport = ({
             const newScheme = canvasScheme === 'dark' ? 'light' : 'dark';
             setCanvasScheme(newScheme);
             applySchemeToTronNodes(newScheme);
+
+            // Get current accentColor/darkBg/lightBg from first node that has them
+            const state = query.getState();
+            const nodes = state?.nodes ?? {};
+            let accentColor = '#FF6B35';
+            let darkBg = '#0a0a0a';
+            let lightBg = '#ffffff';
+            Object.keys(nodes).forEach((id) => {
+              if (id === 'ROOT') return;
+              const props = nodes[id]?.data?.props;
+              if (props && 'accentColor' in props && props.accentColor) accentColor = props.accentColor as string;
+              if (props && 'darkBg' in props && props.darkBg) darkBg = props.darkBg as string;
+              if (props && 'lightBg' in props && props.lightBg) lightBg = props.lightBg as string;
+            });
+
+            window.dispatchEvent(new CustomEvent('iam_color_scheme_changed', {
+              detail: { colorScheme: newScheme, accentColor, darkBg, lightBg }
+            }));
           }}
           style={{
             background: canvasScheme === 'dark' ? 'rgba(255,107,53,0.15)' : 'rgba(255,107,53,0.3)',
