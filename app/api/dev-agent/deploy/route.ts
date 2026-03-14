@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { loadConfig } from '@/lib/dev-agent/config';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 
 export const maxDuration = 120;
 export const runtime = 'nodejs';
@@ -30,7 +30,14 @@ export async function POST() {
 
     const steps: string[] = [];
 
-    execSync('sudo /usr/local/bin/iam-deploy.sh', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 180000, stdio: ['pipe', 'pipe', 'ignore'] });
+    const deployResult = spawnSync('sudo', ['/usr/local/bin/iam-deploy.sh'], {
+      cwd: PROJECT_ROOT,
+      encoding: 'utf-8',
+      timeout: 180000,
+    });
+    if (deployResult.status !== 0) {
+      throw new Error(deployResult.stderr || deployResult.stdout || 'Deploy script failed');
+    }
     steps.push('git pull ✅');
     steps.push('npm run build ✅');
     steps.push('pm2 restart ✅');
@@ -51,7 +58,14 @@ export async function POST() {
       // Auto-rollback
       steps.push('health check ❌ — rolling back...');
       execSync('git reset --hard HEAD~1', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 15000 });
-      execSync('sudo /usr/local/bin/iam-deploy.sh', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 180000, stdio: ['pipe', 'pipe', 'ignore'] });
+      const rollbackResult = spawnSync('sudo', ['/usr/local/bin/iam-deploy.sh'], {
+        cwd: PROJECT_ROOT,
+        encoding: 'utf-8',
+        timeout: 180000,
+      });
+      if (rollbackResult.status !== 0) {
+        throw new Error(rollbackResult.stderr || rollbackResult.stdout || 'Rollback deploy failed');
+      }
       steps.push('rollback complete ✅');
       return NextResponse.json({ success: false, error: 'Health check failed — auto-rollback applied', steps }, { status: 500 });
     }
