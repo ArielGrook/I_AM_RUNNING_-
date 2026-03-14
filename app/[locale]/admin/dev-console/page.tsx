@@ -128,7 +128,7 @@ export default function DevConsolePage() {
   const [prompt, setPrompt] = useState('');
   const [provider, setProvider] = useState('claude');
   const [model, setModel] = useState('claude-sonnet-4-6');
-  const [autoDeploy, setAutoDeploy] = useState(true);
+  const [isDeploying, setIsDeploying] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [log, setLog] = useState<LogEntry[]>([]);
   const [tokens, setTokens] = useState<{ input: number; output: number } | null>(null);
@@ -244,7 +244,7 @@ export default function DevConsolePage() {
       const response = await fetch('/api/dev-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, provider, model, autoDeploy }),
+        body: JSON.stringify({ prompt, provider, model, autoDeploy: false }),
         signal: abortRef.current.signal,
       });
 
@@ -308,6 +308,36 @@ export default function DevConsolePage() {
       setError(message);
     } finally {
       setIsRollingBack(false);
+    }
+  }
+
+  // ── DEPLOY ──
+  async function handleDeploy() {
+    if (isDeploying) return;
+
+    setIsDeploying(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/dev-agent/deploy', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setLog(prev => [
+          ...prev,
+          { time: new Date().toLocaleTimeString('en-GB'), type: 'deploy', message: '✅ Deploy complete' },
+        ]);
+      } else {
+        setError(data.error || 'Deploy failed');
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+    } finally {
+      setIsDeploying(false);
     }
   }
 
@@ -503,17 +533,16 @@ export default function DevConsolePage() {
             ))}
           </select>
 
-          {/* Auto-deploy toggle */}
-          <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoDeploy}
-              onChange={(e) => setAutoDeploy(e.target.checked)}
-              disabled={isRunning}
-              className="rounded border-zinc-600 bg-zinc-800 text-orange-500 focus:ring-orange-500"
-            />
-            Auto-deploy
-          </label>
+          {/* Deploy button */}
+          <Button
+            onClick={handleDeploy}
+            disabled={isRunning || isDeploying}
+            variant="outline"
+            size="sm"
+            className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors"
+          >
+            {isDeploying ? 'Deploying...' : '🚀 Deploy'}
+          </Button>
 
           {/* Spacer */}
           <div className="flex-1" />
