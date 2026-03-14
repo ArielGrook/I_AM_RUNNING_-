@@ -30,7 +30,7 @@ export async function POST() {
 
     const steps: string[] = [];
 
-    execSync('sudo /usr/local/bin/iam-deploy.sh', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 180000 });
+    execSync('sudo /usr/local/bin/iam-deploy.sh', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 180000, stdio: ['pipe', 'pipe', 'ignore'] });
     steps.push('git pull ✅');
     steps.push('npm run build ✅');
     steps.push('pm2 restart ✅');
@@ -51,7 +51,7 @@ export async function POST() {
       // Auto-rollback
       steps.push('health check ❌ — rolling back...');
       execSync('git reset --hard HEAD~1', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 15000 });
-      execSync('sudo /usr/local/bin/iam-deploy.sh', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 180000 });
+      execSync('sudo /usr/local/bin/iam-deploy.sh', { cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 180000, stdio: ['pipe', 'pipe', 'ignore'] });
       steps.push('rollback complete ✅');
       return NextResponse.json({ success: false, error: 'Health check failed — auto-rollback applied', steps }, { status: 500 });
     }
