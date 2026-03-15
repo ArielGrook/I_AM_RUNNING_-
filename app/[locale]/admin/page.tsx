@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,8 @@ import {
   Search,
   Globe,
   Terminal,
+  Menu,
+  X as CloseIcon,
 } from 'lucide-react';
 import { subscribeToProjects, unsubscribe, type ProjectUpdate } from '@/lib/supabase/realtime';
 import { createSupabaseClient } from '@/lib/supabase/client';
@@ -74,6 +76,11 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [realtimeChannel, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
 
+  // Mobile
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+
   useEffect(() => {
     // Restore session from sessionStorage
     if (typeof window !== 'undefined') {
@@ -105,6 +112,17 @@ export default function AdminPage() {
       };
     }
   }, [isAuthenticated]);
+
+  // Mobile detection
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const check = () => setIsMobile(el.getBoundingClientRect().width < 768);
+    check();
+    const observer = new ResizeObserver(([e]) => setIsMobile(e.contentRect.width < 768));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const handleLogin = async () => {
     if (isLocked) {
@@ -272,10 +290,11 @@ export default function AdminPage() {
   if (!isAuthenticated) {
     return (
       <div
+        ref={containerRef}
         className="flex items-center justify-center min-h-screen bg-gray-100"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
-        <div className="bg-white p-8 rounded-lg shadow-md w-96">
+        <div className={`bg-white p-8 rounded-lg shadow-md ${isMobile ? 'w-[calc(100%-32px)] max-w-sm' : 'w-96'}`}>
           <h1 className="text-2xl font-bold mb-2">Admin Access</h1>
           <p className="text-gray-500 text-sm mb-6">Enter code from Google Authenticator</p>
 
@@ -306,25 +325,79 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div ref={containerRef} className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="bg-white border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            {isMobile && (
+              <button
+                onClick={() => setShowMobileSidebar(true)}
+                className="p-2 hover:bg-gray-100 rounded transition-colors"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
             <Eye className="w-6 h-6" />
-            <h1 className="text-2xl font-bold">{t('title')}</h1>
+            <h1 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{t('title')}</h1>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">admin</span>
+            {!isMobile && <span className="text-sm text-gray-600">admin</span>}
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
-              {t('logout')}
+              {!isMobile && t('logout')}
             </Button>
           </div>
         </div>
       </header>
 
+      {/* Mobile Sidebar Overlay */}
+      {isMobile && showMobileSidebar && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileSidebar(false)} />
+          <aside className="absolute left-0 top-0 h-full w-[280px] bg-white shadow-2xl p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-lg">Menu</h2>
+              <button onClick={() => setShowMobileSidebar(false)} className="p-1 hover:bg-gray-100 rounded">
+                <CloseIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  {t('stats')}
+                </h3>
+                <div className="text-sm space-y-1">
+                  <div>{t('totalProjects')}: {projects.length}</div>
+                  <div>{t('totalUsers')}: {users.length}</div>
+                </div>
+              </div>
+              <div>
+                <Link
+                  href={`/${locale}/admin/seo`}
+                  onClick={() => setShowMobileSidebar(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
+                >
+                  <Globe className="w-4 h-4" />
+                  SEO Settings
+                </Link>
+                <Link
+                  href={`/${locale}/admin/dev-console`}
+                  onClick={() => setShowMobileSidebar(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
+                >
+                  <Terminal className="w-4 h-4" />
+                  Dev Console
+                </Link>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
+
       <div className="flex h-[calc(100vh-73px)]">
-        <aside className="hidden sm:block w-64 bg-white border-r p-4">
+        {!isMobile && (
+          <aside className="w-64 bg-white border-r p-4">
           <div className="space-y-4">
             <div>
               <h2 className="font-semibold mb-2 flex items-center gap-2">
@@ -354,8 +427,9 @@ export default function AdminPage() {
             </div>
           </div>
         </aside>
+        )}
 
-        <main className="flex-1 p-6 overflow-auto">
+        <main className={`flex-1 overflow-auto ${isMobile ? 'p-4' : 'p-6'}`}>
           <div className="flex gap-2 mb-4">
             <Button
               variant={activeTab === 'users' ? 'default' : 'outline'}
@@ -524,7 +598,7 @@ export default function AdminPage() {
               </div>
 
               <ScrollArea className="h-[calc(100vh-280px)]">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
                   {filteredProjects.map((project) => (
                     <div
                       key={project.id}

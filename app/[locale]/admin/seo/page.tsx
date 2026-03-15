@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import Link from 'next/link';
@@ -39,6 +39,10 @@ export default function AdminSeoPage() {
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState<SeoSettings>(DEFAULTS);
 
+  // Mobile
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     const hasSession = typeof window !== 'undefined' && sessionStorage.getItem('admin_session');
     if (!hasSession) {
@@ -65,6 +69,17 @@ export default function AdminSeoPage() {
     }
     load();
   }, [locale, router]);
+
+  // Mobile detection
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const check = () => setIsMobile(el.getBoundingClientRect().width < 768);
+    check();
+    const observer = new ResizeObserver(([e]) => setIsMobile(e.contentRect.width < 768));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -113,30 +128,43 @@ export default function AdminSeoPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div ref={containerRef} className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-xl text-gray-600">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-64 bg-white border-r border-gray-200 fixed h-full flex flex-col">
-        <div className="p-6">
-          <Link
-            href={`/${locale}/admin`}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors mb-4 inline-flex w-fit"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Admin</span>
-          </Link>
-          <h2 className="text-2xl font-bold text-gray-900">SEO Settings</h2>
-        </div>
-      </aside>
+    <div ref={containerRef} className="flex min-h-screen bg-gray-50">
+      {!isMobile && (
+        <aside className="w-64 bg-white border-r border-gray-200 fixed h-full flex flex-col">
+          <div className="p-6">
+            <Link
+              href={`/${locale}/admin`}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors mb-4 inline-flex w-fit"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Admin</span>
+            </Link>
+            <h2 className="text-2xl font-bold text-gray-900">SEO Settings</h2>
+          </div>
+        </aside>
+      )}
 
-      <main className="ml-64 flex-1 p-8">
-        <div className="max-w-2xl">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">SEO Metadata</h1>
+      <main className={`flex-1 ${isMobile ? 'p-4' : 'ml-64 p-8'}`}>
+        {isMobile && (
+          <div className="mb-6">
+            <Link
+              href={`/${locale}/admin`}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors inline-flex w-fit"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Admin</span>
+            </Link>
+          </div>
+        )}
+        <div className={isMobile ? 'w-full' : 'max-w-2xl'}>
+          <h1 className={`font-bold text-gray-900 mb-6 ${isMobile ? 'text-xl' : 'text-2xl'}`}>SEO Metadata</h1>
 
           <p className="text-sm text-gray-500 mb-4">
             To save changes, you must be logged in to the site with marcenko.artiom@gmail.com (RLS policy).
@@ -153,7 +181,7 @@ export default function AdminSeoPage() {
             </div>
           )}
 
-          <div className="space-y-6 bg-white rounded-xl p-8 border border-gray-200">
+          <div className={`space-y-6 bg-white rounded-xl border border-gray-200 ${isMobile ? 'p-4' : 'p-8'}`}>
             {/* Meta Title */}
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-900">
@@ -284,7 +312,8 @@ export default function AdminSeoPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white rounded-lg font-medium transition-colors"
+              className={`w-full px-4 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white rounded-lg font-medium transition-colors ${isMobile ? 'py-3 text-base' : 'py-3'}`}
+              style={isMobile ? { minHeight: '48px' } : undefined}
             >
               {saving ? 'Saving...' : 'Save'}
             </button>
