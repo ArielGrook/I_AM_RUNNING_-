@@ -138,6 +138,10 @@ export default function DevConsolePage() {
   const [expandedLines, setExpandedLines] = useState<Set<number>>(new Set());
 
   const [showSettings, setShowSettings] = useState(false);
+  const [showFileTree, setShowFileTree] = useState(false);
+  const [fileTree, setFileTree] = useState<string[]>([]);
+  const [fileTreeLoading, setFileTreeLoading] = useState(false);
+  const [fileTreeExpanded, setFileTreeExpanded] = useState<Set<string>>(new Set(['app', 'lib', 'components', 'context-core']));
   const [configValues, setConfigValues] = useState({
     anthropicApiKey: '',
     openaiApiKey: '',
@@ -341,6 +345,46 @@ export default function DevConsolePage() {
     }
   }
 
+  // ── FILE TREE ──
+  const loadFileTree = async () => {
+    setFileTreeLoading(true);
+    try {
+      const response = await fetch('/api/dev-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: 'Use list_directory to list the project root with depth 3. Return only the raw list_directory result, nothing else.',
+          provider,
+          model,
+          autoDeploy: false,
+        }),
+      });
+      const data = await response.json();
+      const toolResult = data.log?.find((l: { type: string; message: string }) => l.type === 'tool_result' && l.message?.includes('/'));
+      if (toolResult) {
+        const lines = toolResult.message.split(' ').filter((l: string) => l.includes('/') || l.includes('.'));
+        setFileTree(lines);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setFileTreeLoading(false);
+    }
+  };
+
+  const insertPathIntoPrompt = (path: string) => {
+    setPrompt(prev => prev + (prev.endsWith('\n') || prev === '' ? '' : '\n') + path);
+  };
+
+  const toggleFolder = (folder: string) => {
+    setFileTreeExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(folder)) next.delete(folder);
+      else next.add(folder);
+      return next;
+    });
+  };
+
   // ── RENDER ──
   if (!hasSession) return null;
 
@@ -367,6 +411,13 @@ export default function DevConsolePage() {
               <span>{tokens.input.toLocaleString()} in / {tokens.output.toLocaleString()} out</span>
             </div>
           )}
+          <button
+            onClick={() => setShowFileTree(prev => !prev)}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${showFileTree ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+            title="Toggle file tree"
+          >
+            📁
+          </button>
           <button
             onClick={() => setShowSettings(true)}
             className="text-zinc-400 hover:text-white transition-colors ml-3"
@@ -505,7 +556,59 @@ export default function DevConsolePage() {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col p-6 gap-4 max-w-5xl mx-auto w-full">
+      <div className="flex-1 flex flex-row gap-0 w-full overflow-hidden">
+        {/* File Tree Sidebar */}
+        {showFileTree && (
+          <div className="w-64 min-w-[256px] bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800">
+              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Files</span>
+              <button
+                onClick={loadFileTree}
+                disabled={fileTreeLoading}
+                className="text-xs text-zinc-500 hover:text-orange-400 transition-colors"
+                title="Refresh"
+              >
+                {fileTreeLoading ? '...' : '↻'}
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {fileTree.length === 0 ? (
+                <button
+                  onClick={loadFileTree}
+                  className="w-full text-xs text-zinc-500 hover:text-zinc-300 py-2 text-center"
+                >
+                  {fileTreeLoading ? 'Loading...' : 'Click to load files'}
+                </button>
+              ) : (
+                <div className="space-y-0.5">
+                  {fileTree.map((item, i) => {
+                    const depth = (item.match(/\//g) || []).length - 1;
+                    const isDir = !item.includes('.');
+                    const name = item.split('/').pop() || item;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => isDir ? toggleFolder(item) : insertPathIntoPrompt(item)}
+                        className="w-full text-left text-xs px-2 py-0.5 rounded hover:bg-zinc-800 transition-colors flex items-center gap-1"
+                        style={{ paddingLeft: `${8 + depth * 12}px` }}
+                        title={isDir ? 'Toggle folder' : `Insert: ${item}`}
+                      >
+                        <span className={isDir ? 'text-zinc-400' : 'text-zinc-300'}>
+                          {isDir ? (fileTreeExpanded.has(item) ? '▾' : '▸') : '·'}
+                        </span>
+                        <span className={isDir ? 'text-zinc-400' : 'text-zinc-200 hover:text-orange-400'}>
+                          {name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Content Area */}
+        <div className="flex-1 flex flex-col p-6 gap-4 overflow-y-auto">
 
         {/* Controls Row */}
         <div className="flex items-center gap-3 flex-wrap">
@@ -677,6 +780,7 @@ export default function DevConsolePage() {
             </ScrollArea>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
