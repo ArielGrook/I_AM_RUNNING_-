@@ -27,6 +27,12 @@ import {
   Settings,
   Sun,
   Moon,
+  Eye,
+  Pencil,
+  Save,
+  Trash2,
+  Plus,
+  X,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -194,6 +200,25 @@ export default function DevConsolePage() {
   const editorViewRef = useRef<EditorView | null>(null);
   const themeCompartment = useRef(new Compartment());
   const langCompartment = useRef(new Compartment());
+  const readOnlyCompartment = useRef(new Compartment());
+
+  // ── EDIT MODE ──
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isModified, setIsModified] = useState(false);
+  const originalContentRef = useRef<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState(false);
+  // Discard confirmation modal
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+  const [pendingFileSwitch, setPendingFileSwitch] = useState<TreeNode | null>(null);
+  // Delete confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  // New file input
+  const [showNewFileInput, setShowNewFileInput] = useState(false);
+  const [newFilePath, setNewFilePath] = useState('');
+  const [newFileError, setNewFileError] = useState<string | null>(null);
 
   // ── THEME ──
   const [isDark, setIsDark] = useState(true);
@@ -265,12 +290,16 @@ export default function DevConsolePage() {
     setFileError(null);
     setFileContent(null);
     setCodeSelection(null);
+    setIsEditMode(false);
+    setIsModified(false);
+    setSaveError(null);
     fetch(`/api/dev-agent/files/read?path=${encodeURIComponent(selectedFile)}`, { signal: controller.signal })
       .then(r => r.json())
       .then(data => {
         if (data.error) { setFileError(data.error); return; }
         setFileContent(data.content);
         setFileLines(data.lines);
+        originalContentRef.current = data.content;
       })
       .catch(e => { if (e.name !== 'AbortError') setFileError(e.message); })
       .finally(() => setFileLoading(false));
@@ -294,10 +323,16 @@ export default function DevConsolePage() {
         doc: fileContent ?? '',
         extensions: [
           basicSetup,
-          EditorState.readOnly.of(true),
+          readOnlyCompartment.current.of(EditorState.readOnly.of(true)),
           themeCompartment.current.of(themeExt),
           langCompartment.current.of(langExt),
           EditorView.updateListener.of(update => {
+            // Track modifications
+            if (update.docChanged && originalContentRef.current !== null) {
+              const current = update.state.doc.toString();
+              setIsModified(current !== originalContentRef.current);
+            }
+            // Track selection
             const sel = update.state.selection.main;
             if (!sel.empty) {
               const fromLine = update.state.doc.lineAt(sel.from).number;
@@ -321,6 +356,27 @@ export default function DevConsolePage() {
     return () => { view.destroy(); editorViewRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileContent, isDark, selectedFile]);
+
+  // Reconfigure readOnly when edit mode toggles (no full rebuild)
+  useEffect(() => {
+    if (!editorViewRef.current) return;
+    editorViewRef.current.dispatch({
+      effects: readOnlyCompartment.current.reconfigure(EditorState.readOnly.of(!isEditMode)),
+    });
+  }, [isEditMode]);
+
+  // Ctrl+S / Cmd+S to save
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (isEditMode && selectedFile && !isSaving) handleSave();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, selectedFile, isSaving]);
 
   // ── SETTINGS ──
   async function loadSettings() {
@@ -450,6 +506,104 @@ export default function DevConsolePage() {
     } finally { setIsDeploying(false); }
   }
 
+  // ── EDIT MODE HANDLERS ──
+  const handleToggleEditMode = () => {
+    if (isEditMode && isModified) {
+      setPendingFileSwitch(null); // null = toggling mode, not switching file
+      setShowDiscardModal(true);
+      return;
+    }
+    setIsEditMode(prev => !prev);
+  };
+
+  const handleSave = async () => {
+    if (!selectedFile || !editorViewRef.current) return;
+    const content = editorViewRef.current.state.doc.toString();
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch('/api/dev-agent/files/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: selectedFile, content }),
+      });
+      const data = await res.json();
+      if (data.error) { setSaveError(data.error); return; }
+      originalContentRef.current = content;
+      setIsModified(false);
+      setFileLines(data.lines);
+      setSaveToast(true);
+      setTimeout(() => setSaveToast(false), 2000);
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : String(err));
+    } finally { setIsSaving(false); }
+  };
+
+  const handleDiscardConfirm = () => {
+    setIsModified(false);
+    if (pendingFileSwitch) {
+      // Switching to a different file
+      setSelectedFile(pendingFileSwitch.path);
+      setPendingFileSwitch(null);
+    } else {
+      // Just toggling out of edit mode
+      setIsEditMode(false);
+      // Restore original content in editor
+      if (originalContentRef.current !== null && editorViewRef.current) {
+        const doc = editorViewRef.current.state.doc.toString();
+        if (doc !== originalContentRef.current) {
+          editorViewRef.current.dispatch({
+            changes: { from: 0, to: editorViewRef.current.state.doc.length, insert: originalContentRef.current },
+          });
+        }
+      }
+    }
+    setShowDiscardModal(false);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedFile) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch('/api/dev-agent/files/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: selectedFile }),
+      });
+      const data = await res.json();
+      if (data.error) { setSaveError(data.error); return; }
+      setSelectedFile(null);
+      setFileContent(null);
+      setIsEditMode(false);
+      setIsModified(false);
+      await loadFileTree();
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : String(err));
+    } finally { setIsDeleting(false); setShowDeleteConfirm(false); }
+  };
+
+  const handleCreateFile = async () => {
+    const p = newFilePath.trim();
+    if (!p) return;
+    setNewFileError(null);
+    try {
+      const res = await fetch('/api/dev-agent/files/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: p, content: '' }),
+      });
+      const data = await res.json();
+      if (data.error) { setNewFileError(data.error); return; }
+      setShowNewFileInput(false);
+      setNewFilePath('');
+      await loadFileTree();
+      setSelectedFile(p);
+      setIsEditMode(true);
+    } catch (err: unknown) {
+      setNewFileError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   // ── FILE TREE ──
   const loadFileTree = async () => {
     setFileTreeLoading(true);
@@ -494,6 +648,11 @@ export default function DevConsolePage() {
 
   const handleFileClick = (node: TreeNode) => {
     if (node.type === 'dir') { toggleFolder(node.path); return; }
+    if (isEditMode && isModified && node.path !== selectedFile) {
+      setPendingFileSwitch(node);
+      setShowDiscardModal(true);
+      return;
+    }
     setSelectedFile(node.path);
   };
 
@@ -665,6 +824,60 @@ export default function DevConsolePage() {
         </div>
       )}
 
+      {/* Discard Changes Modal */}
+      {showDiscardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowDiscardModal(false)} />
+          <div className={`relative rounded-xl p-6 w-80 shadow-2xl ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
+            <h3 className="text-sm font-semibold mb-2">Unsaved changes</h3>
+            <p className={`text-xs mb-5 ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+              You have unsaved changes. Do you want to discard them?
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowDiscardModal(false)}
+                className={`px-3 py-1.5 text-xs rounded transition-colors ${dark ? 'text-zinc-300 hover:bg-zinc-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDiscardConfirm}
+                className="px-3 py-1.5 text-xs rounded bg-red-600 hover:bg-red-700 text-white transition-colors"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && selectedFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowDeleteConfirm(false)} />
+          <div className={`relative rounded-xl p-6 w-80 shadow-2xl ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
+            <h3 className="text-sm font-semibold mb-2">Delete file?</h3>
+            <p className={`text-xs mb-1 font-mono ${dark ? 'text-zinc-300' : 'text-zinc-700'}`}>{selectedFile}</p>
+            <p className={`text-xs mb-5 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>This action cannot be undone.</p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className={`px-3 py-1.5 text-xs rounded transition-colors ${dark ? 'text-zinc-300 hover:bg-zinc-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-3 py-1.5 text-xs rounded bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white transition-colors"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Three-panel layout */}
       <div className="flex-1 flex flex-row overflow-hidden min-h-0">
 
@@ -673,10 +886,38 @@ export default function DevConsolePage() {
           <div className={`w-[280px] min-w-[280px] ${panelBg} border-r ${borderCls} flex flex-col overflow-hidden min-h-0`}>
             <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
               <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Files</span>
-              <button onClick={loadFileTree} disabled={fileTreeLoading} className={`text-xs transition-colors disabled:opacity-40 ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`} title="Refresh">
-                {fileTreeLoading ? '⟳' : '↻'}
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => { setShowNewFileInput(p => !p); setNewFilePath(''); setNewFileError(null); }}
+                  className={`text-xs transition-colors ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`}
+                  title="New file"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={loadFileTree} disabled={fileTreeLoading} className={`text-xs transition-colors disabled:opacity-40 ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`} title="Refresh">
+                  {fileTreeLoading ? '⟳' : '↻'}
+                </button>
+              </div>
             </div>
+            {/* New file input */}
+            {showNewFileInput && (
+              <div className={`px-2 py-2 border-b ${borderCls} flex-shrink-0 space-y-1`}>
+                <input
+                  type="text"
+                  autoFocus
+                  value={newFilePath}
+                  onChange={e => setNewFilePath(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleCreateFile();
+                    if (e.key === 'Escape') { setShowNewFileInput(false); setNewFilePath(''); setNewFileError(null); }
+                  }}
+                  placeholder="lib/utils/helper.ts"
+                  className={`w-full px-2 py-1 text-xs rounded border focus:outline-none font-mono ${dark ? 'bg-zinc-800 border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:border-orange-500' : 'bg-white border-zinc-300 text-zinc-800 placeholder-zinc-400 focus:border-orange-500'}`}
+                />
+                {newFileError && <p className="text-xs text-red-400">{newFileError}</p>}
+                <p className={`text-[10px] ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>Enter to create · Esc to cancel</p>
+              </div>
+            )}
             <div className="flex-1 overflow-y-auto py-1 min-h-0">
               {fileTreeLoading && fileTree.length === 0 && (
                 <div className={`px-4 py-3 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Loading files...</div>
@@ -698,27 +939,98 @@ export default function DevConsolePage() {
         {/* CENTER: Code Viewer — hidden on mobile */}
         <div className={`hidden md:flex flex-col flex-1 border-r ${borderCls} overflow-hidden min-w-0 min-h-0`}>
           {/* Viewer header */}
-          <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
-            <div className="flex items-center gap-2 min-w-0">
+          <div className={`flex items-center gap-2 px-3 py-1.5 border-b ${borderCls} flex-shrink-0 flex-wrap`}>
+            {/* File path + modified badge */}
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {selectedFile ? (
                 <>
                   <span className={`text-xs font-mono truncate ${dark ? 'text-zinc-300' : 'text-zinc-700'}`}>{selectedFile}</span>
-                  <span className={`text-xs flex-shrink-0 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>· {fileLines} lines</span>
+                  <span className={`text-xs flex-shrink-0 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>· {fileLines}L</span>
+                  {isModified && (
+                    <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                      Modified
+                    </span>
+                  )}
                 </>
               ) : (
                 <span className={`text-xs ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>Code Viewer</span>
               )}
             </div>
-            {codeSelection && selectedFile && (
-              <button
-                onClick={insertReference}
-                className="flex-shrink-0 px-2 py-0.5 text-xs rounded bg-orange-500 hover:bg-orange-600 text-white transition-colors"
-                title="Insert as reference into prompt"
-              >
-                📎 Reference ({codeSelection.fromLine}–{codeSelection.toLine})
-              </button>
-            )}
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Reference button */}
+              {codeSelection && selectedFile && (
+                <button
+                  onClick={insertReference}
+                  className="px-2 py-0.5 text-xs rounded bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+                  title="Insert as reference into prompt"
+                >
+                  📎 {codeSelection.fromLine}–{codeSelection.toLine}
+                </button>
+              )}
+
+              {/* Save / Discard (edit mode only) */}
+              {isEditMode && selectedFile && (
+                <>
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving || !isModified}
+                    className="flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white transition-colors"
+                    title="Save (Ctrl+S)"
+                  >
+                    <Save className="w-3 h-3" />
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={handleToggleEditMode}
+                    className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded transition-colors ${dark ? 'text-zinc-400 hover:bg-zinc-700' : 'text-zinc-500 hover:bg-zinc-100'}`}
+                    title="Discard changes"
+                  >
+                    <X className="w-3 h-3" /> Discard
+                  </button>
+                </>
+              )}
+
+              {/* View / Edit toggle */}
+              {selectedFile && (
+                <button
+                  onClick={handleToggleEditMode}
+                  className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded transition-colors ${isEditMode ? 'bg-orange-500 text-white' : (dark ? 'text-zinc-400 hover:bg-zinc-800' : 'text-zinc-500 hover:bg-zinc-100')}`}
+                  title={isEditMode ? 'Switch to View mode' : 'Switch to Edit mode'}
+                >
+                  {isEditMode ? <Eye className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
+                  {isEditMode ? 'View' : 'Edit'}
+                </button>
+              )}
+
+              {/* Delete */}
+              {selectedFile && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className={`p-1 rounded transition-colors text-red-400 hover:bg-red-950 hover:text-red-300`}
+                  title={`Delete ${selectedFile}`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Save error bar */}
+          {saveError && (
+            <div className="flex items-center justify-between px-3 py-1.5 bg-red-950/50 border-b border-red-800 flex-shrink-0">
+              <span className="text-xs text-red-300">{saveError}</span>
+              <button onClick={() => setSaveError(null)} className="text-red-400 hover:text-red-200"><X className="w-3 h-3" /></button>
+            </div>
+          )}
+
+          {/* Save toast */}
+          {saveToast && (
+            <div className="absolute top-12 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-green-700 text-white text-sm shadow-lg pointer-events-none">
+              ✓ Saved
+            </div>
+          )}
 
           {/* Viewer body */}
           <div className="flex-1 overflow-hidden relative min-h-0">
