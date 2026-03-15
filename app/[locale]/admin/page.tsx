@@ -27,6 +27,8 @@ import { generateProjectPreview, getCachedPreview } from '@/lib/utils/preview';
 import { cn } from '@/lib/utils';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import Link from 'next/link';
+import { authenticator } from 'otplib';
+import QRCode from 'qrcode';
 
 interface Project {
   id: string;
@@ -57,8 +59,11 @@ export default function AdminPage() {
   const isRTL = locale === 'he' || locale === 'ar';
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loginInput, setLoginInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
+  const [totpInput, setTotpInput] = useState('');
+  const [attempts, setAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [showQR, setShowQR] = useState(false);
   const [error, setError] = useState('');
   const [initLoading, setInitLoading] = useState(true);
 
@@ -74,6 +79,28 @@ export default function AdminPage() {
   const [realtimeChannel, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
 
   useEffect(() => {
+    // Restore session from sessionStorage
+    if (typeof window !== 'undefined') {
+      const session = sessionStorage.getItem('admin_session');
+      if (session === 'true') setIsAuthenticated(true);
+
+      // Check lockout
+      const lockUntil = sessionStorage.getItem('admin_lock_until');
+      if (lockUntil && Date.now() < parseInt(lockUntil)) setIsLocked(true);
+
+      // Show QR if first time setup
+      const secret = process.env.NEXT_PUBLIC_ADMIN_TOTP_SECRET;
+      if (secret) {
+        const hasSetup = localStorage.getItem('admin_totp_setup');
+        if (!hasSetup) {
+          const otpauth = authenticator.keyuri('admin', 'I AM RUNNING', secret);
+          QRCode.toDataURL(otpauth).then((url) => {
+            setQrCodeUrl(url);
+            setShowQR(true);
+          });
+        }
+      }
+    }
     setInitLoading(false);
   }, []);
 
@@ -97,14 +124,38 @@ export default function AdminPage() {
   }, [isAuthenticated]);
 
   const handleLogin = () => {
-    if (loginInput === 'admin' && passwordInput === 'super.admin') {
+    if (isLocked) {
+      setError('Too many attempts. Try again in 15 minutes.');
+      return;
+    }
+
+    const secret = process.env.NEXT_PUBLIC_ADMIN_TOTP_SECRET;
+    if (!secret) {
+      setError('TOTP secret not configured. Add NEXT_PUBLIC_ADMIN_TOTP_SECRET to .env');
+      return;
+    }
+
+    const isValid = authenticator.verify({ token: totpInput.trim(), secret });
+
+    if (isValid) {
       setIsAuthenticated(true);
       setError('');
+      setAttempts(0);
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('admin_session', 'true');
+        localStorage.setItem('admin_totp_setup', 'true');
       }
     } else {
-      setError('Invalid credentials');
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      if (newAttempts >= 5) {
+        setIsLocked(true);
+        const lockUntil = Date.now() + 15 * 60 * 1000;
+        sessionStorage.setItem('admin_lock_until', lockUntil.toString());
+        setError('Too many failed attempts. Locked for 15 minutes.');
+      } else {
+        setError(`Invalid code. ${5 - newAttempts} attempts remaining.`);
+      }
     }
   };
 
@@ -113,8 +164,7 @@ export default function AdminPage() {
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('admin_session');
     }
-    setLoginInput('');
-    setPasswordInput('');
+    setTotpInput('');
     setError('');
     setMessage('');
     if (realtimeChannel) {
@@ -242,28 +292,45 @@ export default function AdminPage() {
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         <div className="bg-white p-8 rounded-lg shadow-md w-96">
-          <h1 className="text-2xl font-bold mb-6">Admin Login</h1>
+          <h1 className="text-2xl font-bold mb-2">Admin Access</h1>
+          <p className="text-gray-500 text-sm mb-6">Enter code from Google Authenticator</p>
+
+          {showQR && qrCodeUrl && (
+            <div className="mb-6 text-center">
+              <p className="text-sm text-orange-600 font-semibold mb-2">
+                First time setup — scan this QR code with Google Authenticator:
+              </p>
+              <img src={qrCodeUrl} alt="TOTP QR Code" className="mx-auto mb-2" />
+              <button
+                type="button"
+                onClick={() => setShowQR(false)}
+                className="text-xs text-gray-400 underline"
+              >
+                I&apos;ve scanned it, hide QR
+              </button>
+            </div>
+          )}
+
           <input
             type="text"
-            placeholder="Login"
-            value={loginInput}
-            onChange={(e) => setLoginInput(e.target.value)}
-            className="w-full p-2 border rounded mb-3"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
-            className="w-full p-2 border rounded mb-3"
+            inputMode="numeric"
+            placeholder="000000"
+            maxLength={6}
+            value={totpInput}
+            onChange={(e) => setTotpInput(e.target.value.replace(/\D/g, ''))}
+            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+            className="w-full p-3 border rounded mb-3 text-center text-2xl tracking-widest font-mono"
+            disabled={isLocked}
+            autoFocus
           />
           {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
           <button
             type="button"
             onClick={handleLogin}
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            disabled={isLocked || totpInput.length !== 6}
+            className="w-full bg-orange-500 text-white p-2 rounded hover:bg-orange-600 disabled:opacity-50"
           >
-            Login
+            {isLocked ? 'Locked' : 'Enter'}
           </button>
         </div>
       </div>
