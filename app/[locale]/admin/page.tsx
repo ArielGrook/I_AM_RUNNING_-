@@ -123,39 +123,41 @@ export default function AdminPage() {
     }
   }, [isAuthenticated]);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (isLocked) {
       setError('Too many attempts. Try again in 15 minutes.');
       return;
     }
+    if (totpInput.length !== 6) return;
 
-    const secret = process.env.NEXT_PUBLIC_ADMIN_TOTP_SECRET;
-    if (!secret) {
-      setError('TOTP secret not configured. Add NEXT_PUBLIC_ADMIN_TOTP_SECRET to .env');
-      return;
-    }
+    try {
+      const res = await fetch('/api/admin/verify-totp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: totpInput }),
+      });
+      const data = await res.json();
 
-    const isValid = authenticator.verify({ token: totpInput.trim(), secret });
-
-    if (isValid) {
-      setIsAuthenticated(true);
-      setError('');
-      setAttempts(0);
-      if (typeof window !== 'undefined') {
+      if (data.success) {
+        setIsAuthenticated(true);
+        setError('');
+        setAttempts(0);
         sessionStorage.setItem('admin_session', 'true');
         localStorage.setItem('admin_totp_setup', 'true');
-      }
-    } else {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      if (newAttempts >= 5) {
-        setIsLocked(true);
-        const lockUntil = Date.now() + 15 * 60 * 1000;
-        sessionStorage.setItem('admin_lock_until', lockUntil.toString());
-        setError('Too many failed attempts. Locked for 15 minutes.');
       } else {
-        setError(`Invalid code. ${5 - newAttempts} attempts remaining.`);
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        if (newAttempts >= 5) {
+          setIsLocked(true);
+          sessionStorage.setItem('admin_lock_until', (Date.now() + 15 * 60 * 1000).toString());
+          setError('Too many failed attempts. Locked for 15 minutes.');
+        } else {
+          setError(data.error || 'Invalid code');
+        }
+        setTotpInput('');
       }
+    } catch {
+      setError('Connection error. Try again.');
     }
   };
 
