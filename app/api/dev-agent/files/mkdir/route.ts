@@ -11,7 +11,7 @@ const DEVELOPER_USER_ID = process.env.DEVELOPER_USER_ID;
 
 const BLOCKED_PATTERNS = ['.env', '.git/', 'node_modules/', '.next/', 'app/api/dev-agent'];
 
-export async function DELETE(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -25,44 +25,30 @@ export async function DELETE(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { path: filePath } = body;
+    const { path: dirPath } = body;
 
-    if (!filePath) {
+    if (!dirPath) {
       return NextResponse.json({ error: 'Missing path' }, { status: 400 });
     }
 
-    if (filePath.startsWith('/') || filePath.includes('..')) {
+    if (dirPath.startsWith('/') || dirPath.includes('..')) {
       return NextResponse.json({ error: 'Invalid path' }, { status: 403 });
     }
 
     for (const pattern of BLOCKED_PATTERNS) {
-      if (filePath.includes(pattern)) {
-        return NextResponse.json({ error: `Cannot delete ${pattern}` }, { status: 403 });
+      if (dirPath.includes(pattern)) {
+        return NextResponse.json({ error: `Cannot create directory in ${pattern}` }, { status: 403 });
       }
     }
 
-    const absolute = path.resolve(PROJECT_ROOT, filePath);
+    const absolute = path.resolve(PROJECT_ROOT, dirPath);
     if (!absolute.startsWith(path.resolve(PROJECT_ROOT))) {
       return NextResponse.json({ error: 'Path traversal detected' }, { status: 403 });
     }
 
-    if (!fs.existsSync(absolute)) {
-      return NextResponse.json({ error: 'File not found' }, { status: 404 });
-    }
+    fs.mkdirSync(absolute, { recursive: true });
 
-    const stat = fs.statSync(absolute);
-
-    if (stat.isDirectory()) {
-      const contents = fs.readdirSync(absolute);
-      if (contents.length > 0) {
-        return NextResponse.json({ error: 'Folder is not empty. Delete contents first.' }, { status: 409 });
-      }
-      fs.rmdirSync(absolute);
-    } else {
-      fs.unlinkSync(absolute);
-    }
-
-    return NextResponse.json({ success: true, path: filePath });
+    return NextResponse.json({ success: true, path: dirPath });
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error }, { status: 500 });

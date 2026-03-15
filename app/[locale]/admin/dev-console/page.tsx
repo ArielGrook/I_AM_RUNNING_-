@@ -33,6 +33,8 @@ import {
   Trash2,
   Plus,
   X,
+  Copy,
+  FolderPlus,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -220,6 +222,26 @@ export default function DevConsolePage() {
   const [newFilePath, setNewFilePath] = useState('');
   const [newFileError, setNewFileError] = useState<string | null>(null);
 
+  // ── CONTEXT MENU ──
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    type: 'file' | 'dir' | 'empty';
+    path: string;
+  } | null>(null);
+  // Context menu create (file or folder)
+  const [showContextCreateModal, setShowContextCreateModal] = useState(false);
+  const [contextCreateType, setContextCreateType] = useState<'file' | 'folder'>('file');
+  const [contextCreateParent, setContextCreateParent] = useState('');
+  const [contextCreateName, setContextCreateName] = useState('');
+  const [contextCreateError, setContextCreateError] = useState<string | null>(null);
+  const [isContextCreating, setIsContextCreating] = useState(false);
+  // Delete folder confirmation
+  const [showDeleteFolderConfirm, setShowDeleteFolderConfirm] = useState(false);
+  const [deleteFolderPath, setDeleteFolderPath] = useState<string | null>(null);
+  const [isDeletingFolder, setIsDeletingFolder] = useState(false);
+  const [deleteFolderError, setDeleteFolderError] = useState<string | null>(null);
+
   // ── THEME ──
   const [isDark, setIsDark] = useState(true);
 
@@ -244,6 +266,21 @@ export default function DevConsolePage() {
   const abortRef = useRef<AbortController | null>(null);
 
   // ── EFFECTS ──
+
+  // Context menu dismiss: click outside, Escape, scroll
+  useEffect(() => {
+    if (!contextMenu) return;
+    const dismiss = () => setContextMenu(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') dismiss(); };
+    document.addEventListener('mousedown', dismiss);
+    document.addEventListener('scroll', dismiss, true);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', dismiss);
+      document.removeEventListener('scroll', dismiss, true);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [contextMenu]);
 
   // Theme persistence
   useEffect(() => {
@@ -604,6 +641,81 @@ export default function DevConsolePage() {
     }
   };
 
+  // ── CONTEXT MENU HANDLERS ──
+  const openContextMenu = (e: React.MouseEvent, type: 'file' | 'dir' | 'empty', nodePath: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, type, path: nodePath });
+  };
+
+  const handleContextCreate = async () => {
+    const name = contextCreateName.trim();
+    if (!name) return;
+    setContextCreateError(null);
+    setIsContextCreating(true);
+    const fullPath = contextCreateParent ? `${contextCreateParent}/${name}` : name;
+    try {
+      if (contextCreateType === 'file') {
+        const res = await fetch('/api/dev-agent/files/write', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: fullPath, content: '' }),
+        });
+        const data = await res.json();
+        if (data.error) { setContextCreateError(data.error); return; }
+        await loadFileTree();
+        if (contextCreateParent) {
+          setFileTreeExpanded(prev => new Set([...prev, contextCreateParent]));
+        }
+        setSelectedFile(fullPath);
+        setIsEditMode(true);
+        setShowContextCreateModal(false);
+        setContextCreateName('');
+      } else {
+        const res = await fetch('/api/dev-agent/files/mkdir', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: fullPath }),
+        });
+        const data = await res.json();
+        if (data.error) { setContextCreateError(data.error); return; }
+        await loadFileTree();
+        if (contextCreateParent) {
+          setFileTreeExpanded(prev => new Set([...prev, contextCreateParent]));
+        }
+        setFileTreeExpanded(prev => new Set([...prev, fullPath]));
+        setShowContextCreateModal(false);
+        setContextCreateName('');
+      }
+    } catch (err: unknown) {
+      setContextCreateError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsContextCreating(false);
+    }
+  };
+
+  const handleDeleteFolder = async () => {
+    if (!deleteFolderPath) return;
+    setIsDeletingFolder(true);
+    setDeleteFolderError(null);
+    try {
+      const res = await fetch('/api/dev-agent/files/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: deleteFolderPath }),
+      });
+      const data = await res.json();
+      if (data.error) { setDeleteFolderError(data.error); return; }
+      await loadFileTree();
+      setShowDeleteFolderConfirm(false);
+      setDeleteFolderPath(null);
+    } catch (err: unknown) {
+      setDeleteFolderError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsDeletingFolder(false);
+    }
+  };
+
   // ── FILE TREE ──
   const loadFileTree = async () => {
     setFileTreeLoading(true);
@@ -666,6 +778,7 @@ export default function DevConsolePage() {
           <div key={node.path}>
             <button
               onClick={() => handleFileClick(node)}
+              onContextMenu={(e) => openContextMenu(e, 'dir', node.path)}
               className={`w-full text-left text-xs py-0.5 rounded transition-colors flex items-center gap-1.5 group ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
               style={{ paddingLeft: `${8 + indent}px` }}
               title={node.path}
@@ -682,6 +795,7 @@ export default function DevConsolePage() {
         <button
           key={node.path}
           onClick={() => handleFileClick(node)}
+          onContextMenu={(e) => openContextMenu(e, 'file', node.path)}
           className={`w-full text-left text-xs py-0.5 rounded transition-colors flex items-center gap-1.5 group ${isActive ? (isDark ? 'bg-orange-500/20 text-orange-300' : 'bg-orange-100 text-orange-700') : (isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100')}`}
           style={{ paddingLeft: `${8 + indent}px` }}
           title={`Click to view: ${node.path}`}
@@ -878,6 +992,202 @@ export default function DevConsolePage() {
         </div>
       )}
 
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className={`fixed z-[9999] rounded-lg py-1 min-w-[180px] shadow-2xl border ${dark ? 'bg-zinc-800 border-zinc-700 text-zinc-100' : 'bg-white border-zinc-200 text-zinc-900'}`}
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          {contextMenu.type === 'file' && (<>
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                const node = { path: contextMenu.path, name: contextMenu.path.split('/').pop() || '', type: 'file' as const };
+                handleFileClick(node);
+              }}
+              className={`w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 transition-colors ${dark ? 'hover:bg-zinc-700' : 'hover:bg-zinc-100'}`}
+            >
+              <Eye className="w-3.5 h-3.5 flex-shrink-0 opacity-70" /> Open
+            </button>
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                const node = { path: contextMenu.path, name: contextMenu.path.split('/').pop() || '', type: 'file' as const };
+                handleFileClick(node);
+                setTimeout(() => setIsEditMode(true), 50);
+              }}
+              className={`w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 transition-colors ${dark ? 'hover:bg-zinc-700' : 'hover:bg-zinc-100'}`}
+            >
+              <Pencil className="w-3.5 h-3.5 flex-shrink-0 opacity-70" /> Open in Edit Mode
+            </button>
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                navigator.clipboard.writeText(contextMenu.path);
+              }}
+              className={`w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 transition-colors ${dark ? 'hover:bg-zinc-700' : 'hover:bg-zinc-100'}`}
+            >
+              <Copy className="w-3.5 h-3.5 flex-shrink-0 opacity-70" /> Copy Path
+            </button>
+            <div className={`my-1 border-t ${dark ? 'border-zinc-700' : 'border-zinc-200'} mx-2`} />
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                setSelectedFile(contextMenu.path);
+                setShowDeleteConfirm(true);
+              }}
+              className={`w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 transition-colors text-red-400 ${dark ? 'hover:bg-zinc-700' : 'hover:bg-zinc-100'}`}
+            >
+              <Trash2 className="w-3.5 h-3.5 flex-shrink-0" /> Delete File
+            </button>
+          </>)}
+
+          {contextMenu.type === 'dir' && (<>
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                setContextCreateType('file');
+                setContextCreateParent(contextMenu.path);
+                setContextCreateName('');
+                setContextCreateError(null);
+                setShowContextCreateModal(true);
+              }}
+              className={`w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 transition-colors ${dark ? 'hover:bg-zinc-700' : 'hover:bg-zinc-100'}`}
+            >
+              <Plus className="w-3.5 h-3.5 flex-shrink-0 opacity-70" /> New File
+            </button>
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                setContextCreateType('folder');
+                setContextCreateParent(contextMenu.path);
+                setContextCreateName('');
+                setContextCreateError(null);
+                setShowContextCreateModal(true);
+              }}
+              className={`w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 transition-colors ${dark ? 'hover:bg-zinc-700' : 'hover:bg-zinc-100'}`}
+            >
+              <FolderPlus className="w-3.5 h-3.5 flex-shrink-0 opacity-70" /> New Folder
+            </button>
+            <div className={`my-1 border-t ${dark ? 'border-zinc-700' : 'border-zinc-200'} mx-2`} />
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                setDeleteFolderPath(contextMenu.path);
+                setDeleteFolderError(null);
+                setShowDeleteFolderConfirm(true);
+              }}
+              className={`w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 transition-colors text-red-400 ${dark ? 'hover:bg-zinc-700' : 'hover:bg-zinc-100'}`}
+            >
+              <Trash2 className="w-3.5 h-3.5 flex-shrink-0" /> Delete Folder
+            </button>
+          </>)}
+
+          {contextMenu.type === 'empty' && (<>
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                setContextCreateType('file');
+                setContextCreateParent('');
+                setContextCreateName('');
+                setContextCreateError(null);
+                setShowContextCreateModal(true);
+              }}
+              className={`w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 transition-colors ${dark ? 'hover:bg-zinc-700' : 'hover:bg-zinc-100'}`}
+            >
+              <Plus className="w-3.5 h-3.5 flex-shrink-0 opacity-70" /> New File
+            </button>
+            <button
+              onClick={() => {
+                setContextMenu(null);
+                setContextCreateType('folder');
+                setContextCreateParent('');
+                setContextCreateName('');
+                setContextCreateError(null);
+                setShowContextCreateModal(true);
+              }}
+              className={`w-full text-left px-3 py-2 text-[13px] flex items-center gap-2.5 transition-colors ${dark ? 'hover:bg-zinc-700' : 'hover:bg-zinc-100'}`}
+            >
+              <FolderPlus className="w-3.5 h-3.5 flex-shrink-0 opacity-70" /> New Folder
+            </button>
+          </>)}
+        </div>
+      )}
+
+      {/* Context Create Modal (New File / New Folder) */}
+      {showContextCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowContextCreateModal(false)} />
+          <div className={`relative rounded-xl p-6 w-80 shadow-2xl ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
+            <h3 className="text-sm font-semibold mb-1">
+              {contextCreateType === 'file' ? '📄 New File' : '📁 New Folder'}
+            </h3>
+            {contextCreateParent && (
+              <p className={`text-xs mb-3 font-mono ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                in {contextCreateParent}/
+              </p>
+            )}
+            <input
+              type="text"
+              autoFocus
+              value={contextCreateName}
+              onChange={e => setContextCreateName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleContextCreate();
+                if (e.key === 'Escape') { setShowContextCreateModal(false); setContextCreateName(''); }
+              }}
+              placeholder={contextCreateType === 'file' ? 'filename.ts' : 'folder-name'}
+              className={`w-full px-3 py-2 text-sm rounded border mb-3 focus:outline-none ${dark ? 'bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-500 focus:border-orange-500' : 'bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 focus:border-orange-500'}`}
+            />
+            {contextCreateError && <p className="text-xs text-red-400 mb-3">{contextCreateError}</p>}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => { setShowContextCreateModal(false); setContextCreateName(''); }}
+                className={`px-3 py-1.5 text-xs rounded transition-colors ${dark ? 'text-zinc-300 hover:bg-zinc-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleContextCreate}
+                disabled={isContextCreating || !contextCreateName.trim()}
+                className="px-3 py-1.5 text-xs rounded bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white transition-colors"
+              >
+                {isContextCreating ? 'Creating...' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Folder Confirmation Modal */}
+      {showDeleteFolderConfirm && deleteFolderPath && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => { setShowDeleteFolderConfirm(false); setDeleteFolderError(null); }} />
+          <div className={`relative rounded-xl p-6 w-80 shadow-2xl ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
+            <h3 className="text-sm font-semibold mb-2">Delete folder?</h3>
+            <p className={`text-xs mb-1 font-mono ${dark ? 'text-zinc-300' : 'text-zinc-700'}`}>{deleteFolderPath}</p>
+            <p className={`text-xs mb-1 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Only empty folders can be deleted.</p>
+            {deleteFolderError && <p className="text-xs text-red-400 mb-2">{deleteFolderError}</p>}
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                onClick={() => { setShowDeleteFolderConfirm(false); setDeleteFolderError(null); }}
+                className={`px-3 py-1.5 text-xs rounded transition-colors ${dark ? 'text-zinc-300 hover:bg-zinc-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteFolder}
+                disabled={isDeletingFolder}
+                className="px-3 py-1.5 text-xs rounded bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white transition-colors"
+              >
+                {isDeletingFolder ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Three-panel layout */}
       <div className="flex-1 flex flex-row overflow-hidden min-h-0">
 
@@ -918,7 +1228,12 @@ export default function DevConsolePage() {
                 <p className={`text-[10px] ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>Enter to create · Esc to cancel</p>
               </div>
             )}
-            <div className="flex-1 overflow-y-auto py-1 min-h-0">
+            <div
+              className="flex-1 overflow-y-auto py-1 min-h-0"
+              onContextMenu={(e) => {
+                if (e.target === e.currentTarget) openContextMenu(e, 'empty', '');
+              }}
+            >
               {fileTreeLoading && fileTree.length === 0 && (
                 <div className={`px-4 py-3 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Loading files...</div>
               )}
@@ -929,7 +1244,10 @@ export default function DevConsolePage() {
                 </div>
               )}
               {!fileTreeLoading && !fileTreeError && fileTree.length === 0 && (
-                <div className={`px-4 py-3 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>No files found.</div>
+                <div
+                  className={`px-4 py-3 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}
+                  onContextMenu={(e) => openContextMenu(e, 'empty', '')}
+                >No files found.</div>
               )}
               {fileTree.length > 0 && <div className="space-y-0.5 pr-1">{renderTree(fileTree)}</div>}
             </div>
