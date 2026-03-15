@@ -1,9 +1,17 @@
+// NOTE: Run `npm install @codemirror/view @codemirror/state codemirror @codemirror/lang-javascript @codemirror/lang-css @codemirror/lang-html @codemirror/lang-json @codemirror/theme-one-dark` if not already installed
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { EditorView, Decoration, DecorationSet } from '@codemirror/view';
+import { EditorState, Compartment, StateField, StateEffect } from '@codemirror/state';
+import { basicSetup } from 'codemirror';
+import { javascript } from '@codemirror/lang-javascript';
+import { css } from '@codemirror/lang-css';
+import { html } from '@codemirror/lang-html';
+import { json } from '@codemirror/lang-json';
+import { oneDark } from '@codemirror/theme-one-dark';
 import {
   Terminal,
   Play,
@@ -17,6 +25,8 @@ import {
   Bot,
   DollarSign,
   Settings,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -44,6 +54,20 @@ interface TreeNode {
   path: string;
   type: 'file' | 'dir';
   children?: TreeNode[];
+}
+
+interface ChatMessage {
+  id: string;
+  type: 'user' | 'ai' | 'tool_call' | 'tool_result' | 'deploy' | 'error' | 'status';
+  content: string;
+  full?: string;
+  time: string;
+}
+
+interface CodeSelection {
+  text: string;
+  fromLine: number;
+  toLine: number;
 }
 
 // ─────────────────────────────────────────────
@@ -88,26 +112,30 @@ const PROVIDERS: Record<string, { label: string; models: { value: string; label:
 };
 
 // ─────────────────────────────────────────────
-// СТИЛИ ДЛЯ ТИПОВ ЛОГОВ
+// HELPERS
 // ─────────────────────────────────────────────
 
-function getLogStyle(type: LogEntry['type']): { color: string; icon: React.ReactNode } {
-  switch (type) {
-    case 'status':
-      return { color: 'text-zinc-400', icon: <Loader2 className="w-3 h-3" /> };
-    case 'tool_call':
-      return { color: 'text-blue-400', icon: <Wrench className="w-3 h-3" /> };
-    case 'tool_result':
-      return { color: 'text-green-400', icon: <CheckCircle2 className="w-3 h-3" /> };
-    case 'ai_text':
-      return { color: 'text-purple-400', icon: <Bot className="w-3 h-3" /> };
-    case 'deploy':
-      return { color: 'text-yellow-400', icon: <Play className="w-3 h-3" /> };
-    case 'error':
-      return { color: 'text-red-400', icon: <XCircle className="w-3 h-3" /> };
+function getLanguageExtension(filename: string) {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'ts':
+    case 'tsx':
+    case 'js':
+    case 'jsx':
+      return javascript({ typescript: ext === 'ts' || ext === 'tsx', jsx: ext === 'tsx' || ext === 'jsx' });
+    case 'css':
+      return css();
+    case 'html':
+      return html();
+    case 'json':
+      return json();
     default:
-      return { color: 'text-zinc-400', icon: null };
+      return javascript();
   }
+}
+
+function msgId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 // ─────────────────────────────────────────────
@@ -119,7 +147,6 @@ export default function DevConsolePage() {
   const params = useParams();
   const locale = params?.locale || 'en';
 
-  // Auth (sessionStorage, как в SEO page)
   const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
@@ -131,27 +158,48 @@ export default function DevConsolePage() {
     }
   }, [locale, router]);
 
-  // State
+  // ── CORE STATE ──
   const [prompt, setPrompt] = useState('');
   const [provider, setProvider] = useState('claude');
   const [model, setModel] = useState('claude-sonnet-4-6');
   const [isDeploying, setIsDeploying] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
-  const [log, setLog] = useState<LogEntry[]>([]);
   const [tokens, setTokens] = useState<{ input: number; output: number } | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [isRollingBack, setIsRollingBack] = useState(false);
-  const [aiOutputs, setAiOutputs] = useState<string[]>([]);
-  const [expandedLines, setExpandedLines] = useState<Set<number>>(new Set());
+  const [autoDeploy, setAutoDeploy] = useState(false);
 
-  const [showSettings, setShowSettings] = useState(false);
+  // ── CHAT ──
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [expandedMsgs, setExpandedMsgs] = useState<Set<string>>(new Set());
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // ── FILE TREE ──
   const [showFileTree, setShowFileTree] = useState(true);
   const [fileTree, setFileTree] = useState<TreeNode[]>([]);
   const [fileTreeLoading, setFileTreeLoading] = useState(false);
   const [fileTreeError, setFileTreeError] = useState<string | null>(null);
-  const [fileTreeExpanded, setFileTreeExpanded] = useState<Set<string>>(new Set(['app', 'lib', 'components', 'context-core']));
+  const [fileTreeExpanded, setFileTreeExpanded] = useState<Set<string>>(
+    new Set(['app', 'lib', 'components', 'context-core'])
+  );
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // ── CODE VIEWER ──
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileLines, setFileLines] = useState(0);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [codeSelection, setCodeSelection] = useState<CodeSelection | null>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const editorViewRef = useRef<EditorView | null>(null);
+  const themeCompartment = useRef(new Compartment());
+  const langCompartment = useRef(new Compartment());
+
+  // ── THEME ──
+  const [isDark, setIsDark] = useState(true);
+
+  // ── SETTINGS ──
+  const [showSettings, setShowSettings] = useState(false);
   const [configValues, setConfigValues] = useState({
     anthropicApiKey: '',
     openaiApiKey: '',
@@ -165,33 +213,122 @@ export default function DevConsolePage() {
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
 
-  const logEndRef = useRef<HTMLDivElement>(null);
+  // ── PORTRAIT WARNING (mobile) ──
+  const [isPortrait, setIsPortrait] = useState(false);
+
   const abortRef = useRef<AbortController | null>(null);
 
-  // Auto-scroll лог
-  useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [log]);
+  // ── EFFECTS ──
 
-  // При смене провайдера — выбрать первую модель
+  // Theme persistence
+  useEffect(() => {
+    const stored = localStorage.getItem('devConsoleTheme');
+    if (stored === 'light') setIsDark(false);
+  }, []);
+
+  // Portrait detection
+  useEffect(() => {
+    const check = () => setIsPortrait(window.innerWidth < 768 && window.innerHeight > window.innerWidth);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Provider → first model
   useEffect(() => {
     const models = PROVIDERS[provider]?.models;
-    if (models && models.length > 0) {
-      setModel(models[0].value);
-    }
+    if (models?.length) setModel(models[0].value);
   }, [provider]);
+
+  // Settings load
+  useEffect(() => {
+    if (showSettings) loadSettings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSettings]);
+
+  // File tree auto-load
+  useEffect(() => {
+    if (hasSession) loadFileTree();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSession]);
+
+  // Fetch file content
+  useEffect(() => {
+    if (!selectedFile) return;
+    const controller = new AbortController();
+    setFileLoading(true);
+    setFileError(null);
+    setFileContent(null);
+    setCodeSelection(null);
+    fetch(`/api/dev-agent/files/read?path=${encodeURIComponent(selectedFile)}`, { signal: controller.signal })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { setFileError(data.error); return; }
+        setFileContent(data.content);
+        setFileLines(data.lines);
+      })
+      .catch(e => { if (e.name !== 'AbortError') setFileError(e.message); })
+      .finally(() => setFileLoading(false));
+    return () => controller.abort();
+  }, [selectedFile]);
+
+  // Mount/update CodeMirror
+  useEffect(() => {
+    if (!editorContainerRef.current) return;
+    if (editorViewRef.current) {
+      editorViewRef.current.destroy();
+      editorViewRef.current = null;
+    }
+    if (!fileContent && fileContent !== '') return;
+
+    const themeExt = isDark ? oneDark : EditorView.baseTheme({});
+    const langExt = selectedFile ? getLanguageExtension(selectedFile) : javascript();
+
+    const view = new EditorView({
+      state: EditorState.create({
+        doc: fileContent ?? '',
+        extensions: [
+          basicSetup,
+          EditorState.readOnly.of(true),
+          themeCompartment.current.of(themeExt),
+          langCompartment.current.of(langExt),
+          EditorView.updateListener.of(update => {
+            const sel = update.state.selection.main;
+            if (!sel.empty) {
+              const fromLine = update.state.doc.lineAt(sel.from).number;
+              const toLine = update.state.doc.lineAt(sel.to).number;
+              const text = update.state.sliceDoc(sel.from, sel.to);
+              setCodeSelection({ text, fromLine, toLine });
+            } else {
+              setCodeSelection(null);
+            }
+          }),
+          EditorView.theme({
+            '&': { height: '100%', fontSize: '13px' },
+            '.cm-scroller': { overflow: 'auto' },
+          }),
+        ],
+      }),
+      parent: editorContainerRef.current,
+    });
+
+    editorViewRef.current = view;
+    return () => { view.destroy(); editorViewRef.current = null; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileContent, isDark, selectedFile]);
 
   // ── SETTINGS ──
   async function loadSettings() {
     try {
       const res = await fetch('/api/dev-agent/config');
       const data = await res.json();
-      if (data.config) {
-        setConfigMasked(data.config);
-      }
-    } catch (err) {
-      console.error('Failed to load config:', err);
-    }
+      if (data.config) setConfigMasked(data.config);
+    } catch (err) { console.error(err); }
   }
 
   async function saveSettings() {
@@ -200,83 +337,74 @@ export default function DevConsolePage() {
     try {
       const payload: Record<string, string> = {};
       for (const [key, value] of Object.entries(configValues)) {
-        if (value.trim()) {
-          payload[key] = value.trim();
-        }
+        if (value.trim()) payload[key] = value.trim();
       }
-
-      if (Object.keys(payload).length === 0) {
-        setIsSavingConfig(false);
-        return;
-      }
-
+      if (!Object.keys(payload).length) { setIsSavingConfig(false); return; }
       const res = await fetch('/api/dev-agent/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
       const data = await res.json();
       if (data.success) {
         setConfigMasked(data.config);
-        setConfigValues({
-          anthropicApiKey: '',
-          openaiApiKey: '',
-          geminiApiKey: '',
-          deepseekApiKey: '',
-          githubToken: '',
-          githubRepo: '',
-          developerUserId: '',
-        });
+        setConfigValues({ anthropicApiKey: '', openaiApiKey: '', geminiApiKey: '', deepseekApiKey: '', githubToken: '', githubRepo: '', developerUserId: '' });
         setConfigSaved(true);
         setTimeout(() => setConfigSaved(false), 3000);
       }
-    } catch (err) {
-      console.error('Failed to save config:', err);
-    } finally {
-      setIsSavingConfig(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setIsSavingConfig(false); }
   }
-
-  useEffect(() => {
-    if (showSettings) loadSettings();
-  }, [showSettings]);
 
   // ── EXECUTE ──
   async function handleExecute() {
     if (!prompt.trim() || isRunning) return;
 
+    const userMsg: ChatMessage = { id: msgId(), type: 'user', content: prompt, time: new Date().toLocaleTimeString('en-GB') };
+    setMessages(prev => [...prev, userMsg]);
+
+    const sentPrompt = prompt;
+    setPrompt('');
     setIsRunning(true);
-    setLog([]);
-    setAiOutputs([]);
-    setExpandedLines(new Set());
     setTokens(null);
-    setError(null);
     abortRef.current = new AbortController();
 
     try {
       const response = await fetch('/api/dev-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, provider, model, autoDeploy: false }),
+        body: JSON.stringify({ prompt: sentPrompt, provider, model, autoDeploy }),
         signal: abortRef.current.signal,
       });
-
       const data: DevAgentResponse = await response.json();
 
-      setLog(data.log);
-      setAiOutputs(data.aiOutputs || []);
+      const logMsgs: ChatMessage[] = (data.log || []).map(entry => ({
+        id: msgId(),
+        type: entry.type === 'ai_text' ? 'ai' : entry.type as ChatMessage['type'],
+        content: entry.message,
+        full: entry.full,
+        time: entry.time,
+      }));
+
+      const aiMsgs: ChatMessage[] = (data.aiOutputs || []).map(text => ({
+        id: msgId(),
+        type: 'ai' as const,
+        content: text,
+        time: new Date().toLocaleTimeString('en-GB'),
+      }));
+
+      setMessages(prev => [...prev, ...logMsgs, ...aiMsgs]);
       setTokens(data.tokens);
 
       if (!data.success) {
-        setError(data.error || 'Unknown error');
+        setMessages(prev => [...prev, { id: msgId(), type: 'error', content: data.error || 'Unknown error', time: new Date().toLocaleTimeString('en-GB') }]);
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
-        setLog(prev => [...prev, { time: new Date().toLocaleTimeString('en-GB'), type: 'error', message: 'Aborted by user' }]);
+        setMessages(prev => [...prev, { id: msgId(), type: 'error', content: 'Aborted by user', time: new Date().toLocaleTimeString('en-GB') }]);
       } else {
-        const message = err instanceof Error ? err.message : String(err);
-        setError(message);
+        const msg = err instanceof Error ? err.message : String(err);
+        setMessages(prev => [...prev, { id: msgId(), type: 'error', content: msg, time: new Date().toLocaleTimeString('en-GB') }]);
       }
     } finally {
       setIsRunning(false);
@@ -284,75 +412,42 @@ export default function DevConsolePage() {
     }
   }
 
-  // ── STOP ──
-  function handleStop() {
-    abortRef.current?.abort();
-  }
+  function handleStop() { abortRef.current?.abort(); }
 
-  // ── ROLLBACK ──
   async function handleRollback() {
     if (isRollingBack) return;
-
-    const confirmed = window.confirm(
-      'This will revert the last commit, rebuild, and restart. Continue?'
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm('This will revert the last commit, rebuild, and restart. Continue?')) return;
     setIsRollingBack(true);
-    setError(null);
-
     try {
-      const response = await fetch('/api/dev-agent/rollback', {
-        method: 'POST',
-      });
-
+      const response = await fetch('/api/dev-agent/rollback', { method: 'POST' });
       const data = await response.json();
-
       if (data.success) {
-        setLog(prev => [
-          ...prev,
-          { time: new Date().toLocaleTimeString('en-GB'), type: 'status', message: `Rolled back to ${data.revertedTo || 'previous commit'}` },
-          { time: new Date().toLocaleTimeString('en-GB'), type: 'status', message: '✅ Rollback complete. Site rebuilt and restarted.' },
+        setMessages(prev => [...prev,
+          { id: msgId(), type: 'status', content: `Rolled back to ${data.revertedTo || 'previous commit'}`, time: new Date().toLocaleTimeString('en-GB') },
+          { id: msgId(), type: 'deploy', content: '✅ Rollback complete. Site rebuilt and restarted.', time: new Date().toLocaleTimeString('en-GB') },
         ]);
       } else {
-        setError(data.error || 'Rollback failed');
+        setMessages(prev => [...prev, { id: msgId(), type: 'error', content: data.error || 'Rollback failed', time: new Date().toLocaleTimeString('en-GB') }]);
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-    } finally {
-      setIsRollingBack(false);
-    }
+      setMessages(prev => [...prev, { id: msgId(), type: 'error', content: err instanceof Error ? err.message : String(err), time: new Date().toLocaleTimeString('en-GB') }]);
+    } finally { setIsRollingBack(false); }
   }
 
-  // ── DEPLOY ──
   async function handleDeploy() {
     if (isDeploying) return;
-
     setIsDeploying(true);
-    setError(null);
-
     try {
-      const response = await fetch('/api/dev-agent/deploy', {
-        method: 'POST',
-      });
-
+      const response = await fetch('/api/dev-agent/deploy', { method: 'POST' });
       const data = await response.json();
-
       if (data.success) {
-        setLog(prev => [
-          ...prev,
-          { time: new Date().toLocaleTimeString('en-GB'), type: 'deploy', message: '✅ Deploy complete' },
-        ]);
+        setMessages(prev => [...prev, { id: msgId(), type: 'deploy', content: '✅ Deploy complete', time: new Date().toLocaleTimeString('en-GB') }]);
       } else {
-        setError(data.error || 'Deploy failed');
+        setMessages(prev => [...prev, { id: msgId(), type: 'error', content: data.error || 'Deploy failed', time: new Date().toLocaleTimeString('en-GB') }]);
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-    } finally {
-      setIsDeploying(false);
-    }
+      setMessages(prev => [...prev, { id: msgId(), type: 'error', content: err instanceof Error ? err.message : String(err), time: new Date().toLocaleTimeString('en-GB') }]);
+    } finally { setIsDeploying(false); }
   }
 
   // ── FILE TREE ──
@@ -361,24 +456,13 @@ export default function DevConsolePage() {
     setFileTreeError(null);
     try {
       const res = await fetch('/api/dev-agent/files');
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setFileTree(data.tree || []);
     } catch (err: unknown) {
       setFileTreeError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setFileTreeLoading(false);
-    }
+    } finally { setFileTreeLoading(false); }
   };
-
-  // Load file tree automatically when session is confirmed
-  useEffect(() => {
-    if (hasSession) loadFileTree();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSession]);
 
   const insertPathIntoPrompt = (filePath: string) => {
     const textarea = textareaRef.current;
@@ -391,8 +475,7 @@ export default function DevConsolePage() {
     const before = prompt.slice(0, start);
     const after = prompt.slice(end);
     const prefix = before && !before.endsWith(' ') && !before.endsWith('\n') ? ' ' : '';
-    const newValue = before + prefix + filePath + after;
-    setPrompt(newValue);
+    setPrompt(before + prefix + filePath + after);
     requestAnimationFrame(() => {
       const pos = start + prefix.length + filePath.length;
       textarea.selectionStart = textarea.selectionEnd = pos;
@@ -409,207 +492,172 @@ export default function DevConsolePage() {
     });
   };
 
+  const handleFileClick = (node: TreeNode) => {
+    if (node.type === 'dir') { toggleFolder(node.path); return; }
+    setSelectedFile(node.path);
+  };
+
   const renderTree = (nodes: TreeNode[], depth = 0): React.ReactNode =>
     nodes.map(node => {
       const isExpanded = fileTreeExpanded.has(node.path);
       const indent = depth * 16;
+      const isActive = selectedFile === node.path;
       if (node.type === 'dir') {
         return (
           <div key={node.path}>
             <button
-              onClick={() => toggleFolder(node.path)}
-              className="w-full text-left text-xs py-0.5 rounded hover:bg-zinc-800 transition-colors flex items-center gap-1.5 group"
+              onClick={() => handleFileClick(node)}
+              className={`w-full text-left text-xs py-0.5 rounded transition-colors flex items-center gap-1.5 group ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
               style={{ paddingLeft: `${8 + indent}px` }}
               title={node.path}
             >
-              <span className="text-zinc-500 w-3 flex-shrink-0 text-center">{isExpanded ? '▾' : '▸'}</span>
+              <span className={`w-3 flex-shrink-0 text-center ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>{isExpanded ? '▾' : '▸'}</span>
               <span className="text-base leading-none flex-shrink-0">📁</span>
-              <span className="text-zinc-400 truncate group-hover:text-zinc-200">{node.name}</span>
+              <span className={`truncate ${isDark ? 'text-zinc-400 group-hover:text-zinc-200' : 'text-zinc-600 group-hover:text-zinc-900'}`}>{node.name}</span>
             </button>
-            {isExpanded && node.children && (
-              <div>{renderTree(node.children, depth + 1)}</div>
-            )}
+            {isExpanded && node.children && <div>{renderTree(node.children, depth + 1)}</div>}
           </div>
         );
       }
       return (
         <button
           key={node.path}
-          onClick={() => insertPathIntoPrompt(node.path)}
-          className="w-full text-left text-xs py-0.5 rounded hover:bg-zinc-800 transition-colors flex items-center gap-1.5 group"
+          onClick={() => handleFileClick(node)}
+          className={`w-full text-left text-xs py-0.5 rounded transition-colors flex items-center gap-1.5 group ${isActive ? (isDark ? 'bg-orange-500/20 text-orange-300' : 'bg-orange-100 text-orange-700') : (isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100')}`}
           style={{ paddingLeft: `${8 + indent}px` }}
-          title={`Insert: ${node.path}`}
+          title={`Click to view: ${node.path}`}
         >
           <span className="w-3 flex-shrink-0" />
           <span className="text-base leading-none flex-shrink-0">📄</span>
-          <span className="text-zinc-300 truncate group-hover:text-orange-400">{node.name}</span>
+          <span className={`truncate ${isActive ? '' : (isDark ? 'text-zinc-300 group-hover:text-orange-400' : 'text-zinc-600 group-hover:text-orange-600')}`}>{node.name}</span>
         </button>
       );
     });
 
+  // ── REFERENCE INSERT ──
+  const insertReference = () => {
+    if (!codeSelection || !selectedFile) return;
+    const ref = `File: ${selectedFile}, Lines ${codeSelection.fromLine}-${codeSelection.toLine}:\n\`\`\`\n${codeSelection.text}\n\`\`\``;
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const pos = textarea.selectionStart ?? prompt.length;
+      const before = prompt.slice(0, pos);
+      const after = prompt.slice(pos);
+      const prefix = before && !before.endsWith('\n') ? '\n' : '';
+      setPrompt(before + prefix + ref + '\n' + after);
+      requestAnimationFrame(() => {
+        textarea.selectionStart = textarea.selectionEnd = pos + prefix.length + ref.length + 1;
+        textarea.focus();
+      });
+    } else {
+      setPrompt(prev => prev + (prev ? '\n' : '') + ref + '\n');
+    }
+    setCodeSelection(null);
+  };
+
+  // ── THEME ──
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    localStorage.setItem('devConsoleTheme', next ? 'dark' : 'light');
+  };
+
+  // ── TOGGLE MSG EXPAND ──
+  const toggleMsg = (id: string) => {
+    setExpandedMsgs(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   // ── RENDER ──
   if (!hasSession) return null;
 
-  const selectCls = 'px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 focus:outline-none focus:border-orange-500';
+  const dark = isDark;
+  const bg = dark ? 'bg-zinc-950 text-zinc-100' : 'bg-white text-zinc-900';
+  const panelBg = dark ? 'bg-zinc-900' : 'bg-zinc-50';
+  const borderCls = dark ? 'border-zinc-800' : 'border-zinc-200';
+  const inputCls = dark
+    ? 'bg-zinc-800 border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:border-orange-500'
+    : 'bg-white border-zinc-300 text-zinc-800 placeholder-zinc-400 focus:border-orange-500';
+  const selectCls = `px-3 py-1.5 rounded-md text-sm border focus:outline-none ${inputCls}`;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+    <div className={`min-h-screen flex flex-col ${bg}`}>
+      {/* Portrait warning on mobile */}
+      {isPortrait && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500 text-black text-center text-sm py-2 font-medium">
+          Rotate to landscape for best experience
+        </div>
+      )}
+
       {/* Header */}
-      <header className="border-b border-zinc-800 px-6 py-3 flex items-center justify-between">
+      <header className={`border-b ${borderCls} px-4 py-2 flex items-center justify-between flex-shrink-0`}>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push(`/${locale}/admin`)}
-            className="text-zinc-400 hover:text-white transition-colors"
-          >
+          <button onClick={() => router.push(`/${locale}/admin`)} className={`${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'} transition-colors`}>
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <Terminal className="w-5 h-5 text-orange-500" />
-          <h1 className="text-lg font-semibold">Dev Console</h1>
+          <Terminal className="w-4 h-4 text-orange-500" />
+          <h1 className="text-base font-semibold">Dev Console</h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {tokens && (
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+            <div className={`flex items-center gap-1 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
               <DollarSign className="w-3 h-3" />
-              <span>{tokens.input.toLocaleString()} in / {tokens.output.toLocaleString()} out</span>
+              <span>{tokens.input.toLocaleString()} / {tokens.output.toLocaleString()}</span>
             </div>
           )}
           <button
-            onClick={() => setShowFileTree(prev => !prev)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${showFileTree ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+            onClick={() => setShowFileTree(p => !p)}
+            className={`px-2.5 py-1 rounded text-sm font-medium transition-colors ${showFileTree ? 'bg-orange-500 text-white' : (dark ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200')}`}
             title="Toggle file tree"
-          >
-            📁
+          >📁</button>
+          <button onClick={toggleTheme} className={`p-1.5 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} title={dark ? 'Switch to light' : 'Switch to dark'}>
+            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="text-zinc-400 hover:text-white transition-colors ml-3"
-          >
-            <Settings className="w-5 h-5" />
+          <button onClick={() => setShowSettings(true)} className={`p-1.5 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}>
+            <Settings className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      {/* Settings Panel */}
+      {/* Settings Drawer */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowSettings(false)}
-          />
-          <div className="relative w-full max-w-md bg-zinc-900 border-l border-zinc-800 overflow-y-auto">
-            <div className="p-6 space-y-6">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowSettings(false)} />
+          <div className={`relative w-full max-w-md ${panelBg} border-l ${borderCls} overflow-y-auto`}>
+            <div className="p-6 space-y-5">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-zinc-100">Settings</h2>
-                <button
-                  onClick={() => setShowSettings(false)}
-                  className="text-zinc-500 hover:text-zinc-300"
-                >
-                  ✕
-                </button>
+                <h2 className="text-lg font-semibold">Settings</h2>
+                <button onClick={() => setShowSettings(false)} className={dark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-700'}>✕</button>
               </div>
-
-              <p className="text-xs text-zinc-500">
-                API keys are stored on the server. Leave fields empty to keep current values.
-              </p>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
-                  Anthropic API Key
-                </label>
-                <input
-                  type="password"
-                  value={configValues.anthropicApiKey}
-                  onChange={(e) => setConfigValues(prev => ({ ...prev, anthropicApiKey: e.target.value }))}
-                  placeholder={configMasked.anthropicApiKey || 'sk-ant-...'}
-                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
-                  OpenAI API Key
-                </label>
-                <input
-                  type="password"
-                  value={configValues.openaiApiKey}
-                  onChange={(e) => setConfigValues(prev => ({ ...prev, openaiApiKey: e.target.value }))}
-                  placeholder={configMasked.openaiApiKey || 'sk-...'}
-                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
-                  DeepSeek API Key
-                </label>
-                <input
-                  type="password"
-                  value={configValues.deepseekApiKey}
-                  onChange={(e) => setConfigValues(prev => ({ ...prev, deepseekApiKey: e.target.value }))}
-                  placeholder={configMasked.deepseekApiKey || 'sk-...'}
-                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
-                  Gemini API Key
-                </label>
-                <input
-                  type="password"
-                  value={configValues.geminiApiKey}
-                  onChange={(e) => setConfigValues(prev => ({ ...prev, geminiApiKey: e.target.value }))}
-                  placeholder={configMasked.geminiApiKey || 'AIza...'}
-                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                />
-              </div>
-
-              <div className="border-t border-zinc-800" />
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
-                  GitHub Token
-                </label>
-                <input
-                  type="password"
-                  value={configValues.githubToken}
-                  onChange={(e) => setConfigValues(prev => ({ ...prev, githubToken: e.target.value }))}
-                  placeholder={configMasked.githubToken || 'ghp_...'}
-                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
-                  GitHub Repo URL
-                </label>
-                <input
-                  type="text"
-                  value={configValues.githubRepo}
-                  onChange={(e) => setConfigValues(prev => ({ ...prev, githubRepo: e.target.value }))}
-                  placeholder={configMasked.githubRepo || 'https://github.com/user/repo.git'}
-                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
-                  Developer User ID (Supabase UUID)
-                </label>
-                <input
-                  type="text"
-                  value={configValues.developerUserId}
-                  onChange={(e) => setConfigValues(prev => ({ ...prev, developerUserId: e.target.value }))}
-                  placeholder={configMasked.developerUserId || 'uuid-from-supabase'}
-                  className="w-full px-3 py-2 rounded-md text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
-                />
-              </div>
-
-              <Button
-                onClick={saveSettings}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-                disabled={isSavingConfig}
-              >
+              <p className={`text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>API keys are stored on the server. Leave fields empty to keep current values.</p>
+              {([
+                ['anthropicApiKey', 'Anthropic API Key', 'sk-ant-...'],
+                ['openaiApiKey', 'OpenAI API Key', 'sk-...'],
+                ['deepseekApiKey', 'DeepSeek API Key', 'sk-...'],
+                ['geminiApiKey', 'Gemini API Key', 'AIza...'],
+              ] as [keyof typeof configValues, string, string][]).map(([key, label, ph]) => (
+                <div key={key}>
+                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{label}</label>
+                  <input type="password" value={configValues[key]} onChange={e => setConfigValues(p => ({ ...p, [key]: e.target.value }))} placeholder={configMasked[key] || ph}
+                    className={`w-full px-3 py-2 rounded-md text-sm border focus:outline-none ${inputCls}`} />
+                </div>
+              ))}
+              <div className={`border-t ${borderCls}`} />
+              {([
+                ['githubToken', 'GitHub Token', 'ghp_...'],
+                ['githubRepo', 'GitHub Repo URL', 'https://github.com/user/repo.git'],
+                ['developerUserId', 'Developer User ID', 'uuid-from-supabase'],
+              ] as [keyof typeof configValues, string, string][]).map(([key, label, ph]) => (
+                <div key={key}>
+                  <label className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{label}</label>
+                  <input type={key === 'githubToken' ? 'password' : 'text'} value={configValues[key]} onChange={e => setConfigValues(p => ({ ...p, [key]: e.target.value }))} placeholder={configMasked[key] || ph}
+                    className={`w-full px-3 py-2 rounded-md text-sm border focus:outline-none ${inputCls}`} />
+                </div>
+              ))}
+              <Button onClick={saveSettings} className="w-full bg-orange-600 hover:bg-orange-700 text-white" disabled={isSavingConfig}>
                 {isSavingConfig ? 'Saving...' : configSaved ? '✓ Saved' : 'Save Settings'}
               </Button>
             </div>
@@ -617,222 +665,240 @@ export default function DevConsolePage() {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-row gap-0 w-full overflow-hidden">
-        {/* File Tree Sidebar */}
+      {/* Three-panel layout */}
+      <div className="flex-1 flex flex-row overflow-hidden">
+
+        {/* LEFT: File Tree */}
         {showFileTree && (
-          <div className="w-[280px] min-w-[280px] bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800 flex-shrink-0">
-              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Files</span>
-              <button
-                onClick={loadFileTree}
-                disabled={fileTreeLoading}
-                className="text-xs text-zinc-500 hover:text-orange-400 transition-colors disabled:opacity-40"
-                title="Refresh"
-              >
+          <div className={`w-[280px] min-w-[280px] ${panelBg} border-r ${borderCls} flex flex-col overflow-hidden`}>
+            <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
+              <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Files</span>
+              <button onClick={loadFileTree} disabled={fileTreeLoading} className={`text-xs transition-colors disabled:opacity-40 ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`} title="Refresh">
                 {fileTreeLoading ? '⟳' : '↻'}
               </button>
             </div>
             <div className="flex-1 overflow-y-auto py-1">
               {fileTreeLoading && fileTree.length === 0 && (
-                <div className="px-4 py-3 text-xs text-zinc-500">Loading files...</div>
+                <div className={`px-4 py-3 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Loading files...</div>
               )}
               {fileTreeError && (
-                <div className="px-3 py-2 space-y-2">
+                <div className="px-3 py-2 space-y-1">
                   <p className="text-xs text-red-400">{fileTreeError}</p>
-                  <button
-                    onClick={loadFileTree}
-                    className="text-xs text-orange-400 hover:text-orange-300 underline"
-                  >
-                    Retry
-                  </button>
+                  <button onClick={loadFileTree} className="text-xs text-orange-400 underline">Retry</button>
                 </div>
               )}
               {!fileTreeLoading && !fileTreeError && fileTree.length === 0 && (
-                <div className="px-4 py-3 text-xs text-zinc-500">No files found.</div>
+                <div className={`px-4 py-3 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>No files found.</div>
               )}
-              {fileTree.length > 0 && (
-                <div className="space-y-0.5 pr-1">
-                  {renderTree(fileTree)}
-                </div>
-              )}
+              {fileTree.length > 0 && <div className="space-y-0.5 pr-1">{renderTree(fileTree)}</div>}
             </div>
           </div>
         )}
-        {/* Content Area */}
-        <div className="flex-1 flex flex-col p-6 gap-4 overflow-y-auto">
 
-        {/* Controls Row */}
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Provider */}
-          <select
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            className={selectCls}
-            disabled={isRunning}
-          >
-            {Object.entries(PROVIDERS).map(([key, p]) => (
-              <option key={key} value={key}>{p.label}</option>
-            ))}
-          </select>
-
-          {/* Model */}
-          <select
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            className={selectCls}
-            disabled={isRunning}
-          >
-            {PROVIDERS[provider]?.models.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
-
-          {/* Deploy button */}
-          <Button
-            onClick={handleDeploy}
-            disabled={isRunning || isDeploying}
-            variant="outline"
-            size="sm"
-            className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors"
-          >
-            {isDeploying ? 'Deploying...' : '🚀 Deploy'}
-          </Button>
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Action Buttons */}
-          {isRunning ? (
-            <Button
-              onClick={handleStop}
-              variant="outline"
-              size="sm"
-              className="border-red-700 text-red-400 hover:bg-red-950"
-            >
-              <Square className="w-4 h-4 mr-1.5" />
-              Stop
-            </Button>
-          ) : (
-            <>
-              <Button
-                onClick={handleRollback}
-                variant="outline"
-                size="sm"
-                className="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
-                disabled={isRollingBack}
+        {/* CENTER: Code Viewer — hidden on mobile */}
+        <div className={`hidden md:flex flex-col flex-1 border-r ${borderCls} overflow-hidden min-w-0`}>
+          {/* Viewer header */}
+          <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
+            <div className="flex items-center gap-2 min-w-0">
+              {selectedFile ? (
+                <>
+                  <span className={`text-xs font-mono truncate ${dark ? 'text-zinc-300' : 'text-zinc-700'}`}>{selectedFile}</span>
+                  <span className={`text-xs flex-shrink-0 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>· {fileLines} lines</span>
+                </>
+              ) : (
+                <span className={`text-xs ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>Code Viewer</span>
+              )}
+            </div>
+            {codeSelection && selectedFile && (
+              <button
+                onClick={insertReference}
+                className="flex-shrink-0 px-2 py-0.5 text-xs rounded bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+                title="Insert as reference into prompt"
               >
-                <RotateCcw className={`w-4 h-4 mr-1.5 ${isRollingBack ? 'animate-spin' : ''}`} />
-                {isRollingBack ? 'Rolling back...' : 'Rollback'}
-              </Button>
-              <Button
-                onClick={handleExecute}
-                size="sm"
-                className="bg-orange-600 hover:bg-orange-700 text-white"
-                disabled={!prompt.trim()}
-              >
-                <Play className="w-4 h-4 mr-1.5" />
-                Execute
-              </Button>
-            </>
-          )}
+                📎 Reference ({codeSelection.fromLine}–{codeSelection.toLine})
+              </button>
+            )}
+          </div>
+
+          {/* Viewer body */}
+          <div className="flex-1 overflow-hidden relative">
+            {!selectedFile && (
+              <div className={`absolute inset-0 flex items-center justify-center text-sm ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                Click a file to view its contents
+              </div>
+            )}
+            {fileLoading && selectedFile && (
+              <div className={`absolute inset-0 flex items-center justify-center text-sm ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Loading {selectedFile}...
+              </div>
+            )}
+            {fileError && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-red-400 text-sm px-4 text-center">{fileError}</div>
+              </div>
+            )}
+            <div ref={editorContainerRef} className="absolute inset-0 overflow-auto" />
+          </div>
         </div>
 
-        {/* Prompt textarea */}
-        <textarea
-          ref={textareaRef}
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Paste your prompt here..."
-          disabled={isRunning}
-          rows={8}
-          className="w-full px-4 py-3 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm font-mono placeholder-zinc-600 focus:outline-none focus:border-orange-500 resize-y min-h-[120px]"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              handleExecute();
-            }
-          }}
-        />
+        {/* RIGHT: Chat UI */}
+        <div className={`flex flex-col w-full md:w-[400px] md:min-w-[340px] overflow-hidden`}>
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {messages.length === 0 && (
+              <div className={`text-xs text-center py-8 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                Start a conversation with the AI agent
+              </div>
+            )}
+            {messages.map(msg => {
+              const isExpanded = expandedMsgs.has(msg.id);
+              const hasMore = msg.full && msg.full.length > msg.content.length;
 
-        {/* Error banner */}
-        {error && (
-          <div className="px-4 py-3 rounded-lg bg-red-950/50 border border-red-800 text-red-300 text-sm">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-
-        {/* Log area */}
-        {log.length > 0 && (
-          <div className="flex-1 min-h-[300px] rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden">
-            <div className="px-4 py-2 border-b border-zinc-800 flex items-center gap-2 text-xs text-zinc-500">
-              <Terminal className="w-3 h-3" />
-              <span>Execution Log</span>
-              <span className="ml-auto">{log.length} entries</span>
-            </div>
-            <ScrollArea className="h-[400px]">
-              <div className="p-4 space-y-1 font-mono text-xs">
-                {log.map((entry, i) => {
-                  const style = getLogStyle(entry.type);
-                  const isExpanded = expandedLines.has(i);
-                  const hasFullContent = entry.full && entry.full.length > entry.message.length;
-
-                  return (
-                    <div key={i}>
-                      <div
-                        className={`flex items-start gap-2 ${hasFullContent ? 'cursor-pointer hover:bg-zinc-800/50 rounded px-1 -mx-1' : ''}`}
-                        onClick={() => {
-                          if (hasFullContent) {
-                            setExpandedLines(prev => {
-                              const next = new Set(prev);
-                              if (next.has(i)) next.delete(i);
-                              else next.add(i);
-                              return next;
-                            });
-                          }
-                        }}
-                      >
-                        <span className="text-zinc-600 flex-shrink-0 w-[65px]">{entry.time}</span>
-                        <span className={`flex-shrink-0 mt-0.5 ${style.color}`}>{style.icon}</span>
-                        <span className={`${style.color} break-all`}>
-                          {entry.message}
-                          {hasFullContent && !isExpanded && (
-                            <span className="text-zinc-600 ml-1">▸ click to expand</span>
-                          )}
-                        </span>
-                      </div>
-                      {isExpanded && entry.full && (
-                        <pre className="ml-[85px] mt-1 mb-2 p-3 rounded bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs overflow-x-auto max-h-[400px] overflow-y-auto whitespace-pre-wrap">
-                          {entry.full}
-                        </pre>
-                      )}
+              if (msg.type === 'user') {
+                return (
+                  <div key={msg.id} className="flex justify-end">
+                    <div className={`max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm ${dark ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-200 text-zinc-900'}`}>
+                      <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                      <p className={`text-xs mt-1 text-right ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{msg.time}</p>
                     </div>
-                  );
-                })}
-                <div ref={logEndRef} />
-              </div>
-            </ScrollArea>
-          </div>
-        )}
-
-        {/* AI Output panel */}
-        {aiOutputs.length > 0 && (
-          <div className="rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden">
-            <div className="px-4 py-2 border-b border-zinc-800 flex items-center gap-2 text-xs text-zinc-500">
-              <Bot className="w-3 h-3" />
-              <span>AI Output</span>
-            </div>
-            <ScrollArea className="h-[500px]">
-              <div className="p-4 space-y-4">
-                {aiOutputs.map((output, i) => (
-                  <div key={i} className="text-sm text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
-                    {output}
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                );
+              }
+
+              if (msg.type === 'ai') {
+                return (
+                  <div key={msg.id} className="flex justify-start">
+                    <div className={`max-w-[90%] rounded-2xl rounded-tl-sm px-3 py-2 text-sm ${dark ? 'bg-zinc-800 text-zinc-200' : 'bg-zinc-100 text-zinc-800'}`}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Bot className="w-3 h-3 text-purple-400 flex-shrink-0" />
+                        <span className="text-xs text-purple-400 font-medium">AI</span>
+                      </div>
+                      <p className="whitespace-pre-wrap break-words text-xs font-mono leading-relaxed">{msg.content}</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (msg.type === 'tool_call') {
+                return (
+                  <div key={msg.id} className={`flex items-start gap-2 text-xs ${dark ? 'text-blue-400' : 'text-blue-600'}`}>
+                    <Wrench className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                    <button
+                      onClick={() => hasMore && toggleMsg(msg.id)}
+                      className={`text-left break-all ${hasMore ? 'cursor-pointer hover:opacity-80' : ''}`}
+                    >
+                      {msg.content}
+                      {hasMore && !isExpanded && <span className={`ml-1 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>▸</span>}
+                    </button>
+                  </div>
+                );
+              }
+
+              if (msg.type === 'tool_result') {
+                const lines = msg.content.split('\n');
+                const preview = isExpanded ? msg.content : lines.slice(0, 3).join('\n') + (lines.length > 3 ? '...' : '');
+                return (
+                  <div key={msg.id} className={`text-xs ${dark ? 'text-green-400' : 'text-green-700'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
+                      <button onClick={() => toggleMsg(msg.id)} className="text-left break-all hover:opacity-80 cursor-pointer">
+                        <span className="font-mono">{preview}</span>
+                        {lines.length > 3 && (
+                          <span className={`ml-1 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>{isExpanded ? '▴ collapse' : `▸ +${lines.length - 3} lines`}</span>
+                        )}
+                      </button>
+                    </div>
+                    {isExpanded && msg.full && (
+                      <pre className={`mt-1 ml-4 p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap max-h-[300px] overflow-y-auto ${dark ? 'bg-zinc-950 border border-zinc-800' : 'bg-white border border-zinc-200'}`}>
+                        {msg.full}
+                      </pre>
+                    )}
+                  </div>
+                );
+              }
+
+              if (msg.type === 'deploy') {
+                return (
+                  <div key={msg.id} className="flex items-center gap-1.5 text-xs text-yellow-400">
+                    <Play className="w-3 h-3" />
+                    <span>{msg.content}</span>
+                  </div>
+                );
+              }
+
+              if (msg.type === 'error') {
+                return (
+                  <div key={msg.id} className="flex items-start gap-1.5 text-xs text-red-400">
+                    <XCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                    <span className="break-all">{msg.content}</span>
+                  </div>
+                );
+              }
+
+              // status
+              return (
+                <div key={msg.id} className={`text-xs flex items-center gap-1.5 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                  <Loader2 className="w-3 h-3" />
+                  <span>{msg.content}</span>
+                </div>
+              );
+            })}
+            <div ref={chatEndRef} />
           </div>
-        )}
+
+          {/* Input area */}
+          <div className={`border-t ${borderCls} p-3 space-y-2 flex-shrink-0`}>
+            {/* Model row */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <select value={provider} onChange={e => setProvider(e.target.value)} className={selectCls} disabled={isRunning}>
+                {Object.entries(PROVIDERS).map(([k, p]) => <option key={k} value={k}>{p.label}</option>)}
+              </select>
+              <select value={model} onChange={e => setModel(e.target.value)} className={selectCls} disabled={isRunning}>
+                {PROVIDERS[provider]?.models.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+            </div>
+
+            {/* Textarea */}
+            <textarea
+              ref={textareaRef}
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              placeholder="Describe the task for the AI agent... (Ctrl+Enter to send)"
+              disabled={isRunning}
+              rows={3}
+              style={{ maxHeight: '200px' }}
+              className={`w-full px-3 py-2 rounded-lg text-sm font-mono border focus:outline-none resize-y ${inputCls}`}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleExecute(); }
+              }}
+            />
+
+            {/* Buttons row */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {isRunning ? (
+                <Button onClick={handleStop} variant="outline" size="sm" className="border-red-700 text-red-400 hover:bg-red-950">
+                  <Square className="w-3 h-3 mr-1" /> Stop
+                </Button>
+              ) : (
+                <Button onClick={handleExecute} size="sm" className="bg-orange-600 hover:bg-orange-700 text-white" disabled={!prompt.trim()}>
+                  <Play className="w-3 h-3 mr-1" /> Send
+                </Button>
+              )}
+              <Button onClick={handleDeploy} disabled={isRunning || isDeploying} variant="outline" size="sm" className={`border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white`}>
+                {isDeploying ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                🚀 Deploy
+              </Button>
+              <Button onClick={handleRollback} variant="outline" size="sm" className={`${dark ? 'border-zinc-700 text-zinc-400 hover:bg-zinc-800' : 'border-zinc-300 text-zinc-500 hover:bg-zinc-100'}`} disabled={isRollingBack}>
+                <RotateCcw className={`w-3 h-3 mr-1 ${isRollingBack ? 'animate-spin' : ''}`} />
+                Rollback
+              </Button>
+              <label className={`flex items-center gap-1.5 text-xs cursor-pointer ml-auto ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                <input type="checkbox" checked={autoDeploy} onChange={e => setAutoDeploy(e.target.checked)} className="w-3 h-3" />
+                Auto-deploy
+              </label>
+            </div>
+          </div>
         </div>
       </div>
     </div>
