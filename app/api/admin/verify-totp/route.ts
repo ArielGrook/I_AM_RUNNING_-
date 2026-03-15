@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticator } from 'otplib';
+import * as OTPLib from 'otplib';
+const authenticator = OTPLib.authenticator || (OTPLib as any).default?.authenticator;
 
 const MAX_ATTEMPTS = 5;
 const LOCK_DURATION = 15 * 60 * 1000; // 15 minutes
