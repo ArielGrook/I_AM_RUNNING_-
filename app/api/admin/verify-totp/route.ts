@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as OTPLib from 'otplib';
-const authenticator = OTPLib.authenticator || (OTPLib as any).default?.authenticator;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { authenticator } = require('@otplib/preset-default');
 
 const MAX_ATTEMPTS = 5;
 const LOCK_DURATION = 15 * 60 * 1000; // 15 minutes
