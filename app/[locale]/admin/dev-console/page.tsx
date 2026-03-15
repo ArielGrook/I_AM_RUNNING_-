@@ -584,7 +584,7 @@ export default function DevConsolePage() {
   const selectCls = `px-3 py-1.5 rounded-md text-sm border focus:outline-none ${inputCls}`;
 
   return (
-    <div className={`min-h-screen flex flex-col ${bg}`}>
+    <div className={`h-[100dvh] overflow-hidden flex flex-col ${bg}`}>
       {/* Portrait warning on mobile */}
       {isPortrait && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500 text-black text-center text-sm py-2 font-medium">
@@ -666,18 +666,18 @@ export default function DevConsolePage() {
       )}
 
       {/* Three-panel layout */}
-      <div className="flex-1 flex flex-row overflow-hidden">
+      <div className="flex-1 flex flex-row overflow-hidden min-h-0">
 
         {/* LEFT: File Tree */}
         {showFileTree && (
-          <div className={`w-[280px] min-w-[280px] ${panelBg} border-r ${borderCls} flex flex-col overflow-hidden`}>
+          <div className={`w-[280px] min-w-[280px] ${panelBg} border-r ${borderCls} flex flex-col overflow-hidden min-h-0`}>
             <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
               <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Files</span>
               <button onClick={loadFileTree} disabled={fileTreeLoading} className={`text-xs transition-colors disabled:opacity-40 ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`} title="Refresh">
                 {fileTreeLoading ? '⟳' : '↻'}
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto py-1">
+            <div className="flex-1 overflow-y-auto py-1 min-h-0">
               {fileTreeLoading && fileTree.length === 0 && (
                 <div className={`px-4 py-3 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Loading files...</div>
               )}
@@ -696,7 +696,7 @@ export default function DevConsolePage() {
         )}
 
         {/* CENTER: Code Viewer — hidden on mobile */}
-        <div className={`hidden md:flex flex-col flex-1 border-r ${borderCls} overflow-hidden min-w-0`}>
+        <div className={`hidden md:flex flex-col flex-1 border-r ${borderCls} overflow-hidden min-w-0 min-h-0`}>
           {/* Viewer header */}
           <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
             <div className="flex items-center gap-2 min-w-0">
@@ -721,7 +721,7 @@ export default function DevConsolePage() {
           </div>
 
           {/* Viewer body */}
-          <div className="flex-1 overflow-hidden relative">
+          <div className="flex-1 overflow-hidden relative min-h-0">
             {!selectedFile && (
               <div className={`absolute inset-0 flex items-center justify-center text-sm ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>
                 Click a file to view its contents
@@ -743,9 +743,9 @@ export default function DevConsolePage() {
         </div>
 
         {/* RIGHT: Chat UI */}
-        <div className={`flex flex-col w-full md:w-[400px] md:min-w-[340px] overflow-hidden`}>
+        <div className={`flex flex-col w-full md:w-[400px] md:min-w-[340px] overflow-hidden min-h-0`}>
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
             {messages.length === 0 && (
               <div className={`text-xs text-center py-8 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>
                 Start a conversation with the AI agent
