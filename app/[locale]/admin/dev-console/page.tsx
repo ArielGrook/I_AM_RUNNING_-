@@ -39,6 +39,13 @@ interface DevAgentResponse {
   error?: string;
 }
 
+interface TreeNode {
+  name: string;
+  path: string;
+  type: 'file' | 'dir';
+  children?: TreeNode[];
+}
+
 // ─────────────────────────────────────────────
 // КОНФИГ МОДЕЛЕЙ
 // ─────────────────────────────────────────────
@@ -139,9 +146,12 @@ export default function DevConsolePage() {
 
   const [showSettings, setShowSettings] = useState(false);
   const [showFileTree, setShowFileTree] = useState(true);
-  const [fileTree, setFileTree] = useState<string[]>([]);
+  const [fileTree, setFileTree] = useState<TreeNode[]>([]);
   const [fileTreeLoading, setFileTreeLoading] = useState(false);
+  const [fileTreeError, setFileTreeError] = useState<string | null>(null);
   const [fileTreeExpanded, setFileTreeExpanded] = useState<Set<string>>(new Set(['app', 'lib', 'components', 'context-core']));
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [configValues, setConfigValues] = useState({
     anthropicApiKey: '',
     openaiApiKey: '',
@@ -348,50 +358,94 @@ export default function DevConsolePage() {
   // ── FILE TREE ──
   const loadFileTree = async () => {
     setFileTreeLoading(true);
+    setFileTreeError(null);
     try {
-      const response = await fetch('/api/dev-agent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: 'Use list_directory tool on path "." with depth 3. Do not explain anything, just call the tool.',
-          provider,
-          model,
-          autoDeploy: false,
-        }),
-      });
-      const data = await response.json();
-      const toolResult = data.log?.find((l: { type: string; message: string }) =>
-        l.type === 'tool_result' && l.message?.includes('app')
-      );
-      if (toolResult) {
-        const allPaths = toolResult.message
-          .split(' ')
-          .map((p: string) => p.trim())
-          .filter((p: string) => p.length > 0 && !p.startsWith('.') && p !== 'app');
-        setFileTree(allPaths);
+      const res = await fetch('/api/dev-agent/files');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}`);
       }
-    } catch {
-      // ignore
+      const data = await res.json();
+      setFileTree(data.tree || []);
+    } catch (err: unknown) {
+      setFileTreeError(err instanceof Error ? err.message : String(err));
     } finally {
       setFileTreeLoading(false);
     }
   };
 
-  const insertPathIntoPrompt = (path: string) => {
-    setPrompt(prev => {
-      const cursor = prev.length > 0 && !prev.endsWith('\n') ? '\n' : '';
-      return prev + cursor + path;
+  // Load file tree automatically when session is confirmed
+  useEffect(() => {
+    if (hasSession) loadFileTree();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSession]);
+
+  const insertPathIntoPrompt = (filePath: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setPrompt(prev => prev + (prev && !prev.endsWith(' ') && !prev.endsWith('\n') ? ' ' : '') + filePath);
+      return;
+    }
+    const start = textarea.selectionStart ?? prompt.length;
+    const end = textarea.selectionEnd ?? prompt.length;
+    const before = prompt.slice(0, start);
+    const after = prompt.slice(end);
+    const prefix = before && !before.endsWith(' ') && !before.endsWith('\n') ? ' ' : '';
+    const newValue = before + prefix + filePath + after;
+    setPrompt(newValue);
+    requestAnimationFrame(() => {
+      const pos = start + prefix.length + filePath.length;
+      textarea.selectionStart = textarea.selectionEnd = pos;
+      textarea.focus();
     });
   };
 
-  const toggleFolder = (folder: string) => {
+  const toggleFolder = (folderPath: string) => {
     setFileTreeExpanded(prev => {
       const next = new Set(prev);
-      if (next.has(folder)) next.delete(folder);
-      else next.add(folder);
+      if (next.has(folderPath)) next.delete(folderPath);
+      else next.add(folderPath);
       return next;
     });
   };
+
+  const renderTree = (nodes: TreeNode[], depth = 0): React.ReactNode =>
+    nodes.map(node => {
+      const isExpanded = fileTreeExpanded.has(node.path);
+      const indent = depth * 16;
+      if (node.type === 'dir') {
+        return (
+          <div key={node.path}>
+            <button
+              onClick={() => toggleFolder(node.path)}
+              className="w-full text-left text-xs py-0.5 rounded hover:bg-zinc-800 transition-colors flex items-center gap-1.5 group"
+              style={{ paddingLeft: `${8 + indent}px` }}
+              title={node.path}
+            >
+              <span className="text-zinc-500 w-3 flex-shrink-0 text-center">{isExpanded ? '▾' : '▸'}</span>
+              <span className="text-base leading-none flex-shrink-0">📁</span>
+              <span className="text-zinc-400 truncate group-hover:text-zinc-200">{node.name}</span>
+            </button>
+            {isExpanded && node.children && (
+              <div>{renderTree(node.children, depth + 1)}</div>
+            )}
+          </div>
+        );
+      }
+      return (
+        <button
+          key={node.path}
+          onClick={() => insertPathIntoPrompt(node.path)}
+          className="w-full text-left text-xs py-0.5 rounded hover:bg-zinc-800 transition-colors flex items-center gap-1.5 group"
+          style={{ paddingLeft: `${8 + indent}px` }}
+          title={`Insert: ${node.path}`}
+        >
+          <span className="w-3 flex-shrink-0" />
+          <span className="text-base leading-none flex-shrink-0">📄</span>
+          <span className="text-zinc-300 truncate group-hover:text-orange-400">{node.name}</span>
+        </button>
+      );
+    });
 
   // ── RENDER ──
   if (!hasSession) return null;
@@ -567,52 +621,39 @@ export default function DevConsolePage() {
       <div className="flex-1 flex flex-row gap-0 w-full overflow-hidden">
         {/* File Tree Sidebar */}
         {showFileTree && (
-          <div className="w-72 min-w-[288px] bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800">
+          <div className="w-[280px] min-w-[280px] bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800 flex-shrink-0">
               <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Files</span>
               <button
                 onClick={loadFileTree}
                 disabled={fileTreeLoading}
-                className="text-xs text-zinc-500 hover:text-orange-400 transition-colors"
+                className="text-xs text-zinc-500 hover:text-orange-400 transition-colors disabled:opacity-40"
                 title="Refresh"
               >
-                {fileTreeLoading ? '...' : '↻'}
+                {fileTreeLoading ? '⟳' : '↻'}
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-2">
-              {fileTree.length === 0 ? (
-                <button
-                  onClick={loadFileTree}
-                  className="w-full text-xs text-zinc-500 hover:text-zinc-300 py-2 text-center"
-                >
-                  {fileTreeLoading ? 'Loading...' : 'Click to load files'}
-                </button>
-              ) : (
-                <div className="space-y-0.5">
-                  {fileTree.map((item, i) => {
-                    const parts = item.split('/');
-                    const depth = parts.length - 1;
-                    const isDir = !parts[parts.length - 1].includes('.');
-                    const name = parts[parts.length - 1];
-                    const parentFolder = parts.slice(0, -1).join('/');
-                    if (parentFolder && !fileTreeExpanded.has(parentFolder)) return null;
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => isDir ? toggleFolder(item) : insertPathIntoPrompt(item)}
-                        className="w-full text-left text-xs py-0.5 rounded hover:bg-zinc-800 transition-colors flex items-center gap-1 group"
-                        style={{ paddingLeft: `${8 + depth * 10}px` }}
-                        title={isDir ? item : `Click to insert: ${item}`}
-                      >
-                        <span className="text-zinc-500 w-3 flex-shrink-0">
-                          {isDir ? (fileTreeExpanded.has(item) ? '▾' : '▸') : '·'}
-                        </span>
-                        <span className={`truncate ${isDir ? 'text-zinc-400' : 'text-zinc-300 group-hover:text-orange-400'}`}>
-                          {name}
-                        </span>
-                      </button>
-                    );
-                  })}
+            <div className="flex-1 overflow-y-auto py-1">
+              {fileTreeLoading && fileTree.length === 0 && (
+                <div className="px-4 py-3 text-xs text-zinc-500">Loading files...</div>
+              )}
+              {fileTreeError && (
+                <div className="px-3 py-2 space-y-2">
+                  <p className="text-xs text-red-400">{fileTreeError}</p>
+                  <button
+                    onClick={loadFileTree}
+                    className="text-xs text-orange-400 hover:text-orange-300 underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+              {!fileTreeLoading && !fileTreeError && fileTree.length === 0 && (
+                <div className="px-4 py-3 text-xs text-zinc-500">No files found.</div>
+              )}
+              {fileTree.length > 0 && (
+                <div className="space-y-0.5 pr-1">
+                  {renderTree(fileTree)}
                 </div>
               )}
             </div>
@@ -699,6 +740,7 @@ export default function DevConsolePage() {
 
         {/* Prompt textarea */}
         <textarea
+          ref={textareaRef}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Paste your prompt here..."
