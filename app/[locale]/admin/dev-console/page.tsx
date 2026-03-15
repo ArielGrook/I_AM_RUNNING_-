@@ -138,7 +138,7 @@ export default function DevConsolePage() {
   const [expandedLines, setExpandedLines] = useState<Set<number>>(new Set());
 
   const [showSettings, setShowSettings] = useState(false);
-  const [showFileTree, setShowFileTree] = useState(false);
+  const [showFileTree, setShowFileTree] = useState(true);
   const [fileTree, setFileTree] = useState<string[]>([]);
   const [fileTreeLoading, setFileTreeLoading] = useState(false);
   const [fileTreeExpanded, setFileTreeExpanded] = useState<Set<string>>(new Set(['app', 'lib', 'components', 'context-core']));
@@ -353,17 +353,22 @@ export default function DevConsolePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: 'Use list_directory to list the project root with depth 3. Return only the raw list_directory result, nothing else.',
+          prompt: 'Use list_directory tool on path "." with depth 3. Do not explain anything, just call the tool.',
           provider,
           model,
           autoDeploy: false,
         }),
       });
       const data = await response.json();
-      const toolResult = data.log?.find((l: { type: string; message: string }) => l.type === 'tool_result' && l.message?.includes('/'));
+      const toolResult = data.log?.find((l: { type: string; message: string }) =>
+        l.type === 'tool_result' && l.message?.includes('app')
+      );
       if (toolResult) {
-        const lines = toolResult.message.split(' ').filter((l: string) => l.includes('/') || l.includes('.'));
-        setFileTree(lines);
+        const allPaths = toolResult.message
+          .split(' ')
+          .map((p: string) => p.trim())
+          .filter((p: string) => p.length > 0 && !p.startsWith('.') && p !== 'app');
+        setFileTree(allPaths);
       }
     } catch {
       // ignore
@@ -373,7 +378,10 @@ export default function DevConsolePage() {
   };
 
   const insertPathIntoPrompt = (path: string) => {
-    setPrompt(prev => prev + (prev.endsWith('\n') || prev === '' ? '' : '\n') + path);
+    setPrompt(prev => {
+      const cursor = prev.length > 0 && !prev.endsWith('\n') ? '\n' : '';
+      return prev + cursor + path;
+    });
   };
 
   const toggleFolder = (folder: string) => {
@@ -559,7 +567,7 @@ export default function DevConsolePage() {
       <div className="flex-1 flex flex-row gap-0 w-full overflow-hidden">
         {/* File Tree Sidebar */}
         {showFileTree && (
-          <div className="w-64 min-w-[256px] bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-hidden">
+          <div className="w-72 min-w-[288px] bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800">
               <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Files</span>
               <button
@@ -582,21 +590,24 @@ export default function DevConsolePage() {
               ) : (
                 <div className="space-y-0.5">
                   {fileTree.map((item, i) => {
-                    const depth = (item.match(/\//g) || []).length - 1;
-                    const isDir = !item.includes('.');
-                    const name = item.split('/').pop() || item;
+                    const parts = item.split('/');
+                    const depth = parts.length - 1;
+                    const isDir = !parts[parts.length - 1].includes('.');
+                    const name = parts[parts.length - 1];
+                    const parentFolder = parts.slice(0, -1).join('/');
+                    if (parentFolder && !fileTreeExpanded.has(parentFolder)) return null;
                     return (
                       <button
                         key={i}
                         onClick={() => isDir ? toggleFolder(item) : insertPathIntoPrompt(item)}
-                        className="w-full text-left text-xs px-2 py-0.5 rounded hover:bg-zinc-800 transition-colors flex items-center gap-1"
-                        style={{ paddingLeft: `${8 + depth * 12}px` }}
-                        title={isDir ? 'Toggle folder' : `Insert: ${item}`}
+                        className="w-full text-left text-xs py-0.5 rounded hover:bg-zinc-800 transition-colors flex items-center gap-1 group"
+                        style={{ paddingLeft: `${8 + depth * 10}px` }}
+                        title={isDir ? item : `Click to insert: ${item}`}
                       >
-                        <span className={isDir ? 'text-zinc-400' : 'text-zinc-300'}>
+                        <span className="text-zinc-500 w-3 flex-shrink-0">
                           {isDir ? (fileTreeExpanded.has(item) ? '▾' : '▸') : '·'}
                         </span>
-                        <span className={isDir ? 'text-zinc-400' : 'text-zinc-200 hover:text-orange-400'}>
+                        <span className={`truncate ${isDir ? 'text-zinc-400' : 'text-zinc-300 group-hover:text-orange-400'}`}>
                           {name}
                         </span>
                       </button>
