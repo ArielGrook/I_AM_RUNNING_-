@@ -218,6 +218,7 @@ export default function DevConsolePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveToast, setSaveToast] = useState(false);
+  const [aiUpdateToast, setAiUpdateToast] = useState(false);
   // Discard confirmation modal
   const [showDiscardModal, setShowDiscardModal] = useState(false);
   const [pendingFileSwitch, setPendingFileSwitch] = useState<TreeNode | null>(null);
@@ -588,6 +589,66 @@ export default function DevConsolePage() {
       setMessages(prev => [...prev, ...logMsgs, ...aiMsgs]);
       setTokens(data.tokens);
 
+      // Check for file-modifying tools and reload if current file was modified
+      const fileModifyingTools = ['write_file', 'patch_file', 'delete_file'];
+      const gitTools = ['git_snapshot'];
+      let shouldReloadFile = false;
+      let shouldReloadGit = false;
+      let shouldReloadTree = false;
+
+      for (const entry of data.log || []) {
+        if (entry.type === 'tool_call') {
+          const toolName = entry.message.split('(')[0];
+          
+          if (fileModifyingTools.includes(toolName)) {
+            shouldReloadTree = true;
+            
+            // Parse args to get the path
+            try {
+              const argsStart = entry.message.indexOf('(');
+              const argsEnd = entry.message.lastIndexOf(')');
+              if (argsStart !== -1 && argsEnd !== -1) {
+                const argsJson = entry.message.substring(argsStart + 1, argsEnd);
+                const args = JSON.parse(argsJson);
+                const modifiedPath = args.path;
+                
+                if (modifiedPath && modifiedPath === selectedFile) {
+                  shouldReloadFile = true;
+                }
+              }
+            } catch {
+              // Failed to parse args, skip
+            }
+          }
+          
+          if (gitTools.includes(toolName)) {
+            shouldReloadGit = true;
+          }
+        }
+      }
+
+      // Perform reloads
+      if (shouldReloadFile) {
+        if (isEditMode && isModified) {
+          // User has unsaved changes - show warning instead of auto-reload
+          setMessages(prev => [...prev, { 
+            id: msgId(), 
+            type: 'status', 
+            content: '⚠️ AI modified this file. You have unsaved changes that may conflict.', 
+            time: new Date().toLocaleTimeString('en-GB') 
+          }]);
+        } else {
+          // Safe to reload
+          await reloadCurrentFile();
+        }
+      }
+      if (shouldReloadTree) {
+        await loadFileTree();
+      }
+      if (shouldReloadGit) {
+        await loadGitLog();
+      }
+
       if (!data.success) {
         setMessages(prev => [...prev, { id: msgId(), type: 'error', content: data.error || 'Unknown error', time: new Date().toLocaleTimeString('en-GB') }]);
       }
@@ -739,6 +800,34 @@ export default function DevConsolePage() {
       setIsEditMode(true);
     } catch (err: unknown) {
       setNewFileError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const reloadCurrentFile = async (filePath?: string) => {
+    const pathToReload = filePath || selectedFile;
+    if (!pathToReload) return;
+
+    try {
+      const res = await fetch(`/api/dev-agent/files/read?path=${encodeURIComponent(pathToReload)}`);
+      const data = await res.json();
+      if (data.content !== undefined) {
+        if (editorViewRef.current) {
+          const currentContent = editorViewRef.current.state.doc.toString();
+          if (currentContent !== data.content) {
+            editorViewRef.current.dispatch({
+              changes: { from: 0, to: currentContent.length, insert: data.content }
+            });
+            originalContentRef.current = data.content;
+            setIsModified(false);
+            setAiUpdateToast(true);
+            setTimeout(() => setAiUpdateToast(false), 2000);
+          }
+        }
+        setFileContent(data.content);
+        setFileLines(data.lines);
+      }
+    } catch {
+      // Silently fail - file might have been deleted
     }
   };
 
@@ -1997,6 +2086,13 @@ export default function DevConsolePage() {
           {saveToast && (
             <div className="absolute top-12 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-green-700 text-white text-sm shadow-lg pointer-events-none">
               ✓ Saved
+            </div>
+          )}
+
+          {/* AI update toast */}
+          {aiUpdateToast && (
+            <div className="absolute top-12 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-orange-600 text-white text-sm shadow-lg pointer-events-none">
+              ✓ File updated by AI
             </div>
           )}
 
