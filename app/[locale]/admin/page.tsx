@@ -27,8 +27,6 @@ import { generateProjectPreview, getCachedPreview } from '@/lib/utils/preview';
 import { cn } from '@/lib/utils';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { authenticator } from 'otplib';
-import QRCode from 'qrcode';
 
 interface Project {
   id: string;
@@ -62,8 +60,6 @@ export default function AdminPage() {
   const [totpInput, setTotpInput] = useState('');
   const [attempts, setAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const [showQR, setShowQR] = useState(false);
   const [error, setError] = useState('');
   const [initLoading, setInitLoading] = useState(true);
 
@@ -87,19 +83,6 @@ export default function AdminPage() {
       // Check lockout
       const lockUntil = sessionStorage.getItem('admin_lock_until');
       if (lockUntil && Date.now() < parseInt(lockUntil)) setIsLocked(true);
-
-      // Show QR if first time setup
-      const secret = process.env.NEXT_PUBLIC_ADMIN_TOTP_SECRET;
-      if (secret) {
-        const hasSetup = localStorage.getItem('admin_totp_setup');
-        if (!hasSetup) {
-          const otpauth = authenticator.keyuri('admin', 'I AM RUNNING', secret);
-          QRCode.toDataURL(otpauth).then((url) => {
-            setQrCodeUrl(url);
-            setShowQR(true);
-          });
-        }
-      }
     }
     setInitLoading(false);
   }, []);
@@ -143,7 +126,6 @@ export default function AdminPage() {
         setError('');
         setAttempts(0);
         sessionStorage.setItem('admin_session', 'true');
-        localStorage.setItem('admin_totp_setup', 'true');
       } else {
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
@@ -296,22 +278,6 @@ export default function AdminPage() {
         <div className="bg-white p-8 rounded-lg shadow-md w-96">
           <h1 className="text-2xl font-bold mb-2">Admin Access</h1>
           <p className="text-gray-500 text-sm mb-6">Enter code from Google Authenticator</p>
-
-          {showQR && qrCodeUrl && (
-            <div className="mb-6 text-center">
-              <p className="text-sm text-orange-600 font-semibold mb-2">
-                First time setup — scan this QR code with Google Authenticator:
-              </p>
-              <img src={qrCodeUrl} alt="TOTP QR Code" className="mx-auto mb-2" />
-              <button
-                type="button"
-                onClick={() => setShowQR(false)}
-                className="text-xs text-gray-400 underline"
-              >
-                I&apos;ve scanned it, hide QR
-              </button>
-            </div>
-          )}
 
           <input
             type="text"
