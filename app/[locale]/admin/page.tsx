@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -57,6 +58,7 @@ export default function AdminPage() {
   const t = useTranslations('Admin');
   const locale = useLocale();
   const isRTL = locale === 'he' || locale === 'ar';
+  const router = useRouter();
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [totpInput, setTotpInput] = useState('');
@@ -79,7 +81,7 @@ export default function AdminPage() {
   // Mobile
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showMobileNav, setShowMobileNav] = useState(false);
 
   useEffect(() => {
     // Restore session from sessionStorage
@@ -173,6 +175,7 @@ export default function AdminPage() {
       unsubscribe(realtimeChannel);
       setRealtimeChannel(null);
     }
+    router.push('/');
   };
 
   const loadUsers = async () => {
@@ -328,70 +331,70 @@ export default function AdminPage() {
     <div ref={containerRef} className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="bg-white border-b px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {isMobile && (
-              <button
-                onClick={() => setShowMobileSidebar(true)}
-                className="p-2 hover:bg-gray-100 rounded transition-colors"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-            )}
-            <Eye className="w-6 h-6" />
-            <h1 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{t('title')}</h1>
+          <div className="flex items-center gap-2">
+            {!isMobile && <Eye className="w-6 h-6" />}
+            <h1 className={`${isMobile ? 'text-base' : 'text-2xl'} font-bold`}>
+              {isMobile ? 'Admin Panel' : t('title')}
+            </h1>
           </div>
-          <div className="flex items-center gap-4">
-            {!isMobile && <span className="text-sm text-gray-600">admin</span>}
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              {!isMobile && t('logout')}
-            </Button>
+          <div className="flex items-center gap-2">
+            {isMobile ? (
+              <>
+                <button
+                  onClick={() => setShowMobileNav(!showMobileNav)}
+                  className="px-3 py-2 hover:bg-gray-100 rounded transition-colors text-sm font-medium flex items-center gap-1"
+                >
+                  Menu {showMobileNav ? '▲' : '▼'}
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="p-2 hover:bg-gray-100 rounded transition-colors"
+                  title="Logout"
+                >
+                  <CloseIcon className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-sm text-gray-600">admin</span>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  {t('logout')}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Mobile Sidebar Overlay */}
-      {isMobile && showMobileSidebar && (
-        <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileSidebar(false)} />
-          <aside className="absolute left-0 top-0 h-full w-[280px] bg-white shadow-2xl p-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-lg">Menu</h2>
-              <button onClick={() => setShowMobileSidebar(false)} className="p-1 hover:bg-gray-100 rounded">
-                <CloseIcon className="w-5 h-5" />
-              </button>
+      {/* Mobile Navigation Dropdown */}
+      {isMobile && showMobileNav && (
+        <div className="bg-white border-b shadow-sm">
+          <div className="px-4 py-3 space-y-2">
+            <div className="text-sm text-gray-600 mb-2">
+              📊 Stats: {projects.length} projects, {users.length} users
             </div>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  {t('stats')}
-                </h3>
-                <div className="text-sm space-y-1">
-                  <div>{t('totalProjects')}: {projects.length}</div>
-                  <div>{t('totalUsers')}: {users.length}</div>
-                </div>
+            <Link
+              href={`/${locale}/admin/seo`}
+              className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
+            >
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                SEO Settings
               </div>
-              <div>
-                <Link
-                  href={`/${locale}/admin/seo`}
-                  onClick={() => setShowMobileSidebar(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
-                >
-                  <Globe className="w-4 h-4" />
-                  SEO Settings
-                </Link>
-                <Link
-                  href={`/${locale}/admin/dev-console`}
-                  onClick={() => setShowMobileSidebar(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
-                >
-                  <Terminal className="w-4 h-4" />
-                  Dev Console
-                </Link>
+              <span>→</span>
+            </Link>
+            <Link
+              href={`/${locale}/admin/dev-console`}
+              className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
+            >
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4" />
+                Dev Console
               </div>
-            </div>
-          </aside>
+              <span>→</span>
+            </Link>
+          </div>
         </div>
       )}
 
@@ -464,7 +467,7 @@ export default function AdminPage() {
 
           {activeTab === 'users' && (
             <>
-              <div className="mb-4 flex items-center gap-4">
+              <div className="mb-4 flex items-center gap-2">
                 <input
                   type="text"
                   placeholder="Search by email or name..."
@@ -473,8 +476,8 @@ export default function AdminPage() {
                   className="flex-1 p-2 border rounded"
                 />
                 <Button variant="outline" size="sm" onClick={loadUsers} disabled={usersLoading}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  {t('refresh')}
+                  <RefreshCw className={`w-4 h-4 ${!isMobile && 'mr-2'}`} />
+                  {!isMobile && t('refresh')}
                 </Button>
               </div>
 
@@ -486,30 +489,22 @@ export default function AdminPage() {
               )}
 
               {!usersLoading && (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full bg-white border">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-2 border text-left">#</th>
-                        <th className="px-4 py-2 border text-left">Email</th>
-                        <th className="px-4 py-2 border text-left">Name</th>
-                        <th className="px-4 py-2 border text-left">Account Type</th>
-                        <th className="px-4 py-2 border text-left">Tier</th>
-                        <th className="px-4 py-2 border text-left">Created</th>
-                        <th className="px-4 py-2 border text-left">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                <>
+                  {isMobile ? (
+                    <div className="space-y-3">
                       {filteredUsers.map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 border text-sm">
-                            {user.user_number ?? '-'}
-                          </td>
-                          <td className="px-4 py-2 border text-sm">{user.email}</td>
-                          <td className="px-4 py-2 border text-sm">
-                            {user.full_name || '-'}
-                          </td>
-                          <td className="px-4 py-2 border">
+                        <div key={user.id} className="bg-white rounded-lg border p-4 space-y-2">
+                          <div className="flex justify-between items-start">
+                            <span className="text-sm text-gray-500">#{user.user_number ?? '-'}</span>
+                            <span className="text-xs text-gray-400">
+                              {new Date(user.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="font-medium text-sm break-all">{user.email}</div>
+                          {user.full_name && (
+                            <div className="text-sm text-gray-600">Name: {user.full_name}</div>
+                          )}
+                          <div className="flex gap-2 flex-wrap">
                             <span
                               className={cn(
                                 'px-2 py-1 rounded text-xs',
@@ -520,56 +515,142 @@ export default function AdminPage() {
                             >
                               {user.account_type}
                             </span>
-                          </td>
-                          <td className="px-4 py-2 border text-sm">
-                            {user.freelancer_tier || '-'}
-                          </td>
-                          <td className="px-4 py-2 border text-sm">
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-2 border">
-                            <div className="flex gap-1 flex-wrap">
-                              <button
-                                onClick={() => updateUserRole(user.id, 'regular', null)}
-                                className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 disabled:opacity-50"
-                                disabled={updating}
-                              >
-                                Regular
-                              </button>
-                              <button
-                                onClick={() =>
-                                  updateUserRole(user.id, 'freelancer', 'frontend')
-                                }
-                                className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50"
-                                disabled={updating}
-                              >
-                                Frontend
-                              </button>
-                              <button
-                                onClick={() =>
-                                  updateUserRole(user.id, 'freelancer', 'full_stack')
-                                }
-                                className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:opacity-50"
-                                disabled={updating}
-                              >
-                                Full Stack
-                              </button>
-                              <button
-                                onClick={() =>
-                                  updateUserRole(user.id, 'freelancer', 'professional')
-                                }
-                                className="px-2 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600 disabled:opacity-50"
-                                disabled={updating}
-                              >
-                                Pro
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                            {user.freelancer_tier && (
+                              <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">
+                                {user.freelancer_tier}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-2 flex-wrap pt-2">
+                            <button
+                              onClick={() => updateUserRole(user.id, 'regular', null)}
+                              className="px-3 py-2 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 disabled:opacity-50"
+                              style={{ minHeight: '44px' }}
+                              disabled={updating}
+                            >
+                              Regular
+                            </button>
+                            <button
+                              onClick={() =>
+                                updateUserRole(user.id, 'freelancer', 'frontend')
+                              }
+                              className="px-3 py-2 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50"
+                              style={{ minHeight: '44px' }}
+                              disabled={updating}
+                            >
+                              Frontend
+                            </button>
+                            <button
+                              onClick={() =>
+                                updateUserRole(user.id, 'freelancer', 'full_stack')
+                              }
+                              className="px-3 py-2 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:opacity-50"
+                              style={{ minHeight: '44px' }}
+                              disabled={updating}
+                            >
+                              Full Stack
+                            </button>
+                            <button
+                              onClick={() =>
+                                updateUserRole(user.id, 'freelancer', 'professional')
+                              }
+                              className="px-3 py-2 bg-purple-500 text-white rounded text-xs hover:bg-purple-600 disabled:opacity-50"
+                              style={{ minHeight: '44px' }}
+                              disabled={updating}
+                            >
+                              Pro
+                            </button>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full bg-white border">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="px-4 py-2 border text-left">#</th>
+                            <th className="px-4 py-2 border text-left">Email</th>
+                            <th className="px-4 py-2 border text-left">Name</th>
+                            <th className="px-4 py-2 border text-left">Account Type</th>
+                            <th className="px-4 py-2 border text-left">Tier</th>
+                            <th className="px-4 py-2 border text-left">Created</th>
+                            <th className="px-4 py-2 border text-left">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredUsers.map((user) => (
+                            <tr key={user.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-2 border text-sm">
+                                {user.user_number ?? '-'}
+                              </td>
+                              <td className="px-4 py-2 border text-sm">{user.email}</td>
+                              <td className="px-4 py-2 border text-sm">
+                                {user.full_name || '-'}
+                              </td>
+                              <td className="px-4 py-2 border">
+                                <span
+                                  className={cn(
+                                    'px-2 py-1 rounded text-xs',
+                                    user.account_type === 'freelancer'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  )}
+                                >
+                                  {user.account_type}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2 border text-sm">
+                                {user.freelancer_tier || '-'}
+                              </td>
+                              <td className="px-4 py-2 border text-sm">
+                                {new Date(user.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="px-4 py-2 border">
+                                <div className="flex gap-1 flex-wrap">
+                                  <button
+                                    onClick={() => updateUserRole(user.id, 'regular', null)}
+                                    className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 disabled:opacity-50"
+                                    disabled={updating}
+                                  >
+                                    Regular
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      updateUserRole(user.id, 'freelancer', 'frontend')
+                                    }
+                                    className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50"
+                                    disabled={updating}
+                                  >
+                                    Frontend
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      updateUserRole(user.id, 'freelancer', 'full_stack')
+                                    }
+                                    className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:opacity-50"
+                                    disabled={updating}
+                                  >
+                                    Full Stack
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      updateUserRole(user.id, 'freelancer', 'professional')
+                                    }
+                                    className="px-2 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600 disabled:opacity-50"
+                                    disabled={updating}
+                                  >
+                                    Pro
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
               )}
 
               {!usersLoading && filteredUsers.length === 0 && (
@@ -580,7 +661,7 @@ export default function AdminPage() {
 
           {activeTab === 'projects' && (
             <>
-              <div className="mb-4 flex items-center gap-4">
+              <div className="mb-4 flex items-center gap-2">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
@@ -592,8 +673,8 @@ export default function AdminPage() {
                   />
                 </div>
                 <Button variant="outline" size="sm" onClick={loadProjects}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  {t('refresh')}
+                  <RefreshCw className={`w-4 h-4 ${!isMobile && 'mr-2'}`} />
+                  {!isMobile && t('refresh')}
                 </Button>
               </div>
 
