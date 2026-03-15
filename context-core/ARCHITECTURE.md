@@ -124,7 +124,39 @@
 
 ---
 
-## 7. ИЗВЕСТНЫЕ БАГИ
+## 7. DEV CONSOLE — IDE
+
+**Файл:** `app/[locale]/admin/dev-console/page.tsx`
+
+**API Endpoints:**
+- `GET /api/dev-agent/files` — файловое дерево проекта
+- `GET /api/dev-agent/files/read?path=...` — чтение файла (макс 500KB, блокирует .env)
+- `POST /api/dev-agent/files/write` — создание/сохранение файла (не делает git commit)
+- `DELETE /api/dev-agent/files/delete` — удаление файла (папки только пустые)
+- `POST /api/dev-agent/files/mkdir` — создание папки
+- `GET /api/dev-agent/git-log` — последние 30 коммитов
+- `POST /api/dev-agent/deploy` — деплой (git push → build → pm2 restart через nohup)
+- `POST /api/dev-agent/rollback` — откат к хэшу или HEAD~1
+
+**Функции UI:**
+- Файловое дерево с контекстным меню (правый клик): New File, New Folder, Delete, Copy Path, Open in Edit
+- Code viewer (CodeMirror) с подсветкой синтаксиса: .ts/.tsx/.js/.jsx/.css/.html/.json
+- Edit mode — редактирование в браузере + Ctrl+S сохранение
+- Reference кнопка — выделил строки → путь + строки + код вставляются в промпт
+- Git History панель — список коммитов, rollback в один клик
+- Resizable panels (3 колонки), ширина в localStorage
+- Light/Dark тема
+
+**Краеугольные камни (не ломать):**
+- Edit mode НЕ делает git commit — только пишет файл на диск. Deploy нужен после
+- Delete работает только для пустых папок — рекурсивного удаления нет намеренно
+- Все endpoints используют одинаковый auth паттерн: Supabase session + DEVELOPER_USER_ID
+- Path security везде: no .., no absolute paths, BLOCKED_PATTERNS
+- PM2 рестартует через 2 секунды после deploy (nohup sleep 2) — сайт недоступен ~3-5 сек
+
+---
+
+## 8. ИЗВЕСТНЫЕ БАГИ
 
 | Баг | Файл | Статус |
 |-----|------|--------|
