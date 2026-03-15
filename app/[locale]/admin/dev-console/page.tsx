@@ -35,6 +35,8 @@ import {
   X,
   Copy,
   FolderPlus,
+  GitCommit,
+  RefreshCw,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -76,6 +78,11 @@ interface CodeSelection {
   text: string;
   fromLine: number;
   toLine: number;
+}
+
+interface GitCommitEntry {
+  hash: string;
+  message: string;
 }
 
 // ─────────────────────────────────────────────
@@ -242,6 +249,34 @@ export default function DevConsolePage() {
   const [isDeletingFolder, setIsDeletingFolder] = useState(false);
   const [deleteFolderError, setDeleteFolderError] = useState<string | null>(null);
 
+  // ── PANEL RESIZE ──
+  const [leftWidth, setLeftWidth] = useState(() => {
+    if (typeof window === 'undefined') return 280;
+    return parseInt(localStorage.getItem('devConsole_leftWidth') || '280', 10);
+  });
+  const [rightWidth, setRightWidth] = useState(() => {
+    if (typeof window === 'undefined') return 400;
+    return parseInt(localStorage.getItem('devConsole_rightWidth') || '400', 10);
+  });
+  const [dragging, setDragging] = useState<'left' | 'right' | null>(null);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
+
+  // ── GIT HISTORY ──
+  const [gitCommits, setGitCommits] = useState<GitCommitEntry[]>([]);
+  const [gitLoading, setGitLoading] = useState(false);
+  const [gitError, setGitError] = useState<string | null>(null);
+  const [showGitPanel, setShowGitPanel] = useState(true);
+  const [gitPanelHeight, setGitPanelHeight] = useState(() => {
+    if (typeof window === 'undefined') return 200;
+    return parseInt(localStorage.getItem('devConsole_gitPanelHeight') || '200', 10);
+  });
+  const [gitDragging, setGitDragging] = useState(false);
+  const gitDragStartY = useRef(0);
+  const gitDragStartHeight = useRef(0);
+  const [rollbackTarget, setRollbackTarget] = useState<GitCommitEntry | null>(null);
+  const [isRollingBackFromHistory, setIsRollingBackFromHistory] = useState(false);
+
   // ── THEME ──
   const [isDark, setIsDark] = useState(true);
 
@@ -322,6 +357,61 @@ export default function DevConsolePage() {
     if (hasSession) loadFileTree();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasSession]);
+
+  // Git log auto-load
+  useEffect(() => {
+    if (hasSession) loadGitLog();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSession]);
+
+  // Panel drag — horizontal (left / right)
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e: MouseEvent) => {
+      const delta = e.clientX - dragStartX.current;
+      if (dragging === 'left') {
+        setLeftWidth(Math.max(200, Math.min(600, dragStartWidth.current + delta)));
+      } else {
+        setRightWidth(Math.max(300, Math.min(800, dragStartWidth.current - delta)));
+      }
+    };
+    const onUp = () => setDragging(null);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [dragging]);
+
+  // Git panel drag — vertical
+  useEffect(() => {
+    if (!gitDragging) return;
+    const onMove = (e: MouseEvent) => {
+      const delta = gitDragStartY.current - e.clientY;
+      setGitPanelHeight(Math.max(100, Math.min(400, gitDragStartHeight.current + delta)));
+    };
+    const onUp = () => setGitDragging(false);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [gitDragging]);
+
+  // Persist panel widths/heights
+  useEffect(() => { localStorage.setItem('devConsole_leftWidth', String(leftWidth)); }, [leftWidth]);
+  useEffect(() => { localStorage.setItem('devConsole_rightWidth', String(rightWidth)); }, [rightWidth]);
+  useEffect(() => { localStorage.setItem('devConsole_gitPanelHeight', String(gitPanelHeight)); }, [gitPanelHeight]);
 
   // Fetch file content
   useEffect(() => {
@@ -523,6 +613,7 @@ export default function DevConsolePage() {
           { id: msgId(), type: 'status', content: `Rolled back to ${data.revertedTo || 'previous commit'}`, time: new Date().toLocaleTimeString('en-GB') },
           { id: msgId(), type: 'deploy', content: '✅ Rollback complete. Site rebuilt and restarted.', time: new Date().toLocaleTimeString('en-GB') },
         ]);
+        await loadGitLog();
       } else {
         setMessages(prev => [...prev, { id: msgId(), type: 'error', content: data.error || 'Rollback failed', time: new Date().toLocaleTimeString('en-GB') }]);
       }
@@ -539,6 +630,7 @@ export default function DevConsolePage() {
       const data = await response.json();
       if (data.success) {
         setMessages(prev => [...prev, { id: msgId(), type: 'deploy', content: '✅ Deploy complete', time: new Date().toLocaleTimeString('en-GB') }]);
+        await loadGitLog();
       } else {
         setMessages(prev => [...prev, { id: msgId(), type: 'error', content: data.error || 'Deploy failed', time: new Date().toLocaleTimeString('en-GB') }]);
       }
@@ -642,6 +734,65 @@ export default function DevConsolePage() {
       setIsEditMode(true);
     } catch (err: unknown) {
       setNewFileError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  // ── PANEL DRAG HANDLERS ──
+  const startDrag = (side: 'left' | 'right', e: React.MouseEvent) => {
+    e.preventDefault();
+    setDragging(side);
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = side === 'left' ? leftWidth : rightWidth;
+  };
+
+  const startGitDrag = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setGitDragging(true);
+    gitDragStartY.current = e.clientY;
+    gitDragStartHeight.current = gitPanelHeight;
+  };
+
+  // ── GIT HISTORY ──
+  const loadGitLog = async () => {
+    setGitLoading(true);
+    setGitError(null);
+    try {
+      const res = await fetch('/api/dev-agent/git-log');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setGitCommits(data.commits || []);
+    } catch (err: unknown) {
+      setGitError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setGitLoading(false);
+    }
+  };
+
+  const handleRollbackFromHistory = async () => {
+    if (!rollbackTarget || isRollingBackFromHistory) return;
+    setIsRollingBackFromHistory(true);
+    try {
+      const res = await fetch('/api/dev-agent/rollback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetHash: rollbackTarget.hash }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessages(prev => [...prev,
+          { id: msgId(), type: 'status', content: `Rolled back to ${rollbackTarget.hash}: ${rollbackTarget.message}`, time: new Date().toLocaleTimeString('en-GB') },
+          { id: msgId(), type: 'deploy', content: '✅ Rollback complete. Site rebuilt and restarted.', time: new Date().toLocaleTimeString('en-GB') },
+        ]);
+        await loadGitLog();
+      } else {
+        setMessages(prev => [...prev, { id: msgId(), type: 'error', content: data.error || 'Rollback failed', time: new Date().toLocaleTimeString('en-GB') }]);
+      }
+    } catch (err: unknown) {
+      setMessages(prev => [...prev, { id: msgId(), type: 'error', content: err instanceof Error ? err.message : String(err), time: new Date().toLocaleTimeString('en-GB') }]);
+    } finally {
+      setIsRollingBackFromHistory(false);
+      setRollbackTarget(null);
     }
   };
 
@@ -1192,12 +1343,47 @@ export default function DevConsolePage() {
         </div>
       )}
 
+      {/* Rollback from Git History confirmation modal */}
+      {rollbackTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setRollbackTarget(null)} />
+          <div className={`relative rounded-xl p-6 w-96 shadow-2xl ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
+            <h3 className="text-sm font-semibold mb-2">Rollback to this commit?</h3>
+            <div className={`rounded-lg px-3 py-2 mb-3 ${dark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
+              <p className="font-mono text-xs text-orange-400 mb-0.5">{rollbackTarget.hash}</p>
+              <p className={`text-xs ${dark ? 'text-zinc-300' : 'text-zinc-700'}`}>{rollbackTarget.message}</p>
+            </div>
+            <p className={`text-xs mb-5 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+              This will run <code className="font-mono">git reset --hard {rollbackTarget.hash}</code>, rebuild, and restart the server. All commits after this point will be discarded.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setRollbackTarget(null)}
+                className={`px-3 py-1.5 text-xs rounded transition-colors ${dark ? 'text-zinc-300 hover:bg-zinc-800' : 'text-zinc-600 hover:bg-zinc-100'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRollbackFromHistory}
+                disabled={isRollingBackFromHistory}
+                className="px-3 py-1.5 text-xs rounded bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white transition-colors"
+              >
+                {isRollingBackFromHistory ? 'Rolling back...' : 'Rollback'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Three-panel layout */}
       <div className="flex-1 flex flex-row overflow-hidden min-h-0">
 
-        {/* LEFT: File Tree */}
+        {/* LEFT: File Tree + Git History */}
         {showFileTree && (
-          <div className={`w-[280px] min-w-[280px] ${panelBg} border-r ${borderCls} flex flex-col overflow-hidden min-h-0`}>
+          <div
+            className={`${panelBg} border-r ${borderCls} flex flex-col overflow-hidden min-h-0 flex-shrink-0`}
+            style={{ width: leftWidth, minWidth: 200, maxWidth: 600 }}
+          >
             <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
               <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Files</span>
               <div className="flex items-center gap-1.5">
@@ -1255,11 +1441,85 @@ export default function DevConsolePage() {
               )}
               {fileTree.length > 0 && <div className="space-y-0.5 pr-1">{renderTree(fileTree)}</div>}
             </div>
+
+            {/* Git History horizontal resize handle */}
+            <div
+              className={`h-1 flex-shrink-0 cursor-row-resize transition-colors ${dark ? 'hover:bg-zinc-600' : 'hover:bg-zinc-300'} ${gitDragging ? (dark ? 'bg-zinc-600' : 'bg-zinc-300') : 'bg-transparent'}`}
+              onMouseDown={startGitDrag}
+              title="Drag to resize git panel"
+            />
+
+            {/* Git History panel */}
+            {showGitPanel && (
+              <div
+                className={`border-t ${borderCls} flex flex-col overflow-hidden flex-shrink-0`}
+                style={{ height: gitPanelHeight }}
+              >
+                <div className={`flex items-center justify-between px-3 py-1.5 border-b ${borderCls} flex-shrink-0`}>
+                  <div className="flex items-center gap-1.5">
+                    <GitCommit className={`w-3 h-3 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`} />
+                    <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Git History</span>
+                  </div>
+                  <button
+                    onClick={loadGitLog}
+                    disabled={gitLoading}
+                    className={`transition-colors disabled:opacity-40 ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`}
+                    title="Refresh git log"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${gitLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  {gitLoading && gitCommits.length === 0 && (
+                    <div className={`px-3 py-2 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Loading...</div>
+                  )}
+                  {gitError && (
+                    <div className="px-3 py-2 space-y-1">
+                      <p className="text-xs text-red-400 break-all">{gitError}</p>
+                      <button onClick={loadGitLog} className="text-xs text-orange-400 underline">Retry</button>
+                    </div>
+                  )}
+                  {!gitLoading && !gitError && gitCommits.length === 0 && (
+                    <div className={`px-3 py-2 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>No commits found.</div>
+                  )}
+                  {gitCommits.map((commit, i) => (
+                    <div
+                      key={commit.hash}
+                      className={`group flex items-center gap-2 px-3 py-1.5 text-xs cursor-default transition-colors ${i === 0 ? (dark ? 'bg-orange-500/10' : 'bg-orange-50') : ''} ${dark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
+                    >
+                      <span className={`font-mono flex-shrink-0 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{commit.hash.slice(0, 7)}</span>
+                      <span className={`truncate flex-1 ${dark ? 'text-zinc-300' : 'text-zinc-700'} ${i === 0 ? 'font-medium' : ''}`} title={commit.message}>
+                        {commit.message}
+                      </span>
+                      <button
+                        onClick={() => setRollbackTarget(commit)}
+                        className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] px-1.5 py-0.5 rounded ${dark ? 'bg-zinc-700 hover:bg-red-900 text-zinc-300 hover:text-red-300' : 'bg-zinc-200 hover:bg-red-100 text-zinc-600 hover:text-red-600'}`}
+                        title={`Rollback to ${commit.hash}`}
+                      >
+                        ↩ rollback
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
+        {/* Drag handle: left ↔ center */}
+        {showFileTree && (
+          <div
+            className={`w-1 flex-shrink-0 cursor-col-resize transition-colors ${dark ? 'hover:bg-zinc-600' : 'hover:bg-zinc-300'} ${dragging === 'left' ? (dark ? 'bg-zinc-600' : 'bg-zinc-300') : 'bg-transparent'}`}
+            onMouseDown={(e) => startDrag('left', e)}
+            title="Drag to resize"
+          />
+        )}
+
         {/* CENTER: Code Viewer — hidden on mobile */}
-        <div className={`hidden md:flex flex-col flex-1 border-r ${borderCls} overflow-hidden min-w-0 min-h-0`}>
+        <div
+          className={`hidden md:flex flex-col border-r ${borderCls} overflow-hidden min-h-0`}
+          style={{ flex: 1, minWidth: 300 }}
+        >
           {/* Viewer header */}
           <div className={`flex items-center gap-2 px-3 py-1.5 border-b ${borderCls} flex-shrink-0 flex-wrap`}>
             {/* File path + modified badge */}
@@ -1376,8 +1636,18 @@ export default function DevConsolePage() {
           </div>
         </div>
 
+        {/* Drag handle: center ↔ right */}
+        <div
+          className={`hidden md:block w-1 flex-shrink-0 cursor-col-resize transition-colors ${dark ? 'hover:bg-zinc-600' : 'hover:bg-zinc-300'} ${dragging === 'right' ? (dark ? 'bg-zinc-600' : 'bg-zinc-300') : 'bg-transparent'}`}
+          onMouseDown={(e) => startDrag('right', e)}
+          title="Drag to resize"
+        />
+
         {/* RIGHT: Chat UI */}
-        <div className={`flex flex-col w-full md:w-[400px] md:min-w-[340px] overflow-hidden min-h-0`}>
+        <div
+          className={`flex flex-col overflow-hidden min-h-0 flex-shrink-0`}
+          style={{ width: rightWidth, minWidth: 300, maxWidth: 800 }}
+        >
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
             {messages.length === 0 && (

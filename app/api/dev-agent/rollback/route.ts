@@ -25,11 +25,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
     }
 
+    const body = await request.json().catch(() => ({}));
+    const { targetHash } = body as { targetHash?: string };
+
+    // Validate targetHash if provided
+    if (targetHash && !/^[a-f0-9]{7,40}$/.test(targetHash)) {
+      return NextResponse.json({ success: false, error: 'Invalid commit hash' }, { status: 400 });
+    }
+
     const rolledBack = execSync('git log --oneline -1', {
       cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 5000,
     }).trim();
 
-    execSync('git reset --hard HEAD~1', {
+    const resetTarget = targetHash ? targetHash : 'HEAD~1';
+    execSync(`git reset --hard ${resetTarget}`, {
       cwd: PROJECT_ROOT, encoding: 'utf-8', timeout: 10000,
     });
 
