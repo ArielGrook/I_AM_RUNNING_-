@@ -295,8 +295,11 @@ export default function DevConsolePage() {
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
 
-  // ── PORTRAIT WARNING (mobile) ──
+  // ── MOBILE ──
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'files' | 'chat'>('chat');
   const [isPortrait, setIsPortrait] = useState(false);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -327,9 +330,13 @@ export default function DevConsolePage() {
     if (stored === 'light') setIsDark(false);
   }, []);
 
-  // Portrait detection
+  // Mobile and portrait detection
   useEffect(() => {
-    const check = () => setIsPortrait(window.innerWidth < 768 && window.innerHeight > window.innerWidth);
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setIsPortrait(mobile && window.innerHeight > window.innerWidth);
+    };
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
@@ -803,6 +810,28 @@ export default function DevConsolePage() {
     setContextMenu({ x: e.clientX, y: e.clientY, type, path: nodePath });
   };
 
+  // ── MOBILE LONG-PRESS HANDLERS ──
+  const handleTouchStart = (e: React.TouchEvent, type: 'file' | 'dir' | 'empty', nodePath: string) => {
+    longPressTimer.current = setTimeout(() => {
+      const touch = e.touches[0];
+      setContextMenu({ x: touch.clientX, y: touch.clientY, type, path: nodePath });
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handleTouchCancel = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
   const handleContextCreate = async () => {
     const name = contextCreateName.trim();
     if (!name) return;
@@ -915,6 +944,15 @@ export default function DevConsolePage() {
 
   const handleFileClick = (node: TreeNode) => {
     if (node.type === 'dir') { toggleFolder(node.path); return; }
+    
+    // Mobile: insert path into chat and switch to chat tab
+    if (isMobile) {
+      insertPathIntoPrompt(node.path);
+      setMobileTab('chat');
+      return;
+    }
+    
+    // Desktop: open in code viewer
     if (isEditMode && isModified && node.path !== selectedFile) {
       setPendingFileSwitch(node);
       setShowDiscardModal(true);
@@ -934,8 +972,11 @@ export default function DevConsolePage() {
             <button
               onClick={() => handleFileClick(node)}
               onContextMenu={(e) => openContextMenu(e, 'dir', node.path)}
-              className={`w-full text-left text-xs py-0.5 rounded transition-colors flex items-center gap-1.5 group ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
-              style={{ paddingLeft: `${8 + indent}px` }}
+              onTouchStart={(e) => handleTouchStart(e, 'dir', node.path)}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchCancel}
+              className={`w-full text-left text-xs rounded transition-colors flex items-center gap-1.5 group ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
+              style={{ paddingLeft: `${8 + indent}px`, paddingTop: isMobile ? '10px' : '2px', paddingBottom: isMobile ? '10px' : '2px' }}
               title={node.path}
             >
               <span className={`w-3 flex-shrink-0 text-center ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>{isExpanded ? '▾' : '▸'}</span>
@@ -951,9 +992,12 @@ export default function DevConsolePage() {
           key={node.path}
           onClick={() => handleFileClick(node)}
           onContextMenu={(e) => openContextMenu(e, 'file', node.path)}
-          className={`w-full text-left text-xs py-0.5 rounded transition-colors flex items-center gap-1.5 group ${isActive ? (isDark ? 'bg-orange-500/20 text-orange-300' : 'bg-orange-100 text-orange-700') : (isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100')}`}
-          style={{ paddingLeft: `${8 + indent}px` }}
-          title={`Click to view: ${node.path}`}
+          onTouchStart={(e) => handleTouchStart(e, 'file', node.path)}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
+          className={`w-full text-left text-xs rounded transition-colors flex items-center gap-1.5 group ${isActive ? (isDark ? 'bg-orange-500/20 text-orange-300' : 'bg-orange-100 text-orange-700') : (isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100')}`}
+          style={{ paddingLeft: `${8 + indent}px`, paddingTop: isMobile ? '10px' : '2px', paddingBottom: isMobile ? '10px' : '2px' }}
+          title={isMobile ? `Tap to insert: ${node.path}` : `Click to view: ${node.path}`}
         >
           <span className="w-3 flex-shrink-0" />
           <span className="text-base leading-none flex-shrink-0">📄</span>
@@ -1022,31 +1066,56 @@ export default function DevConsolePage() {
 
       {/* Header */}
       <header className={`border-b ${borderCls} px-4 py-2 flex items-center justify-between flex-shrink-0`}>
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push(`/${locale}/admin`)} className={`${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'} transition-colors`}>
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <Terminal className="w-4 h-4 text-orange-500" />
-          <h1 className="text-base font-semibold">Dev Console</h1>
-        </div>
         <div className="flex items-center gap-2">
-          {tokens && (
+          <button onClick={() => router.push(`/${locale}/admin`)} className={`${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'} transition-colors`}>
+            <ChevronLeft className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+          </button>
+          {!isMobile && <Terminal className="w-4 h-4 text-orange-500" />}
+          <h1 className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold`}>Dev Console</h1>
+        </div>
+
+        {/* Mobile: Tab buttons */}
+        {isMobile && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setMobileTab('files')}
+              className={`px-3 py-1.5 text-lg transition-colors relative ${mobileTab === 'files' ? 'text-orange-500' : (dark ? 'text-zinc-500' : 'text-zinc-400')}`}
+            >
+              📁
+              {mobileTab === 'files' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />}
+            </button>
+            <button
+              onClick={() => setMobileTab('chat')}
+              className={`px-3 py-1.5 text-lg transition-colors relative ${mobileTab === 'chat' ? 'text-orange-500' : (dark ? 'text-zinc-500' : 'text-zinc-400')}`}
+            >
+              💬
+              {mobileTab === 'chat' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />}
+            </button>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          {!isMobile && tokens && (
             <div className={`flex items-center gap-1 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
               <DollarSign className="w-3 h-3" />
               <span>{tokens.input.toLocaleString()} / {tokens.output.toLocaleString()}</span>
             </div>
           )}
-          <button
-            onClick={() => setShowFileTree(p => !p)}
-            className={`px-2.5 py-1 rounded text-sm font-medium transition-colors ${showFileTree ? 'bg-orange-500 text-white' : (dark ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200')}`}
-            title="Toggle file tree"
-          >📁</button>
+          {!isMobile && (
+            <button
+              onClick={() => setShowFileTree(p => !p)}
+              className={`px-2.5 py-1 rounded text-sm font-medium transition-colors ${showFileTree ? 'bg-orange-500 text-white' : (dark ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200')}`}
+              title="Toggle file tree"
+            >📁</button>
+          )}
           <button onClick={toggleTheme} className={`p-1.5 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} title={dark ? 'Switch to light' : 'Switch to dark'}>
             {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <button onClick={() => setShowSettings(true)} className={`p-1.5 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}>
-            <Settings className="w-4 h-4" />
-          </button>
+          {!isMobile && (
+            <button onClick={() => setShowSettings(true)} className={`p-1.5 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}>
+              <Settings className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </header>
 
@@ -1054,7 +1123,7 @@ export default function DevConsolePage() {
       {showSettings && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowSettings(false)} />
-          <div className={`relative w-full max-w-md ${panelBg} border-l ${borderCls} overflow-y-auto`}>
+          <div className={`relative ${isMobile ? 'w-full' : 'w-full max-w-md'} ${panelBg} ${isMobile ? '' : 'border-l'} ${borderCls} overflow-y-auto`}>
             <div className="p-6 space-y-5">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Settings</h2>
@@ -1347,7 +1416,7 @@ export default function DevConsolePage() {
       {rollbackTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setRollbackTarget(null)} />
-          <div className={`relative rounded-xl p-6 w-96 shadow-2xl ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
+          <div className={`relative rounded-xl p-6 shadow-2xl ${isMobile ? 'w-[90%] max-w-sm' : 'w-96'} ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
             <h3 className="text-sm font-semibold mb-2">Rollback to this commit?</h3>
             <div className={`rounded-lg px-3 py-2 mb-3 ${dark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
               <p className="font-mono text-xs text-orange-400 mb-0.5">{rollbackTarget.hash}</p>
@@ -1375,8 +1444,291 @@ export default function DevConsolePage() {
         </div>
       )}
 
-      {/* Three-panel layout */}
-      <div className="flex-1 flex flex-row overflow-hidden min-h-0">
+      {/* MOBILE LAYOUT */}
+      {isMobile ? (
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          {/* Files Tab */}
+          {mobileTab === 'files' && (
+            <div className={`flex-1 flex flex-col overflow-hidden ${panelBg}`}>
+              {/* File Tree Header */}
+              <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
+                <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Files</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => { setShowNewFileInput(p => !p); setNewFilePath(''); setNewFileError(null); }}
+                    className={`text-xs transition-colors ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`}
+                    title="New file"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={loadFileTree} disabled={fileTreeLoading} className={`text-xs transition-colors disabled:opacity-40 ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`} title="Refresh">
+                    {fileTreeLoading ? '⟳' : '↻'}
+                  </button>
+                </div>
+              </div>
+
+              {/* New file input */}
+              {showNewFileInput && (
+                <div className={`px-2 py-2 border-b ${borderCls} flex-shrink-0 space-y-1`}>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={newFilePath}
+                    onChange={e => setNewFilePath(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleCreateFile();
+                      if (e.key === 'Escape') { setShowNewFileInput(false); setNewFilePath(''); setNewFileError(null); }
+                    }}
+                    placeholder="lib/utils/helper.ts"
+                    className={`w-full px-2 py-1 text-xs rounded border focus:outline-none font-mono ${dark ? 'bg-zinc-800 border-zinc-700 text-zinc-200 placeholder-zinc-600 focus:border-orange-500' : 'bg-white border-zinc-300 text-zinc-800 placeholder-zinc-400 focus:border-orange-500'}`}
+                  />
+                  {newFileError && <p className="text-xs text-red-400">{newFileError}</p>}
+                  <p className={`text-[10px] ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>Enter to create · Esc to cancel</p>
+                </div>
+              )}
+
+              {/* File Tree Content */}
+              <div
+                className="flex-1 overflow-y-auto py-1 min-h-0"
+                onContextMenu={(e) => {
+                  if (e.target === e.currentTarget) openContextMenu(e, 'empty', '');
+                }}
+              >
+                {fileTreeLoading && fileTree.length === 0 && (
+                  <div className={`px-4 py-3 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Loading files...</div>
+                )}
+                {fileTreeError && (
+                  <div className="px-3 py-2 space-y-1">
+                    <p className="text-xs text-red-400">{fileTreeError}</p>
+                    <button onClick={loadFileTree} className="text-xs text-orange-400 underline">Retry</button>
+                  </div>
+                )}
+                {!fileTreeLoading && !fileTreeError && fileTree.length === 0 && (
+                  <div
+                    className={`px-4 py-3 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}
+                    onContextMenu={(e) => openContextMenu(e, 'empty', '')}
+                  >No files found.</div>
+                )}
+                {fileTree.length > 0 && <div className="space-y-0.5 pr-1">{renderTree(fileTree)}</div>}
+              </div>
+
+              {/* Git History (collapsed by default on mobile) */}
+              {showGitPanel && (
+                <>
+                  <div
+                    className={`h-1 flex-shrink-0 cursor-row-resize transition-colors ${dark ? 'hover:bg-zinc-600' : 'hover:bg-zinc-300'} ${gitDragging ? (dark ? 'bg-zinc-600' : 'bg-zinc-300') : 'bg-transparent'}`}
+                    onMouseDown={startGitDrag}
+                    title="Drag to resize git panel"
+                  />
+                  <div
+                    className={`border-t ${borderCls} flex flex-col overflow-hidden flex-shrink-0`}
+                    style={{ height: Math.min(gitPanelHeight, 150) }}
+                  >
+                    <div className={`flex items-center justify-between px-3 py-1.5 border-b ${borderCls} flex-shrink-0`}>
+                      <div className="flex items-center gap-1.5">
+                        <GitCommit className={`w-3 h-3 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`} />
+                        <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Git</span>
+                      </div>
+                      <button
+                        onClick={loadGitLog}
+                        disabled={gitLoading}
+                        className={`transition-colors disabled:opacity-40 ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`}
+                        title="Refresh git log"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${gitLoading ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                      {gitLoading && gitCommits.length === 0 && (
+                        <div className={`px-3 py-2 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Loading...</div>
+                      )}
+                      {gitError && (
+                        <div className="px-3 py-2 space-y-1">
+                          <p className="text-xs text-red-400 break-all">{gitError}</p>
+                          <button onClick={loadGitLog} className="text-xs text-orange-400 underline">Retry</button>
+                        </div>
+                      )}
+                      {!gitLoading && !gitError && gitCommits.length === 0 && (
+                        <div className={`px-3 py-2 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>No commits.</div>
+                      )}
+                      {gitCommits.slice(0, 10).map((commit, i) => (
+                        <div
+                          key={commit.hash}
+                          className={`group flex items-center gap-2 px-3 py-2 text-xs cursor-default transition-colors ${i === 0 ? (dark ? 'bg-orange-500/10' : 'bg-orange-50') : ''} ${dark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
+                        >
+                          <span className={`font-mono flex-shrink-0 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{commit.hash.slice(0, 7)}</span>
+                          <span className={`truncate flex-1 ${dark ? 'text-zinc-300' : 'text-zinc-700'} ${i === 0 ? 'font-medium' : ''}`} title={commit.message}>
+                            {commit.message}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Chat Tab */}
+          {mobileTab === 'chat' && (
+            <div className={`flex-1 flex flex-col overflow-hidden ${panelBg}`}>
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+                {messages.length === 0 && (
+                  <div className={`text-xs text-center py-8 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                    Start a conversation with the AI agent
+                  </div>
+                )}
+                {messages.map(msg => {
+                  const isExpanded = expandedMsgs.has(msg.id);
+                  const hasMore = msg.full && msg.full.length > msg.content.length;
+
+                  if (msg.type === 'user') {
+                    return (
+                      <div key={msg.id} className="flex justify-end">
+                        <div className={`max-w-[85%] rounded-2xl rounded-tr-sm px-3 py-2 text-sm ${dark ? 'bg-zinc-700 text-zinc-100' : 'bg-zinc-200 text-zinc-900'}`}>
+                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                          <p className={`text-xs mt-1 text-right ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{msg.time}</p>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (msg.type === 'ai') {
+                    return (
+                      <div key={msg.id} className="flex justify-start">
+                        <div className={`max-w-[90%] rounded-2xl rounded-tl-sm px-3 py-2 text-sm ${dark ? 'bg-zinc-800 text-zinc-200' : 'bg-zinc-100 text-zinc-800'}`}>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Bot className="w-3 h-3 text-purple-400 flex-shrink-0" />
+                            <span className="text-xs text-purple-400 font-medium">AI</span>
+                          </div>
+                          <p className="whitespace-pre-wrap break-words text-xs font-mono leading-relaxed">{msg.content}</p>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (msg.type === 'tool_call') {
+                    return (
+                      <div key={msg.id} className={`flex items-start gap-2 text-xs ${dark ? 'text-blue-400' : 'text-blue-600'}`}>
+                        <Wrench className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                        <button
+                          onClick={() => hasMore && toggleMsg(msg.id)}
+                          className={`text-left break-all ${hasMore ? 'cursor-pointer hover:opacity-80' : ''}`}
+                        >
+                          {msg.content}
+                          {hasMore && !isExpanded && <span className={`ml-1 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>▸</span>}
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  if (msg.type === 'tool_result') {
+                    const lines = msg.content.split('\n');
+                    const preview = isExpanded ? msg.content : lines.slice(0, 2).join('\n') + (lines.length > 2 ? '...' : '');
+                    return (
+                      <div key={msg.id} className={`text-xs ${dark ? 'text-green-400' : 'text-green-700'}`}>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
+                          <button onClick={() => toggleMsg(msg.id)} className="text-left break-all hover:opacity-80 cursor-pointer">
+                            <span className="font-mono">{preview}</span>
+                            {lines.length > 2 && (
+                              <span className={`ml-1 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>{isExpanded ? '▴' : `▸ +${lines.length - 2}`}</span>
+                            )}
+                          </button>
+                        </div>
+                        {isExpanded && msg.full && (
+                          <pre className={`mt-1 ml-4 p-2 rounded text-xs overflow-x-auto whitespace-pre-wrap max-h-[200px] overflow-y-auto ${dark ? 'bg-zinc-950 border border-zinc-800' : 'bg-white border border-zinc-200'}`}>
+                            {msg.full}
+                          </pre>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  if (msg.type === 'deploy') {
+                    return (
+                      <div key={msg.id} className="flex items-center gap-1.5 text-xs text-yellow-400">
+                        <Play className="w-3 h-3" />
+                        <span>{msg.content}</span>
+                      </div>
+                    );
+                  }
+
+                  if (msg.type === 'error') {
+                    return (
+                      <div key={msg.id} className="flex items-start gap-1.5 text-xs text-red-400">
+                        <XCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                        <span className="break-all">{msg.content}</span>
+                      </div>
+                    );
+                  }
+
+                  if (msg.type === 'status') {
+                    return (
+                      <div key={msg.id} className={`text-xs text-center ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                        {msg.content}
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input area */}
+              <div className={`border-t ${borderCls} p-3 flex-shrink-0 space-y-2`}>
+                {/* Model selector */}
+                <div className="flex items-center gap-2">
+                  <select value={provider} onChange={e => setProvider(e.target.value)} className={`flex-1 text-xs ${selectCls}`}>
+                    {Object.entries(PROVIDERS).map(([key, p]) => (
+                      <option key={key} value={key}>{p.label}</option>
+                    ))}
+                  </select>
+                  <select value={model} onChange={e => setModel(e.target.value)} className={`flex-1 text-xs ${selectCls}`}>
+                    {PROVIDERS[provider]?.models.map(m => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Textarea */}
+                <textarea
+                  ref={textareaRef}
+                  value={prompt}
+                  onChange={e => setPrompt(e.target.value)}
+                  placeholder="Describe what you want to build or modify..."
+                  className={`w-full px-3 py-2 rounded-md text-sm border focus:outline-none resize-none ${inputCls}`}
+                  rows={3}
+                  disabled={isRunning}
+                />
+
+                {/* Buttons */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleExecute}
+                    disabled={isRunning || !prompt.trim()}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md text-sm font-medium bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white transition-colors"
+                  >
+                    {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                    {isRunning ? 'Running...' : 'Send'}
+                  </button>
+                  <button
+                    onClick={handleDeploy}
+                    disabled={isDeploying}
+                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md text-sm font-medium bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white transition-colors"
+                  >
+                    {isDeploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* DESKTOP LAYOUT - Three-panel layout */
+        <div className="flex-1 flex flex-row overflow-hidden min-h-0">
 
         {/* LEFT: File Tree + Git History */}
         {showFileTree && (
@@ -1805,6 +2157,7 @@ export default function DevConsolePage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
