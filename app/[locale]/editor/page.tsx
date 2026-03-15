@@ -483,7 +483,7 @@ export default function EditorPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
-      router.replace(`/${locale}/login`);
+      router.replace(`/${locale}/auth/login`);
       return;
     }
     if (!projectId) {
