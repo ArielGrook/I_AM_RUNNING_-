@@ -297,8 +297,7 @@ export default function DevConsolePage() {
 
   // ── MOBILE ──
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileTab, setMobileTab] = useState<'files' | 'chat'>('chat');
-  const [isPortrait, setIsPortrait] = useState(false);
+  const [mobileDropdown, setMobileDropdown] = useState<'files' | 'git' | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -330,12 +329,11 @@ export default function DevConsolePage() {
     if (stored === 'light') setIsDark(false);
   }, []);
 
-  // Mobile and portrait detection
+  // Mobile detection
   useEffect(() => {
     const check = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      setIsPortrait(mobile && window.innerHeight > window.innerWidth);
     };
     check();
     window.addEventListener('resize', check);
@@ -832,6 +830,10 @@ export default function DevConsolePage() {
     }
   };
 
+  const toggleDropdown = (panel: 'files' | 'git') => {
+    setMobileDropdown(prev => prev === panel ? null : panel);
+  };
+
   const handleContextCreate = async () => {
     const name = contextCreateName.trim();
     if (!name) return;
@@ -945,10 +947,10 @@ export default function DevConsolePage() {
   const handleFileClick = (node: TreeNode) => {
     if (node.type === 'dir') { toggleFolder(node.path); return; }
     
-    // Mobile: insert path into chat and switch to chat tab
+    // Mobile: insert path into chat and close dropdown
     if (isMobile) {
       insertPathIntoPrompt(node.path);
-      setMobileTab('chat');
+      setMobileDropdown(null);
       return;
     }
     
@@ -1057,64 +1059,60 @@ export default function DevConsolePage() {
 
   return (
     <div className={`h-[100dvh] overflow-hidden flex flex-col ${bg}`}>
-      {/* Portrait warning on mobile */}
-      {isPortrait && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500 text-black text-center text-sm py-2 font-medium">
-          Rotate to landscape for best experience
-        </div>
-      )}
-
       {/* Header */}
       <header className={`border-b ${borderCls} px-4 py-2 flex items-center justify-between flex-shrink-0`}>
         <div className="flex items-center gap-2">
           <button onClick={() => router.push(`/${locale}/admin`)} className={`${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'} transition-colors`}>
-            <ChevronLeft className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+            <ChevronLeft className="w-5 h-5" />
           </button>
           {!isMobile && <Terminal className="w-4 h-4 text-orange-500" />}
           <h1 className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold`}>Dev Console</h1>
         </div>
 
-        {/* Mobile: Tab buttons */}
-        {isMobile && (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setMobileTab('files')}
-              className={`px-3 py-1.5 text-lg transition-colors relative ${mobileTab === 'files' ? 'text-orange-500' : (dark ? 'text-zinc-500' : 'text-zinc-400')}`}
-            >
-              📁
-              {mobileTab === 'files' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />}
-            </button>
-            <button
-              onClick={() => setMobileTab('chat')}
-              className={`px-3 py-1.5 text-lg transition-colors relative ${mobileTab === 'chat' ? 'text-orange-500' : (dark ? 'text-zinc-500' : 'text-zinc-400')}`}
-            >
-              💬
-              {mobileTab === 'chat' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />}
-            </button>
-          </div>
-        )}
-
         <div className="flex items-center gap-2">
-          {!isMobile && tokens && (
-            <div className={`flex items-center gap-1 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
-              <DollarSign className="w-3 h-3" />
-              <span>{tokens.input.toLocaleString()} / {tokens.output.toLocaleString()}</span>
-            </div>
-          )}
-          {!isMobile && (
-            <button
-              onClick={() => setShowFileTree(p => !p)}
-              className={`px-2.5 py-1 rounded text-sm font-medium transition-colors ${showFileTree ? 'bg-orange-500 text-white' : (dark ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200')}`}
-              title="Toggle file tree"
-            >📁</button>
-          )}
-          <button onClick={toggleTheme} className={`p-1.5 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} title={dark ? 'Switch to light' : 'Switch to dark'}>
-            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-          {!isMobile && (
-            <button onClick={() => setShowSettings(true)} className={`p-1.5 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}>
-              <Settings className="w-4 h-4" />
-            </button>
+          {isMobile ? (
+            <>
+              <button
+                onClick={() => toggleDropdown('files')}
+                className={`p-2 rounded transition-colors ${mobileDropdown === 'files' ? 'bg-orange-500 text-white' : (dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900')}`}
+                title="Files"
+              >
+                📁
+              </button>
+              <button
+                onClick={() => toggleDropdown('git')}
+                className={`p-2 rounded transition-colors ${mobileDropdown === 'git' ? 'bg-orange-500 text-white' : (dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900')}`}
+                title="Git History"
+              >
+                📜
+              </button>
+              <button onClick={toggleTheme} className={`p-2 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} title={dark ? 'Switch to light' : 'Switch to dark'}>
+                {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+              <button onClick={() => setShowSettings(true)} className={`p-2 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}>
+                <Settings className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              {tokens && (
+                <div className={`flex items-center gap-1 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                  <DollarSign className="w-3 h-3" />
+                  <span>{tokens.input.toLocaleString()} / {tokens.output.toLocaleString()}</span>
+                </div>
+              )}
+              <button
+                onClick={() => setShowFileTree(p => !p)}
+                className={`px-2.5 py-1 rounded text-sm font-medium transition-colors ${showFileTree ? 'bg-orange-500 text-white' : (dark ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200')}`}
+                title="Toggle file tree"
+              >📁</button>
+              <button onClick={toggleTheme} className={`p-1.5 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`} title={dark ? 'Switch to light' : 'Switch to dark'}>
+                {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+              <button onClick={() => setShowSettings(true)} className={`p-1.5 rounded transition-colors ${dark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900'}`}>
+                <Settings className="w-4 h-4" />
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -1166,7 +1164,7 @@ export default function DevConsolePage() {
       {showDiscardModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowDiscardModal(false)} />
-          <div className={`relative rounded-xl p-6 w-80 shadow-2xl ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
+          <div className={`relative rounded-xl p-6 shadow-2xl ${isMobile ? 'w-[calc(100%-32px)] max-w-sm' : 'w-80'} ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
             <h3 className="text-sm font-semibold mb-2">Unsaved changes</h3>
             <p className={`text-xs mb-5 ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>
               You have unsaved changes. Do you want to discard them?
@@ -1193,7 +1191,7 @@ export default function DevConsolePage() {
       {showDeleteConfirm && selectedFile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowDeleteConfirm(false)} />
-          <div className={`relative rounded-xl p-6 w-80 shadow-2xl ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
+          <div className={`relative rounded-xl p-6 shadow-2xl ${isMobile ? 'w-[calc(100%-32px)] max-w-sm' : 'w-80'} ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
             <h3 className="text-sm font-semibold mb-2">Delete file?</h3>
             <p className={`text-xs mb-1 font-mono ${dark ? 'text-zinc-300' : 'text-zinc-700'}`}>{selectedFile}</p>
             <p className={`text-xs mb-5 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>This action cannot be undone.</p>
@@ -1343,7 +1341,7 @@ export default function DevConsolePage() {
       {showContextCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowContextCreateModal(false)} />
-          <div className={`relative rounded-xl p-6 w-80 shadow-2xl ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
+          <div className={`relative rounded-xl p-6 shadow-2xl ${isMobile ? 'w-[calc(100%-32px)] max-w-sm' : 'w-80'} ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
             <h3 className="text-sm font-semibold mb-1">
               {contextCreateType === 'file' ? '📄 New File' : '📁 New Folder'}
             </h3>
@@ -1388,7 +1386,7 @@ export default function DevConsolePage() {
       {showDeleteFolderConfirm && deleteFolderPath && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => { setShowDeleteFolderConfirm(false); setDeleteFolderError(null); }} />
-          <div className={`relative rounded-xl p-6 w-80 shadow-2xl ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
+          <div className={`relative rounded-xl p-6 shadow-2xl ${isMobile ? 'w-[calc(100%-32px)] max-w-sm' : 'w-80'} ${dark ? 'bg-zinc-900 border border-zinc-700' : 'bg-white border border-zinc-200'}`}>
             <h3 className="text-sm font-semibold mb-2">Delete folder?</h3>
             <p className={`text-xs mb-1 font-mono ${dark ? 'text-zinc-300' : 'text-zinc-700'}`}>{deleteFolderPath}</p>
             <p className={`text-xs mb-1 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Only empty folders can be deleted.</p>
@@ -1444,12 +1442,27 @@ export default function DevConsolePage() {
         </div>
       )}
 
-      {/* MOBILE LAYOUT */}
+      {/* MOBILE LAYOUT - Portrait with dropdown panels */}
       {isMobile ? (
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-          {/* Files Tab */}
-          {mobileTab === 'files' && (
-            <div className={`flex-1 flex flex-col overflow-hidden ${panelBg}`}>
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
+          {/* Backdrop when dropdown is open */}
+          {mobileDropdown && (
+            <div
+              className="absolute inset-0 bg-black/30 z-10"
+              onClick={() => setMobileDropdown(null)}
+            />
+          )}
+
+          {/* Dropdown Panels */}
+          <div
+            className={`${panelBg} border-b ${borderCls} overflow-hidden transition-all duration-200 ease-out flex-shrink-0 relative z-20`}
+            style={{
+              maxHeight: mobileDropdown ? '50vh' : '0',
+              overflowY: mobileDropdown ? 'auto' : 'hidden'
+            }}
+          >
+            {mobileDropdown === 'files' && (
+              <div className="flex flex-col">
               {/* File Tree Header */}
               <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
                 <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Files</span>
@@ -1512,66 +1525,64 @@ export default function DevConsolePage() {
                 {fileTree.length > 0 && <div className="space-y-0.5 pr-1">{renderTree(fileTree)}</div>}
               </div>
 
-              {/* Git History (collapsed by default on mobile) */}
-              {showGitPanel && (
-                <>
-                  <div
-                    className={`h-1 flex-shrink-0 cursor-row-resize transition-colors ${dark ? 'hover:bg-zinc-600' : 'hover:bg-zinc-300'} ${gitDragging ? (dark ? 'bg-zinc-600' : 'bg-zinc-300') : 'bg-transparent'}`}
-                    onMouseDown={startGitDrag}
-                    title="Drag to resize git panel"
-                  />
-                  <div
-                    className={`border-t ${borderCls} flex flex-col overflow-hidden flex-shrink-0`}
-                    style={{ height: Math.min(gitPanelHeight, 150) }}
+              </div>
+            )}
+
+            {mobileDropdown === 'git' && (
+              <div className="flex flex-col">
+                <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
+                  <div className="flex items-center gap-1.5">
+                    <GitCommit className={`w-3 h-3 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`} />
+                    <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Git History</span>
+                  </div>
+                  <button
+                    onClick={loadGitLog}
+                    disabled={gitLoading}
+                    className={`transition-colors disabled:opacity-40 ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`}
+                    title="Refresh git log"
                   >
-                    <div className={`flex items-center justify-between px-3 py-1.5 border-b ${borderCls} flex-shrink-0`}>
-                      <div className="flex items-center gap-1.5">
-                        <GitCommit className={`w-3 h-3 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`} />
-                        <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Git</span>
-                      </div>
+                    <RefreshCw className={`w-3 h-3 ${gitLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+                <div className="py-1">
+                  {gitLoading && gitCommits.length === 0 && (
+                    <div className={`px-3 py-2 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Loading...</div>
+                  )}
+                  {gitError && (
+                    <div className="px-3 py-2 space-y-1">
+                      <p className="text-xs text-red-400 break-all">{gitError}</p>
+                      <button onClick={loadGitLog} className="text-xs text-orange-400 underline">Retry</button>
+                    </div>
+                  )}
+                  {!gitLoading && !gitError && gitCommits.length === 0 && (
+                    <div className={`px-3 py-2 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>No commits.</div>
+                  )}
+                  {gitCommits.map((commit, i) => (
+                    <div
+                      key={commit.hash}
+                      className={`group flex items-center gap-2 px-3 py-2 text-sm transition-colors ${i === 0 ? (dark ? 'bg-orange-500/10' : 'bg-orange-50') : ''} ${dark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
+                      style={{ minHeight: '44px' }}
+                    >
+                      <span className={`font-mono flex-shrink-0 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{commit.hash.slice(0, 7)}</span>
+                      <span className={`truncate flex-1 text-xs ${dark ? 'text-zinc-300' : 'text-zinc-700'} ${i === 0 ? 'font-medium' : ''}`} title={commit.message}>
+                        {commit.message}
+                      </span>
                       <button
-                        onClick={loadGitLog}
-                        disabled={gitLoading}
-                        className={`transition-colors disabled:opacity-40 ${dark ? 'text-zinc-500 hover:text-orange-400' : 'text-zinc-400 hover:text-orange-500'}`}
-                        title="Refresh git log"
+                        onClick={() => setRollbackTarget(commit)}
+                        className={`flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] px-2 py-1 rounded ${dark ? 'bg-zinc-700 hover:bg-red-900 text-zinc-300 hover:text-red-300' : 'bg-zinc-200 hover:bg-red-100 text-zinc-600 hover:text-red-600'}`}
+                        title={`Rollback to ${commit.hash}`}
                       >
-                        <RefreshCw className={`w-3 h-3 ${gitLoading ? 'animate-spin' : ''}`} />
+                        ↩
                       </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto min-h-0">
-                      {gitLoading && gitCommits.length === 0 && (
-                        <div className={`px-3 py-2 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Loading...</div>
-                      )}
-                      {gitError && (
-                        <div className="px-3 py-2 space-y-1">
-                          <p className="text-xs text-red-400 break-all">{gitError}</p>
-                          <button onClick={loadGitLog} className="text-xs text-orange-400 underline">Retry</button>
-                        </div>
-                      )}
-                      {!gitLoading && !gitError && gitCommits.length === 0 && (
-                        <div className={`px-3 py-2 text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>No commits.</div>
-                      )}
-                      {gitCommits.slice(0, 10).map((commit, i) => (
-                        <div
-                          key={commit.hash}
-                          className={`group flex items-center gap-2 px-3 py-2 text-xs cursor-default transition-colors ${i === 0 ? (dark ? 'bg-orange-500/10' : 'bg-orange-50') : ''} ${dark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}
-                        >
-                          <span className={`font-mono flex-shrink-0 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{commit.hash.slice(0, 7)}</span>
-                          <span className={`truncate flex-1 ${dark ? 'text-zinc-300' : 'text-zinc-700'} ${i === 0 ? 'font-medium' : ''}`} title={commit.message}>
-                            {commit.message}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
-          {/* Chat Tab */}
-          {mobileTab === 'chat' && (
-            <div className={`flex-1 flex flex-col overflow-hidden ${panelBg}`}>
+          {/* Chat Area - Always visible */}
+          <div className={`flex-1 flex flex-col overflow-hidden ${panelBg} relative z-0`}>
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
                 {messages.length === 0 && (
@@ -1677,54 +1688,77 @@ export default function DevConsolePage() {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Input area */}
-              <div className={`border-t ${borderCls} p-3 flex-shrink-0 space-y-2`}>
-                {/* Model selector */}
-                <div className="flex items-center gap-2">
-                  <select value={provider} onChange={e => setProvider(e.target.value)} className={`flex-1 text-xs ${selectCls}`}>
-                    {Object.entries(PROVIDERS).map(([key, p]) => (
-                      <option key={key} value={key}>{p.label}</option>
-                    ))}
-                  </select>
-                  <select value={model} onChange={e => setModel(e.target.value)} className={`flex-1 text-xs ${selectCls}`}>
-                    {PROVIDERS[provider]?.models.map(m => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Textarea */}
+            {/* Input area - Always at bottom */}
+            <div className={`border-t ${borderCls} p-3 flex-shrink-0 space-y-2`}>
+              {/* Row 1: Model selector + Textarea */}
+              <div className="flex items-start gap-2">
+                <select
+                  value={`${provider}:${model}`}
+                  onChange={e => {
+                    const [newProvider, newModel] = e.target.value.split(':');
+                    setProvider(newProvider);
+                    setModel(newModel);
+                  }}
+                  className={`flex-shrink-0 text-xs ${selectCls}`}
+                  style={{ minHeight: '44px' }}
+                >
+                  {Object.entries(PROVIDERS).map(([providerKey, providerData]) =>
+                    providerData.models.map(m => (
+                      <option key={`${providerKey}:${m.value}`} value={`${providerKey}:${m.value}`}>
+                        {providerData.label} - {m.label}
+                      </option>
+                    ))
+                  )}
+                </select>
                 <textarea
                   ref={textareaRef}
                   value={prompt}
                   onChange={e => setPrompt(e.target.value)}
-                  placeholder="Describe what you want to build or modify..."
-                  className={`w-full px-3 py-2 rounded-md text-sm border focus:outline-none resize-none ${inputCls}`}
-                  rows={3}
+                  placeholder="Enter prompt..."
+                  className={`flex-1 px-3 py-2 rounded-md text-sm border focus:outline-none resize-none ${inputCls}`}
+                  rows={1}
+                  style={{ minHeight: '44px', maxHeight: '132px' }}
                   disabled={isRunning}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = '44px';
+                    target.style.height = Math.min(target.scrollHeight, 132) + 'px';
+                  }}
                 />
+              </div>
 
-                {/* Buttons */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleExecute}
-                    disabled={isRunning || !prompt.trim()}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md text-sm font-medium bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white transition-colors"
-                  >
-                    {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                    {isRunning ? 'Running...' : 'Send'}
-                  </button>
-                  <button
-                    onClick={handleDeploy}
-                    disabled={isDeploying}
-                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md text-sm font-medium bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white transition-colors"
-                  >
-                    {isDeploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  </button>
-                </div>
+              {/* Row 2: Action Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExecute}
+                  disabled={isRunning || !prompt.trim()}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 rounded-md text-sm font-medium bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white transition-colors"
+                  style={{ minHeight: '48px' }}
+                >
+                  {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                  {isRunning ? 'Running...' : 'Send'}
+                </button>
+                <button
+                  onClick={handleDeploy}
+                  disabled={isDeploying}
+                  className="flex items-center justify-center gap-1.5 px-3 rounded-md text-sm font-medium bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white transition-colors"
+                  style={{ minHeight: '48px' }}
+                  title="Deploy"
+                >
+                  {isDeploying ? <Loader2 className="w-4 h-4 animate-spin" /> : '🚀'}
+                </button>
+                <button
+                  onClick={handleRollback}
+                  disabled={isRollingBack}
+                  className="flex items-center justify-center gap-1.5 px-3 rounded-md text-sm font-medium bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white transition-colors"
+                  style={{ minHeight: '48px' }}
+                  title="Rollback"
+                >
+                  {isRollingBack ? <Loader2 className="w-4 h-4 animate-spin" /> : '↩️'}
+                </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       ) : (
         /* DESKTOP LAYOUT - Three-panel layout */
