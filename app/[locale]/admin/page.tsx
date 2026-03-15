@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -79,7 +79,6 @@ export default function AdminPage() {
   const [realtimeChannel, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
 
   // Mobile
-  const containerRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
 
@@ -117,13 +116,10 @@ export default function AdminPage() {
 
   // Mobile detection
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const check = () => setIsMobile(el.getBoundingClientRect().width < 768);
+    const check = () => setIsMobile(window.innerWidth < 768);
     check();
-    const observer = new ResizeObserver(([e]) => setIsMobile(e.contentRect.width < 768));
-    observer.observe(el);
-    return () => observer.disconnect();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
   const handleLogin = async () => {
@@ -293,7 +289,6 @@ export default function AdminPage() {
   if (!isAuthenticated) {
     return (
       <div
-        ref={containerRef}
         className="flex items-center justify-center min-h-screen bg-gray-100"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
@@ -328,7 +323,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="bg-white border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
