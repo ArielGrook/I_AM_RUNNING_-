@@ -1198,6 +1198,7 @@ export default function EditorPage() {
                       minHeight: '100vh',
                       display: 'flex',
                       flexDirection: 'column',
+                      paddingBottom: '120px',
                     }}
                   >
                   </Element>
