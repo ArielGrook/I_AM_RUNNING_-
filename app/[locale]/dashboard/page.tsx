@@ -95,7 +95,20 @@ export default function DashboardPage() {
         user_id: uid,
         name: `New project ${new Date().toLocaleDateString()}`,
         description: '',
-        data: { pages: [{ component: '', styles: [] }] },
+        data: {
+        craft: {
+          schemaVersion: 2,
+          pages: [{
+            id: 'page-1',
+            name: 'Home',
+            slug: 'home',
+            data: null,
+            desktopData: null,
+            mobileData: null,
+          }],
+          activePageId: 'page-1',
+        }
+      },
       })
       .select('id')
       .single();
