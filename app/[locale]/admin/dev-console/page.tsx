@@ -270,14 +270,18 @@ export default function DevConsolePage() {
   // Context menu dismiss: click outside, Escape, scroll
   useEffect(() => {
     if (!contextMenu) return;
-    const dismiss = () => setContextMenu(null);
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') dismiss(); };
-    document.addEventListener('mousedown', dismiss);
-    document.addEventListener('scroll', dismiss, true);
+    const handler = (e: MouseEvent) => {
+      const menu = document.getElementById('context-menu');
+      if (menu && menu.contains(e.target as Node)) return;
+      setContextMenu(null);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setContextMenu(null); };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('scroll', () => setContextMenu(null), true);
     document.addEventListener('keydown', onKey);
     return () => {
-      document.removeEventListener('mousedown', dismiss);
-      document.removeEventListener('scroll', dismiss, true);
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('scroll', () => setContextMenu(null), true);
       document.removeEventListener('keydown', onKey);
     };
   }, [contextMenu]);
@@ -995,9 +999,9 @@ export default function DevConsolePage() {
       {/* Context Menu */}
       {contextMenu && (
         <div
+          id="context-menu"
           className={`fixed z-[9999] rounded-lg py-1 min-w-[180px] shadow-2xl border ${dark ? 'bg-zinc-800 border-zinc-700 text-zinc-100' : 'bg-white border-zinc-200 text-zinc-900'}`}
           style={{ top: contextMenu.y, left: contextMenu.x }}
-          onMouseDown={e => e.stopPropagation()}
         >
           {contextMenu.type === 'file' && (<>
             <button
