@@ -3,6 +3,7 @@ export { HeroTron, HeroTronHeading, HeroTronSubheading, HeroTronButton } from '.
 export { HeaderTron } from './HeaderTron';
 export { TronFeatures, FeatureCard } from './TronFeatures';
 export { TronStats, StatItem } from './TronStats';
+export { TronAbout } from './TronAbout';
 export { TronPortfolio } from './TronPortfolio';
 export { TronTestimonials, TestimonialCard } from './TronTestimonials';
 export { TronPricing, PricingCard } from './TronPricing';
