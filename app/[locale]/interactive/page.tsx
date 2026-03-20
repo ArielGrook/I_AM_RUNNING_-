@@ -1,8 +1,33 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { Editor, Frame, Element, useEditor } from '@craftjs/core';
+import lz from 'lzutf8';
+import { createSupabaseClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { buildElementsFromContract, InteractiveContract } from '@/lib/craft/assembler';
+
+// Import all resolver components (same as editor)
+import {
+  Container,
+  HeroTron, HeroTronHeading, HeroTronSubheading, HeroTronButton,
+  HeaderTron, TronFeatures, FeatureCard, TronStats, TronAbout, StatItem,
+  TronPortfolio, TronTestimonials, TestimonialCard, TronPricing, PricingCard,
+  TronFAQ, FAQItem, TronFooter, FooterColumn, TronContact, TronShowcase,
+  TronLogin, TronRegister, TronHub, HtmlBlock,
+} from '@/lib/craft/components';
+import { ThemeProvider } from '@/lib/craft/context/ThemeContext';
+import { SiteContext } from '@/lib/craft/context/SiteContext';
+
+const resolver = {
+  Container, HeroTron, HeroTronHeading, HeroTronSubheading, HeroTronButton,
+  HeaderTron, TronFeatures, FeatureCard, TronStats, TronAbout, StatItem,
+  TronPortfolio, TronTestimonials, TestimonialCard, TronPricing, PricingCard,
+  TronFAQ, FAQItem, TronFooter, FooterColumn, TronContact, TronShowcase,
+  TronLogin, TronRegister, TronHub, HtmlBlock,
+};
 
 // ── Types ──────────────────────────────────────────
 interface ContractState {
@@ -45,7 +70,7 @@ const BLOCKS = [
   { id: 'header', label: 'Header', emoji: '🔝', required: true },
   { id: 'hero', label: 'Hero', emoji: '🎯', required: true },
   { id: 'about', label: 'About', emoji: 'ℹ️' },
-  { id: 'services', label: 'Services', emoji: '⚙️', disabled: true, disabledReason: 'Coming soon' },
+  { id: 'services', label: 'Services', emoji: '⚙️' },
   { id: 'features', label: 'Features', emoji: '✨' },
   { id: 'portfolio', label: 'Portfolio', emoji: '🖼️' },
   { id: 'stats', label: 'Stats', emoji: '📊' },
@@ -56,74 +81,76 @@ const BLOCKS = [
   { id: 'footer', label: 'Footer', emoji: '🔚', required: true },
 ];
 
-// ── Preview Component ──────────────────────────────
-function SitePreview({ craftJson, onClose, onEdit }: { craftJson: string; onClose: () => void; onEdit: () => void }) {
-  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+// ── Assembler component that runs inside Craft.js Editor ──
+function AssemblerInner({ contract, onAssembled }: { contract: InteractiveContract; onAssembled: (json: string) => void }) {
+  const { query, actions } = useEditor();
+  const assembled = useRef(false);
 
-  // Store craftJson in sessionStorage for preview page to read
   useEffect(() => {
-    if (craftJson) {
-      sessionStorage.setItem('iam_preview_craft_json', craftJson);
-    }
-  }, [craftJson]);
+    if (assembled.current) return;
+    assembled.current = true;
+
+    // Small delay to let Craft.js initialize
+    setTimeout(() => {
+      try {
+        const elements = buildElementsFromContract(contract);
+        const ROOT_ID = 'ROOT';
+
+        // Clear existing nodes
+        const state = query.getState();
+        const rootNode = state?.nodes?.[ROOT_ID];
+        const childIds = (rootNode?.data?.nodes ?? []) as string[];
+        [...childIds].reverse().forEach((id) => actions.delete(id));
+
+        // Add new elements
+        elements.forEach((element, index) => {
+          const tree = query.parseReactElement(element).toNodeTree();
+          actions.addNodeTree(tree, ROOT_ID, index);
+        });
+
+        // Serialize after a frame
+        requestAnimationFrame(() => {
+          const json = query.serialize();
+          onAssembled(json);
+        });
+      } catch (err) {
+        console.error('Assembly failed:', err);
+      }
+    }, 200);
+  }, [contract, query, actions, onAssembled]);
+
+  return null;
+}
+
+// ── Preview component ──
+function PreviewFrame({ craftJson, style }: { craftJson: string; style: string }) {
+  const colorScheme = style === 'light' || style === 'minimal' ? 'light' : 'dark';
+  const siteContextValue = {
+    navigateToPage: () => {},
+    toggleTheme: () => {},
+    colorScheme,
+  };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: '#000',
-      display: 'flex', flexDirection: 'column',
-    }}>
-      {/* Top bar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 16px', background: '#111', borderBottom: '1px solid #222',
-        flexShrink: 0,
-      }}>
-        <button
-          onClick={onClose}
-          style={{
-            background: 'none', border: 'none', color: '#999', fontSize: 14,
-            cursor: 'pointer', padding: '6px 12px',
-          }}
-        >
-          ← Back
-        </button>
-        <span style={{ color: '#666', fontSize: 13 }}>Preview</span>
-        <button
-          onClick={onEdit}
-          style={{
-            padding: '8px 20px', borderRadius: 8, border: 'none',
-            background: 'linear-gradient(135deg, #FF4500, #FF6B35)',
-            color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-          }}
-        >
-          ✏️ Edit in Editor
-        </button>
-      </div>
-
-      {/* Preview iframe */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        <iframe
-          ref={iframeRef}
-          src="/api/preview"
-          style={{
-            width: '100%', height: '100%', border: 'none',
-          }}
-        />
-      </div>
-    </div>
+    <ThemeProvider initialAccent="#FF6B35" initialScheme={colorScheme}>
+      <SiteContext.Provider value={siteContextValue}>
+        <Editor resolver={resolver} enabled={false}>
+          <Frame data={craftJson}>
+            <Element is={Container} canvas />
+          </Frame>
+        </Editor>
+      </SiteContext.Provider>
+    </ThemeProvider>
   );
 }
 
-// ── Main Component ──────────────────────────────────
+// ── Main component ──────────────────────────────────────
 export default function InteractivePage() {
   const router = useRouter();
   const locale = useLocale();
+  const { user, isAuthenticated } = useAuth();
   const [isPortrait, setIsPortrait] = useState(false);
   const [dismissedRotate, setDismissedRotate] = useState(false);
-  const [assembling, setAssembling] = useState(false);
-  const [previewData, setPreviewData] = useState<{ craftJson: string; projectId: string | null } | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const [contract, setContract] = useState<ContractState>({
     businessType: null,
@@ -132,6 +159,12 @@ export default function InteractivePage() {
     companyName: '',
     step: 1,
   });
+
+  // Preview state
+  const [showPreview, setShowPreview] = useState(false);
+  const [craftJson, setCraftJson] = useState<string | null>(null);
+  const [assembling, setAssembling] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const check = () => {
@@ -156,49 +189,27 @@ export default function InteractivePage() {
     }
   };
 
-  const handleAssemble = async () => {
-    setAssembling(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/projects/assemble', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessType: contract.businessType,
-          style: contract.style,
-          blocks: contract.blocks,
-          companyName: contract.companyName,
-        }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        setError(data.error);
-        return;
-      }
-
-      if (data.projectId) {
-        // Authenticated — go to editor
-        router.push(`/${locale}/editor?id=${data.projectId}`);
-      } else {
-        // Anonymous — show preview
-        setPreviewData({ craftJson: data.craftJson, projectId: null });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assemble');
-    } finally {
-      setAssembling(false);
-    }
-  };
+  const handleAssembled = useCallback((json: string) => {
+    setCraftJson(json);
+    setAssembling(false);
+    setShowPreview(true);
+  }, []);
 
   const handleNext = () => {
     if (contract.step < totalSteps) {
       setContract(prev => ({ ...prev, step: prev.step + 1 }));
     } else {
-      handleAssemble();
+      // Start assembling
+      setAssembling(true);
     }
   };
 
   const handleBack = () => {
+    if (showPreview) {
+      setShowPreview(false);
+      setCraftJson(null);
+      return;
+    }
     if (contract.step > 1) {
       setContract(prev => ({ ...prev, step: prev.step - 1 }));
     } else {
@@ -206,9 +217,63 @@ export default function InteractivePage() {
     }
   };
 
+  const handleSaveProject = async () => {
+    if (!craftJson) return;
+    setSaving(true);
+
+    const compressed = lz.compress(craftJson, { outputEncoding: 'Base64' });
+
+    const projectData = {
+      name: contract.companyName,
+      description: `${contract.businessType} - ${contract.style}`,
+      source: 'interactive' as const,
+      data: {
+        craft: {
+          schemaVersion: 2,
+          pages: [{
+            id: 'page-1',
+            name: 'Home',
+            slug: 'home',
+            data: null,
+            desktopData: compressed,
+            mobileData: null,
+          }],
+          activePageId: 'page-1',
+        },
+      },
+    };
+
+    if (isAuthenticated && user) {
+      // Save to Supabase
+      const supabase = createSupabaseClient();
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({ ...projectData, user_id: user.id })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Failed to save:', error);
+        alert('Failed to save project. Please try again.');
+        setSaving(false);
+        return;
+      }
+
+      router.push(`/${locale}/editor?id=${data.id}`);
+    } else {
+      // Save to localStorage for after registration
+      localStorage.setItem('iam_interactive_contract', JSON.stringify({
+        ...contract,
+        craftJson: compressed,
+        createdAt: new Date().toISOString(),
+      }));
+      router.push(`/${locale}/auth/signup?redirect=/${locale}/dashboard&from=interactive`);
+    }
+  };
+
   const toggleBlock = (id: string) => {
     const block = BLOCKS.find(b => b.id === id);
-    if (block?.required || block?.disabled) return;
+    if (block?.required) return;
     setContract(prev => ({
       ...prev,
       blocks: prev.blocks.includes(id)
@@ -217,27 +282,7 @@ export default function InteractivePage() {
     }));
   };
 
-  // Preview mode
-  if (previewData) {
-    return (
-      <SitePreview
-        craftJson={previewData.craftJson}
-        onClose={() => setPreviewData(null)}
-        onEdit={() => {
-          // Save contract and redirect to auth
-          localStorage.setItem('iam_interactive_contract', JSON.stringify({
-            businessType: contract.businessType,
-            style: contract.style,
-            blocks: contract.blocks,
-            companyName: contract.companyName,
-          }));
-          router.push(`/${locale}/auth/signup?redirect=/${locale}/dashboard`);
-        }}
-      />
-    );
-  }
-
-  // Portrait overlay
+  // ── Portrait overlay ──
   if (isPortrait && !dismissedRotate) {
     return (
       <div style={{
@@ -249,14 +294,13 @@ export default function InteractivePage() {
         <div style={{ fontSize: 64, marginBottom: 24 }}>📱↻</div>
         <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12 }}>Rotate to Landscape</h2>
         <p style={{ fontSize: 16, opacity: 0.9, marginBottom: 32, maxWidth: 300 }}>
-          For the best experience, please rotate your device
+          For the best experience, please rotate your device to landscape mode
         </p>
         <button
           onClick={() => setDismissedRotate(true)}
           style={{
             padding: '12px 32px', borderRadius: 100, border: '2px solid rgba(255,255,255,0.3)',
-            background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 15, fontWeight: 600,
-            cursor: 'pointer',
+            background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer',
           }}
         >
           Continue anyway
@@ -265,6 +309,79 @@ export default function InteractivePage() {
     );
   }
 
+  // ── Assembling state: hidden Craft.js editor that builds the JSON ──
+  if (assembling && !craftJson) {
+    const interactiveContract: InteractiveContract = {
+      businessType: contract.businessType!,
+      style: contract.style!,
+      blocks: contract.blocks,
+      companyName: contract.companyName,
+    };
+
+    return (
+      <div style={{ minHeight: '100dvh', background: '#0a0a0a', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 24, animation: 'spin 2s linear infinite' }}>🚀</div>
+        <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Building your website...</h2>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15 }}>Assembling {contract.blocks.length} sections</p>
+
+        {/* Hidden Craft.js editor for assembly */}
+        <div style={{ position: 'absolute', left: -9999, top: -9999, width: 1, height: 1, overflow: 'hidden' }}>
+          <ThemeProvider initialAccent="#FF6B35" initialScheme={contract.style === 'light' ? 'light' : 'dark'}>
+            <Editor resolver={resolver} enabled={true}>
+              <AssemblerInner contract={interactiveContract} onAssembled={handleAssembled} />
+              <Frame>
+                <Element is={Container} canvas />
+              </Frame>
+            </Editor>
+          </ThemeProvider>
+        </div>
+
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  // ── Preview mode ──
+  if (showPreview && craftJson) {
+    return (
+      <div style={{ minHeight: '100dvh', background: '#0a0a0a', color: '#fff', display: 'flex', flexDirection: 'column' }}>
+        {/* Preview header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)',
+          flexShrink: 0, background: '#111',
+        }}>
+          <button onClick={handleBack} style={{
+            background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)',
+            fontSize: 14, cursor: 'pointer',
+          }}>
+            ← Back to edit
+          </button>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#FF6B35' }}>
+            Preview: {contract.companyName}
+          </span>
+          <button
+            onClick={handleSaveProject}
+            disabled={saving}
+            style={{
+              padding: '8px 24px', borderRadius: 100, border: 'none',
+              background: saving ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #FF4500, #FF6B35)',
+              color: '#fff', fontSize: 14, fontWeight: 700, cursor: saving ? 'default' : 'pointer',
+            }}
+          >
+            {saving ? 'Saving...' : isAuthenticated ? '💾 Save & Edit' : '🔐 Sign up to save'}
+          </button>
+        </div>
+
+        {/* Preview content — full screen scrollable */}
+        <div style={{ flex: 1, overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <PreviewFrame craftJson={craftJson} style={contract.style || 'dark'} />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Wizard steps ──
   return (
     <div style={{
       minHeight: '100dvh', background: '#0a0a0a', color: '#fff',
@@ -277,7 +394,7 @@ export default function InteractivePage() {
       }}>
         <button onClick={handleBack} style={{
           background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)',
-          fontSize: 14, cursor: 'pointer',
+          fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
         }}>
           ← {contract.step === 1 ? 'Home' : 'Back'}
         </button>
@@ -296,17 +413,9 @@ export default function InteractivePage() {
         }} />
       </div>
 
-      {/* Error */}
-      {error && (
-        <div style={{ padding: '12px 20px', background: 'rgba(239,68,68,0.15)', color: '#f87171', fontSize: 14, textAlign: 'center' }}>
-          {error}
-        </div>
-      )}
-
       {/* Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', overflow: 'auto' }}>
 
-        {/* Step 1: Business Type */}
         {contract.step === 1 && (
           <div style={{ width: '100%', maxWidth: 800, textAlign: 'center' }}>
             <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>What&apos;s your business?</h1>
@@ -315,13 +424,12 @@ export default function InteractivePage() {
               {BUSINESS_TYPES.map(bt => (
                 <button key={bt.id} onClick={() => setContract(prev => ({ ...prev, businessType: bt.id }))}
                   style={{
-                    padding: '16px 12px', borderRadius: 12, cursor: 'pointer',
+                    padding: '16px 12px', borderRadius: 12,
                     border: contract.businessType === bt.id ? '2px solid #FF6B35' : '1px solid rgba(255,255,255,0.1)',
                     background: contract.businessType === bt.id ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.03)',
-                    color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                    color: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
                     transition: 'all 0.15s ease', fontSize: 13, fontWeight: 500,
-                  }}
-                >
+                  }}>
                   <span style={{ fontSize: 28 }}>{bt.emoji}</span>
                   {bt.label}
                 </button>
@@ -330,7 +438,6 @@ export default function InteractivePage() {
           </div>
         )}
 
-        {/* Step 2: Style */}
         {contract.step === 2 && (
           <div style={{ width: '100%', maxWidth: 600, textAlign: 'center' }}>
             <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Choose a style</h1>
@@ -339,13 +446,12 @@ export default function InteractivePage() {
               {STYLES.map(s => (
                 <button key={s.id} onClick={() => setContract(prev => ({ ...prev, style: s.id }))}
                   style={{
-                    padding: '24px 16px', borderRadius: 12, cursor: 'pointer',
+                    padding: '24px 16px', borderRadius: 12,
                     border: contract.style === s.id ? '2px solid #FF6B35' : '1px solid rgba(255,255,255,0.1)',
                     background: contract.style === s.id ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.03)',
-                    color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                    color: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
                     transition: 'all 0.15s ease', fontSize: 14, fontWeight: 600,
-                  }}
-                >
+                  }}>
                   <div style={{ width: 48, height: 48, borderRadius: 12, background: s.color, border: s.id === 'light' ? '1px solid rgba(255,255,255,0.2)' : 'none' }} />
                   {s.label}
                 </button>
@@ -354,7 +460,6 @@ export default function InteractivePage() {
           </div>
         )}
 
-        {/* Step 3: Blocks */}
         {contract.step === 3 && (
           <div style={{ width: '100%', maxWidth: 700, textAlign: 'center' }}>
             <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Choose sections</h1>
@@ -362,23 +467,21 @@ export default function InteractivePage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
               {BLOCKS.map(b => {
                 const isSelected = contract.blocks.includes(b.id);
-                const isDisabled = b.required || b.disabled;
                 return (
                   <button key={b.id} onClick={() => toggleBlock(b.id)}
                     style={{
-                      padding: '14px 10px', borderRadius: 10, cursor: isDisabled ? 'default' : 'pointer',
+                      padding: '14px 10px', borderRadius: 10,
                       border: isSelected ? '2px solid #FF6B35' : '1px solid rgba(255,255,255,0.1)',
                       background: isSelected ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.03)',
-                      color: isDisabled ? 'rgba(255,255,255,0.3)' : '#fff',
+                      color: b.required ? 'rgba(255,255,255,0.4)' : '#fff',
+                      cursor: b.required ? 'default' : 'pointer',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                       transition: 'all 0.15s ease', fontSize: 13, fontWeight: 500,
-                      opacity: b.disabled ? 0.4 : b.required ? 0.6 : 1,
-                    }}
-                  >
+                      opacity: b.required ? 0.5 : 1,
+                    }}>
                     <span style={{ fontSize: 22 }}>{b.emoji}</span>
                     {b.label}
                     {b.required && <span style={{ fontSize: 10, color: '#FF6B35' }}>required</span>}
-                    {b.disabled && <span style={{ fontSize: 10, color: '#666' }}>{b.disabledReason}</span>}
                   </button>
                 );
               })}
@@ -389,13 +492,11 @@ export default function InteractivePage() {
           </div>
         )}
 
-        {/* Step 4: Company Name */}
         {contract.step === 4 && (
           <div style={{ width: '100%', maxWidth: 500, textAlign: 'center' }}>
             <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Almost done!</h1>
             <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 32, fontSize: 15 }}>Enter your company or project name</p>
-            <input
-              type="text" value={contract.companyName}
+            <input type="text" value={contract.companyName}
               onChange={(e) => setContract(prev => ({ ...prev, companyName: e.target.value }))}
               placeholder="My Awesome Business" maxLength={50} autoFocus
               style={{
@@ -434,19 +535,16 @@ export default function InteractivePage() {
         padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.08)',
         display: 'flex', justifyContent: 'center', flexShrink: 0,
       }}>
-        <button
-          onClick={handleNext}
-          disabled={!canProceed() || assembling}
+        <button onClick={handleNext} disabled={!canProceed()}
           style={{
             padding: '14px 48px', borderRadius: 100, border: 'none',
-            background: canProceed() && !assembling ? 'linear-gradient(135deg, #FF4500, #FF6B35)' : 'rgba(255,255,255,0.08)',
-            color: canProceed() && !assembling ? '#fff' : 'rgba(255,255,255,0.3)',
+            background: canProceed() ? 'linear-gradient(135deg, #FF4500, #FF6B35)' : 'rgba(255,255,255,0.08)',
+            color: canProceed() ? '#fff' : 'rgba(255,255,255,0.3)',
             fontSize: 16, fontWeight: 700,
-            cursor: canProceed() && !assembling ? 'pointer' : 'default',
+            cursor: canProceed() ? 'pointer' : 'default',
             transition: 'all 0.2s ease', minWidth: 200,
-          }}
-        >
-          {assembling ? '⏳ Building...' : contract.step === totalSteps ? '🚀 Create Website' : 'Next →'}
+          }}>
+          {contract.step === totalSteps ? '🚀 Create Website' : 'Next →'}
         </button>
       </div>
     </div>
