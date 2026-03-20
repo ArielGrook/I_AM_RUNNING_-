@@ -1,38 +1,63 @@
-# RULES FOR THIS AI MODEL
+# DEVELOPMENT RULES
 
-## You are an executor, not an architect
-Do exactly what the prompt says. No extra improvements. No touching files not mentioned.
+## Two Modes of AI Operation
 
-## patch_file over write_file — always
-patch_file replaces specific text. write_file overwrites the entire file.
-Use write_file ONLY when creating a new file from scratch.
+### Mode 1: MCP Connector (Claude Opus — this mode)
+- Full reasoning capability
+- Can audit, decide, and execute in one session
+- git_snapshot before every write — always
+- Audit relevant files before modifying — never guess
+- Use search_files before read_file to save tokens
+- Deploy after changes if requested — fire-and-forget, ~2 min build
 
-## Read minimum files
-Use search_files to find function names and line numbers.
-Use read_file only when you need to see the full function body.
-Never read editor/page.tsx (37K) or HeroTron.tsx (31K) in full — use search_files first.
+### Mode 2: Dev Console (Gemini Flash / GPT-4o — cheap executor)
+- Executes pre-written prompts, does NOT think independently
+- One task per prompt maximum
+- patch_file over write_file — always
+- Read minimum files — use search_files first
+- Never read editor/page.tsx or HeroTron.tsx in full (1200+ / 600+ lines)
 
-## One task per prompt
-If the prompt asks for one thing, do one thing. Do not fix adjacent issues.
-
-## Protected files — NEVER write to these
-app/api/dev-agent/ — Dev Console source (self-modification blocked)
+## Protected Files — NEVER write to these
+```
 .env, .env.local, .env.production
-.git/, node_modules/, .next/
-middleware.ts, package-lock.json
-context-core/ — this system prompt
+node_modules/
+.next/
+```
 
-## Before any file change — git_snapshot
-Call git_snapshot with message "before: [description]" before first patch_file or write_file.
+## Previously Protected, Now Accessible via MCP
+```
+app/api/dev-agent/       — Dev Console source (MCP can modify)
+middleware.ts             — Auth/routing (MCP can modify)
+context-core/            — Documentation (MCP can modify)
+```
 
-## Do not deploy on audit prompts
-If the prompt says "show me", "find", "read" — do NOT run build or pm2 restart.
+## Component Rules (abbreviated — see COMPONENT_WRITING_RULES_v2.md)
+- Register in 4 places: index.ts + editor resolver + SiteRenderer resolver + Toolbox
+- Colors only via buildTokens + hexToRgb, never hardcode
+- Mobile: ResizeObserver 520px, never Tailwind breakpoints
+- JS animations required — no static components
+- EditableText from ../shared/EditableText only
+- Images via MediaLibrary URLs, never base64 in props
 
-## NEVER
-- localStorage/sessionStorage in components (crashes SSR)
-- window.* without typeof window !== 'undefined' check
-- Hardcode colors outside buildTokens
-- base64 for images in props
-- Tailwind breakpoints (md:, lg:) for responsive layout
-- key={colorScheme} on root section element
-- Import EditableText from anywhere except ../shared/EditableText
+## Code Safety
+- No localStorage/sessionStorage in components (SSR crash)
+- No window.* without typeof window !== 'undefined'
+- useMemo for Supabase client (prevent render loop)
+- Token refresh before every Supabase request in client components
+- lzutf8 always with { inputEncoding: 'Base64' } / { outputEncoding: 'Base64' }
+
+## Deploy Validation
+- For product/UI changes: deploy first, validate on live site
+- For critical-path changes (auth, payments, middleware, deploy script): audit code before deploy
+- pm2 restart via nohup sleep 2 — site down ~5 sec during deploy
+
+## Engineering Memory
+- After every significant audit: update ENGINEERING_MEMORY.md
+- After debugging: update DEBUG_MAP.md if new symptom→code mapping discovered
+- After creating new files/features: update PROGRESS.md
+- After architecture changes: update ARCHITECTURE.md
+
+## Git Discipline
+- git_snapshot before first write in a session
+- Meaningful commit messages: "feat:", "fix:", "refactor:", "docs:"
+- Deploy only via deploy tool or iam-deploy.sh — never manual pm2 restart
