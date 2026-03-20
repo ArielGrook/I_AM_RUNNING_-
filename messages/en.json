@@ -188,7 +188,9 @@
       "login": "Login",
       "signUp": "Sign Up",
       "enterChat": "Enter Chat",
-      "enterEditor": "Enter Editor"
+      "enterEditor": "Enter Editor",
+      "tryInteractive": "Build a Website",
+      "tryInteractiveDesc": "No code needed"
     },
     "origin": {
       "eyebrow": "Our Story",

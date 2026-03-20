@@ -131,7 +131,9 @@
       "login": "התחברות",
       "signUp": "הרשמה",
       "enterChat": "כניסה לצ'אט",
-      "enterEditor": "כניסה לעורך"
+      "enterEditor": "כניסה לעורך",
+      "tryInteractive": "בנה אתר",
+      "tryInteractiveDesc": "ללא קוד"
     },
     "origin": {
       "eyebrow": "הסיפור שלנו",

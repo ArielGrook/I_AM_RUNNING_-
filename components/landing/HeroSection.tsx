@@ -142,6 +142,18 @@ export function HeroSection() {
             transition={{ delay: 0.8 }}
             className="pt-6 flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
+            {/* Interactive button - for everyone */}
+            <Button
+              asChild
+              size="lg"
+              className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-white text-[#FF4500] hover:bg-white/90 shadow-lg hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all duration-300 rounded-full sm:min-w-[200px]"
+            >
+              <Link href={`/${locale}/interactive`}>
+                {t('tryInteractive')}
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Link>
+            </Button>
+
             {/* Editor button - only for role >= 2 */}
             {canAccessEditor && (
               <Button

@@ -131,7 +131,9 @@
       "login": "Войти",
       "signUp": "Регистрация",
       "enterChat": "Войти в чат",
-      "enterEditor": "Войти в редактор"
+      "enterEditor": "Войти в редактор",
+      "tryInteractive": "Создать сайт",
+      "tryInteractiveDesc": "Без кода"
     },
     "origin": {
       "eyebrow": "Наша история",
