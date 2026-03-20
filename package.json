@@ -21,6 +21,7 @@
     "@codemirror/view": "^6.40.0",
     "@craftjs/core": "^0.2.12",
     "@hookform/resolvers": "^3.9.1",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@otplib/preset-default": "^12.0.1",
     "@paypal/react-paypal-js": "^8.9.2",
     "@radix-ui/react-alert-dialog": "^1.1.2",

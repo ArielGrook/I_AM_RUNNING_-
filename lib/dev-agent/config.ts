@@ -12,6 +12,7 @@ export interface DevAgentConfig {
   githubToken?: string;
   githubRepo?: string;
   developerUserId?: string;
+  mcpAuthToken?: string;
 }
 
 const DEFAULT_CONFIG: DevAgentConfig = {
@@ -22,6 +23,7 @@ const DEFAULT_CONFIG: DevAgentConfig = {
   githubToken: '',
   githubRepo: '',
   developerUserId: '',
+  mcpAuthToken: '',
 };
 
 export async function loadConfig(): Promise<DevAgentConfig> {
