@@ -43,11 +43,13 @@ async function handleMcp(request: NextRequest): Promise<Response> {
 
 // ── POST: main MCP protocol handler ──────────────────────────────────────
 export async function POST(request: NextRequest): Promise<Response> {
+  console.log("[MCP] POST request received", new Date().toISOString());
   return handleMcp(request);
 }
 
 // ── GET: SSE stream endpoint (required by MCP Streamable HTTP spec) ────────
 export async function GET(request: NextRequest): Promise<Response> {
+  console.log("[MCP] GET request received", new Date().toISOString());
   return handleMcp(request);
 }
 
