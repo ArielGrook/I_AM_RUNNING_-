@@ -16,6 +16,7 @@ export default function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
+    pathname.startsWith('/.well-known') ||
     pathname.startsWith('/static') ||
     pathname.startsWith('/debug') ||
     pathname.startsWith('/sites') ||
@@ -29,7 +30,7 @@ export default function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next|api|static|debug|sites|.*\\..*).*)',
+    '/((?!_next|api|\\.well-known|static|debug|sites|.*\\..*).*)',
     '/'
   ]
 };
