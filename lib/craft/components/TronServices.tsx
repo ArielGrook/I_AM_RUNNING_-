@@ -197,16 +197,25 @@ export const TronServices = React.memo(function TronServices() {
     );
   };
 
-  // ── Cards layout ──────────────────────────────────────────────────────
+  // ── Cards layout — whole card is a CTA link ───────────────────────────
   const renderCards = () => (
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: isMobile ? 16 : 24 }}>
       {list.map((item, i) => {
         const isHov = hovered === i;
+        const Tag = (item.showCta && item.ctaHref && !enabled) ? 'a' : 'div';
+        const tagProps = Tag === 'a' ? {
+          href: item.ctaHref ?? '#',
+          onClick: (e: React.MouseEvent) => handleLinkClick(e, item.ctaHref ?? '#', enabled, siteCtx.navigateToPage),
+          style: { textDecoration: 'none' },
+        } : {};
+
         return (
-          <div key={i}
+          <Tag key={i}
+            {...tagProps as React.HTMLAttributes<HTMLElement>}
             onMouseEnter={() => !enabled && setHovered(i)}
             onMouseLeave={() => setHovered(null)}
             style={{
+              ...(tagProps as React.CSSProperties),
               position: 'relative',
               padding: isMobile ? '24px 20px' : '32px 28px',
               borderRadius: 16,
@@ -216,7 +225,9 @@ export const TronServices = React.memo(function TronServices() {
               transform: isHov ? 'translateY(-4px)' : 'translateY(0)',
               boxShadow: isHov ? `0 16px 48px rgba(${rgb}, 0.12)` : 'none',
               display: 'flex', flexDirection: 'column',
-              cursor: 'default', overflow: 'hidden',
+              cursor: (item.showCta && !enabled) ? 'pointer' : 'default',
+              overflow: 'hidden',
+              textDecoration: 'none',
             }}
           >
             {/* Accent top line */}
@@ -288,8 +299,19 @@ export const TronServices = React.memo(function TronServices() {
               </div>
             )}
 
-            <CtaBtn item={item} i={i} />
-          </div>
+            {/* Arrow indicator when card is a link */}
+            {item.showCta && (
+              <div style={{
+                marginTop: 'auto', paddingTop: 16, display: 'flex', alignItems: 'center', gap: 6,
+                color: isHov ? accentColor : t.textSecondary, transition: 'color 0.2s ease', fontSize: 13, fontWeight: 600,
+              }}>
+                <span>{item.ctaText ?? 'Learn more'}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transition: 'transform 0.2s ease', transform: isHov ? 'translateX(3px)' : 'translateX(0)' }}>
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </div>
+            )}
+          </Tag>
         );
       })}
     </div>
@@ -421,12 +443,9 @@ export const TronServices = React.memo(function TronServices() {
                     }}>{item.tag}</span>
                   )}
                 </div>
-                {!isOpen && (
-                  <p style={{ fontSize: 13, color: t.textSecondary, margin: '3px 0 0', lineHeight: 1.4 }}>
-                    {item.description}
-                  </p>
-                )}
-              </div>
+                <p style={{ fontSize: 13, color: t.textSecondary, margin: '3px 0 0', lineHeight: 1.4 }}>
+                  {item.description}
+                </p>              </div>
 
               {/* Chevron */}
               <div style={{
@@ -447,21 +466,11 @@ export const TronServices = React.memo(function TronServices() {
               transition: 'max-height 0.35s ease',
             }}>
               <div style={{ padding: isMobile ? '0 16px 20px' : '0 28px 24px', paddingLeft: isMobile ? 16 : 92 }}>
-                {/* Full description */}
-                <EditableText
-                  value={item.description ?? ''} fieldKey={`horiz-desc-${i}`} tag="p"
-                  style={{ fontSize: 15, lineHeight: 1.65, color: t.textSecondary, margin: '0 0 12px' }}
-                  enabled={enabled}
-                  onSave={(val) => setProp((p: Record<string, unknown>) => {
-                    const arr = [...((p.items as ServiceItem[]) ?? [])];
-                    arr[i] = { ...arr[i], description: val }; p.items = arr;
-                  }, 0)}
-                />
-                {/* Detail text */}
+                {/* Detail text only — description already shown in header */}
                 {(item.detailText || enabled) && (
                   <EditableText
                     value={item.detailText ?? ''} fieldKey={`horiz-detail-${i}`} tag="p"
-                    style={{ fontSize: 14, lineHeight: 1.65, color: t.textSecondary, margin: '0 0 4px', opacity: 0.75 }}
+                    style={{ fontSize: 14, lineHeight: 1.65, color: t.textSecondary, margin: '0 0 4px' }}
                     enabled={enabled}
                     onSave={(val) => setProp((p: Record<string, unknown>) => {
                       const arr = [...((p.items as ServiceItem[]) ?? [])];
