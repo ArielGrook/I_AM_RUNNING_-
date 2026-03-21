@@ -971,28 +971,10 @@ export default function EditorPage() {
   useEffect(() => {
     const handler = (e: Event) => {
       const { accentColor, darkBg, lightBg } = (e as CustomEvent).detail;
-      setPages((prev) => {
-        const updated = applyColorPresetToAllPages(prev, accentColor, darkBg, lightBg);
-        // Schedule Frame reload AFTER state update completes
-        const currentPage = updated.find((p) => p.id === activePageId);
-        if (currentPage) {
-          const dataToLoad = viewport === 'desktop'
-            ? (currentPage.desktopData ?? currentPage.data)
-            : (currentPage.mobileData ?? currentPage.desktopData ?? currentPage.data);
-          if (dataToLoad) {
-            try {
-              const json = lz.decompress(dataToLoad, { inputEncoding: 'Base64' }) as string;
-              setTimeout(() => {
-                setFrameData(json);
-                setFrameKey((k) => k + 1);
-              }, 0);
-            } catch {
-              // ignore
-            }
-          }
-        }
-        return updated;
-      });
+      // Update stored page data for non-active pages (for save consistency).
+      // ColorPresetSync already handles live node updates on the active canvas —
+      // do NOT reload the Frame here or unsaved (dropped but not saved) nodes will be lost.
+      setPages((prev) => applyColorPresetToAllPages(prev, accentColor, darkBg, lightBg));
       setHasUnsavedChanges(true);
     };
     window.addEventListener('iam_color_preset_changed', handler);

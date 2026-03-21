@@ -40,11 +40,29 @@ export interface TronCTAProps {
   cardTitle?: string;
   cardText?: string;
   cardBadge?: string;
+  cardIcon?: string;
   animationType?: string;
   animateDelay?: string;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────
+// ── Card icon set ─────────────────────────────────────────────────────────
+const CARD_ICONS: Record<string, React.ReactNode> = {
+  bolt: <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />,
+  shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
+  lock: (<><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>),
+  user: (<><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>),
+  globe: (<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>),
+  star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />,
+  check: (<><polyline points="20 6 9 17 4 12"/></>),
+  rocket: (<><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></>),
+  heart: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />,
+};
+
+const CARD_ICON_LABELS: Record<string, string> = {
+  bolt: '⚡ Bolt', shield: '🛡 Shield', lock: '🔒 Lock',
+  user: '👤 User', globe: '🌐 Globe', star: '⭐ Star',
+  check: '✓ Check', rocket: '🚀 Rocket', heart: '♥ Heart',
+};
 export const TronCTA = React.memo(function TronCTA() {
   const { connectors: { connect, drag }, actions: { setProp } } = useNode();
   const isSelected = useNode((node) => node.events.selected);
@@ -119,7 +137,7 @@ export const TronCTA = React.memo(function TronCTA() {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         spotlight.style.background = `radial-gradient(circle 500px at ${x}px ${y}px,
-          rgba(${hexToRgb(accentColor)}, ${(glowIntensity ?? 12) / 100}) 0%,
+          rgba(${hexToRgb(accentColor)}, 0.08) 0%,
           transparent 70%)`;
         spotlight.style.opacity = '1';
       });
@@ -466,7 +484,7 @@ export const TronCTA = React.memo(function TronCTA() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="2">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    {CARD_ICONS[props.cardIcon ?? 'bolt']}
                   </svg>
                 </div>
                 <EditableText
@@ -774,15 +792,33 @@ function TronCTASettings() {
             <input type="checkbox" checked={showGrid} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showGrid = e.target.checked; })} className="rounded border-gray-600 bg-gray-700" />
             Show grid
           </label>
-          <div className="mt-2">
-            <label className={labelCls}>Glow intensity: {glowIntensity}</label>
-            <input type="range" min={0} max={30} step={1} value={glowIntensity}
-              onChange={(e) => setProp((p: Record<string, unknown>) => { p.glowIntensity = Number(e.target.value); }, 300)}
-              className="settings-slider"
-            />
-          </div>
         </div>
       </div>
+
+      {/* CARD ICON (split layout only) */}
+      {layoutStyle === 'split' && (
+        <div className={sectionCls}>
+          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Card icon</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+            {Object.entries(CARD_ICON_LABELS).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setProp((p: Record<string, unknown>) => { p.cardIcon = key; })}
+                style={{
+                  padding: '8px 4px', borderRadius: 6, fontSize: 11, textAlign: 'center',
+                  background: props.cardIcon === key || (!props.cardIcon && key === 'bolt')
+                    ? 'rgba(255,107,53,0.15)' : 'rgba(255,255,255,0.04)',
+                  border: props.cardIcon === key || (!props.cardIcon && key === 'bolt')
+                    ? '1px solid #FF6B35' : '1px solid rgba(255,255,255,0.08)',
+                  color: '#fff', cursor: 'pointer',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ANIMATION */}
       <div className={sectionCls}>
@@ -838,6 +874,7 @@ const tronCTACraft = {
     cardTitle: 'Fast & reliable',
     cardText: 'Deploy in minutes, not months. Our platform handles everything so you can focus on your business.',
     cardBadge: 'No credit card required',
+    cardIcon: 'bolt',
     animationType: 'none',
     animateDelay: '0',
   },
