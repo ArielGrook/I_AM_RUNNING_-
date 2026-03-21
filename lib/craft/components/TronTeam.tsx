@@ -7,6 +7,7 @@ import { useSiteContext } from '@/lib/craft/context/SiteContext';
 import { labelCls, inputCls, sectionCls } from '@/lib/craft/settingsStyles';
 import { EditableText } from '@/lib/craft/shared/EditableText';
 import { handleLinkClick } from '@/lib/craft/shared/LinkPicker';
+import { LinkPicker } from '@/lib/craft/shared/LinkPicker';
 import { buildGridTokens as buildTokens } from '../tokens';
 import { MediaLibrary } from '@/components/craft/MediaLibrary';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -17,28 +18,38 @@ function hexToRgb(hex: string): string {
   return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
 }
 
-// ── Social icons ──────────────────────────────────────────────────────────
-const IconLinkedIn = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-    <rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>
-  </svg>
-);
-const IconTwitter = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-  </svg>
-);
-const IconGitHub = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-  </svg>
-);
-const IconInstagram = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-  </svg>
-);
+// ── Social platforms ──────────────────────────────────────────────────────
+type SocialPlatform = 'linkedin' | 'twitter' | 'github' | 'instagram' | 'youtube' | 'facebook' | 'tiktok' | 'telegram' | 'whatsapp' | 'website';
+
+interface SocialLink {
+  platform: SocialPlatform;
+  url: string;
+}
+
+const SOCIAL_ICONS: Record<SocialPlatform, React.ReactNode> = {
+  linkedin: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>,
+  twitter:  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
+  github:   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>,
+  instagram:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>,
+  youtube:  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20.06 12 20.06 12 20.06s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/></svg>,
+  facebook: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>,
+  tiktok:   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.05a8.18 8.18 0 0 0 4.78 1.52V7.12a4.85 4.85 0 0 1-1.01-.43z"/></svg>,
+  telegram: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>,
+  whatsapp: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.932-1.42A9.945 9.945 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fillRule="evenodd" clipRule="evenodd"/></svg>,
+  website:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+};
+
+const SOCIAL_LABELS: Record<SocialPlatform, string> = {
+  linkedin: 'LinkedIn', twitter: 'Twitter / X', github: 'GitHub',
+  instagram: 'Instagram', youtube: 'YouTube', facebook: 'Facebook',
+  tiktok: 'TikTok', telegram: 'Telegram', whatsapp: 'WhatsApp', website: 'Website',
+};
+
+// legacy helpers — kept for backward compat with old IconLinkedIn usage in Avatar
+const IconLinkedIn = () => SOCIAL_ICONS.linkedin;
+const IconTwitter  = () => SOCIAL_ICONS.twitter;
+const IconGitHub   = () => SOCIAL_ICONS.github;
+const IconInstagram= () => SOCIAL_ICONS.instagram;
 
 // ── Types ─────────────────────────────────────────────────────────────────
 interface TeamMember {
@@ -48,6 +59,8 @@ interface TeamMember {
   bio?: string;
   badge?: string;
   showBadge?: boolean;
+  socials?: SocialLink[];
+  // legacy fields kept for backward compat
   linkedIn?: string;
   twitter?: string;
   github?: string;
@@ -70,15 +83,19 @@ export interface TronTeamProps {
   photoShape?: 'circle' | 'square' | 'rounded';
   cardStyle?: 'border' | 'filled' | 'minimal';
   members?: TeamMember[];
+  showBackButton?: boolean;
+  backButtonText?: string;
+  backButtonHref?: string;
+  backButtonHrefType?: 'section' | 'page' | 'external';
   animationType?: string;
   animateDelay?: string;
 }
 
 const DEFAULT_MEMBERS: TeamMember[] = [
-  { name: 'Alex Morgan', role: 'CEO & Co-Founder', bio: 'Passionate about building products that matter. 10+ years in SaaS and startup ecosystems.', badge: 'Founder', showBadge: true, linkedIn: '#', twitter: '#', github: '', instagram: '' },
-  { name: 'Sara Chen', role: 'Head of Design', bio: 'Former lead designer at Figma. Obsessed with clean interfaces and pixel-perfect details.', badge: 'Lead', showBadge: true, linkedIn: '#', twitter: '', github: '', instagram: '#' },
-  { name: 'James Park', role: 'CTO', bio: 'Full-stack engineer with a love for scalable architectures and open source contributions.', badge: 'Tech', showBadge: false, linkedIn: '#', twitter: '#', github: '#', instagram: '' },
-  { name: 'Mia Torres', role: 'Head of Growth', bio: 'Growth hacker turned strategist. Scaled 3 products from 0 to 100k users.', badge: '', showBadge: false, linkedIn: '#', twitter: '#', github: '', instagram: '#' },
+  { name: 'Alex Morgan', role: 'CEO & Co-Founder', bio: 'Passionate about building products that matter. 10+ years in SaaS and startup ecosystems.', badge: 'Founder', showBadge: true, socials: [{ platform: 'linkedin', url: '#' }, { platform: 'twitter', url: '#' }] },
+  { name: 'Sara Chen', role: 'Head of Design', bio: 'Former lead designer at Figma. Obsessed with clean interfaces and pixel-perfect details.', badge: 'Lead', showBadge: true, socials: [{ platform: 'linkedin', url: '#' }, { platform: 'instagram', url: '#' }] },
+  { name: 'James Park', role: 'CTO', bio: 'Full-stack engineer with a love for scalable architectures and open source contributions.', badge: 'Tech', showBadge: false, socials: [{ platform: 'github', url: '#' }, { platform: 'twitter', url: '#' }] },
+  { name: 'Mia Torres', role: 'Head of Growth', bio: 'Growth hacker turned strategist. Scaled 3 products from 0 to 100k users.', badge: '', showBadge: false, socials: [{ platform: 'linkedin', url: '#' }, { platform: 'instagram', url: '#' }] },
 ];
 
 // ── Tilt helper — applies 3D tilt transform via direct DOM style ──────────
@@ -187,6 +204,10 @@ export const TronTeam = React.memo(function TronTeam() {
     photoShape = 'circle',
     cardStyle = 'border',
     members = DEFAULT_MEMBERS,
+    showBackButton = false,
+    backButtonText = '← Back to home',
+    backButtonHref = '/',
+    backButtonHrefType = 'external',
     animationType = 'none',
     animateDelay = '0',
   } = props;
@@ -276,39 +297,41 @@ export const TronTeam = React.memo(function TronTeam() {
 
   // ── Social links row ──────────────────────────────────────────────────
   const Socials = ({ member, idx }: { member: TeamMember; idx: number }) => {
-    const links = [
-      { key: `li-${idx}`, url: member.linkedIn, icon: <IconLinkedIn />, label: 'LinkedIn' },
-      { key: `tw-${idx}`, url: member.twitter, icon: <IconTwitter />, label: 'Twitter' },
-      { key: `gh-${idx}`, url: member.github, icon: <IconGitHub />, label: 'GitHub' },
-      { key: `ig-${idx}`, url: member.instagram, icon: <IconInstagram />, label: 'Instagram' },
-    ].filter((l) => l.url);
-
+    // Support both new `socials` array and legacy fields
+    const links: SocialLink[] = member.socials?.filter((s) => s.url) ?? [];
+    // Fallback: legacy fields
+    if (!links.length) {
+      if (member.linkedIn)  links.push({ platform: 'linkedin',  url: member.linkedIn });
+      if (member.twitter)   links.push({ platform: 'twitter',   url: member.twitter });
+      if (member.github)    links.push({ platform: 'github',    url: member.github });
+      if (member.instagram) links.push({ platform: 'instagram', url: member.instagram });
+    }
     if (!links.length) return null;
     return (
       <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-        {links.map(({ key, url, icon, label }) => (
+        {links.map(({ platform, url }, li) => (
           <a
-            key={key}
+            key={li}
             href={enabled ? undefined : url}
             onClick={(e) => { if (enabled) { e.preventDefault(); return; } }}
             target="_blank"
             rel="noopener noreferrer"
-            onMouseEnter={() => !enabled && setHoveredSocial(key)}
+            onMouseEnter={() => !enabled && setHoveredSocial(`${idx}-${li}`)}
             onMouseLeave={() => setHoveredSocial(null)}
-            title={label}
+            title={SOCIAL_LABELS[platform]}
             style={{
               width: 32, height: 32, borderRadius: 8,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: hoveredSocial === key ? `rgba(${rgb}, 0.2)` : `rgba(${rgb}, 0.08)`,
-              color: hoveredSocial === key ? accentColor : t.textSecondary,
-              border: `1px solid ${hoveredSocial === key ? `rgba(${rgb}, 0.3)` : 'transparent'}`,
+              background: hoveredSocial === `${idx}-${li}` ? `rgba(${rgb}, 0.2)` : `rgba(${rgb}, 0.08)`,
+              color: hoveredSocial === `${idx}-${li}` ? accentColor : t.textSecondary,
+              border: `1px solid ${hoveredSocial === `${idx}-${li}` ? `rgba(${rgb}, 0.3)` : 'transparent'}`,
               transition: 'all 0.2s ease',
               cursor: enabled ? 'default' : 'pointer',
               textDecoration: 'none',
-              transform: hoveredSocial === key ? 'translateY(-2px)' : 'translateY(0)',
+              transform: hoveredSocial === `${idx}-${li}` ? 'translateY(-2px)' : 'translateY(0)',
             }}
           >
-            {icon}
+            {SOCIAL_ICONS[platform]}
           </a>
         ))}
       </div>
@@ -568,6 +591,50 @@ export const TronTeam = React.memo(function TronTeam() {
         backgroundSize: showGrid ? '50px 50px' : 'auto',
       }} />
 
+      {/* Back button */}
+      {showBackButton && (
+        <div style={{ position: 'absolute', top: isMobile ? 20 : 28, left: isMobile ? 20 : 40, zIndex: 10 }}>
+          <a
+            href={enabled ? undefined : (backButtonHref ?? '/')}
+            onClick={(e) => handleLinkClick(e, backButtonHref ?? '/', enabled, siteCtx.navigateToPage)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '8px 16px', borderRadius: 100,
+              background: `rgba(${rgb}, 0.08)`,
+              color: t.textSecondary,
+              border: `1px solid ${t.border}`,
+              fontSize: 13, fontWeight: 600,
+              textDecoration: 'none', cursor: enabled ? 'default' : 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              if (!enabled) {
+                (e.currentTarget as HTMLAnchorElement).style.color = accentColor;
+                (e.currentTarget as HTMLAnchorElement).style.borderColor = `rgba(${rgb}, 0.3)`;
+                (e.currentTarget as HTMLAnchorElement).style.background = `rgba(${rgb}, 0.12)`;
+              }
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.color = t.textSecondary;
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = t.border;
+              (e.currentTarget as HTMLAnchorElement).style.background = `rgba(${rgb}, 0.08)`;
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            {enabled ? (
+              <EditableText
+                value={backButtonText ?? '← Back to home'} fieldKey="backButtonText" tag="span"
+                style={{ color: 'inherit', fontWeight: 600, fontSize: 13 }}
+                enabled={enabled}
+                onSave={(val) => setProp((p: Record<string, unknown>) => { p.backButtonText = val; }, 0)}
+              />
+            ) : backButtonText}
+          </a>
+        </div>
+      )}
+
       {/* Content */}
       <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 1200, margin: '0 auto', padding: isMobile ? '60px 20px' : '80px 40px' }} {...animAttrs}>
         {/* Header */}
@@ -617,6 +684,8 @@ function TronTeamSettings() {
     layoutStyle = 'grid', columns = 3,
     photoShape = 'circle', cardStyle = 'border',
     members = DEFAULT_MEMBERS, showGrid = true,
+    showBackButton = false, backButtonText = '← Back to home',
+    backButtonHref = '/', backButtonHrefType = 'external',
     darkBg = '#0a0a0a', lightBg = '#ffffff',
     sectionHeight = 70, animationType = 'none', animateDelay = '0',
   } = props;
@@ -756,19 +825,64 @@ function TronTeamSettings() {
                       </label>
                     </div>
                   </div>
-                  {/* Social links */}
+                  {/* Social links — dynamic platform picker */}
                   <div>
                     <label className={labelCls}>Social links</label>
-                    {[
-                      { field: 'linkedIn' as keyof TeamMember, label: 'LinkedIn URL' },
-                      { field: 'twitter' as keyof TeamMember, label: 'Twitter/X URL' },
-                      { field: 'github' as keyof TeamMember, label: 'GitHub URL' },
-                      { field: 'instagram' as keyof TeamMember, label: 'Instagram URL' },
-                    ].map(({ field, label: lbl }) => (
-                      <input key={field} type="text" value={(member[field] as string) ?? ''} placeholder={lbl}
-                        onChange={(e) => updateMember(i, field, e.target.value)}
-                        className={inputCls} style={{ marginBottom: 4 }} />
-                    ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {(member.socials ?? []).map((social, si) => (
+                        <div key={si} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <select
+                            value={social.platform}
+                            onChange={(e) => {
+                              setProp((p: Record<string, unknown>) => {
+                                const arr = [...((p.members as TeamMember[]) ?? [])];
+                                const socs = [...(arr[i].socials ?? [])];
+                                socs[si] = { ...socs[si], platform: e.target.value as SocialPlatform };
+                                arr[i] = { ...arr[i], socials: socs };
+                                p.members = arr;
+                              }, 0);
+                            }}
+                            className={inputCls}
+                            style={{ width: 110, flexShrink: 0, marginBottom: 0 }}
+                          >
+                            {(Object.keys(SOCIAL_LABELS) as SocialPlatform[]).map((k) => (
+                              <option key={k} value={k}>{SOCIAL_LABELS[k]}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="text" value={social.url} placeholder="URL"
+                            onChange={(e) => {
+                              setProp((p: Record<string, unknown>) => {
+                                const arr = [...((p.members as TeamMember[]) ?? [])];
+                                const socs = [...(arr[i].socials ?? [])];
+                                socs[si] = { ...socs[si], url: e.target.value };
+                                arr[i] = { ...arr[i], socials: socs };
+                                p.members = arr;
+                              }, 300);
+                            }}
+                            className={inputCls} style={{ flex: 1, marginBottom: 0 }}
+                          />
+                          <button
+                            onClick={() => setProp((p: Record<string, unknown>) => {
+                              const arr = [...((p.members as TeamMember[]) ?? [])];
+                              const socs = (arr[i].socials ?? []).filter((_, idx) => idx !== si);
+                              arr[i] = { ...arr[i], socials: socs };
+                              p.members = arr;
+                            })}
+                            style={{ color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '0 4px', flexShrink: 0 }}
+                          >×</button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => setProp((p: Record<string, unknown>) => {
+                          const arr = [...((p.members as TeamMember[]) ?? [])];
+                          const socs = [...(arr[i].socials ?? []), { platform: 'website' as SocialPlatform, url: '' }];
+                          arr[i] = { ...arr[i], socials: socs };
+                          p.members = arr;
+                        })}
+                        style={{ color: '#FF6B35', fontWeight: 600, fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
+                      >+ Add social link</button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -779,6 +893,30 @@ function TronTeamSettings() {
           })} style={{ color: '#FF6B35', fontWeight: 600, fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
             + Add member
           </button>
+        </div>
+      </div>
+
+      {/* BACK BUTTON */}
+      <div className={sectionCls}>
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Back button</h3>
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-xs text-gray-400">
+            <input type="checkbox" checked={showBackButton ?? false} onChange={(e) => setProp((p: Record<string, unknown>) => { p.showBackButton = e.target.checked; })} className="rounded border-gray-600 bg-gray-700" />
+            Show back button
+          </label>
+          {showBackButton && (
+            <>
+              <div>
+                <label className={labelCls}>Button text</label>
+                <input type="text" value={backButtonText ?? '← Back to home'} onChange={(e) => setProp((p: Record<string, unknown>) => { p.backButtonText = e.target.value; }, 500)} className={inputCls} />
+              </div>
+              <LinkPicker
+                label="Link"
+                value={{ type: (backButtonHrefType ?? 'external') as 'section' | 'page' | 'external', href: backButtonHref ?? '/' }}
+                onChange={(val) => setProp((p: Record<string, unknown>) => { p.backButtonHref = val.href; p.backButtonHrefType = val.type; }, 0)}
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -857,6 +995,10 @@ const tronTeamCraft = {
     photoShape: 'circle' as const,
     cardStyle: 'border' as const,
     members: DEFAULT_MEMBERS,
+    showBackButton: false,
+    backButtonText: '← Back to home',
+    backButtonHref: '/',
+    backButtonHrefType: 'external' as const,
     animationType: 'none',
     animateDelay: '0',
   },
