@@ -37,6 +37,9 @@ export interface TronCTAProps {
   showSecondary?: boolean;
   layoutStyle?: 'centered' | 'split';
   glowIntensity?: number;
+  cardTitle?: string;
+  cardText?: string;
+  cardBadge?: string;
   animationType?: string;
   animateDelay?: string;
 }
@@ -190,7 +193,7 @@ export const TronCTA = React.memo(function TronCTA() {
     accentColor: propAccent,
     darkBg = '#0a0a0a',
     lightBg = '#ffffff',
-    sectionHeight = 60,
+    sectionHeight = 70,
     showGrid = true,
     label = 'Ready to start?',
     showLabel = true,
@@ -454,21 +457,28 @@ export const TronCTA = React.memo(function TronCTA() {
               border: `1px solid rgba(${rgb}, 0.15)`,
               backdropFilter: 'blur(12px)',
             }}>
-              {/* Decorative lines */}
-              {[
-                { w: '70%', opacity: 0.4 },
-                { w: '90%', opacity: 0.25 },
-                { w: '55%', opacity: 0.3 },
-              ].map((line, i) => (
-                <div key={i} style={{
-                  height: 3, borderRadius: 2, marginBottom: i < 2 ? 14 : 0,
-                  width: line.w,
-                  background: `rgba(${rgb}, ${line.opacity})`,
-                }} />
-              ))}
-              <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+              {/* Editable card content */}
+              <div style={{ marginBottom: 20 }}>
+                <EditableText
+                  value={props.cardTitle ?? 'Fast & reliable'}
+                  fieldKey="cardTitle"
+                  tag="div"
+                  style={{ fontSize: 18, fontWeight: 700, color: t.text, marginBottom: 10 }}
+                  enabled={enabled}
+                  onSave={(val) => setProp((p: Record<string, unknown>) => { p.cardTitle = val; }, 0)}
+                />
+                <EditableText
+                  value={props.cardText ?? 'Deploy in minutes, not months. Our platform handles everything so you can focus on your business.'}
+                  fieldKey="cardText"
+                  tag="p"
+                  style={{ fontSize: 14, lineHeight: 1.65, color: t.textSecondary }}
+                  enabled={enabled}
+                  onSave={(val) => setProp((p: Record<string, unknown>) => { p.cardText = val; }, 0)}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 16, borderTop: `1px solid rgba(${rgb}, 0.12)` }}>
                 <div style={{
-                  width: 36, height: 36, borderRadius: 10,
+                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                   background: `rgba(${rgb}, 0.15)`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
@@ -476,10 +486,14 @@ export const TronCTA = React.memo(function TronCTA() {
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                   </svg>
                 </div>
-                <div>
-                  <div style={{ height: 8, width: 80, borderRadius: 4, background: `rgba(${rgb}, 0.3)`, marginBottom: 6 }} />
-                  <div style={{ height: 6, width: 120, borderRadius: 3, background: `rgba(${rgb}, 0.15)` }} />
-                </div>
+                <EditableText
+                  value={props.cardBadge ?? 'No credit card required'}
+                  fieldKey="cardBadge"
+                  tag="span"
+                  style={{ fontSize: 13, color: t.textSecondary, fontWeight: 500 }}
+                  enabled={enabled}
+                  onSave={(val) => setProp((p: Record<string, unknown>) => { p.cardBadge = val; }, 0)}
+                />
               </div>
             </div>
             {/* Glow behind card */}
@@ -823,7 +837,7 @@ const tronCTACraft = {
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',
-    sectionHeight: 60,
+    sectionHeight: 70,
     showGrid: true,
     label: 'Ready to start?',
     showLabel: true,
@@ -838,6 +852,9 @@ const tronCTACraft = {
     showSecondary: true,
     layoutStyle: 'centered' as const,
     glowIntensity: 12,
+    cardTitle: 'Fast & reliable',
+    cardText: 'Deploy in minutes, not months. Our platform handles everything so you can focus on your business.',
+    cardBadge: 'No credit card required',
     animationType: 'none',
     animateDelay: '0',
   },
