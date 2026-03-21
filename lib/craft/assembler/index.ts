@@ -8,6 +8,7 @@ import { HeroTron } from '../components/HeroTron';
 import { TronFeatures } from '../components/TronFeatures';
 import { TronAbout } from '../components/TronAbout';
 import { TronCTA } from '../components/TronCTA';
+import { TronServices } from '../components/TronServices';
 import { TronPortfolio } from '../components/TronPortfolio';
 import { TronTestimonials } from '../components/TronTestimonials';
 import { TronPricing } from '../components/TronPricing';
@@ -22,7 +23,7 @@ const BLOCK_MAP: Record<string, { component: React.ComponentType<any>; props?: R
   hero:         { component: HeroTron, props: { showGrid: true, spotlightIntensity: 15 } },
   about:        { component: TronAbout },
   cta:          { component: TronCTA },
-  services:     { component: TronFeatures },  // TronServices not yet built, use Features
+  services:     { component: TronServices },  // ✅ proper services component
   features:     { component: TronFeatures },
   portfolio:    { component: TronPortfolio },
   stats:        { component: TronStats },

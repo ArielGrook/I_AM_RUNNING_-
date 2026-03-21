@@ -13,7 +13,7 @@ import { buildElementsFromContract, InteractiveContract } from '@/lib/craft/asse
 import {
   Container,
   HeroTron, HeroTronHeading, HeroTronSubheading, HeroTronButton,
-  HeaderTron, TronFeatures, FeatureCard, TronStats, TronAbout, TronCTA, StatItem,
+  HeaderTron, TronFeatures, FeatureCard, TronStats, TronAbout, TronCTA, TronServices, StatItem,
   TronPortfolio, TronTestimonials, TestimonialCard, TronPricing, PricingCard,
   TronFAQ, FAQItem, TronFooter, FooterColumn, TronContact, TronShowcase,
   TronLogin, TronRegister, TronHub, HtmlBlock,
@@ -23,7 +23,7 @@ import { SiteContext } from '@/lib/craft/context/SiteContext';
 
 const resolver = {
   Container, HeroTron, HeroTronHeading, HeroTronSubheading, HeroTronButton,
-  HeaderTron, TronFeatures, FeatureCard, TronStats, TronAbout, TronCTA, StatItem,
+  HeaderTron, TronFeatures, FeatureCard, TronStats, TronAbout, TronCTA, TronServices, StatItem,
   TronPortfolio, TronTestimonials, TestimonialCard, TronPricing, PricingCard,
   TronFAQ, FAQItem, TronFooter, FooterColumn, TronContact, TronShowcase,
   TronLogin, TronRegister, TronHub, HtmlBlock,
