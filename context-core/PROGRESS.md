@@ -1,34 +1,41 @@
 # CURRENT STATE — updated 21.03.2026
 
 ## Working ✅
-- Craft.js editor with 15 Tron components (including TronAbout)
+- Craft.js editor with 16 Tron components (TronCTA added)
 - Client site deploy on subdomains (SSR, pixel-perfect)
+- Nginx subdomains: static served from disk (/_next/static/ alias), no Node.js overhead
 - Dev Console: Full IDE with file manager, code editor, git history, deploy/rollback
 - **MCP Connector: Claude has direct project access (read/write/deploy)**
 - **Interactive pipeline: 4-step wizard → assembly → preview → save**
-- **Assembler: maps block IDs → real Tron components, builds Craft.js JSON client-side**
-- **Interactive: footer always last (canonical order: header→hero→middle→footer)**
-- **Interactive: position badges on optional blocks (numeric) + "last" on footer**
+- **Assembler: canonical order enforced (header→hero→middle→footer), position badges in Step 3**
 - Context Core v2: 10 documents as system prompt
-- Color preset + scheme propagation across all pages
-- Admin panel: TOTP auth + httpOnly cookie on all /api/admin/* routes
-- Admin panel: mobile-responsive (cards on mobile, table on desktop)
-- Admin panel: role buttons Free/Paid/Basic/Pro/Admin/Agency/Employee with active highlight
-- Admin panel: role badge updates instantly after change (reads from auth.admin.listUsers)
-- Admin panel: Last seen column
-- **Security: rate limiting in middleware (totp/auth/api/pages)**
-- **Security: /admin returns 404 to non-admins + IP ban after 3 probes (24h)**
-- **Security: CSP + X-Frame + X-XSS + Referrer-Policy headers on all responses**
-- **Role system v2: roles 0-7 (added Agency Owner 6, Agency Employee 7)**
-- **Role system: USER_UPDATED event — role change reflects without re-login**
-- **Role system: agency_id + trial_expires_at fields in profiles table**
-- Nginx subdomains: static served directly from disk (/_next/static/ → alias), no Node.js overhead
 
-## MCP Connector — Operational ✅
-- 12 tools available (read/write/patch/delete/list/search/git/deploy/run_command)
-- OAuth auto-approve flow
-- Whitelisted shell commands
-- Deploy via nohup pattern (fire-and-forget)
+## Security ✅
+- Admin API: httpOnly cookie auth (ADMIN_SESSION_SECRET) on all /api/admin/* routes
+- Admin UI: 404 for non-admins + IP ban after 3 probes (24h)
+- Rate limiting in middleware: totp (5/15min), auth (10/min), api (60/min), pages (120/min)
+- CSP + X-Frame + X-XSS + Referrer-Policy headers on all responses
+- Admin logout clears httpOnly cookie server-side
+
+## Role System v2 ✅
+- Roles 0-7: 0=Anon, 1=Free, 2=Paid, 3=Basic, 4=Pro, 5=Admin, 6=AgencyOwner, 7=AgencyEmployee
+- Source of truth: auth.users.user_metadata.role (set via Admin API)
+- Real-time role propagation: Realtime subscription on profiles table → refreshSession() → UI updates without re-login
+- DB: profiles.role CHECK (0..7), profiles.agency_id, profiles.trial_expires_at
+- useAuth flags: isAgencyOwner, isAgencyEmployee, isAgency added
+
+## Admin Panel ✅
+- Mobile-responsive (cards on mobile, table on desktop)
+- Role buttons: Free/Paid/Basic/Pro/Admin/Agency/Employee with active highlight (✓)
+- Role badge updates instantly after change (reads from auth.admin.listUsers)
+- Last seen column
+- get-users reads from auth.admin.listUsers() — numeric role always fresh
+
+## Components ✅ (16 total)
+- HeroTron, HeaderTron, TronFeatures, TronStats, TronAbout, TronPortfolio
+- TronTestimonials, TronPricing, TronFAQ, TronFooter, TronContact, TronShowcase
+- TronLogin, TronRegister, TronHub, **TronCTA** (new 21.03.2026)
+- TronCTA features: GSAP word stagger, cursor spotlight, magnetic buttons, pulse glow, split/centered layout, editable card
 
 ## Open Issues ⚠️
 - Interactive: style doesn't map to color presets yet
@@ -36,45 +43,17 @@
 - Delete Account button in TronHub (stub)
 - Profile page redirect missing locale
 - Anonymous → signup: project not restored from localStorage after registration
-- Multi-deploy: can't deploy specific site or multiple sites simultaneously (Nginx slug bug)
+- Multi-deploy: can't deploy specific site or multiple sites simultaneously
 
 ## MVP Blockers 🔴
 - Stripe integration (checkout, webhook, subscription check)
 - Route protection middleware (editor requires subscription)
-- Missing components: TronCTA, TronServices, TronTeam
+- Missing components: TronServices, TronTeam
 - Landing page needs pricing section + demo CTA
 - Interactive needs thumbnail previews for blocks
 
-## Role System — Current State
-```
-0 = Anonymous
-1 = Free User        — default on signup, chat only
-2 = Paid User        — editor, 1 project ($20 one-time, Stripe pending)
-3 = Freelancer Basic — 5 projects ($30/mo)
-4 = Freelancer Pro   — unlimited ($100/mo)
-5 = Admin
-6 = Agency Owner     — team management, unlimited projects
-7 = Agency Employee  — works under owner (agency_id field)
-```
-Source of truth: auth.users.user_metadata.role (set via Admin API)
-DB: profiles.role CHECK (0..7), profiles.agency_id, profiles.trial_expires_at
-
-## Security — Current State
-```
-✅ Admin API: httpOnly cookie auth (ADMIN_SESSION_SECRET)
-✅ Admin UI: 404 for non-admins + 24h IP ban after 3 probes
-✅ TOTP: 5 req/15min window + 30min block (middleware + route)
-✅ Auth endpoints: 10 req/min
-✅ API general: 60 req/min
-✅ Page routes: 120 req/min
-✅ CSP + security headers on all responses
-⬜ Stripe (no payment = no attack surface yet)
-⬜ CAPTCHA (deferred, not needed pre-launch)
-```
-
 ## Next Priority
-1. TronCTA component (needed on every site)
-2. TronServices component (currently mapped to TronFeatures — wrong)
-3. Anonymous → signup project restore flow
-4. Route protection middleware (editor guard)
-5. Stripe checkout + webhook
+1. TronServices (currently maps to TronFeatures — wrong semantics)
+2. Anonymous → signup project restore flow
+3. Route protection middleware
+4. Stripe checkout + webhook

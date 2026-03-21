@@ -20,7 +20,41 @@
 - `/api/projects/[id]/deploy` — нужно проверить логику slug assignment и published flag
 - Не критично для MVP, фиксить после запуска
 
-### Admin Panel Security (lib/admin/checkAdminAuth.ts)
+### TronCTA (lib/craft/components/TronCTA.tsx) — added 21.03.2026
+- block_type: 'cta', два layout: centered (default) и split (текст + карточка справа)
+- GSAP stagger: слова заголовка влетают с rotateX(-20) при маунте на deployed сайте
+- Cursor spotlight: radial-gradient следует за мышью в пределах секции
+- Magnetic buttons: кнопки притягиваются к курсору (±25%), cleanup при unmount
+- Pulse glow: центральный blob анимируется через CSS keyframes (tronCtaPulse)
+- Split card: EditableText поля — cardTitle, cardText, cardBadge
+- Centering: секция display:flex + alignItems:center — контент по центру при любой высоте
+- Default: sectionHeight 70vh
+- Зарегистрирован в 4 местах + assembler (block_id: 'cta') + interactive resolver
+
+### Real-time Role Propagation (lib/hooks/useAuth.tsx) — fixed 21.03.2026
+- Проблема: USER_UPDATED event не стреляет при admin.updateUserById() — только при updateUser() от самого юзера
+- Решение: Realtime подписка на profiles таблицу (filter: id=eq.{userId})
+- При UPDATE profiles.role → supabase.auth.refreshSession() → новый JWT → buildProfileFromUser() → UI обновляется без перелогина
+- Канал: role-watch-{userId}, cleanup при unmount AuthProvider
+
+### get-users API (app/api/admin/get-users/route.ts) — fixed 21.03.2026
+- Было: читал profiles таблицу, конвертировал role→account_type/freelancer_tier, числовое значение терялось
+- Стало: читает auth.admin.listUsers() — source of truth для ролей
+- Возвращает: числовой role из user_metadata, last_sign_in, agency_id из profiles
+- RoleBadge в admin panel теперь обновляется сразу после смены роли
+
+### Admin Security (lib/admin/checkAdminAuth.ts) — added 21.03.2026
+- httpOnly cookie admin_token на всех /api/admin/* routes
+- verify-totp при успехе: setAdminSessionCookie(response)
+- logout: clearAdminSessionCookie(response)
+- /admin route в middleware: 404 для всех без валидной cookie, recordAdminProbe() — 3 проверки → 24h IP бан
+- ADMIN_SESSION_SECRET в .env обязателен
+
+### Nginx Subdomains — fixed 21.03.2026
+- Было: location /_next/ proxy → localhost → "no resolver defined to resolve localhost"
+- Причина: при переменной $subdomain в proxy_pass Nginx требует explicit resolver для hostname
+- Fix 1: proxy_pass http://127.0.0.1:3000/sites/$subdomain (IP вместо localhost)
+- Fix 2: location /_next/static/ { alias /var/www/i_am_running/.next/static/; } — статика с диска, минуя Node.js
 - **Было:** `/api/admin/get-users` и `/api/admin/update-user-role` — нулевая серверная авторизация. GET на get-users = полный список юзеров. POST на update-user-role = назначить себе роль 5 (Admin).
 - **Стало:** httpOnly cookie `admin_token` содержит `ADMIN_SESSION_SECRET` из env. `checkAdminAuth(request)` проверяет cookie в каждом admin route.
 - **verify-totp** выставляет cookie через `setAdminSessionCookie(response)` при успешном TOTP.
