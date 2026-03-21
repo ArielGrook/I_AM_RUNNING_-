@@ -71,7 +71,6 @@ export const TronCTA = React.memo(function TronCTA() {
   const siteCtx = useSiteContext();
 
   const containerRef = React.useRef<HTMLElement | null>(null);
-  const spotlightRef = React.useRef<HTMLDivElement>(null);
   const primaryBtnRef = React.useRef<HTMLAnchorElement>(null);
   const secondaryBtnRef = React.useRef<HTMLAnchorElement>(null);
   const [isMobile, setIsMobile] = React.useState(false);
@@ -120,36 +119,6 @@ export const TronCTA = React.memo(function TronCTA() {
     };
     initGsap();
     return () => { if (ctx?.revert) ctx.revert(); };
-  }, [enabled]);
-
-  // Spotlight cursor tracking
-  React.useEffect(() => {
-    if (typeof window === 'undefined' || enabled) return;
-    const section = containerRef.current;
-    const spotlight = spotlightRef.current;
-    if (!section || !spotlight) return;
-
-    let rafId: number;
-    const handleMove = (e: MouseEvent) => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const rect = section.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        spotlight.style.background = `radial-gradient(circle 500px at ${x}px ${y}px,
-          rgba(${hexToRgb(accentColor)}, 0.08) 0%,
-          transparent 70%)`;
-        spotlight.style.opacity = '1';
-      });
-    };
-    const handleLeave = () => { spotlight.style.opacity = '0'; };
-    section.addEventListener('mousemove', handleMove, { passive: true });
-    section.addEventListener('mouseleave', handleLeave);
-    return () => {
-      cancelAnimationFrame(rafId);
-      section.removeEventListener('mousemove', handleMove);
-      section.removeEventListener('mouseleave', handleLeave);
-    };
   }, [enabled]);
 
   // Magnetic buttons
@@ -221,7 +190,6 @@ export const TronCTA = React.memo(function TronCTA() {
     secondaryHrefType = 'external',
     showSecondary = true,
     layoutStyle = 'centered',
-    glowIntensity = 12,
     animationType = 'none',
     animateDelay = '0',
   } = props;
@@ -273,16 +241,6 @@ export const TronCTA = React.memo(function TronCTA() {
                linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
             : 'none',
           backgroundSize: showGrid ? '50px 50px' : 'auto',
-        }}
-      />
-
-      {/* Cursor spotlight */}
-      <div
-        ref={spotlightRef}
-        style={{
-          position: 'absolute', inset: 0,
-          pointerEvents: 'none', zIndex: 1,
-          opacity: 0, transition: 'opacity 0.3s ease',
         }}
       />
 
