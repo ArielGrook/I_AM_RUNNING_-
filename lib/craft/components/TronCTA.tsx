@@ -173,10 +173,6 @@ export const TronCTA = React.memo(function TronCTA() {
     const style = document.createElement('style');
     style.id = id;
     style.textContent = `
-      @keyframes tronCtaPulse {
-        0%, 100% { opacity: 0.6; transform: scale(1); }
-        50%       { opacity: 1;   transform: scale(1.08); }
-      }
       @keyframes tronCtaRing {
         0%   { transform: scale(0.8); opacity: 0.8; }
         100% { transform: scale(2);   opacity: 0; }
@@ -245,6 +241,8 @@ export const TronCTA = React.memo(function TronCTA() {
         background: t.bg,
         minHeight: `${sectionHeight}vh`,
         position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
       }}
     >
       {/* Grid */}
@@ -257,22 +255,6 @@ export const TronCTA = React.memo(function TronCTA() {
                linear-gradient(90deg, ${t.gridColor} 1px, transparent 1px)`
             : 'none',
           backgroundSize: showGrid ? '50px 50px' : 'auto',
-        }}
-      />
-
-      {/* Central glow blob — always visible */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: isMobile ? '80%' : '60%',
-          aspectRatio: '1',
-          borderRadius: '50%',
-          background: `radial-gradient(circle, rgba(${rgb}, ${(glowIntensity ?? 12) / 100 * 1.5}) 0%, transparent 70%)`,
-          animation: 'tronCtaPulse 4s ease-in-out infinite',
-          pointerEvents: 'none',
-          zIndex: 0,
         }}
       />
 
@@ -290,6 +272,7 @@ export const TronCTA = React.memo(function TronCTA() {
       <div
         style={{
           position: 'relative', zIndex: 2,
+          width: '100%',
           maxWidth: 1200, margin: '0 auto',
           padding: isMobile ? '60px 24px' : '80px 40px',
           display: 'flex',
