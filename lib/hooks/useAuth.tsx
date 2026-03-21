@@ -431,66 +431,73 @@ function useAuthProvider(): AuthContextValue {
         
         if (event === 'SIGNED_IN' && session?.user) {
           const user = session.user;
-          
-          console.log('🔐 Auth event: SIGNED_IN');
-          console.log('👤 User data:', { email: user.email, metadata: user.user_metadata });
-          
-          // Build profile from user metadata (fast, cached by Supabase)
           const profile = buildProfileFromUser(user);
-          
-          console.log('📋 Profile built from metadata:', { email: profile.email, role: profile.role });
-          
-          setAuthState({
-            user,
-            profile,
-            loading: false,
-            isAuthenticated: true,
-            error: null,
-          });
-          
-          console.log('✅ Auth state updated');
+          setAuthState({ user, profile, loading: false, isAuthenticated: true, error: null });
         } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          // TOKEN_REFRESHED: normal session refresh
-          // USER_UPDATED: fires when admin changes user_metadata (role change) — no re-login needed
-          console.log('🔐 Auth event:', event);
           const user = session?.user;
-          
           if (user) {
-            console.log('👤 User data (from cache):', {
-              id: user.id,
-              email: user.email,
-              metadata: user.user_metadata,
-            });
-            
             const profile = buildProfileFromUser(user);
-            
-            console.log('📋 Built profile:', profile);
-            
-            setAuthState({
-              user,
-              profile,
-              loading: false,
-              isAuthenticated: true,
-              error: null,
-            });
-            
-            console.log('✅ Auth state updated');
+            setAuthState({ user, profile, loading: false, isAuthenticated: true, error: null });
           }
         } else if (event === 'SIGNED_OUT') {
-          setAuthState({
-            user: null,
-            profile: null,
-            loading: false,
-            isAuthenticated: false,
-            error: null,
-          });
+          setAuthState({ user: null, profile: null, loading: false, isAuthenticated: false, error: null });
         }
       }
     );
 
+    // ── Realtime: watch profiles table for role changes ──────────────────────
+    // When admin changes role via Admin API, user_metadata updates server-side
+    // but the client JWT is stale. We detect the DB change and force refreshSession()
+    // which issues a new JWT with updated user_metadata — no re-login needed.
+    let profilesChannel: ReturnType<typeof supabase.channel> | null = null;
+
+    const setupRealtimeRoleWatch = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id || !mountedRef.current) return;
+
+      const userId = session.user.id;
+
+      profilesChannel = supabase
+        .channel(`role-watch-${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${userId}`,
+          },
+          async (payload) => {
+            const newRole = (payload.new as { role?: number })?.role;
+            const oldRole = (payload.old as { role?: number })?.role;
+            if (newRole === oldRole) return;
+
+            console.log(`🔄 Role changed in DB: ${oldRole} → ${newRole}, forcing session refresh...`);
+
+            // Force new JWT with updated user_metadata
+            const { data, error } = await supabase.auth.refreshSession();
+            if (!error && data?.user && mountedRef.current) {
+              const profile = buildProfileFromUser(data.user);
+              setAuthState({
+                user: data.user,
+                profile,
+                loading: false,
+                isAuthenticated: true,
+                error: null,
+              });
+              console.log('✅ Role updated live, new role:', profile.role);
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtimeRoleWatch();
+
     return () => {
       mountedRef.current = false;
       subscription.unsubscribe();
+      if (profilesChannel) supabase.removeChannel(profilesChannel);
     };
   }, []);
 
