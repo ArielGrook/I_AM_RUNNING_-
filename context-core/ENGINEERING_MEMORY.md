@@ -59,6 +59,9 @@
 - Maps block IDs to Tron components: header→HeaderTron, hero→HeroTron, about→TronAbout, etc.
 - services→TronFeatures (TronServices not yet built)
 - Returns React elements array for Craft.js parseReactElement
+- **Block ordering bug (fixed 21.03.2026):** `contract.blocks` initial state is `['header','hero','footer']`. When user toggles optional blocks they append AFTER footer, giving order: header→hero→footer→about→services. Assembler rendered in array order → footer was 3rd.
+- **Fix:** assembler now enforces canonical order: header→hero→middleBlocks(user order)→footer via explicit reorder before map.
+- **Position badges (added 21.03.2026):** Step 3 UI shows numeric badge (1,2,3...) on optional selected blocks in top-left corner. Footer shows "last" badge. Header/Hero show no badge (always implicit first positions). Computed from `optionalSelected = contract.blocks.filter(not header/hero/footer)`.
 
 ---
 

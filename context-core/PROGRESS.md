@@ -20,7 +20,8 @@
 - Deploy via nohup pattern (fire-and-forget)
 
 ## Open Issues ⚠️
-- Interactive: component positioning (sections may overlap)
+- ~~Interactive: component positioning (sections may overlap)~~ ✅ Fixed 21.03.2026 — footer always last, assembler enforces canonical order
+- Interactive: block position badges added in Step 3 (numeric for optional, "last" for footer)
 - Interactive: style doesn't map to color presets yet
 - Interactive: no mobileData generation
 - Delete Account button in TronHub (stub)
