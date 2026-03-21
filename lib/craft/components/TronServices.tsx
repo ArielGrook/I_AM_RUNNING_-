@@ -70,7 +70,7 @@ interface ServiceItem {
   iconKey: string;
   title: string;
   description: string;
-  tag?: string;   // e.g. "Popular", "New", price like "$99/mo"
+  tag?: string;
   showTag?: boolean;
 }
 
@@ -94,12 +94,12 @@ export interface TronServicesProps {
 
 // ── Default items ─────────────────────────────────────────────────────────
 const DEFAULT_ITEMS: ServiceItem[] = [
-  { iconKey: 'design',    title: 'UI/UX Design',       description: 'Beautiful, conversion-focused designs tailored to your brand and audience.',    tag: 'Popular', showTag: true  },
-  { iconKey: 'code',      title: 'Web Development',    description: 'Fast, scalable websites and web apps built with modern technologies.',          tag: 'From $999', showTag: true  },
-  { iconKey: 'marketing', title: 'Digital Marketing',  description: 'Data-driven campaigns that grow your audience and convert visitors to clients.', tag: 'New',      showTag: false },
-  { iconKey: 'seo',       title: 'SEO Optimization',   description: 'Rank higher on search engines and get more organic traffic to your site.',     tag: '',         showTag: false },
-  { iconKey: 'analytics', title: 'Analytics & Reports', description: 'Deep insights into your traffic, conversions, and user behavior patterns.',   tag: '',         showTag: false },
-  { iconKey: 'support',   title: '24/7 Support',        description: 'Round-the-clock expert support to keep your business running smoothly.',      tag: 'Pro',      showTag: false },
+  { iconKey: 'design',    title: 'UI/UX Design',        description: 'Beautiful, conversion-focused designs tailored to your brand and audience.',    tag: 'Popular',   showTag: true  },
+  { iconKey: 'code',      title: 'Web Development',     description: 'Fast, scalable websites and web apps built with modern technologies.',          tag: 'From $999', showTag: true  },
+  { iconKey: 'marketing', title: 'Digital Marketing',   description: 'Data-driven campaigns that grow your audience and convert visitors to clients.', tag: 'New',       showTag: false },
+  { iconKey: 'seo',       title: 'SEO Optimization',    description: 'Rank higher on search engines and get more organic traffic to your site.',      tag: '',          showTag: false },
+  { iconKey: 'analytics', title: 'Analytics & Reports', description: 'Deep insights into your traffic, conversions, and user behavior patterns.',    tag: '',          showTag: false },
+  { iconKey: 'support',   title: '24/7 Support',         description: 'Round-the-clock expert support to keep your business running smoothly.',       tag: 'Pro',       showTag: false },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ export const TronServices = React.memo(function TronServices() {
   const [isMobile, setIsMobile] = React.useState(false);
   const [hovered, setHovered] = React.useState<number | null>(null);
 
-  // ResizeObserver 520px
+  // ResizeObserver — 520px, строго пустой массив
   React.useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -124,42 +124,7 @@ export const TronServices = React.memo(function TronServices() {
     return () => observer.disconnect();
   }, []);
 
-  // GSAP stagger on scroll
-  React.useEffect(() => {
-    if (typeof window === 'undefined' || enabled) return;
-    let ctx: { revert?: () => void } = {};
-    const init = async () => {
-      try {
-        const gsapModule = await import('gsap');
-        const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-        const gsap = (gsapModule as unknown as { gsap: typeof import('gsap').gsap }).gsap
-          || (gsapModule as unknown as { default: typeof import('gsap').gsap }).default;
-        if (!gsap) return;
-        gsap.registerPlugin(ScrollTrigger);
-
-        ctx = gsap.context(() => {
-          const cards = containerRef.current?.querySelectorAll('.tron-service-card');
-          if (!cards?.length) return;
-          gsap.fromTo(cards,
-            { opacity: 0, y: 32 },
-            {
-              opacity: 1, y: 0, duration: 0.55, ease: 'power2.out',
-              stagger: 0.08,
-              scrollTrigger: {
-                trigger: containerRef.current,
-                start: 'top 80%',
-                once: true,
-              },
-            }
-          );
-        });
-      } catch { /* degrade */ }
-    };
-    init();
-    return () => { if (ctx?.revert) ctx.revert(); };
-  }, [enabled]);
-
-  // ── Props ──────────────────────────────────────────────────────────────
+  // ── Props ─────────────────────────────────────────────────────────────
   const props = useNode((node) => node.data.props as Partial<TronServicesProps>) ?? {};
   const {
     colorScheme = 'dark',
@@ -194,7 +159,7 @@ export const TronServices = React.memo(function TronServices() {
   const list = Array.isArray(items) && items.length > 0 ? items : DEFAULT_ITEMS;
   const cols = isMobile ? 1 : (columns ?? 3);
 
-  // ── Card layout ────────────────────────────────────────────────────────
+  // ── Card layout ──────────────────────────────────────────────────────
   const renderCards = () => (
     <div style={{
       display: 'grid',
@@ -202,38 +167,30 @@ export const TronServices = React.memo(function TronServices() {
       gap: isMobile ? 16 : 24,
     }}>
       {list.map((item, i) => {
-        const isHovered = hovered === i;
+        const isHov = hovered === i;
         return (
           <div
             key={i}
-            className="tron-service-card"
             onMouseEnter={() => !enabled && setHovered(i)}
             onMouseLeave={() => setHovered(null)}
             style={{
               position: 'relative',
               padding: isMobile ? '24px 20px' : '32px 28px',
               borderRadius: 16,
-              background: isHovered
-                ? `rgba(${rgb}, 0.07)`
-                : t.cardBg,
-              border: `1px solid ${isHovered ? `rgba(${rgb}, 0.25)` : t.border}`,
+              background: isHov ? `rgba(${rgb}, 0.07)` : t.cardBg,
+              border: `1px solid ${isHov ? `rgba(${rgb}, 0.25)` : t.border}`,
               transition: 'all 0.25s ease',
-              transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-              boxShadow: isHovered ? `0 16px 48px rgba(${rgb}, 0.12)` : 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 0,
-              cursor: 'default',
-              overflow: 'hidden',
+              transform: isHov ? 'translateY(-4px)' : 'translateY(0)',
+              boxShadow: isHov ? `0 16px 48px rgba(${rgb}, 0.12)` : 'none',
+              display: 'flex', flexDirection: 'column',
+              cursor: 'default', overflow: 'hidden',
             }}
           >
             {/* Accent top line */}
             <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0,
-              height: 2,
-              background: isHovered ? accentColor : 'transparent',
-              borderRadius: '16px 16px 0 0',
-              transition: 'background 0.25s ease',
+              position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+              background: isHov ? accentColor : 'transparent',
+              borderRadius: '16px 16px 0 0', transition: 'background 0.25s ease',
             }} />
 
             {/* Tag badge */}
@@ -241,55 +198,39 @@ export const TronServices = React.memo(function TronServices() {
               <div style={{
                 position: 'absolute', top: 16, right: 16,
                 padding: '3px 10px', borderRadius: 100,
-                background: `rgba(${rgb}, 0.15)`,
-                color: accentColor,
-                fontSize: 11, fontWeight: 700,
-                letterSpacing: '0.04em',
-              }}>
-                {item.tag}
-              </div>
+                background: `rgba(${rgb}, 0.15)`, color: accentColor,
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.04em',
+              }}>{item.tag}</div>
             )}
 
             {/* Icon */}
             <div style={{
               width: 48, height: 48, borderRadius: 12,
-              background: `rgba(${rgb}, ${isHovered ? 0.15 : 0.08})`,
+              background: `rgba(${rgb}, ${isHov ? 0.15 : 0.08})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: accentColor,
-              marginBottom: 20,
-              transition: 'background 0.25s ease',
-              flexShrink: 0,
+              color: accentColor, marginBottom: 20, transition: 'background 0.25s ease', flexShrink: 0,
             }}>
               {SERVICE_ICONS[item.iconKey] ?? SERVICE_ICONS.code}
             </div>
 
-            {/* Title */}
             <div style={{ marginBottom: 12 }}>
               <EditableText
-                value={item.title ?? ''}
-                fieldKey={`service-title-${i}`}
-                tag="h3"
+                value={item.title ?? ''} fieldKey={`service-title-${i}`} tag="h3"
                 style={{ fontSize: 18, fontWeight: 700, color: t.text, margin: 0 }}
                 enabled={enabled}
                 onSave={(val) => setProp((p: Record<string, unknown>) => {
                   const arr = [...((p.items as ServiceItem[]) ?? [])];
-                  arr[i] = { ...arr[i], title: val };
-                  p.items = arr;
+                  arr[i] = { ...arr[i], title: val }; p.items = arr;
                 }, 0)}
               />
             </div>
-
-            {/* Description */}
             <EditableText
-              value={item.description ?? ''}
-              fieldKey={`service-desc-${i}`}
-              tag="p"
+              value={item.description ?? ''} fieldKey={`service-desc-${i}`} tag="p"
               style={{ fontSize: 14, lineHeight: 1.65, color: t.textSecondary, margin: 0, flex: 1 }}
               enabled={enabled}
               onSave={(val) => setProp((p: Record<string, unknown>) => {
                 const arr = [...((p.items as ServiceItem[]) ?? [])];
-                arr[i] = { ...arr[i], description: val };
-                p.items = arr;
+                arr[i] = { ...arr[i], description: val }; p.items = arr;
               }, 0)}
             />
           </div>
@@ -298,88 +239,56 @@ export const TronServices = React.memo(function TronServices() {
     </div>
   );
 
-  // ── Steps layout (numbered process) ───────────────────────────────────
+  // ── Steps layout ────────────────────────────────────────────────────
   const renderSteps = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       {list.map((item, i) => {
         const isLast = i === list.length - 1;
         return (
-          <div
-            key={i}
-            className="tron-service-card"
-            style={{
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              gap: isMobile ? 16 : 32,
-              alignItems: isMobile ? 'flex-start' : 'flex-start',
-              paddingBottom: isLast ? 0 : 40,
-              marginBottom: isLast ? 0 : 0,
-              position: 'relative',
-            }}
-          >
-            {/* Step number + line */}
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              flexShrink: 0,
-            }}>
+          <div key={i} style={{
+            display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? 16 : 32, paddingBottom: isLast ? 0 : 40,
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
               <div style={{
                 width: 48, height: 48, borderRadius: '50%',
-                background: `rgba(${rgb}, 0.12)`,
-                border: `2px solid rgba(${rgb}, 0.3)`,
+                background: `rgba(${rgb}, 0.12)`, border: `2px solid rgba(${rgb}, 0.3)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: accentColor,
-                fontSize: 16, fontWeight: 800,
-                flexShrink: 0,
-              }}>
-                {i + 1}
-              </div>
+                color: accentColor, fontSize: 16, fontWeight: 800,
+              }}>{i + 1}</div>
               {!isLast && !isMobile && (
                 <div style={{
-                  width: 1, flex: 1, minHeight: 40,
+                  width: 1, flex: 1, minHeight: 40, marginTop: 8,
                   background: `linear-gradient(to bottom, rgba(${rgb}, 0.3), transparent)`,
-                  marginTop: 8,
                 }} />
               )}
             </div>
-
-            {/* Content */}
             <div style={{ flex: 1, paddingBottom: isLast ? 0 : (isMobile ? 0 : 40) }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <div style={{ color: accentColor }}>
-                  {SERVICE_ICONS[item.iconKey] ?? SERVICE_ICONS.code}
-                </div>
+                <div style={{ color: accentColor }}>{SERVICE_ICONS[item.iconKey] ?? SERVICE_ICONS.code}</div>
                 <EditableText
-                  value={item.title ?? ''}
-                  fieldKey={`step-title-${i}`}
-                  tag="h3"
+                  value={item.title ?? ''} fieldKey={`step-title-${i}`} tag="h3"
                   style={{ fontSize: 18, fontWeight: 700, color: t.text, margin: 0 }}
                   enabled={enabled}
                   onSave={(val) => setProp((p: Record<string, unknown>) => {
                     const arr = [...((p.items as ServiceItem[]) ?? [])];
-                    arr[i] = { ...arr[i], title: val };
-                    p.items = arr;
+                    arr[i] = { ...arr[i], title: val }; p.items = arr;
                   }, 0)}
                 />
                 {item.showTag && item.tag && (
                   <span style={{
                     padding: '2px 10px', borderRadius: 100,
-                    background: `rgba(${rgb}, 0.12)`, color: accentColor,
-                    fontSize: 11, fontWeight: 700,
-                  }}>
-                    {item.tag}
-                  </span>
+                    background: `rgba(${rgb}, 0.12)`, color: accentColor, fontSize: 11, fontWeight: 700,
+                  }}>{item.tag}</span>
                 )}
               </div>
               <EditableText
-                value={item.description ?? ''}
-                fieldKey={`step-desc-${i}`}
-                tag="p"
+                value={item.description ?? ''} fieldKey={`step-desc-${i}`} tag="p"
                 style={{ fontSize: 15, lineHeight: 1.65, color: t.textSecondary, margin: 0 }}
                 enabled={enabled}
                 onSave={(val) => setProp((p: Record<string, unknown>) => {
                   const arr = [...((p.items as ServiceItem[]) ?? [])];
-                  arr[i] = { ...arr[i], description: val };
-                  p.items = arr;
+                  arr[i] = { ...arr[i], description: val }; p.items = arr;
                 }, 0)}
               />
             </div>
@@ -389,81 +298,60 @@ export const TronServices = React.memo(function TronServices() {
     </div>
   );
 
-  // ── Horizontal layout (compact list) ──────────────────────────────────
+  // ── Horizontal layout ────────────────────────────────────────────────
   const renderHorizontal = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {list.map((item, i) => {
-        const isHovered = hovered === i;
+        const isHov = hovered === i;
         return (
-          <div
-            key={i}
-            className="tron-service-card"
+          <div key={i}
             onMouseEnter={() => !enabled && setHovered(i)}
             onMouseLeave={() => setHovered(null)}
             style={{
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
+              display: 'flex', flexDirection: isMobile ? 'column' : 'row',
               alignItems: isMobile ? 'flex-start' : 'center',
-              gap: isMobile ? 12 : 24,
-              padding: isMobile ? '20px 16px' : '20px 28px',
+              gap: isMobile ? 12 : 24, padding: isMobile ? '20px 16px' : '20px 28px',
               borderRadius: 12,
-              background: isHovered ? `rgba(${rgb}, 0.05)` : 'transparent',
-              border: `1px solid ${isHovered ? `rgba(${rgb}, 0.15)` : 'transparent'}`,
-              transition: 'all 0.2s ease',
-              cursor: 'default',
+              background: isHov ? `rgba(${rgb}, 0.05)` : 'transparent',
+              border: `1px solid ${isHov ? `rgba(${rgb}, 0.15)` : 'transparent'}`,
+              transition: 'all 0.2s ease', cursor: 'default',
             }}
           >
             <div style={{
               width: 40, height: 40, borderRadius: 10, flexShrink: 0,
               background: `rgba(${rgb}, 0.1)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: accentColor,
-            }}>
-              {SERVICE_ICONS[item.iconKey] ?? SERVICE_ICONS.code}
-            </div>
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: accentColor,
+            }}>{SERVICE_ICONS[item.iconKey] ?? SERVICE_ICONS.code}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                 <EditableText
-                  value={item.title ?? ''}
-                  fieldKey={`horiz-title-${i}`}
-                  tag="span"
+                  value={item.title ?? ''} fieldKey={`horiz-title-${i}`} tag="span"
                   style={{ fontSize: 16, fontWeight: 700, color: t.text }}
                   enabled={enabled}
                   onSave={(val) => setProp((p: Record<string, unknown>) => {
                     const arr = [...((p.items as ServiceItem[]) ?? [])];
-                    arr[i] = { ...arr[i], title: val };
-                    p.items = arr;
+                    arr[i] = { ...arr[i], title: val }; p.items = arr;
                   }, 0)}
                 />
                 {item.showTag && item.tag && (
                   <span style={{
                     padding: '2px 8px', borderRadius: 100,
-                    background: `rgba(${rgb}, 0.12)`, color: accentColor,
-                    fontSize: 11, fontWeight: 700,
-                  }}>
-                    {item.tag}
-                  </span>
+                    background: `rgba(${rgb}, 0.12)`, color: accentColor, fontSize: 11, fontWeight: 700,
+                  }}>{item.tag}</span>
                 )}
               </div>
               <EditableText
-                value={item.description ?? ''}
-                fieldKey={`horiz-desc-${i}`}
-                tag="p"
+                value={item.description ?? ''} fieldKey={`horiz-desc-${i}`} tag="p"
                 style={{ fontSize: 14, lineHeight: 1.55, color: t.textSecondary, margin: 0 }}
                 enabled={enabled}
                 onSave={(val) => setProp((p: Record<string, unknown>) => {
                   const arr = [...((p.items as ServiceItem[]) ?? [])];
-                  arr[i] = { ...arr[i], description: val };
-                  p.items = arr;
+                  arr[i] = { ...arr[i], description: val }; p.items = arr;
                 }, 0)}
               />
             </div>
             {!isMobile && (
-              <div style={{
-                color: isHovered ? accentColor : t.textSecondary,
-                transition: 'color 0.2s ease',
-                flexShrink: 0,
-              }}>
+              <div style={{ color: isHov ? accentColor : t.textSecondary, transition: 'color 0.2s ease', flexShrink: 0 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
@@ -507,8 +395,7 @@ export const TronServices = React.memo(function TronServices() {
       <div
         style={{
           position: 'relative', zIndex: 1,
-          width: '100%',
-          maxWidth: 1200, margin: '0 auto',
+          width: '100%', maxWidth: 1200, margin: '0 auto',
           padding: isMobile ? '60px 20px' : '80px 40px',
         }}
         {...animAttrs}
@@ -516,18 +403,11 @@ export const TronServices = React.memo(function TronServices() {
         {/* Header */}
         <div style={{ marginBottom: isMobile ? 40 : 56, textAlign: 'center' }}>
           {showLabel && (
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 16,
-            }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
               <div style={{ width: 32, height: 2, background: accentColor, borderRadius: 1 }} />
               <EditableText
-                value={label ?? ''}
-                fieldKey="label"
-                tag="span"
-                style={{
-                  color: accentColor, fontSize: 13, fontWeight: 600,
-                  textTransform: 'uppercase', letterSpacing: '0.08em',
-                }}
+                value={label ?? ''} fieldKey="label" tag="span"
+                style={{ color: accentColor, fontSize: 13, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}
                 enabled={enabled}
                 onSave={(val) => setProp((p: Record<string, unknown>) => { p.label = val; }, 0)}
               />
@@ -535,34 +415,21 @@ export const TronServices = React.memo(function TronServices() {
             </div>
           )}
           <EditableText
-            value={title ?? ''}
-            fieldKey="title"
-            tag="h2"
-            style={{
-              fontSize: isMobile ? 28 : 44, fontWeight: 800,
-              letterSpacing: '-0.02em', lineHeight: 1.1,
-              color: t.text, margin: '0 0 16px',
-            }}
+            value={title ?? ''} fieldKey="title" tag="h2"
+            style={{ fontSize: isMobile ? 28 : 44, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1, color: t.text, margin: '0 0 16px' }}
             enabled={enabled}
             onSave={(val) => setProp((p: Record<string, unknown>) => { p.title = val; }, 0)}
           />
           <EditableText
-            value={subtitle ?? ''}
-            fieldKey="subtitle"
-            tag="p"
-            style={{
-              fontSize: 16, lineHeight: 1.65,
-              color: t.textSecondary, margin: '0 auto',
-              maxWidth: 560,
-            }}
+            value={subtitle ?? ''} fieldKey="subtitle" tag="p"
+            style={{ fontSize: 16, lineHeight: 1.65, color: t.textSecondary, margin: '0 auto', maxWidth: 560 }}
             enabled={enabled}
             onSave={(val) => setProp((p: Record<string, unknown>) => { p.subtitle = val; }, 0)}
           />
         </div>
 
-        {/* Services */}
-        {layoutStyle === 'cards' && renderCards()}
-        {layoutStyle === 'steps' && renderSteps()}
+        {layoutStyle === 'cards'      && renderCards()}
+        {layoutStyle === 'steps'      && renderSteps()}
         {layoutStyle === 'horizontal' && renderHorizontal()}
       </div>
     </section>
@@ -652,7 +519,7 @@ function TronServicesSettings() {
         </div>
       </div>
 
-      {/* ITEMS */}
+      {/* ITEMS — новый layout: title сверху, icon+tag снизу */}
       <div className={sectionCls}>
         <h3 className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Services ({list.length})</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -661,32 +528,54 @@ function TronServicesSettings() {
               background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 8, padding: 10,
             }}>
+              {/* Row 1: title + delete */}
               <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                <select value={item.iconKey} onChange={(e) => updateItem(i, 'iconKey', e.target.value)}
-                  className={inputCls} style={{ width: 110, flexShrink: 0, marginBottom: 0 }}>
+                <input
+                  type="text" value={item.title} placeholder="Title"
+                  onChange={(e) => updateItem(i, 'title', e.target.value)}
+                  className={inputCls} style={{ flex: 1, marginBottom: 0 }}
+                />
+                <button
+                  onClick={() => setProp((p: Record<string, unknown>) => {
+                    p.items = ((p.items as ServiceItem[]) ?? []).filter((_, idx) => idx !== i);
+                  })}
+                  style={{ color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '0 4px', flexShrink: 0 }}
+                >×</button>
+              </div>
+
+              {/* Row 2: description */}
+              <textarea
+                value={item.description} placeholder="Description" rows={2}
+                onChange={(e) => updateItem(i, 'description', e.target.value)}
+                className={inputCls} style={{ marginBottom: 6 }}
+              />
+
+              {/* Row 3: icon select + tag input + show toggle */}
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <select
+                  value={item.iconKey} onChange={(e) => updateItem(i, 'iconKey', e.target.value)}
+                  className={inputCls} style={{ width: 100, flexShrink: 0, marginBottom: 0 }}
+                >
                   {ICON_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
                 </select>
-                <input type="text" value={item.title} placeholder="Title"
-                  onChange={(e) => updateItem(i, 'title', e.target.value)} className={inputCls} style={{ marginBottom: 0 }} />
-                <button onClick={() => setProp((p: Record<string, unknown>) => {
-                  p.items = ((p.items as ServiceItem[]) ?? []).filter((_, idx) => idx !== i);
-                })} style={{ color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '0 4px', flexShrink: 0 }}>×</button>
-              </div>
-              <textarea value={item.description} placeholder="Description" rows={2}
-                onChange={(e) => updateItem(i, 'description', e.target.value)} className={inputCls} style={{ marginBottom: 6 }} />
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <input type="text" value={item.tag ?? ''} placeholder="Tag (e.g. Popular, $99)" style={{ flex: 1, marginBottom: 0 }}
-                  onChange={(e) => updateItem(i, 'tag', e.target.value)} className={inputCls} />
-                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#a1a1aa', flexShrink: 0 }}>
+                <input
+                  type="text" value={item.tag ?? ''} placeholder="Tag (Popular, $99…)"
+                  onChange={(e) => updateItem(i, 'tag', e.target.value)}
+                  className={inputCls} style={{ flex: 1, marginBottom: 0 }}
+                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#a1a1aa', flexShrink: 0, cursor: 'pointer' }}>
                   <input type="checkbox" checked={item.showTag ?? false} onChange={(e) => updateItem(i, 'showTag', e.target.checked)} />
                   show
                 </label>
               </div>
             </div>
           ))}
-          <button onClick={() => setProp((p: Record<string, unknown>) => {
-            p.items = [...((p.items as ServiceItem[]) ?? []), { iconKey: 'code', title: 'New Service', description: 'Service description.', tag: '', showTag: false }];
-          })} style={{ color: '#FF6B35', fontWeight: 600, fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+          <button
+            onClick={() => setProp((p: Record<string, unknown>) => {
+              p.items = [...((p.items as ServiceItem[]) ?? []), { iconKey: 'code', title: 'New Service', description: 'Service description.', tag: '', showTag: false }];
+            })}
+            style={{ color: '#FF6B35', fontWeight: 600, fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
+          >
             + Add service
           </button>
         </div>
@@ -788,10 +677,7 @@ const tronServicesCraft = {
     block_type: 'services',
     variant_name: 'default',
     style_tags: ['dark', 'minimal', 'corporate'],
-    business_tags: [
-      'agency', 'consulting', 'startup', 'business_card',
-      'portfolio', 'health', 'education', 'beauty',
-    ],
+    business_tags: ['agency', 'consulting', 'startup', 'business_card', 'portfolio', 'health', 'education', 'beauty'],
     feature_tags: ['services'],
     supportsTheme: true,
     supportsColorPreset: true,
