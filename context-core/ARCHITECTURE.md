@@ -50,8 +50,10 @@
 - `agency_id` — для role 7: ID Agency Owner-а
 - `trial_expires_at` — ISO date, зарезервировано для Stripe trial
 
-**Фикс "нужно перелогиниться" (добавлен 21.03.2026):**
-`onAuthStateChange` теперь слушает `USER_UPDATED` event — когда admin меняет роль через Admin API, Supabase генерирует это событие, `buildProfileFromUser()` сразу перечитывает новый `user_metadata`. Перелогин больше не нужен.
+**Фикс real-time role propagation (21.03.2026):**
+`USER_UPDATED` event от Supabase не стреляет при `admin.updateUserById()` — только при `updateUser()` от самого юзера. Настоящее решение: Realtime подписка на `profiles` таблицу (`id=eq.{userId}`). Когда `role` меняется в БД → `supabase.auth.refreshSession()` → новый JWT с обновлённым `user_metadata` → `buildProfileFromUser()` → UI обновляется без перелогина.
+
+Канал: `role-watch-{userId}`, cleanup при размонтировании AuthProvider.
 
 **Admin panel role buttons (обновлено 21.03.2026):**
 Free | Paid | Basic | Pro | Admin | Agency | Employee
