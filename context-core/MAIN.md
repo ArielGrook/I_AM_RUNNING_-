@@ -41,6 +41,19 @@ username.iamrunning.online → Nginx wildcard → localhost:3000/sites/username
 SiteRenderer.tsx deserializes Craft.js JSON → renders same components as editor
 Navigation: CustomEvent('iam_navigate', { detail: { page: 'slug' } })
 
+## Context Core Documents
+| File | When to read |
+|------|-------------|
+| PROGRESS.md | Every new chat — current state |
+| ARCHITECTURE.md | Before changing any flow |
+| COMPONENTS.md | Before working with components |
+| MECHANICS.md | **Before writing ANY mechanic** — global vs component rules |
+| PATTERNS.md | Before writing a component |
+| ENGINEERING_MEMORY.md | Before debugging familiar zones |
+| DEBUG_MAP.md | On any bug |
+| INTERACTIVE_PIPELINE.md | Interactive wizard work |
+| MVP_HAPPY_PATH.md | Prioritization |
+
 ## Data Format
 Craft.js JSON → lz.compress(json, { outputEncoding: 'Base64' }) → Supabase JSONB
 Project: `data.craft.pages[].desktopData` = compressed Craft.js serialized state

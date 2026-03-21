@@ -22,6 +22,22 @@ TronHub — user dashboard (auth required, real Supabase ops)
 TronLogin — login with email + Google OAuth
 TronRegister — registration form
 
+## Mechanics Rules
+See full doctrine: context-core/MECHANICS.md
+
+GLOBAL mechanics (DO NOT implement in component):
+- Cursor spotlight — lives in Viewport.tsx + SiteRenderer.tsx ONLY
+- Page scroll animations — GSAP via data-animate attributes
+
+COMPONENT mechanics (allowed in component):
+- Static spotlight — fixed decorative radial gradient (NOT mouse-reactive)
+  prop name: spotlightIntensity — this is the TOP LIGHT, not cursor
+- Magnetic buttons, parallax image, card tilt, count-up — specific to component
+- Canvas particles/fireflies — Canvas API, always with cancelAnimationFrame cleanup
+
+KEY RULE: Never add mousemove → radial-gradient in a component.
+That's cursor spotlight. It's global. Adding it in component = double brightness bug.
+
 ## Protected (DO NOT DELETE)
 Container — root Element in Craft.js Frame
 HtmlBlock — required for ZIP import
