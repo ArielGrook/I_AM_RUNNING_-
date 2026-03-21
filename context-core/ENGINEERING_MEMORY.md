@@ -9,6 +9,17 @@
 
 ---
 
+### Nginx Subdomain — no resolver для localhost (fixed 21.03.2026)
+- Когда в `proxy_pass` используется переменная (`$subdomain`), Nginx требует явный `resolver` для резолва hostname
+- `proxy_pass http://localhost:3000/sites/$subdomain` → ошибка `no resolver defined to resolve localhost`
+- Фикс: всегда использовать IP `127.0.0.1` вместо `localhost` в subdomain конфиге
+- Файл: `/etc/nginx/sites-available/sites.iamrunning.online`
+
+### Multi-site deploy bug (known, 21.03.2026)
+- Нельзя задеплоить несколько сайтов одновременно или конкретный сайт по выбору
+- `/api/projects/[id]/deploy` — нужно проверить логику slug assignment и published flag
+- Не критично для MVP, фиксить после запуска
+
 ### Admin Panel Security (lib/admin/checkAdminAuth.ts)
 - **Было:** `/api/admin/get-users` и `/api/admin/update-user-role` — нулевая серверная авторизация. GET на get-users = полный список юзеров. POST на update-user-role = назначить себе роль 5 (Admin).
 - **Стало:** httpOnly cookie `admin_token` содержит `ADMIN_SESSION_SECRET` из env. `checkAdminAuth(request)` проверяет cookie в каждом admin route.

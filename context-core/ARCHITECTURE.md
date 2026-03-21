@@ -20,24 +20,40 @@
 
 **Роли:**
 - 0 = Anonymous
-- 1 = Free User (только чат)
-- 2 = Paid User (редактор, 1 проект)
+- 1 = Free User (только chat, default при регистрации)
+- 2 = Paid User (editor, 1 проект) — **недостижим через admin panel, нет кнопки**
 - 3 = Freelancer Basic (5 проектов)
 - 4 = Freelancer Pro (unlimited)
 - 5 = Admin
 
-**Флаги:** `canAccessEditor = role >= 2`, `isFreelancer = role >= 3`, `isAdmin = role >= 5`
-**Источник роли:** `user.user_metadata.role` → `buildProfileFromUser()`
-**Session:** `supabase.auth.getSession()` при инициализации AuthProvider
-**OAuth/Email confirm:** `app/[locale]/auth/callback/page.tsx` → `exchangeCodeForSession(code)`
+**Источник роли:** `user.user_metadata.role` — хранится в Supabase Auth токене, без запроса к БД. `buildProfileFromUser()` читает `user.user_metadata.role` при каждом auth event.
 
-**Guards (client-side, не middleware):**
+**Флаги в useAuth:** `canAccessEditor = role >= 2`, `isFreelancer = role >= 3`, `isAdmin = role >= 5`
+
+**Session:** `supabase.auth.getSession()` при инициализации + `onAuthStateChange` слушает SIGNED_IN / TOKEN_REFRESHED / SIGNED_OUT
+
+**Guards (client-side, НЕ middleware):**
 - `/dashboard` → `!isAuthenticated` → `/auth/login?redirect=...`, `!canAccessEditor` → `/subscription`
-- `/editor` → `!isAuthenticated` → `/auth/login` ⚠️ (исправлено ac5a25b)
-- `/profile` → `!isAuthenticated` → `/auth/login` (без locale — баг)
-- `/subscription` → `!isAuthenticated` → `/auth/login`
+- `/editor` → guard только client-side ⚠️ (middleware не проверяет роли)
 
-⚠️ **ВАЖНО:** Middleware НЕ защищает пути. Вся защита client-side через useAuth.
+**Проблема "нужно перелогиниться после смены роли":**
+`update-user-role` через Admin API меняет `user_metadata`, но браузерная сессия кэширует старый JWT токен до следующего TOKEN_REFRESHED (~60 мин). Решение: слушать `USER_UPDATED` event в `onAuthStateChange` и вызывать `refreshAuth()`.
+
+**Регистрационный триггер:**
+- Email signup: `role: 1` hardcode в `signUp()` → `user_metadata`
+- Google OAuth: fallback в `auth/callback/page.tsx` — если `role == null` → `updateUser({ data: { role: 1 } })`
+- Нет Supabase DB trigger — только client-side
+
+**Смена роли:**
+- Только через admin panel → `POST /api/admin/update-user-role`
+- Меняет: `users` таблица + `profiles` таблица + `auth.users.user_metadata` через Admin API
+- Stripe webhook для auto-upgrade — **не реализован**
+
+**Маппинг admin panel → role number:**
+```
+regular → 1, frontend → 3, full_stack → 4, professional → 5
+```
+⚠️ role 2 (Paid User) недостижим через admin panel — нет кнопки "Paid"
 
 ---
 
