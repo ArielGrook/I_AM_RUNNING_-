@@ -47,6 +47,7 @@ const categories: { key: 'tronSections'; title: string; items: { name: string; l
       { name: 'TronAbout', label: 'Tron About', icon: '◉', component: TronAbout, canvas: true },
       { name: 'TronCTA', label: 'Tron CTA', icon: '🎯', component: TronCTA, canvas: true },
       { name: 'TronServices', label: 'Tron Services', icon: '⚙️', component: TronServices, canvas: true },
+      { name: 'TronTeam', label: 'Tron Team', icon: '👥', component: TronTeam, canvas: true },
       { name: 'TronPortfolio', label: 'Tron Portfolio', icon: '▣', component: TronPortfolio, canvas: true },
       { name: 'TronTestimonials', label: 'Tron Testimonials', icon: '💬', component: TronTestimonials, canvas: true },
       { name: 'TronPricing', label: 'Tron Pricing', icon: '💰', component: TronPricing, canvas: true },

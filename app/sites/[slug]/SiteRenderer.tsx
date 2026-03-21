@@ -16,6 +16,8 @@ import {
   TronAbout,
   TronCTA,
   TronServices,
+  TronTeam,
+  TronTeam,
   TronServices,
   StatItem,
   TronPortfolio,

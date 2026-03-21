@@ -6,6 +6,7 @@ export { TronStats, StatItem } from './TronStats';
 export { TronAbout } from './TronAbout';
 export { TronCTA } from './TronCTA';
 export { TronServices } from './TronServices';
+export { TronTeam } from './TronTeam';
 export { TronPortfolio } from './TronPortfolio';
 export { TronTestimonials, TestimonialCard } from './TronTestimonials';
 export { TronPricing, PricingCard } from './TronPricing';
