@@ -9,7 +9,13 @@
 
 ---
 
-## EXPLORED ZONES
+### Admin Panel Security (lib/admin/checkAdminAuth.ts)
+- **Было:** `/api/admin/get-users` и `/api/admin/update-user-role` — нулевая серверная авторизация. GET на get-users = полный список юзеров. POST на update-user-role = назначить себе роль 5 (Admin).
+- **Стало:** httpOnly cookie `admin_token` содержит `ADMIN_SESSION_SECRET` из env. `checkAdminAuth(request)` проверяет cookie в каждом admin route.
+- **verify-totp** выставляет cookie через `setAdminSessionCookie(response)` при успешном TOTP.
+- **logout** (`POST /api/admin/logout`) чистит cookie сервер-сайд через `clearAdminSessionCookie()`.
+- Cookie: httpOnly, secure (production), sameSite: strict, maxAge: 8 часов.
+- Переменная `ADMIN_SESSION_SECRET` обязательна — без неё все admin routes возвращают 500.
 
 ### Editor (app/[locale]/editor/page.tsx)
 - **Size:** ~1200 lines. NEVER read in full — use search_files

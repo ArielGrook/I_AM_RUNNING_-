@@ -117,10 +117,24 @@
 **Файл:** `app/[locale]/admin/page.tsx`
 **Dev Console:** `app/[locale]/admin/dev-console/page.tsx`
 
-⚠️ **SECURITY:** Логин через hardcoded `admin`/`super.admin`, сессия в sessionStorage.
-Нет Supabase auth. Первый приоритет при pentest закрытии.
+**Auth flow (обновлено 21.03.2026):**
+1. Юзер вводит TOTP → `POST /api/admin/verify-totp` (IP lockout: 5 попыток → 15 мин)
+2. При успехе: сервер выставляет httpOnly cookie `admin_token` (8 часов, secure, sameSite: strict)
+3. Все admin API routes вызывают `checkAdminAuth(request)` из `lib/admin/checkAdminAuth.ts`
+4. Cookie не совпадает или отсутствует → 401, без исключений
+5. Logout: `POST /api/admin/logout` → очищает cookie сервер-сайд + `sessionStorage.removeItem`
+
+**Переменная окружения:** `ADMIN_SESSION_SECRET` — случайный hex32, хранится в `.env`
+
+**API routes:**
+- `POST /api/admin/verify-totp` — TOTP проверка, выставляет cookie (не требует auth)
+- `POST /api/admin/logout` — очищает cookie (не требует auth)
+- `GET /api/admin/get-users` — список пользователей (**требует cookie**)
+- `POST /api/admin/update-user-role` — смена роли (**требует cookie**)
 
 **Функции:** список пользователей, смена ролей, список проектов, SEO настройки, Dev Console
+
+⚠️ **БЫЛО:** `/api/admin/get-users` и `/api/admin/update-user-role` не имели серверной авторизации — любой мог получить список юзеров и назначить себе роль Admin. Закрыто хотфиксом c62b9f2.
 
 ---
 
@@ -163,7 +177,8 @@
 | Dashboard создаёт проект с неправильным data форматом | dashboard/page.tsx:86 | Открыт |
 | Profile редирект без locale `/auth/login` | profile/page.tsx:15 | Открыт |
 | Subscription — оплата не реализована (coming soon) | subscription/page.tsx:41 | Открыт |
-| Admin hardcoded логин/пароль | admin/page.tsx:99 | Открыт ⚠️ |
+- ~~Admin hardcoded логин/пароль~~ ✅ TOTP был уже реализован
+- ~~Admin API без авторизации~~ ✅ Закрыто хотфиксом 21.03.2026 — httpOnly cookie на всех /api/admin/* routes
 
 ---
 
