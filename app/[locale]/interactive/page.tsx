@@ -410,13 +410,454 @@ function AnimatedBackground({ accentColor, isDark }: { accentColor: string | nul
   );
 }
 
-// ── DEPRECATED: BusinessTypeThumbnail replaced by inline icons ──────────
-function BusinessTypeThumbnail({ id }: { id: string }) {
-  const bg = '#111';
-  const dim = 'rgba(255,255,255,0.06)';
-  const mid = 'rgba(255,255,255,0.15)';
-  const brt = 'rgba(255,255,255,0.55)';
+// ── Niche detailed thumbnails ────────────────────────────────────────────
+const NICHE_THUMBNAILS: Record<string, React.ReactNode> = {
+  food: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#111"/>
+      <rect x="0" y="0" width="140" height="14" fill="#0d0d0d"/>
+      <circle cx="10" cy="7" r="4" fill="#f97316" opacity=".9"/>
+      <rect x="20" y="5" width="22" height="4" rx="2" fill="rgba(255,255,255,.15)"/>
+      <rect x="100" y="4" width="18" height="6" rx="3" fill="#f97316" opacity=".8"/>
+      <rect x="0" y="14" width="140" height="36" fill="#1a0f08"/>
+      <ellipse cx="70" cy="32" rx="55" ry="22" fill="#f97316" opacity=".06"/>
+      <ellipse cx="70" cy="35" rx="24" ry="7" fill="rgba(255,255,255,.06)"/>
+      <ellipse cx="65" cy="30" rx="8" ry="6" fill="#c2410c" opacity=".85"/>
+      <ellipse cx="76" cy="31" rx="7" ry="5" fill="#16a34a" opacity=".7"/>
+      <ellipse cx="70" cy="28" rx="6" ry="4" fill="#d97706" opacity=".9"/>
+      <path d="M54 22 Q56 18 54 15" stroke="rgba(255,255,255,.15)" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+      <path d="M70 20 Q72 16 70 13" stroke="rgba(255,255,255,.15)" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+      <path d="M86 22 Q88 18 86 15" stroke="rgba(255,255,255,.15)" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+      <rect x="40" y="52" width="60" height="6" rx="2" fill="rgba(255,255,255,.7)"/>
+      <rect x="50" y="61" width="40" height="3" rx="1.5" fill="rgba(255,255,255,.25)"/>
+      <rect x="10" y="68" width="36" height="14" rx="3" fill="#f97316" opacity=".15"/>
+      <rect x="10" y="73" width="24" height="3" rx="1.5" fill="#f97316" opacity=".5"/>
+      <rect x="52" y="68" width="36" height="14" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="52" y="73" width="20" height="3" rx="1.5" fill="rgba(255,255,255,.2)"/>
+      <rect x="94" y="68" width="36" height="14" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="94" y="73" width="22" height="3" rx="1.5" fill="rgba(255,255,255,.2)"/>
+    </svg>
+  ),
+  shop: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#0d0a1a"/>
+      <rect x="0" y="0" width="140" height="13" fill="#080614"/>
+      <circle cx="10" cy="6.5" r="4" fill="#8b5cf6" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="108" y="3" width="24" height="7" rx="3.5" fill="#8b5cf6" opacity=".8"/>
+      <rect x="18" y="16" width="104" height="56" rx="3" fill="#120e22"/>
+      <rect x="18" y="16" width="104" height="14" rx="3" fill="#1e1535"/>
+      <rect x="18" y="16" width="26" height="14" fill="#8b5cf6" opacity=".35"/>
+      <rect x="44" y="16" width="26" height="14" fill="#7c3aed" opacity=".25"/>
+      <rect x="70" y="16" width="26" height="14" fill="#8b5cf6" opacity=".35"/>
+      <rect x="96" y="16" width="26" height="14" fill="#7c3aed" opacity=".25"/>
+      <rect x="38" y="19" width="64" height="7" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="48" y="21" width="44" height="3" rx="1" fill="rgba(255,255,255,.5)"/>
+      <rect x="22" y="34" width="30" height="22" rx="2" fill="rgba(255,255,255,.06)"/>
+      <rect x="88" y="34" width="30" height="22" rx="2" fill="rgba(255,255,255,.06)"/>
+      <rect x="26" y="37" width="8" height="12" rx="1" fill="#d97706" opacity=".55"/>
+      <rect x="36" y="39" width="7" height="10" rx="1" fill="#ec4899" opacity=".55"/>
+      <rect x="92" y="36" width="7" height="14" rx="1" fill="#22c55e" opacity=".5"/>
+      <rect x="101" y="38" width="8" height="12" rx="1" fill="#3b82f6" opacity=".5"/>
+      <rect x="57" y="34" width="26" height="28" rx="2" fill="rgba(255,255,255,.07)"/>
+      <circle cx="80" cy="48" r="1.5" fill="rgba(255,255,255,.3)"/>
+      <rect x="18" y="72" width="104" height="8" fill="rgba(255,255,255,.04)"/>
+    </svg>
+  ),
+  ecommerce: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#050d1a"/>
+      <rect x="0" y="0" width="140" height="13" fill="#030810"/>
+      <circle cx="10" cy="6.5" r="4" fill="#00bcd4" opacity=".9"/>
+      <rect x="20" y="4" width="20" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="30" y="4" width="50" height="5" rx="2.5" fill="rgba(255,255,255,.06)"/>
+      <rect x="118" y="3" width="14" height="8" rx="4" fill="#00bcd4" opacity=".9"/>
+      <rect x="8" y="18" width="37" height="28" rx="3" fill="rgba(255,255,255,.06)"/>
+      <rect x="8" y="18" width="37" height="18" rx="3" fill="#e11d48" opacity=".2"/>
+      <rect x="12" y="40" width="20" height="2.5" rx="1" fill="rgba(255,255,255,.5)"/>
+      <rect x="12" y="44" width="14" height="2" rx="1" fill="#00bcd4" opacity=".7"/>
+      <rect x="52" y="18" width="37" height="28" rx="3" fill="rgba(255,255,255,.06)"/>
+      <rect x="52" y="18" width="37" height="18" rx="3" fill="#8b5cf6" opacity=".2"/>
+      <rect x="56" y="40" width="20" height="2.5" rx="1" fill="rgba(255,255,255,.5)"/>
+      <rect x="56" y="44" width="14" height="2" rx="1" fill="#00bcd4" opacity=".7"/>
+      <rect x="96" y="18" width="37" height="28" rx="3" fill="rgba(255,255,255,.06)"/>
+      <rect x="96" y="18" width="37" height="18" rx="3" fill="#16a34a" opacity=".2"/>
+      <rect x="100" y="40" width="20" height="2.5" rx="1" fill="rgba(255,255,255,.5)"/>
+      <rect x="100" y="44" width="14" height="2" rx="1" fill="#00bcd4" opacity=".7"/>
+      <rect x="8" y="50" width="37" height="28" rx="3" fill="rgba(255,255,255,.06)"/>
+      <rect x="8" y="50" width="37" height="18" rx="3" fill="#d97706" opacity=".2"/>
+      <rect x="52" y="50" width="37" height="28" rx="3" fill="rgba(255,255,255,.06)"/>
+      <rect x="52" y="50" width="37" height="18" rx="3" fill="#e11d48" opacity=".15"/>
+      <rect x="96" y="50" width="37" height="28" rx="3" fill="rgba(255,255,255,.06)"/>
+      <rect x="96" y="50" width="37" height="18" rx="3" fill="#00bcd4" opacity=".12"/>
+    </svg>
+  ),
+  startup: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#030a00"/>
+      <rect x="0" y="0" width="140" height="13" fill="#020700"/>
+      <circle cx="10" cy="6.5" r="4" fill="#84cc16" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="108" y="3" width="24" height="7" rx="3" fill="#84cc16" opacity=".85"/>
+      <rect x="20" y="18" width="85" height="8" rx="2" fill="rgba(255,255,255,.75)"/>
+      <rect x="20" y="29" width="65" height="5" rx="1.5" fill="rgba(255,255,255,.3)"/>
+      <rect x="20" y="37" width="50" height="5" rx="1.5" fill="rgba(255,255,255,.2)"/>
+      <rect x="20" y="46" width="32" height="10" rx="5" fill="#84cc16" opacity=".9"/>
+      <rect x="57" y="46" width="32" height="10" rx="5" fill="none" stroke="#84cc16" strokeWidth="1" opacity=".6"/>
+      <path d="M115 42 L120 24 L125 42 Z" fill="#84cc16" opacity=".7"/>
+      <rect x="117" y="38" width="6" height="16" rx="2" fill="#4d7c0f" opacity=".8"/>
+      <ellipse cx="120" cy="56" rx="5" ry="7" fill="#f59e0b" opacity=".5"/>
+      <ellipse cx="120" cy="56" rx="3" ry="4" fill="#fbbf24" opacity=".7"/>
+      <rect x="8" y="62" width="30" height="18" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="10" y="65" width="16" height="5" rx="1" fill="#84cc16" opacity=".5"/>
+      <rect x="10" y="73" width="22" height="2.5" rx="1" fill="rgba(255,255,255,.2)"/>
+      <rect x="44" y="62" width="30" height="18" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="46" y="65" width="16" height="5" rx="1" fill="#84cc16" opacity=".5"/>
+      <rect x="46" y="73" width="22" height="2.5" rx="1" fill="rgba(255,255,255,.2)"/>
+      <rect x="80" y="62" width="30" height="18" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="82" y="65" width="16" height="5" rx="1" fill="#84cc16" opacity=".5"/>
+      <rect x="82" y="73" width="22" height="2.5" rx="1" fill="rgba(255,255,255,.2)"/>
+    </svg>
+  ),
+  portfolio: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#0a0800"/>
+      <rect x="0" y="0" width="140" height="13" fill="#070600"/>
+      <circle cx="10" cy="6.5" r="4" fill="#d97706" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="8" y="16" width="78" height="50" rx="4" fill="rgba(255,255,255,.05)"/>
+      <circle cx="30" cy="36" r="16" fill="#8b5cf6" opacity=".3"/>
+      <circle cx="52" cy="40" r="14" fill="#3b82f6" opacity=".3"/>
+      <circle cx="44" cy="26" r="12" fill="#e11d48" opacity=".25"/>
+      <path d="M14 48 Q28 36 42 44 Q56 52 70 40" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" opacity=".6"/>
+      <rect x="10" y="57" width="40" height="3" rx="1.5" fill="rgba(255,255,255,.5)"/>
+      <rect x="10" y="62" width="28" height="2" rx="1" fill="#d97706" opacity=".5"/>
+      <rect x="92" y="16" width="40" height="22" rx="3" fill="rgba(255,255,255,.05)"/>
+      <ellipse cx="112" cy="27" rx="12" ry="8" fill="#d97706" opacity=".2"/>
+      <rect x="92" y="42" width="40" height="22" rx="3" fill="rgba(255,255,255,.05)"/>
+      <ellipse cx="112" cy="53" rx="12" ry="8" fill="#8b5cf6" opacity=".2"/>
+      <rect x="8" y="70" width="24" height="12" rx="2" fill="rgba(255,255,255,.05)"/>
+      <rect x="36" y="70" width="24" height="12" rx="2" fill="rgba(255,255,255,.05)"/>
+      <rect x="64" y="70" width="24" height="12" rx="2" fill="rgba(255,255,255,.05)"/>
+      <rect x="92" y="70" width="24" height="12" rx="2" fill="rgba(255,255,255,.05)"/>
+      <rect x="120" y="70" width="12" height="12" rx="2" fill="#d97706" opacity=".5"/>
+    </svg>
+  ),
+  beauty: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#120810"/>
+      <rect x="0" y="0" width="140" height="13" fill="#0d0609"/>
+      <circle cx="10" cy="6.5" r="4" fill="#ec4899" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="0" y="13" width="70" height="40" fill="#1a0d14"/>
+      <ellipse cx="35" cy="33" rx="30" ry="20" fill="#ec4899" opacity=".05"/>
+      <ellipse cx="35" cy="20" rx="8" ry="8" fill="rgba(255,255,255,.08)"/>
+      <rect x="27" y="28" width="16" height="22" rx="4" fill="rgba(255,255,255,.06)"/>
+      <line x1="55" y1="15" x2="55" y2="21" stroke="#f9a8d4" strokeWidth="1.2" opacity=".6"/>
+      <line x1="52" y1="18" x2="58" y2="18" stroke="#f9a8d4" strokeWidth="1.2" opacity=".6"/>
+      <line x1="12" y1="16" x2="12" y2="22" stroke="#ec4899" strokeWidth="1.2" opacity=".5"/>
+      <line x1="9" y1="19" x2="15" y2="19" stroke="#ec4899" strokeWidth="1.2" opacity=".5"/>
+      <rect x="76" y="16" width="50" height="6" rx="2" fill="rgba(255,255,255,.65)"/>
+      <rect x="76" y="25" width="40" height="3" rx="1.5" fill="rgba(255,255,255,.25)"/>
+      <rect x="76" y="31" width="44" height="3" rx="1.5" fill="rgba(255,255,255,.18)"/>
+      <rect x="76" y="37" width="36" height="3" rx="1.5" fill="rgba(255,255,255,.18)"/>
+      <rect x="76" y="44" width="28" height="7" rx="3.5" fill="#ec4899" opacity=".85"/>
+      <rect x="8" y="57" width="28" height="24" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="8" y="57" width="28" height="14" rx="3" fill="#9333ea" opacity=".2"/>
+      <rect x="10" y="74" width="16" height="2.5" rx="1" fill="rgba(255,255,255,.3)"/>
+      <rect x="42" y="57" width="28" height="24" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="42" y="57" width="28" height="14" rx="3" fill="#ec4899" opacity=".2"/>
+      <rect x="44" y="74" width="16" height="2.5" rx="1" fill="rgba(255,255,255,.3)"/>
+      <rect x="76" y="57" width="28" height="24" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="76" y="57" width="28" height="14" rx="3" fill="#db2777" opacity=".2"/>
+      <rect x="78" y="74" width="16" height="2.5" rx="1" fill="rgba(255,255,255,.3)"/>
+      <rect x="110" y="57" width="22" height="24" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="110" y="57" width="22" height="14" rx="3" fill="#c026d3" opacity=".18"/>
+    </svg>
+  ),
+  health: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#061410"/>
+      <rect x="0" y="0" width="140" height="13" fill="#040e0b"/>
+      <circle cx="10" cy="6.5" r="4" fill="#22c55e" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="8" y="16" width="124" height="36" rx="4" fill="#061a0f"/>
+      <polyline points="12,36 24,36 30,22 36,48 42,30 48,34 56,34 62,34 68,34 74,20 80,46 86,34 98,34 110,34 120,26 128,34 132,34" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".9"/>
+      <polyline points="12,36 24,36 30,22 36,48 42,30 48,34 56,34 62,34 68,34 74,20 80,46 86,34 98,34 110,34 120,26 128,34 132,34" fill="none" stroke="#22c55e" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" opacity=".08"/>
+      <rect x="10" y="19" width="14" height="7" rx="1" fill="#22c55e" opacity=".4"/>
+      <rect x="26" y="20" width="20" height="5" rx="1" fill="rgba(255,255,255,.4)"/>
+      <rect x="8" y="57" width="36" height="22" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="10" y="60" width="16" height="7" rx="1" fill="#22c55e" opacity=".5"/>
+      <rect x="10" y="70" width="28" height="2.5" rx="1" fill="rgba(255,255,255,.3)"/>
+      <rect x="10" y="74" width="20" height="2" rx="1" fill="rgba(255,255,255,.15)"/>
+      <rect x="52" y="57" width="36" height="22" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="54" y="60" width="16" height="7" rx="1" fill="#3b82f6" opacity=".5"/>
+      <rect x="54" y="70" width="28" height="2.5" rx="1" fill="rgba(255,255,255,.3)"/>
+      <rect x="96" y="57" width="36" height="22" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="98" y="60" width="16" height="7" rx="1" fill="#f59e0b" opacity=".5"/>
+      <rect x="98" y="70" width="28" height="2.5" rx="1" fill="rgba(255,255,255,.3)"/>
+    </svg>
+  ),
+  education: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#060d1a"/>
+      <rect x="0" y="0" width="140" height="13" fill="#040910"/>
+      <circle cx="10" cy="6.5" r="4" fill="#3b82f6" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="108" y="3" width="24" height="7" rx="3.5" fill="#3b82f6" opacity=".85"/>
+      <rect x="8" y="18" width="60" height="38" rx="4" fill="#0c1a2e"/>
+      <rect x="8" y="18" width="60" height="22" rx="4" fill="#1e3a5f"/>
+      <rect x="28" y="24" width="20" height="3" rx="1" fill="rgba(255,255,255,.6)"/>
+      <path d="M38 27 L46 23 L38 19 L30 23 Z" fill="rgba(255,255,255,.5)"/>
+      <rect x="44" y="22" width="1.5" height="8" rx=".75" fill="rgba(255,255,255,.4)"/>
+      <rect x="12" y="43" width="40" height="3" rx="1.5" fill="rgba(255,255,255,.5)"/>
+      <rect x="12" y="48" width="28" height="2.5" rx="1" fill="rgba(255,255,255,.2)"/>
+      <rect x="12" y="52" width="20" height="5" rx="2.5" fill="#3b82f6" opacity=".7"/>
+      <rect x="74" y="18" width="58" height="17" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="74" y="18" width="28" height="17" rx="3" fill="#1e3a5f"/>
+      <rect x="106" y="21" width="22" height="3" rx="1" fill="rgba(255,255,255,.5)"/>
+      <rect x="106" y="27" width="16" height="2" rx="1" fill="rgba(255,255,255,.2)"/>
+      <rect x="74" y="40" width="58" height="17" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="74" y="40" width="28" height="17" rx="3" fill="#1e3a5f"/>
+      <rect x="106" y="43" width="22" height="3" rx="1" fill="rgba(255,255,255,.5)"/>
+      <rect x="106" y="49" width="16" height="2" rx="1" fill="rgba(255,255,255,.2)"/>
+      <rect x="8" y="62" width="124" height="6" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="8" y="62" width="78" height="6" rx="3" fill="#3b82f6" opacity=".35"/>
+      <rect x="8" y="72" width="124" height="6" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="8" y="72" width="50" height="6" rx="3" fill="#3b82f6" opacity=".25"/>
+      <rect x="8" y="82" width="124" height="6" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="8" y="82" width="95" height="6" rx="3" fill="#3b82f6" opacity=".3"/>
+    </svg>
+  ),
+  agency: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#0a0500"/>
+      <rect x="0" y="0" width="140" height="13" fill="#070400"/>
+      <circle cx="10" cy="6.5" r="4" fill="#FF6B35" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="35" y="18" width="70" height="58" rx="2" fill="#150c06"/>
+      <rect x="35" y="14" width="70" height="8" rx="2" fill="#1f1009"/>
+      <rect x="40" y="20" width="16" height="10" rx="1" fill="#3b82f6" opacity=".35"/>
+      <rect x="62" y="20" width="16" height="10" rx="1" fill="#FF6B35" opacity=".3"/>
+      <rect x="84" y="20" width="16" height="10" rx="1" fill="rgba(255,255,255,.07)"/>
+      <rect x="40" y="34" width="16" height="10" rx="1" fill="rgba(255,255,255,.07)"/>
+      <rect x="62" y="34" width="16" height="10" rx="1" fill="#f59e0b" opacity=".3"/>
+      <rect x="84" y="34" width="16" height="10" rx="1" fill="#3b82f6" opacity=".3"/>
+      <rect x="40" y="48" width="16" height="10" rx="1" fill="#FF6B35" opacity=".25"/>
+      <rect x="62" y="48" width="16" height="10" rx="1" fill="rgba(255,255,255,.07)"/>
+      <rect x="84" y="48" width="16" height="10" rx="1" fill="rgba(255,255,255,.07)"/>
+      <rect x="57" y="60" width="26" height="16" rx="1" fill="rgba(255,255,255,.06)"/>
+      <rect x="43" y="16" width="54" height="5" rx="1" fill="rgba(255,255,255,.5)"/>
+      <rect x="8" y="32" width="24" height="44" rx="1" fill="rgba(255,255,255,.03)"/>
+      <rect x="108" y="38" width="24" height="38" rx="1" fill="rgba(255,255,255,.03)"/>
+      <rect x="0" y="76" width="140" height="12" fill="rgba(255,255,255,.03)"/>
+    </svg>
+  ),
+  consulting: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#080600"/>
+      <rect x="0" y="0" width="140" height="13" fill="#060400"/>
+      <circle cx="10" cy="6.5" r="4" fill="#f59e0b" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="8" y="16" width="86" height="56" rx="4" fill="#120e00"/>
+      <rect x="18" y="52" width="12" height="14" rx="1" fill="#3b82f6" opacity=".6"/>
+      <rect x="34" y="42" width="12" height="24" rx="1" fill="#3b82f6" opacity=".6"/>
+      <rect x="50" y="32" width="12" height="34" rx="1" fill="#22c55e" opacity=".7"/>
+      <rect x="66" y="25" width="12" height="41" rx="1" fill="#22c55e" opacity=".7"/>
+      <rect x="82" y="20" width="8" height="46" rx="1" fill="#f59e0b" opacity=".8"/>
+      <polyline points="24,52 40,42 56,32 72,25 86,18" fill="none" stroke="#e11d48" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="3,2" opacity=".8"/>
+      <circle cx="86" cy="18" r="2.5" fill="#e11d48" opacity=".9"/>
+      <line x1="14" y1="66" x2="90" y2="66" stroke="rgba(255,255,255,.15)" strokeWidth="1"/>
+      <line x1="14" y1="20" x2="14" y2="66" stroke="rgba(255,255,255,.15)" strokeWidth="1"/>
+      <rect x="100" y="16" width="32" height="14" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="104" y="19" width="14" height="5" rx="1" fill="#f59e0b" opacity=".6"/>
+      <rect x="104" y="26" width="20" height="2" rx="1" fill="rgba(255,255,255,.2)"/>
+      <rect x="100" y="34" width="32" height="14" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="104" y="37" width="14" height="5" rx="1" fill="#22c55e" opacity=".6"/>
+      <rect x="104" y="44" width="20" height="2" rx="1" fill="rgba(255,255,255,.2)"/>
+      <rect x="100" y="52" width="32" height="14" rx="3" fill="rgba(255,255,255,.04)"/>
+      <rect x="104" y="55" width="14" height="5" rx="1" fill="#e11d48" opacity=".5"/>
+      <rect x="104" y="62" width="20" height="2" rx="1" fill="rgba(255,255,255,.2)"/>
+    </svg>
+  ),
+  blog: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#0d0d0d"/>
+      <rect x="0" y="0" width="140" height="13" fill="#0a0a0a"/>
+      <circle cx="10" cy="6.5" r="4" fill="#94a3b8" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="8" y="16" width="124" height="34" rx="3" fill="#1a1a1a"/>
+      <rect x="8" y="28" width="124" height="22" fill="#0c1a2e" opacity=".6"/>
+      <circle cx="110" cy="28" r="8" fill="#fbbf24" opacity=".25"/>
+      <path d="M8 38 Q30 28 55 34 Q80 40 105 30 Q120 24 132 28 L132 50 L8 50 Z" fill="#16a34a" opacity=".2"/>
+      <rect x="12" y="18" width="28" height="7" rx="3.5" fill="#94a3b8" opacity=".6"/>
+      <rect x="14" y="20" width="18" height="3" rx="1" fill="rgba(255,255,255,.6)"/>
+      <rect x="8" y="53" width="90" height="6" rx="2" fill="rgba(255,255,255,.7)"/>
+      <rect x="8" y="62" width="110" height="3" rx="1.5" fill="rgba(255,255,255,.2)"/>
+      <rect x="8" y="67" width="96" height="3" rx="1.5" fill="rgba(255,255,255,.15)"/>
+      <circle cx="14" cy="78" r="5" fill="#475569" opacity=".7"/>
+      <rect x="22" y="75" width="24" height="3" rx="1.5" fill="rgba(255,255,255,.4)"/>
+      <rect x="22" y="80" width="16" height="2" rx="1" fill="rgba(255,255,255,.2)"/>
+      <rect x="102" y="75" width="30" height="7" rx="3.5" fill="rgba(255,255,255,.05)"/>
+      <rect x="106" y="77" width="18" height="3" rx="1" fill="rgba(255,255,255,.2)"/>
+    </svg>
+  ),
+  event: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#0c0007"/>
+      <rect x="0" y="0" width="140" height="13" fill="#090005"/>
+      <circle cx="10" cy="6.5" r="4" fill="#e11d48" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <path d="M15 72 L30 32 L55 32 L45 72 Z" fill="rgba(255,200,50,.04)"/>
+      <path d="M50 72 L60 32 L80 32 L72 72 Z" fill="rgba(255,200,50,.05)"/>
+      <path d="M85 72 L88 32 L110 32 L108 72 Z" fill="rgba(255,200,50,.04)"/>
+      <rect x="20" y="62" width="100" height="7" rx="2" fill="rgba(255,255,255,.1)"/>
+      <rect x="20" y="62" width="100" height="2" fill="rgba(255,255,255,.06)"/>
+      <circle cx="25" cy="18" r="4" fill="#fbbf24" opacity=".7"/>
+      <circle cx="55" cy="14" r="4" fill="#fbbf24" opacity=".7"/>
+      <circle cx="85" cy="14" r="4" fill="#fbbf24" opacity=".7"/>
+      <circle cx="115" cy="18" r="4" fill="#fbbf24" opacity=".7"/>
+      <circle cx="70" cy="52" r="5" fill="rgba(255,255,255,.2)"/>
+      <rect x="67" y="57" width="6" height="8" rx="2" fill="rgba(255,255,255,.15)"/>
+      <circle cx="30" cy="72" r="4" fill="rgba(255,255,255,.12)"/>
+      <circle cx="44" cy="70" r="4" fill="rgba(255,255,255,.1)"/>
+      <circle cx="58" cy="72" r="4" fill="rgba(255,255,255,.12)"/>
+      <circle cx="82" cy="70" r="4" fill="rgba(255,255,255,.1)"/>
+      <circle cx="96" cy="72" r="4" fill="rgba(255,255,255,.12)"/>
+      <circle cx="110" cy="70" r="4" fill="rgba(255,255,255,.1)"/>
+      <rect x="35" y="22" width="4" height="4" rx="1" fill="#e11d48" opacity=".7" transform="rotate(20 37 24)"/>
+      <rect x="72" y="19" width="4" height="4" rx="1" fill="#3b82f6" opacity=".7" transform="rotate(-15 74 21)"/>
+      <rect x="95" y="24" width="4" height="4" rx="1" fill="#22c55e" opacity=".7" transform="rotate(30 97 26)"/>
+      <rect x="48" y="20" width="3" height="3" rx=".5" fill="#fbbf24" opacity=".7" transform="rotate(10 49 21)"/>
+      <rect x="100" y="34" width="32" height="22" rx="3" fill="rgba(255,255,255,.08)"/>
+      <rect x="100" y="34" width="32" height="8" rx="3" fill="#e11d48" opacity=".7"/>
+      <rect x="104" y="36" width="20" height="3" rx="1" fill="rgba(255,255,255,.7)"/>
+      <rect x="106" y="45" width="16" height="3" rx="1" fill="rgba(255,255,255,.4)"/>
+    </svg>
+  ),
+  real_estate: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#0a0800"/>
+      <rect x="0" y="0" width="140" height="13" fill="#070600"/>
+      <circle cx="10" cy="6.5" r="4" fill="#d97706" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="8" y="16" width="84" height="50" rx="4" fill="#1a1200"/>
+      <rect x="8" y="16" width="84" height="25" rx="4" fill="#0c1a2e" opacity=".8"/>
+      <circle cx="76" cy="24" r="7" fill="#fbbf24" opacity=".4"/>
+      <path d="M30 41 L50 26 L70 41 Z" fill="rgba(255,255,255,.12)"/>
+      <rect x="33" y="41" width="34" height="20" rx="1" fill="rgba(255,255,255,.07)"/>
+      <rect x="42" y="49" width="10" height="12" rx="1" fill="rgba(255,255,255,.06)"/>
+      <rect x="35" y="43" width="8" height="6" rx="1" fill="#d97706" opacity=".3"/>
+      <rect x="55" y="43" width="8" height="6" rx="1" fill="#d97706" opacity=".3"/>
+      <circle cx="20" cy="55" r="6" fill="#16a34a" opacity=".35"/>
+      <rect x="19" y="58" width="2" height="6" fill="#854d0e" opacity=".4"/>
+      <circle cx="80" cy="57" r="5" fill="#16a34a" opacity=".3"/>
+      <rect x="10" y="54" width="30" height="10" rx="2" fill="#d97706" opacity=".85"/>
+      <rect x="12" y="57" width="20" height="3" rx="1" fill="rgba(255,255,255,.8)"/>
+      <rect x="98" y="16" width="34" height="22" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="98" y="16" width="34" height="13" rx="3" fill="#1c1400"/>
+      <path d="M104 29 L111 22 L118 29 Z" fill="rgba(255,255,255,.1)"/>
+      <rect x="101" y="32" width="22" height="2.5" rx="1" fill="rgba(255,255,255,.4)"/>
+      <rect x="101" y="35" width="14" height="2" rx="1" fill="#d97706" opacity=".6"/>
+      <rect x="98" y="42" width="34" height="22" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="98" y="42" width="34" height="13" rx="3" fill="#1c1400"/>
+      <path d="M104 55 L111 48 L118 55 Z" fill="rgba(255,255,255,.1)"/>
+      <rect x="101" y="58" width="22" height="2.5" rx="1" fill="rgba(255,255,255,.4)"/>
+      <rect x="101" y="61" width="14" height="2" rx="1" fill="#d97706" opacity=".6"/>
+      <rect x="8" y="70" width="20" height="8" rx="4" fill="#d97706" opacity=".7"/>
+      <rect x="32" y="70" width="20" height="8" rx="4" fill="rgba(255,255,255,.06)"/>
+      <rect x="56" y="70" width="20" height="8" rx="4" fill="rgba(255,255,255,.06)"/>
+    </svg>
+  ),
+  travel: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#020d18"/>
+      <rect x="0" y="0" width="140" height="13" fill="#010a12"/>
+      <circle cx="10" cy="6.5" r="4" fill="#0ea5e9" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="0" y="13" width="140" height="40" fill="#0c1a2e"/>
+      <rect x="0" y="13" width="140" height="20" fill="#0c4a6e" opacity=".5"/>
+      <circle cx="100" cy="22" r="9" fill="#fbbf24" opacity=".4"/>
+      <ellipse cx="100" cy="22" rx="14" ry="14" fill="#fbbf24" opacity=".1"/>
+      <ellipse cx="30" cy="20" rx="14" ry="5" fill="rgba(255,255,255,.1)"/>
+      <ellipse cx="42" cy="18" rx="9" ry="4" fill="rgba(255,255,255,.07)"/>
+      <path d="M0 53 L20 28 L40 53 Z" fill="#1e3a5f" opacity=".8"/>
+      <path d="M25 53 L52 20 L79 53 Z" fill="#162d4a" opacity=".9"/>
+      <path d="M65 53 L88 32 L111 53 Z" fill="#1e3a5f" opacity=".7"/>
+      <path d="M100 53 L120 38 L140 53 Z" fill="#162d4a" opacity=".6"/>
+      <path d="M52 20 L46 32 L58 32 Z" fill="rgba(255,255,255,.4)"/>
+      <rect x="0" y="53" width="140" height="10" fill="#0369a1" opacity=".35"/>
+      <path d="M0 56 Q18 52 35 56 Q52 60 70 56 Q88 52 105 56 Q122 60 140 56" fill="none" stroke="rgba(255,255,255,.15)" strokeWidth="1"/>
+      <path d="M60 35 L70 30 L72 33 L63 38 Z" fill="rgba(255,255,255,.6)"/>
+      <path d="M63 34 L67 27 L69 28 L65 35 Z" fill="rgba(255,255,255,.4)"/>
+      <rect x="8" y="66" width="38" height="16" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="8" y="66" width="38" height="9" rx="3" fill="#0c4a6e" opacity=".6"/>
+      <rect x="12" y="78" width="22" height="2" rx="1" fill="rgba(255,255,255,.3)"/>
+      <rect x="52" y="66" width="38" height="16" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="52" y="66" width="38" height="9" rx="3" fill="#164e63" opacity=".6"/>
+      <rect x="56" y="78" width="22" height="2" rx="1" fill="rgba(255,255,255,.3)"/>
+      <rect x="96" y="66" width="38" height="16" rx="3" fill="rgba(255,255,255,.05)"/>
+      <rect x="96" y="66" width="38" height="9" rx="3" fill="#0c4a6e" opacity=".6"/>
+      <rect x="100" y="78" width="22" height="2" rx="1" fill="rgba(255,255,255,.3)"/>
+    </svg>
+  ),
+  craft: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#0d0a1a"/>
+      <rect x="0" y="0" width="140" height="13" fill="#080614"/>
+      <circle cx="10" cy="6.5" r="4" fill="#a855f7" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="28" y="14" width="68" height="52" rx="2" fill="#100d1c" stroke="rgba(255,255,255,.1)" strokeWidth=".5"/>
+      <circle cx="50" cy="34" r="14" fill="#8b5cf6" opacity=".35"/>
+      <circle cx="68" cy="38" r="12" fill="#3b82f6" opacity=".3"/>
+      <circle cx="60" cy="24" r="10" fill="#e11d48" opacity=".3"/>
+      <path d="M32 44 Q44 34 56 42 Q68 50 80 38" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round" opacity=".7"/>
+      <path d="M36 52 Q48 46 60 50 Q72 54 82 48" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" opacity=".5"/>
+      <line x1="28" y1="66" x2="18" y2="78" stroke="rgba(255,255,255,.2)" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="96" y1="66" x2="106" y2="78" stroke="rgba(255,255,255,.2)" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="62" y1="66" x2="62" y2="78" stroke="rgba(255,255,255,.2)" strokeWidth="1.5" strokeLinecap="round"/>
+      <ellipse cx="116" cy="38" rx="10" ry="13" fill="#1a1530"/>
+      <circle cx="111" cy="30" r="3" fill="#e11d48" opacity=".8"/>
+      <circle cx="118" cy="28" r="3" fill="#3b82f6" opacity=".8"/>
+      <circle cx="122" cy="35" r="3" fill="#22c55e" opacity=".8"/>
+      <circle cx="120" cy="43" r="3" fill="#fbbf24" opacity=".8"/>
+      <circle cx="113" cy="45" r="3" fill="#a855f7" opacity=".8"/>
+      <rect x="8" y="20" width="3" height="22" rx="1.5" fill="#92400e" opacity=".7"/>
+      <path d="M7 20 L11 20 L10 14 Z" fill="#a855f7" opacity=".8"/>
+      <rect x="14" y="26" width="3" height="18" rx="1.5" fill="#92400e" opacity=".7"/>
+      <path d="M13 26 L17 26 L16 20 Z" fill="#e11d48" opacity=".7"/>
+    </svg>
+  ),
+  business_card: (
+    <svg viewBox="0 0 140 88" xmlns="http://www.w3.org/2000/svg" style={{width:'100%',display:'block'}}>
+      <rect width="140" height="88" fill="#0a0a0a"/>
+      <rect x="0" y="0" width="140" height="13" fill="#080808"/>
+      <circle cx="10" cy="6.5" r="4" fill="#64748b" opacity=".9"/>
+      <rect x="20" y="4" width="22" height="4" rx="2" fill="rgba(255,255,255,.12)"/>
+      <rect x="18" y="24" width="108" height="54" rx="5" fill="#111" transform="rotate(3 72 51)"/>
+      <rect x="16" y="20" width="108" height="54" rx="5" fill="#1a1a1a"/>
+      <rect x="16" y="20" width="5" height="54" rx="5" fill="#64748b" opacity=".5"/>
+      <circle cx="46" cy="42" r="14" fill="#293548" opacity=".9"/>
+      <circle cx="46" cy="38" r="6" fill="#64748b" opacity=".5"/>
+      <ellipse cx="46" cy="52" rx="9" ry="6" fill="#64748b" opacity=".3"/>
+      <rect x="68" y="26" width="44" height="7" rx="2" fill="rgba(255,255,255,.65)"/>
+      <rect x="68" y="36" width="32" height="4" rx="1.5" fill="#64748b" opacity=".7"/>
+      <line x1="68" y1="44" x2="116" y2="44" stroke="rgba(255,255,255,.07)" strokeWidth="1"/>
+      <rect x="68" y="47" width="4" height="4" rx="1" fill="#64748b" opacity=".5"/>
+      <rect x="75" y="48" width="30" height="2.5" rx="1" fill="rgba(255,255,255,.25)"/>
+      <rect x="68" y="54" width="4" height="4" rx="1" fill="#64748b" opacity=".5"/>
+      <rect x="75" y="55" width="24" height="2.5" rx="1" fill="rgba(255,255,255,.25)"/>
+      <rect x="68" y="61" width="4" height="4" rx="1" fill="#64748b" opacity=".5"/>
+      <rect x="75" y="62" width="28" height="2.5" rx="1" fill="rgba(255,255,255,.25)"/>
+      <rect x="100" y="53" width="14" height="14" rx="2" fill="rgba(255,255,255,.07)"/>
+      <rect x="102" y="55" width="4" height="4" rx=".5" fill="rgba(255,255,255,.2)"/>
+      <rect x="108" y="55" width="4" height="4" rx=".5" fill="rgba(255,255,255,.2)"/>
+      <rect x="102" y="61" width="4" height="4" rx=".5" fill="rgba(255,255,255,.2)"/>
+    </svg>
+  ),
+};
 
+function BusinessTypeThumbnail({ id }: { id: string }) {
   const svgs: Record<string, React.ReactNode> = {
     food: (
       <svg viewBox="0 0 120 72" xmlns="http://www.w3.org/2000/svg">
@@ -813,15 +1254,9 @@ function BusinessTypeThumbnail({ id }: { id: string }) {
     ),
   };
 
-  return (
-    <div style={{ width: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-      {svgs[id] ?? (
-        <svg viewBox="0 0 120 72" xmlns="http://www.w3.org/2000/svg">
-          <rect width="120" height="72" fill="#111"/>
-        </svg>
-      )}
-    </div>
-  );
+  const t = NICHE_THUMBNAILS[id];
+  if (!t) return <div style={{ width: '100%', height: 88, background: '#111', borderRadius: 8 }} />;
+  return <div style={{ width: '100%', borderRadius: 8, overflow: 'hidden' }}>{t}</div>;
 }
 function AssemblerInner({ contract, onAssembled }: { contract: InteractiveContract; onAssembled: (json: string) => void }) {
   const { query, actions } = useEditor();
@@ -1138,19 +1573,7 @@ export default function InteractivePage() {
                       position: 'relative',
                     }}
                   >
-                    <div style={{
-                      height: 62, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: `radial-gradient(circle at 50% 60%, ${bt.accentColor}${isSelected ? '28' : '18'} 0%, transparent 70%)`,
-                      transition: 'background 0.2s',
-                    }}>
-                      <svg
-                        viewBox="0 0 24 24" width={26} height={26}
-                        fill="none" stroke={bt.accentColor}
-                        strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round"
-                        style={{ opacity: 0.85 }}
-                        dangerouslySetInnerHTML={{ __html: BUSINESS_TYPE_ICONS[bt.id] ?? '' }}
-                      />
-                    </div>
+                    <BusinessTypeThumbnail id={bt.id} />
                     <div style={{
                       padding: '5px 6px 9px', textAlign: 'center',
                       borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
