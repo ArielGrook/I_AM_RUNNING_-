@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { setAdminSessionCookie } from '@/lib/admin/checkAdminAuth';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { authenticator } = require('@otplib/preset-default');
 
@@ -31,7 +32,8 @@ export async function POST(request: NextRequest) {
 
   if (isValid) {
     attempts[ip] = { count: 0 };
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+    return setAdminSessionCookie(response);
   }
 
   record.count = (record.count || 0) + 1;

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkAdminAuth } from '@/lib/admin/checkAdminAuth';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,7 +26,10 @@ function mapRoleToAccountType(role: number | null): {
   return { account_type: 'freelancer', freelancer_tier: 'full_stack' };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = checkAdminAuth(request);
+  if (authError) return authError;
+
   try {
     const { data: usersData, error } = await supabaseAdmin
       .from('users')

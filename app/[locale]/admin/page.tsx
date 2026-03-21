@@ -159,7 +159,9 @@ export default function AdminPage() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Clear server-side httpOnly cookie
+    await fetch('/api/admin/logout', { method: 'POST' });
     setIsAuthenticated(false);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('admin_session');
