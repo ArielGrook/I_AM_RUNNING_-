@@ -52,6 +52,19 @@
 - Landing page needs pricing section + demo CTA
 - Interactive needs thumbnail previews for blocks
 
+## Interactive Pipeline — Color Presets
+12 named presets in `app/[locale]/interactive/page.tsx`:
+- Midnight Ember, Arctic Pulse, Crimson Dark, Forest Night, Violet Storm, Solar Flare
+- Rose Quartz, Ocean Mist, Obsidian Gold, Cyber Lime, Pearl Minimal, Coral Sunset
+- Each preset: id, name, tagline, accentColor, darkBg, lightBg, colorScheme
+- Selected preset passes accentColor/darkBg/lightBg to assembler → applied to ALL components
+- Step 2 shows mini site preview card + accent dot for each preset
+
+## Interactive Pipeline — Block Thumbnails
+SVG thumbnails for all 13 block types rendered inline in Step 3.
+`BlockThumbnail({ blockId, accent })` component uses accent color from selected preset.
+No external images — pure SVG, instant render.
+
 ## Next Priority — Roadmap
 
 ### 🔴 Приоритет 1 — Frontend компоненты (MVP ниши)

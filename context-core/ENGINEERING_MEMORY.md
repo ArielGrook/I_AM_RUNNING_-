@@ -20,7 +20,17 @@
 - `/api/projects/[id]/deploy` — нужно проверить логику slug assignment и published flag
 - Не критично для MVP, фиксить после запуска
 
-### TronCTA (lib/craft/components/TronCTA.tsx) — added 21.03.2026
+### Interactive Color Presets — added 21.03.2026
+- 12 presets replace old 6-style selector in Step 2
+- Each has: accentColor, darkBg, lightBg, colorScheme
+- Assembler now accepts accentColor/darkBg/lightBg from contract (was hardcoded #FF6B35/#0a0a0a)
+- Style 'light'/'dark' now drives colorScheme only; actual colors from preset fields
+- BLOCK_MAP uses `extraProps` key (renamed from `props` to avoid confusion with React props)
+
+### Block Thumbnails (Interactive Step 3) — added 21.03.2026
+- `BlockThumbnail` SVG component for: header, hero, about, services, features, portfolio, stats, testimonials, pricing, faq, contact, team, footer
+- Uses selected preset accentColor — thumbnails update color when user switches preset in Step 2
+- Pure inline SVG — no images, no external deps, instant render
 - block_type: 'cta', два layout: centered (default) и split (текст + карточка справа)
 - GSAP stagger: слова заголовка влетают с rotateX(-20) при маунте на deployed сайте
 - Cursor spotlight: radial-gradient следует за мышью в пределах секции

@@ -1,6 +1,6 @@
 /**
  * Assembler: maps Interactive block IDs to Tron components.
- * Used by Interactive page to build Craft.js node trees.
+ * Receives full color preset from InteractiveContract.
  */
 import React from 'react';
 import { HeaderTron } from '../components/HeaderTron';
@@ -18,14 +18,13 @@ import { TronContact } from '../components/TronContact';
 import { TronStats } from '../components/TronStats';
 import { TronFooter } from '../components/TronFooter';
 
-// Map Interactive block IDs → Tron component + default props
-const BLOCK_MAP: Record<string, { component: React.ComponentType<any>; props?: Record<string, any> }> = {
+const BLOCK_MAP: Record<string, { component: React.ComponentType<any>; extraProps?: Record<string, any> }> = {
   header:       { component: HeaderTron },
-  hero:         { component: HeroTron, props: { showGrid: true, spotlightIntensity: 15 } },
+  hero:         { component: HeroTron, extraProps: { showGrid: true, spotlightIntensity: 15 } },
   about:        { component: TronAbout },
   team:         { component: TronTeam },
   cta:          { component: TronCTA },
-  services:     { component: TronServices },  // ✅ proper services component
+  services:     { component: TronServices },
   features:     { component: TronFeatures },
   portfolio:    { component: TronPortfolio },
   stats:        { component: TronStats },
@@ -41,17 +40,18 @@ export interface InteractiveContract {
   style: string;
   blocks: string[];
   companyName: string;
+  // Color preset fields
+  accentColor?: string;
+  darkBg?: string;
+  lightBg?: string;
 }
 
-/**
- * Given a contract from Interactive, returns an array of React elements
- * ready to be added to Craft.js canvas via parseReactElement().
- */
 export function buildElementsFromContract(contract: InteractiveContract): React.ReactElement[] {
-  const colorScheme = contract.style === 'light' || contract.style === 'minimal' ? 'light' : 'dark';
-  const accentColor = '#FF6B35';
+  const colorScheme: 'dark' | 'light' = contract.style === 'light' ? 'light' : 'dark';
+  const accentColor = contract.accentColor ?? '#FF6B35';
+  const darkBg = contract.darkBg ?? '#0a0a0a';
+  const lightBg = contract.lightBg ?? '#ffffff';
 
-  // Enforce fixed ordering: header → hero → middle blocks (in user selection order) → footer
   const selected = new Set(contract.blocks);
   const middleBlocks = contract.blocks.filter(id => id !== 'header' && id !== 'hero' && id !== 'footer');
   const orderedBlocks = [
@@ -64,11 +64,13 @@ export function buildElementsFromContract(contract: InteractiveContract): React.
   return orderedBlocks
     .filter(blockId => BLOCK_MAP[blockId])
     .map(blockId => {
-      const { component, props = {} } = BLOCK_MAP[blockId];
+      const { component, extraProps = {} } = BLOCK_MAP[blockId];
       return React.createElement(component, {
-        ...props,
+        ...extraProps,
         colorScheme,
         accentColor,
+        darkBg,
+        lightBg,
       });
     });
 }
