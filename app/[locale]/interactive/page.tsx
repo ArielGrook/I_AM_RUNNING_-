@@ -460,28 +460,58 @@ export default function InteractivePage() {
           </div>
         )}
 
-        {contract.step === 3 && (
+        {contract.step === 3 && (() => {
+          // Optional blocks in user-selection order (excludes header/hero/footer)
+          const optionalSelected = contract.blocks.filter(id => id !== 'header' && id !== 'hero' && id !== 'footer');
+          return (
           <div style={{ width: '100%', maxWidth: 700, textAlign: 'center' }}>
             <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Choose sections</h1>
             <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 32, fontSize: 15 }}>Header, Hero and Footer are always included</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10 }}>
               {BLOCKS.map(b => {
                 const isSelected = contract.blocks.includes(b.id);
+                const isFooter = b.id === 'footer';
+                const isHeaderOrHero = b.id === 'header' || b.id === 'hero';
+                const positionIndex = !isFooter && !isHeaderOrHero ? optionalSelected.indexOf(b.id) : -1;
+                const positionLabel = positionIndex !== -1 ? String(positionIndex + 1) : null;
+
                 return (
                   <button key={b.id} onClick={() => toggleBlock(b.id)}
                     style={{
-                      padding: '14px 10px', borderRadius: 10,
+                      position: 'relative',
+                      padding: '14px 10px', paddingTop: 22, borderRadius: 10,
                       border: isSelected ? '2px solid #FF6B35' : '1px solid rgba(255,255,255,0.1)',
                       background: isSelected ? 'rgba(255,107,53,0.12)' : 'rgba(255,255,255,0.03)',
                       color: b.required ? 'rgba(255,255,255,0.4)' : '#fff',
                       cursor: b.required ? 'default' : 'pointer',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                       transition: 'all 0.15s ease', fontSize: 13, fontWeight: 500,
-                      opacity: b.required ? 0.5 : 1,
+                      opacity: b.required ? 0.6 : 1,
                     }}>
+                    {/* Position badge — top-left corner */}
+                    {positionLabel && (
+                      <span style={{
+                        position: 'absolute', top: 6, left: 8,
+                        fontSize: 11, fontWeight: 800, color: '#FF6B35',
+                        background: 'rgba(255,107,53,0.2)', borderRadius: 4,
+                        padding: '1px 5px', lineHeight: 1.4,
+                      }}>
+                        {positionLabel}
+                      </span>
+                    )}
+                    {/* Footer "last" badge */}
+                    {isFooter && (
+                      <span style={{
+                        position: 'absolute', top: 6, left: 8,
+                        fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)',
+                        background: 'rgba(255,255,255,0.06)', borderRadius: 4,
+                        padding: '1px 5px', lineHeight: 1.4,
+                      }}>
+                        last
+                      </span>
+                    )}
                     <span style={{ fontSize: 22 }}>{b.emoji}</span>
                     {b.label}
-                    {b.required && <span style={{ fontSize: 10, color: '#FF6B35' }}>required</span>}
                   </button>
                 );
               })}
@@ -490,7 +520,8 @@ export default function InteractivePage() {
               {contract.blocks.length} sections selected
             </p>
           </div>
-        )}
+          );
+        })()}
 
         {contract.step === 4 && (
           <div style={{ width: '100%', maxWidth: 500, textAlign: 'center' }}>

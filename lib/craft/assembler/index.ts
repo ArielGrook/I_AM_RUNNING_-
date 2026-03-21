@@ -46,7 +46,17 @@ export function buildElementsFromContract(contract: InteractiveContract): React.
   const colorScheme = contract.style === 'light' || contract.style === 'minimal' ? 'light' : 'dark';
   const accentColor = '#FF6B35';
 
-  return contract.blocks
+  // Enforce fixed ordering: header → hero → middle blocks (in user selection order) → footer
+  const selected = new Set(contract.blocks);
+  const middleBlocks = contract.blocks.filter(id => id !== 'header' && id !== 'hero' && id !== 'footer');
+  const orderedBlocks = [
+    ...(selected.has('header') ? ['header'] : []),
+    ...(selected.has('hero')   ? ['hero']   : []),
+    ...middleBlocks,
+    ...(selected.has('footer') ? ['footer'] : []),
+  ];
+
+  return orderedBlocks
     .filter(blockId => BLOCK_MAP[blockId])
     .map(blockId => {
       const { component, props = {} } = BLOCK_MAP[blockId];
