@@ -52,8 +52,23 @@
 - Landing page needs pricing section + demo CTA
 - Interactive needs thumbnail previews for blocks
 
-## Next Priority
-1. TronServices (currently maps to TronFeatures — wrong semantics)
-2. Anonymous → signup project restore flow
-3. Route protection middleware
-4. Stripe checkout + webhook
+## Next Priority — Roadmap
+
+### 🔴 Приоритет 1 — Frontend компоненты (MVP ниши)
+- [ ] TronServices — сейчас маппится на TronFeatures, нужен отдельный компонент
+- [ ] TronTeam — для agency/startup ниш
+- [ ] Дополнительные Tron компоненты под ниши: Shop, Portfolio, Agency, Business Card, Startup
+
+### 🟡 Приоритет 2 — Механики и полировка
+- [ ] Раздел "Механики" в Settings Panel (fireflies, particles, gradient blobs, magnetic select)
+- [ ] Thumbnail превью блоков в Interactive Step 3
+- [ ] Landing: pricing section + demo CTA
+- [ ] i18n для Interactive (ru/he)
+
+### 🟢 Приоритет 3 — Конверсия и UX
+- [ ] Anonymous → signup flow: проект из localStorage не восстанавливается после регистрации
+- [ ] Header в Interactive не обновляет навигацию под выбранные блоки
+
+### ⏳ Отложено (после запуска)
+- [ ] Route protection middleware (редактор без подписки)
+- [ ] Stripe checkout + webhook → апгрейд роли
