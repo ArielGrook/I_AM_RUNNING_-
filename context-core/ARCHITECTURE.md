@@ -36,7 +36,26 @@
 - `/dashboard` → `!isAuthenticated` → `/auth/login?redirect=...`, `!canAccessEditor` → `/subscription`
 - `/editor` → guard только client-side ⚠️ (middleware не проверяет роли)
 
-**Проблема "нужно перелогиниться после смены роли":**
+  // Role system:
+  // 0 = Anonymous (not logged in)
+  // 1 = Free User (chat only, default при регистрации)
+  // 2 = Paid User ($20 one-time) - editor, 1 project
+  // 3 = Freelancer Basic ($30/mo) - 5 projects
+  // 4 = Freelancer Pro ($100/mo) - unlimited
+  // 5 = Admin
+  // 6 = Agency Owner - manages team, unlimited projects
+  // 7 = Agency Employee - works under owner (agency_id в user_metadata)
+
+**Новые поля в user_metadata (добавлены 21.03.2026):**
+- `agency_id` — для role 7: ID Agency Owner-а
+- `trial_expires_at` — ISO date, зарезервировано для Stripe trial
+
+**Фикс "нужно перелогиниться" (добавлен 21.03.2026):**
+`onAuthStateChange` теперь слушает `USER_UPDATED` event — когда admin меняет роль через Admin API, Supabase генерирует это событие, `buildProfileFromUser()` сразу перечитывает новый `user_metadata`. Перелогин больше не нужен.
+
+**Admin panel role buttons (обновлено 21.03.2026):**
+Free | Paid | Basic | Pro | Admin | Agency | Employee
+Текущая роль подсвечена с галочкой ✓. Все кнопки на мобиле в flex-wrap.
 `update-user-role` через Admin API меняет `user_metadata`, но браузерная сессия кэширует старый JWT токен до следующего TOKEN_REFRESHED (~60 мин). Решение: слушать `USER_UPDATED` event в `onAuthStateChange` и вызывать `refreshAuth()`.
 
 **Регистрационный триггер:**
