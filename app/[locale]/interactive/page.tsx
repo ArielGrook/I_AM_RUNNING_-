@@ -39,22 +39,22 @@ interface ContractState {
 
 // ── Business types ──────────────────────────────────────────────────────
 const BUSINESS_TYPES = [
-  { id: 'food',          emoji: '🍕', label: 'Restaurant & Food' },
-  { id: 'shop',          emoji: '🛍️', label: 'Shop & Retail' },
-  { id: 'ecommerce',     emoji: '🛒', label: 'Online Store' },
-  { id: 'startup',       emoji: '🚀', label: 'Startup & Tech' },
-  { id: 'portfolio',     emoji: '💼', label: 'Portfolio' },
-  { id: 'beauty',        emoji: '✨', label: 'Beauty & Spa' },
-  { id: 'health',        emoji: '💪', label: 'Health & Fitness' },
-  { id: 'education',     emoji: '📚', label: 'Education' },
-  { id: 'agency',        emoji: '🏢', label: 'Agency' },
-  { id: 'consulting',    emoji: '📊', label: 'Consulting' },
-  { id: 'blog',          emoji: '✍️', label: 'Blog' },
-  { id: 'event',         emoji: '🎉', label: 'Events' },
-  { id: 'real_estate',   emoji: '🏠', label: 'Real Estate' },
-  { id: 'travel',        emoji: '✈️', label: 'Travel' },
-  { id: 'craft',         emoji: '🎨', label: 'Art & Craft' },
-  { id: 'business_card', emoji: '📇', label: 'Business Card' },
+  { id: 'food',          emoji: '🍕', label: 'Restaurant & Food',  accentColor: '#f97316' },
+  { id: 'shop',          emoji: '🛍️', label: 'Shop & Retail',       accentColor: '#8b5cf6' },
+  { id: 'ecommerce',     emoji: '🛒', label: 'Online Store',        accentColor: '#00bcd4' },
+  { id: 'startup',       emoji: '🚀', label: 'Startup & Tech',      accentColor: '#84cc16' },
+  { id: 'portfolio',     emoji: '💼', label: 'Portfolio',           accentColor: '#d97706' },
+  { id: 'beauty',        emoji: '✨', label: 'Beauty & Spa',        accentColor: '#ec4899' },
+  { id: 'health',        emoji: '💪', label: 'Health & Fitness',    accentColor: '#22c55e' },
+  { id: 'education',     emoji: '📚', label: 'Education',           accentColor: '#3b82f6' },
+  { id: 'agency',        emoji: '🏢', label: 'Agency',              accentColor: '#FF6B35' },
+  { id: 'consulting',    emoji: '📊', label: 'Consulting',          accentColor: '#f59e0b' },
+  { id: 'blog',          emoji: '✍️', label: 'Blog',               accentColor: '#94a3b8' },
+  { id: 'event',         emoji: '🎉', label: 'Events',              accentColor: '#e11d48' },
+  { id: 'real_estate',   emoji: '🏠', label: 'Real Estate',        accentColor: '#d97706' },
+  { id: 'travel',        emoji: '✈️', label: 'Travel',             accentColor: '#0ea5e9' },
+  { id: 'craft',         emoji: '🎨', label: 'Art & Craft',         accentColor: '#a855f7' },
+  { id: 'business_card', emoji: '📇', label: 'Business Card',       accentColor: '#64748b' },
 ];
 
 // ── Color presets ───────────────────────────────────────────────────────
@@ -284,7 +284,133 @@ function BlockThumbnail({ blockId, accent }: { blockId: string; accent: string }
   );
 }
 
-// ── Business type SVG thumbnails ─────────────────────────────────────────
+// ── Background icon paths (30 generic icons for animated background) ────
+const BG_ICON_PATHS: string[] = [
+  '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>',
+  '<path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>',
+  '<rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+  '<line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>',
+  '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>',
+  '<path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>',
+  '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+  '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',
+  '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',
+  '<path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
+  '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  '<rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
+  '<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  '<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>',
+  '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>',
+  '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/>',
+  '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
+  '<path d="M18 3a3 3 0 00-3 3v12a3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3H6a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3V6a3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3h12a3 3 0 003-3 3 3 0 00-3-3z"/>',
+  '<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
+  '<circle cx="12" cy="12" r="10"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32"/>',
+  '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>',
+  '<path d="M12 2a3 3 0 013 3v7a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v3M8 22h8"/>',
+  '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
+  '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>',
+  '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  '<circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>',
+  '<path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/>',
+];
+
+// ── Per-niche card icons ─────────────────────────────────────────────────
+const BUSINESS_TYPE_ICONS: Record<string, string> = {
+  food:          '<path d="M7 3v5a2 2 0 004 0V3M9 8v13M15 3v18M13 3h4v4a2 2 0 01-4 0z"/>',
+  shop:          '<path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/>',
+  ecommerce:     '<path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>',
+  startup:       '<path d="M12 2s-6 7-6 12l6 3 6-3C18 9 12 2 12 2z"/><circle cx="12" cy="10" r="2"/>',
+  portfolio:     '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+  beauty:        '<path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>',
+  health:        '<polyline points="3 12 7 12 9 6 11 18 13 12 21 12"/><circle cx="12" cy="4" r="2"/>',
+  education:     '<path d="M2 10l10-5 10 5-10 5z"/><path d="M6 12.5V17c3 3 9 3 12 0v-4.5"/><line x1="22" y1="10" x2="22" y2="16"/>',
+  agency:        '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/>',
+  consulting:    '<polyline points="3 20 9 14 13 18 22 7"/><line x1="3" y1="20" x2="22" y2="20"/>',
+  blog:          '<path d="M11 4H4a2 2 0 00-2 2v16a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2 2 0 013 3L12 15l-4 1 1-4z"/>',
+  event:         '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/>',
+  real_estate:   '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  travel:        '<path d="M22 2L11 13M22 2L15 22l-4-9-9-4z"/>',
+  craft:         '<path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5z"/>',
+  business_card: '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="6" y1="9" x2="10" y2="9"/><line x1="6" y1="13" x2="9" y2="13"/><circle cx="16" cy="12" r="3"/>',
+};
+
+// ── Niche → default color preset map ────────────────────────────────────
+const NICHE_PRESET_MAP: Record<string, string> = {
+  food:          'coral_sunset',
+  shop:          'violet_storm',
+  ecommerce:     'arctic_pulse',
+  startup:       'cyber_lime',
+  portfolio:     'obsidian_gold',
+  beauty:        'rose_quartz',
+  health:        'forest_night',
+  education:     'ocean_mist',
+  agency:        'midnight_ember',
+  consulting:    'solar_flare',
+  blog:          'pearl_minimal',
+  event:         'crimson_dark',
+  real_estate:   'obsidian_gold',
+  travel:        'arctic_pulse',
+  craft:         'violet_storm',
+  business_card: 'pearl_minimal',
+};
+
+// ── Animated background (Step 1 only) ───────────────────────────────────
+function AnimatedBackground({ accentColor, isDark }: { accentColor: string | null; isDark: boolean }) {
+  const iconColor = accentColor
+    ? accentColor + '55'
+    : isDark ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.09)';
+
+  const items = React.useMemo(() => Array.from({ length: 120 }, (_, i) => ({
+    key: i,
+    iconIdx: i % BG_ICON_PATHS.length,
+    sz: 14 + (i % 7) * 4,
+    dur: 32 + (i % 9) * 4,
+    startX: ((i * 7.3 + Math.sin(i) * 15 + 100) % 115) - 5,
+    startY: ((i * 5.7 + Math.cos(i * 1.3) * 12 + 100) % 110),
+    delay: -(((i / 120) * (32 + (i % 9) * 4)) + ((i % 5) * 3.1)),
+    r0: (i % 7 - 3) * 8,
+    r1: (i % 7 - 3) * 8 + (i % 5 - 2) * 12,
+  })), []);
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', color: iconColor, transition: 'color 1.2s ease' }}>
+      <style>{`@keyframes diagFloat{0%{opacity:0;transform:translate(0,0) rotate(var(--r0,0deg))}8%{opacity:var(--op,0.1)}92%{opacity:var(--op,0.1)}100%{opacity:0;transform:translate(-900px,-900px) rotate(var(--r1,20deg))}}`}</style>
+      {items.map(item => (
+        <div
+          key={item.key}
+          style={{
+            position: 'absolute',
+            bottom: `${item.startY}%`,
+            right: `${-item.startX}%`,
+            lineHeight: 0,
+            animation: `diagFloat ${item.dur}s ${item.delay}s linear infinite`,
+            ['--r0' as string]: `${item.r0}deg`,
+            ['--r1' as string]: `${item.r1}deg`,
+            ['--op' as string]: String(0.85 + (item.key % 3) * 0.075),
+          } as React.CSSProperties}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width={item.sz}
+            height={item.sz}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.4}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            dangerouslySetInnerHTML={{ __html: BG_ICON_PATHS[item.iconIdx] }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── DEPRECATED: BusinessTypeThumbnail replaced by inline icons ──────────
 function BusinessTypeThumbnail({ id }: { id: string }) {
   const bg = '#111';
   const dim = 'rgba(255,255,255,0.06)';
@@ -767,6 +893,7 @@ export default function InteractivePage() {
   const { user, isAuthenticated } = useAuth();
   const [isPortrait, setIsPortrait] = useState(false);
   const [dismissedRotate, setDismissedRotate] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   const [contract, setContract] = useState<ContractState>({
     businessType: null,
@@ -935,55 +1062,112 @@ export default function InteractivePage() {
     );
   }
 
+  const step1BgColor = isDarkMode ? '#0d0d0d' : '#f2eeea';
+  const step1TextColor = isDarkMode ? '#fff' : '#111';
+  const bgAccent = contract.businessType
+    ? (COLOR_PRESETS.find(p => p.id === NICHE_PRESET_MAP[contract.businessType!])?.accentColor ?? null)
+    : null;
+
   // ── Wizard ────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100dvh', background: '#0a0a0a', color: '#fff', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: contract.step === 1 ? step1BgColor : '#0a0a0a', color: contract.step === 1 ? step1TextColor : '#fff', display: 'flex', flexDirection: 'column', position: 'relative', transition: 'background 0.35s ease, color 0.3s ease' }}>
+      {contract.step === 1 && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <AnimatedBackground accentColor={bgAccent} isDark={isDarkMode} />
+        </div>
+      )}
       {/* Top bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
-        <button onClick={handleBack} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+        <button onClick={handleBack} style={{ background: 'none', border: 'none', color: contract.step === 1 ? (isDarkMode ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)') : 'rgba(255,255,255,0.6)', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
           ← {contract.step === 1 ? 'Home' : 'Back'}
         </button>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Step {contract.step} of {totalSteps}</div>
+        <div style={{ fontSize: 13, color: contract.step === 1 ? (isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)') : 'rgba(255,255,255,0.4)' }}>Step {contract.step} of {totalSteps}</div>
         <div style={{ width: 60 }} />
       </div>
 
       {/* Progress */}
-      <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }}>
+      <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', flexShrink: 0, position: 'relative', zIndex: 1 }}>
         <div style={{ height: '100%', width: `${progress}%`, background: `linear-gradient(90deg, ${accentColor}99, ${accentColor})`, transition: 'width 0.3s ease' }} />
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', overflow: 'auto' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', overflow: 'auto', position: 'relative', zIndex: 1 }}>
 
         {contract.step === 1 && (
-          <div style={{ width: '100%', maxWidth: 860, textAlign: 'center' }}>
-            <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>What&apos;s your business?</h1>
-            <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 32, fontSize: 15 }}>Choose the category that best describes your project</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 14 }}>
+          <div style={{ width: '100%', maxWidth: 900 }}>
+            {/* Toggle + heading */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div>
+                <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: isDarkMode ? '#fff' : '#111' }}>What&apos;s your business?</h1>
+                <p style={{ fontSize: 13, color: isDarkMode ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)', margin: '4px 0 0' }}>Choose the category that best describes your project</p>
+              </div>
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                style={{
+                  flexShrink: 0, marginLeft: 16,
+                  background: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)',
+                  border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'}`,
+                  borderRadius: 20, color: isDarkMode ? '#fff' : '#111',
+                  padding: '5px 14px', cursor: 'pointer', fontSize: 11, fontWeight: 700,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {isDarkMode ? '☀ Light' : '● Dark'}
+              </button>
+            </div>
+            {/* Card grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 9 }}>
               {BUSINESS_TYPES.map(bt => {
                 const isSelected = contract.businessType === bt.id;
                 return (
-                  <button key={bt.id} onClick={() => setContract(prev => ({ ...prev, businessType: bt.id }))}
+                  <button
+                    key={bt.id}
+                    onClick={() => setContract(prev => ({
+                      ...prev,
+                      businessType: bt.id,
+                      presetId: NICHE_PRESET_MAP[bt.id] ?? prev.presetId,
+                    }))}
                     style={{
-                      padding: 0, borderRadius: 12, overflow: 'hidden',
-                      border: isSelected ? `2px solid ${accentColor}` : '1px solid rgba(255,255,255,0.08)',
-                      background: 'transparent', cursor: 'pointer',
+                      padding: 0, borderRadius: 10, overflow: 'hidden',
+                      border: isSelected ? `2px solid ${bt.accentColor}` : `1px solid ${isDarkMode ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.10)'}`,
+                      background: isDarkMode ? (isSelected ? '#222' : '#181818') : '#fff',
+                      cursor: 'pointer',
                       transition: 'all 0.15s ease',
-                      transform: isSelected ? 'scale(1.03)' : 'scale(1)',
-                      boxShadow: isSelected ? `0 0 20px ${accentColor}40` : 'none',
+                      transform: isSelected ? 'scale(1.04)' : 'scale(1)',
+                      boxShadow: isSelected ? `0 0 18px ${bt.accentColor}45` : 'none',
                       position: 'relative',
-                    }}>
-                    <BusinessTypeThumbnail id={bt.id} />
+                    }}
+                  >
                     <div style={{
-                      padding: '8px 10px', background: isSelected ? `rgba(${hexToRgb(accentColor)}, 0.1)` : 'rgba(255,255,255,0.03)',
-                      textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.05)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      height: 62, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: `radial-gradient(circle at 50% 60%, ${bt.accentColor}${isSelected ? '28' : '18'} 0%, transparent 70%)`,
+                      transition: 'background 0.2s',
                     }}>
-                      <span style={{ fontSize: 14 }}>{bt.emoji}</span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: isSelected ? accentColor : 'rgba(255,255,255,0.7)' }}>{bt.label}</span>
+                      <svg
+                        viewBox="0 0 24 24" width={26} height={26}
+                        fill="none" stroke={bt.accentColor}
+                        strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round"
+                        style={{ opacity: 0.85 }}
+                        dangerouslySetInnerHTML={{ __html: BUSINESS_TYPE_ICONS[bt.id] ?? '' }}
+                      />
+                    </div>
+                    <div style={{
+                      padding: '5px 6px 9px', textAlign: 'center',
+                      borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+                    }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, lineHeight: 1.3, display: 'block',
+                        color: isSelected ? bt.accentColor : (isDarkMode ? 'rgba(255,255,255,0.48)' : 'rgba(0,0,0,0.5)'),
+                      }}>{bt.label}</span>
                     </div>
                     {isSelected && (
-                      <div style={{ position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: '50%', background: accentColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff' }}>✓</div>
+                      <div style={{
+                        position: 'absolute', top: 5, right: 5,
+                        width: 15, height: 15, borderRadius: '50%',
+                        background: bt.accentColor,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 8, fontWeight: 900, color: '#fff', lineHeight: 1,
+                      }}>✓</div>
                     )}
                   </button>
                 );
@@ -1138,7 +1322,7 @@ export default function InteractivePage() {
       </div>
 
       {/* Bottom bar */}
-      <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'center', flexShrink: 0, position: 'relative', zIndex: 1 }}>
         <button onClick={handleNext} disabled={!canProceed()}
           style={{
             padding: '14px 48px', borderRadius: 100, border: 'none',
