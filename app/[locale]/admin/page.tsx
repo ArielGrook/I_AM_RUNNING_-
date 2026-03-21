@@ -1,9 +1,3 @@
-/**
- * Admin Panel Page
- *
- * Shadow mode admin interface with user management and project monitoring.
- */
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,16 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Users,
-  FileText,
-  Eye,
-  LogOut,
-  RefreshCw,
-  Search,
-  Globe,
-  Terminal,
-  Menu,
-  X as CloseIcon,
+  Users, FileText, Eye, LogOut, RefreshCw, Search, Globe, Terminal,
 } from 'lucide-react';
 import { subscribeToProjects, unsubscribe, type ProjectUpdate } from '@/lib/supabase/realtime';
 import { createSupabaseClient } from '@/lib/supabase/client';
@@ -31,29 +16,88 @@ import { cn } from '@/lib/utils';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import Link from 'next/link';
 
+// ── Role config ────────────────────────────────────────────────────────────
+// Each entry: { label, accountType, tier, color, roleNum }
+const ROLE_BUTTONS = [
+  { label: 'Free',       accountType: 'regular',          tier: null,           color: '#6b7280', roleNum: 1 },
+  { label: 'Paid',       accountType: 'paid',             tier: null,           color: '#f59e0b', roleNum: 2 },
+  { label: 'Basic',      accountType: 'freelancer',       tier: 'frontend',     color: '#3b82f6', roleNum: 3 },
+  { label: 'Pro',        accountType: 'freelancer',       tier: 'full_stack',   color: '#8b5cf6', roleNum: 4 },
+  { label: 'Admin',      accountType: 'freelancer',       tier: 'professional', color: '#ef4444', roleNum: 5 },
+  { label: 'Agency',     accountType: 'agency_owner',     tier: null,           color: '#0ea5e9', roleNum: 6 },
+  { label: 'Employee',   accountType: 'agency_employee',  tier: null,           color: '#14b8a6', roleNum: 7 },
+] as const;
+
+const ROLE_LABEL: Record<number, string> = {
+  0: 'Anon', 1: 'Free', 2: 'Paid', 3: 'Basic',
+  4: 'Pro', 5: 'Admin', 6: 'Agency', 7: 'Employee',
+};
+const ROLE_COLOR: Record<number, string> = {
+  0: '#9ca3af', 1: '#6b7280', 2: '#f59e0b', 3: '#3b82f6',
+  4: '#8b5cf6', 5: '#ef4444', 6: '#0ea5e9', 7: '#14b8a6',
+};
+
+// ── Types ──────────────────────────────────────────────────────────────────
 interface Project {
-  id: string;
-  user_id: string;
-  name: string;
-  description?: string;
-  data: unknown;
-  thumbnail?: string;
-  created_at: string;
-  updated_at: string;
+  id: string; user_id: string; name: string; description?: string;
+  data: unknown; thumbnail?: string; created_at: string; updated_at: string;
 }
 
-interface User {
-  id: string;
-  user_number?: number;
-  email: string;
-  full_name: string | null;
-  account_type: 'regular' | 'freelancer';
-  freelancer_tier: 'frontend' | 'full_stack' | 'professional' | null;
-  created_at: string;
+interface AdminUser {
+  id: string; user_number?: number; email: string; full_name: string | null;
+  account_type: string; freelancer_tier: string | null; role?: number; created_at: string;
 }
 
 type TabType = 'users' | 'projects';
 
+// ── Role badge ─────────────────────────────────────────────────────────────
+function RoleBadge({ role }: { role?: number }) {
+  const r = role ?? 1;
+  return (
+    <span style={{
+      display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 11,
+      fontWeight: 700, color: '#fff', background: ROLE_COLOR[r] ?? '#6b7280',
+    }}>
+      {ROLE_LABEL[r] ?? `Role ${r}`}
+    </span>
+  );
+}
+
+// ── Role buttons row ───────────────────────────────────────────────────────
+function RoleButtons({
+  userId, currentRole, onUpdate, disabled,
+}: {
+  userId: string; currentRole?: number; onUpdate: (userId: string, accountType: string, tier: string | null) => void; disabled: boolean;
+}) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+      {ROLE_BUTTONS.map(({ label, accountType, tier, color, roleNum }) => {
+        const isCurrent = currentRole === roleNum;
+        return (
+          <button
+            key={label}
+            onClick={() => onUpdate(userId, accountType, tier)}
+            disabled={disabled || isCurrent}
+            style={{
+              padding: '4px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
+              color: isCurrent ? '#fff' : '#fff',
+              background: isCurrent ? color : color + 'aa',
+              border: isCurrent ? `2px solid ${color}` : '2px solid transparent',
+              opacity: disabled ? 0.5 : 1,
+              cursor: disabled || isCurrent ? 'default' : 'pointer',
+              minHeight: 32,
+              transition: 'all 0.15s',
+            }}
+          >
+            {isCurrent ? `✓ ${label}` : label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
 export default function AdminPage() {
   const t = useTranslations('Admin');
   const locale = useLocale();
@@ -66,55 +110,20 @@ export default function AdminPage() {
   const [isLocked, setIsLocked] = useState(false);
   const [error, setError] = useState('');
   const [initLoading, setInitLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showMobileNav, setShowMobileNav] = useState(false);
 
   const [activeTab, setActiveTab] = useState<TabType>('users');
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [realtimeChannel, setRealtimeChannel] = useState<RealtimeChannel | null>(null);
 
-  // Mobile
-  const [isMobile, setIsMobile] = useState(false);
-  const [showMobileNav, setShowMobileNav] = useState(false);
-
-  useEffect(() => {
-    // Restore session from sessionStorage
-    if (typeof window !== 'undefined') {
-      const session = sessionStorage.getItem('admin_session');
-      if (session === 'true') setIsAuthenticated(true);
-
-      // Check lockout
-      const lockUntil = sessionStorage.getItem('admin_lock_until');
-      if (lockUntil && Date.now() < parseInt(lockUntil)) setIsLocked(true);
-    }
-    setInitLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadUsers();
-      loadProjects();
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      const channel = subscribeToProjects((update) => {
-        handleRealtimeUpdate(update);
-      });
-      setRealtimeChannel(channel);
-      return () => {
-        if (channel) unsubscribe(channel);
-      };
-    }
-  }, [isAuthenticated]);
-
-  // Mobile detection
+  // Mobile detection via ResizeObserver approach (window.innerWidth for full-page)
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -122,600 +131,351 @@ export default function AdminPage() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const handleLogin = async () => {
-    if (isLocked) {
-      setError('Too many attempts. Try again in 15 minutes.');
-      return;
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (sessionStorage.getItem('admin_session') === 'true') setIsAuthenticated(true);
+      const lockUntil = sessionStorage.getItem('admin_lock_until');
+      if (lockUntil && Date.now() < parseInt(lockUntil)) setIsLocked(true);
     }
-    if (totpInput.length !== 6) return;
+    setInitLoading(false);
+  }, []);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    loadUsers();
+    loadProjects();
+    const channel = subscribeToProjects((update: ProjectUpdate) => {
+      if (update.action === 'INSERT' || update.action === 'UPDATE') loadProjects();
+      else if (update.action === 'DELETE') setProjects(prev => prev.filter(p => p.id !== update.id));
+    });
+    setRealtimeChannel(channel);
+    return () => { if (channel) unsubscribe(channel); };
+  }, [isAuthenticated]);
+
+  const handleLogin = async () => {
+    if (isLocked || totpInput.length !== 6) return;
     try {
       const res = await fetch('/api/admin/verify-totp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: totpInput }),
       });
       const data = await res.json();
-
       if (data.success) {
-        setIsAuthenticated(true);
-        setError('');
-        setAttempts(0);
+        setIsAuthenticated(true); setError(''); setAttempts(0);
         sessionStorage.setItem('admin_session', 'true');
       } else {
-        const newAttempts = attempts + 1;
-        setAttempts(newAttempts);
-        if (newAttempts >= 5) {
+        const n = attempts + 1; setAttempts(n);
+        if (n >= 5) {
           setIsLocked(true);
-          sessionStorage.setItem('admin_lock_until', (Date.now() + 15 * 60 * 1000).toString());
-          setError('Too many failed attempts. Locked for 15 minutes.');
-        } else {
-          setError(data.error || 'Invalid code');
-        }
+          sessionStorage.setItem('admin_lock_until', String(Date.now() + 15 * 60 * 1000));
+          setError('Too many attempts. Locked 15 min.');
+        } else { setError(data.error || 'Invalid code'); }
         setTotpInput('');
       }
-    } catch {
-      setError('Connection error. Try again.');
-    }
+    } catch { setError('Connection error.'); }
   };
 
   const handleLogout = async () => {
-    // Clear server-side httpOnly cookie
     await fetch('/api/admin/logout', { method: 'POST' });
     setIsAuthenticated(false);
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('admin_session');
-    }
-    setTotpInput('');
-    setError('');
-    setMessage('');
-    if (realtimeChannel) {
-      unsubscribe(realtimeChannel);
-      setRealtimeChannel(null);
-    }
+    sessionStorage.removeItem('admin_session');
+    if (realtimeChannel) { unsubscribe(realtimeChannel); setRealtimeChannel(null); }
     router.push('/');
   };
 
   const loadUsers = async () => {
     setUsersLoading(true);
-    setMessage('');
     try {
-      const response = await fetch('/api/admin/get-users');
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to load users');
-      }
-
+      const res = await fetch('/api/admin/get-users');
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed');
       setUsers(result.users || []);
     } catch (err) {
-      setMessage(`❌ Error loading users: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setUsersLoading(false);
-    }
+      setMessage(`❌ ${err instanceof Error ? err.message : 'Error loading users'}`);
+    } finally { setUsersLoading(false); }
   };
 
   const loadProjects = async () => {
     try {
       const supabase = createSupabaseClient();
-      const { data, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('updated_at', { ascending: false })
-        .limit(100);
-
-      if (projectsError) throw projectsError;
+      const { data } = await supabase.from('projects').select('*')
+        .order('updated_at', { ascending: false }).limit(100);
       setProjects(data || []);
-    } catch (err) {
-      console.error('Failed to load projects:', err);
-    }
+    } catch (err) { console.error('Failed to load projects:', err); }
   };
 
-  const updateUserRole = async (
-    userId: string,
-    accountType: 'regular' | 'freelancer',
-    tier: 'frontend' | 'full_stack' | 'professional' | null
-  ) => {
-    setUpdating(true);
-    setMessage('');
+  const updateUserRole = async (userId: string, accountType: string, tier: string | null) => {
+    setUpdating(true); setMessage('');
     try {
-      const response = await fetch('/api/admin/update-user-role', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch('/api/admin/update-user-role', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, accountType, freelancerTier: tier }),
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to update user');
-      }
-
-      setMessage('✅ User updated successfully');
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed');
+      setMessage('✅ Role updated');
       loadUsers();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setMessage(`❌ Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleRealtimeUpdate = (update: ProjectUpdate) => {
-    if (update.action === 'INSERT' || update.action === 'UPDATE') {
-      loadProjects();
-    } else if (update.action === 'DELETE') {
-      setProjects((prev) => prev.filter((p) => p.id !== update.id));
-    }
+      setMessage(`❌ ${err instanceof Error ? err.message : 'Error'}`);
+    } finally { setUpdating(false); }
   };
 
   const handleGeneratePreview = async (project: Project) => {
     try {
-      const preview = await getCachedPreview(
-        project.id,
-        () => generateProjectPreview(project.data, 400, 300)
-      );
-      setProjects((prev) =>
-        prev.map((p) => (p.id === project.id ? { ...p, thumbnail: preview } : p))
-      );
-    } catch (err) {
-      console.error('Failed to generate preview:', err);
-    }
+      const preview = await getCachedPreview(project.id, () => generateProjectPreview(project.data, 400, 300));
+      setProjects(prev => prev.map(p => p.id === project.id ? { ...p, thumbnail: preview } : p));
+    } catch (err) { console.error('Preview failed:', err); }
   };
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(u =>
+    u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const filteredProjects = projects.filter((p) => {
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return (
-        p.name.toLowerCase().includes(q) ||
-        (p.description?.toLowerCase().includes(q) ?? false)
-      );
-    }
-    return true;
+  const filteredProjects = projects.filter(p => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return p.name.toLowerCase().includes(q) || (p.description?.toLowerCase().includes(q) ?? false);
   });
 
-  if (initLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    );
-  }
+  // ── Login screen ──────────────────────────────────────────────────────────
+  if (initLoading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6b7280' }}>Loading...</div>;
 
   if (!isAuthenticated) {
     return (
-      <div
-        className="flex items-center justify-center min-h-screen bg-gray-100"
-        dir={isRTL ? 'rtl' : 'ltr'}
-      >
-        <div className={`bg-white p-8 rounded-lg shadow-md ${isMobile ? 'w-[calc(100%-32px)] max-w-sm' : 'w-96'}`}>
-          <h1 className="text-2xl font-bold mb-2">Admin Access</h1>
-          <p className="text-gray-500 text-sm mb-6">Enter code from Google Authenticator</p>
-
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f3f4f6', padding: 16 }} dir={isRTL ? 'rtl' : 'ltr'}>
+        <div style={{ background: '#fff', padding: 32, borderRadius: 12, boxShadow: '0 4px 24px rgba(0,0,0,0.1)', width: '100%', maxWidth: 360 }}>
+          <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 4, color: '#FF6B35' }}>I AM RUNNING</div>
+          <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 24 }}>Admin Panel — enter TOTP code</div>
           <input
-            type="text"
-            inputMode="numeric"
-            placeholder="000000"
-            maxLength={6}
+            type="text" inputMode="numeric" placeholder="000000" maxLength={6}
             value={totpInput}
-            onChange={(e) => setTotpInput(e.target.value.replace(/\D/g, ''))}
-            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-            className="w-full p-3 border rounded mb-3 text-center text-2xl tracking-widest font-mono"
-            disabled={isLocked}
-            autoFocus
+            onChange={e => setTotpInput(e.target.value.replace(/\D/g, ''))}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            autoFocus disabled={isLocked}
+            style={{
+              width: '100%', padding: '14px 0', border: '2px solid #e5e7eb', borderRadius: 8,
+              textAlign: 'center', fontSize: 28, fontFamily: 'monospace', letterSpacing: '0.3em',
+              outline: 'none', marginBottom: 12, boxSizing: 'border-box',
+            }}
           />
-          {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+          {error && <div style={{ color: '#ef4444', fontSize: 13, marginBottom: 10 }}>{error}</div>}
           <button
-            type="button"
-            onClick={handleLogin}
-            disabled={isLocked || totpInput.length !== 6}
-            className="w-full bg-orange-500 text-white p-2 rounded hover:bg-orange-600 disabled:opacity-50"
+            onClick={handleLogin} disabled={isLocked || totpInput.length !== 6}
+            style={{
+              width: '100%', padding: 14, borderRadius: 8, border: 'none',
+              background: isLocked || totpInput.length !== 6 ? '#e5e7eb' : '#FF6B35',
+              color: '#fff', fontWeight: 700, fontSize: 16, cursor: isLocked || totpInput.length !== 6 ? 'default' : 'pointer',
+            }}
           >
-            {isLocked ? 'Locked' : 'Enter'}
+            {isLocked ? '🔒 Locked' : 'Enter'}
           </button>
         </div>
       </div>
     );
   }
 
+  // ── Main admin UI ─────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
-      <header className="bg-white border-b px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {!isMobile && <Eye className="w-6 h-6" />}
-            <h1 className={`${isMobile ? 'text-base' : 'text-2xl'} font-bold`}>
-              {isMobile ? 'Admin Panel' : t('title')}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {isMobile ? (
-              <>
-                <button
-                  onClick={() => setShowMobileNav(!showMobileNav)}
-                  className="px-3 py-2 hover:bg-gray-100 rounded transition-colors text-sm font-medium flex items-center gap-1"
-                >
-                  Menu {showMobileNav ? '▲' : '▼'}
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 hover:bg-gray-100 rounded transition-colors"
-                  title="Logout"
-                >
-                  <CloseIcon className="w-5 h-5" />
-                </button>
-              </>
-            ) : (
-              <>
-                <span className="text-sm text-gray-600">admin</span>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  {t('logout')}
-                </Button>
-              </>
-            )}
-          </div>
+    <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: 'system-ui, sans-serif' }} dir={isRTL ? 'rtl' : 'ltr'}>
+
+      {/* Header */}
+      <header style={{
+        background: '#fff', borderBottom: '1px solid #e5e7eb',
+        padding: isMobile ? '10px 16px' : '12px 24px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'sticky', top: 0, zIndex: 100,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: isMobile ? 16 : 20, fontWeight: 800, color: '#FF6B35' }}>IAM</span>
+          {!isMobile && <span style={{ fontSize: 14, color: '#6b7280' }}>Admin Panel</span>}
+          <span style={{ padding: '2px 8px', background: '#fef3c7', color: '#d97706', borderRadius: 4, fontSize: 11, fontWeight: 700 }}>
+            {users.length}u · {projects.length}p
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {isMobile ? (
+            <>
+              <button onClick={() => setShowMobileNav(!showMobileNav)} style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer' }}>
+                {showMobileNav ? '✕' : '☰'}
+              </button>
+              <button onClick={handleLogout} style={{ padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff', fontSize: 13, cursor: 'pointer', color: '#ef4444' }}>
+                Exit
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href={`/${locale}/admin/seo`} style={{ padding: '6px 12px', background: '#f3f4f6', borderRadius: 6, fontSize: 13, textDecoration: 'none', color: '#374151' }}>SEO</Link>
+              <Link href={`/${locale}/admin/dev-console`} style={{ padding: '6px 12px', background: '#f3f4f6', borderRadius: 6, fontSize: 13, textDecoration: 'none', color: '#374151' }}>Dev Console</Link>
+              <button onClick={handleLogout} style={{ padding: '6px 14px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                Logout
+              </button>
+            </>
+          )}
         </div>
       </header>
 
-      {/* Mobile Navigation Dropdown */}
+      {/* Mobile nav dropdown */}
       {isMobile && showMobileNav && (
-        <div className="bg-white border-b shadow-sm">
-          <div className="px-4 py-3 space-y-2">
-            <div className="text-sm text-gray-600 mb-2">
-              📊 Stats: {projects.length} projects, {users.length} users
-            </div>
-            <Link
-              href={`/${locale}/admin/seo`}
-              className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
-            >
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4" />
-                SEO Settings
-              </div>
-              <span>→</span>
-            </Link>
-            <Link
-              href={`/${locale}/admin/dev-console`}
-              className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
-            >
-              <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4" />
-                Dev Console
-              </div>
-              <span>→</span>
-            </Link>
-          </div>
+        <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <Link href={`/${locale}/admin/seo`} style={{ padding: '10px 14px', background: '#f3f4f6', borderRadius: 8, fontSize: 14, textDecoration: 'none', color: '#374151' }} onClick={() => setShowMobileNav(false)}>
+            🌐 SEO Settings
+          </Link>
+          <Link href={`/${locale}/admin/dev-console`} style={{ padding: '10px 14px', background: '#f3f4f6', borderRadius: 8, fontSize: 14, textDecoration: 'none', color: '#374151' }} onClick={() => setShowMobileNav(false)}>
+            💻 Dev Console
+          </Link>
         </div>
       )}
 
-      <div className="flex h-[calc(100vh-73px)]">
-        {!isMobile && (
-          <aside className="w-64 bg-white border-r p-4">
-          <div className="space-y-4">
-            <div>
-              <h2 className="font-semibold mb-2 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                {t('stats')}
-              </h2>
-              <div className="text-sm space-y-1">
-                <div>{t('totalProjects')}: {projects.length}</div>
-                <div>{t('totalUsers')}: {users.length}</div>
-              </div>
-            </div>
-            <div>
-              <Link
-                href={`/${locale}/admin/seo`}
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
-              >
-                <Globe className="w-4 h-4" />
-                SEO Settings
-              </Link>
-              <Link
-                href={`/${locale}/admin/dev-console`}
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 text-sm font-medium"
-              >
-                <Terminal className="w-4 h-4" />
-                Dev Console
-              </Link>
-            </div>
+      {/* Tabs */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: isMobile ? '0 16px' : '0 24px', display: 'flex', gap: 0 }}>
+        {(['users', 'projects'] as TabType[]).map(tab => (
+          <button
+            key={tab} onClick={() => setActiveTab(tab)}
+            style={{
+              padding: isMobile ? '12px 16px' : '14px 20px',
+              border: 'none', background: 'none', cursor: 'pointer',
+              fontSize: isMobile ? 13 : 14, fontWeight: 600,
+              color: activeTab === tab ? '#FF6B35' : '#6b7280',
+              borderBottom: activeTab === tab ? '2px solid #FF6B35' : '2px solid transparent',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            {tab === 'users' ? '👥' : '📁'} {tab === 'users' ? `Users (${users.length})` : `Projects (${projects.length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: isMobile ? 12 : 24, maxWidth: 1400, margin: '0 auto' }}>
+
+        {/* Status message */}
+        {message && (
+          <div style={{
+            padding: '10px 16px', borderRadius: 8, marginBottom: 16, fontSize: 14, fontWeight: 600,
+            background: message.startsWith('✅') ? '#f0fdf4' : '#fef2f2',
+            color: message.startsWith('✅') ? '#15803d' : '#dc2626',
+            border: `1px solid ${message.startsWith('✅') ? '#86efac' : '#fca5a5'}`,
+          }}>
+            {message}
           </div>
-        </aside>
         )}
 
-        <main className={`flex-1 overflow-auto ${isMobile ? 'p-4' : 'p-6'}`}>
-          <div className="flex gap-2 mb-4">
-            <Button
-              variant={activeTab === 'users' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('users')}
-            >
-              <Users className="w-4 h-4 mr-2" />
-              Users
-            </Button>
-            <Button
-              variant={activeTab === 'projects' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('projects')}
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Projects
-            </Button>
-          </div>
-
-          {message && (
-            <div
-              className={cn(
-                'mb-4 p-4 rounded',
-                message.startsWith('✅')
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-              )}
-            >
-              {message}
+        {/* ── USERS TAB ── */}
+        {activeTab === 'users' && (
+          <div>
+            {/* Search + refresh */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <input
+                type="text" placeholder="Search by email or name..."
+                value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                style={{ flex: 1, padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14, outline: 'none' }}
+              />
+              <button onClick={loadUsers} disabled={usersLoading} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                {usersLoading ? '...' : '↻'}
+              </button>
             </div>
-          )}
 
-          {activeTab === 'users' && (
-            <>
-              <div className="mb-4 flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Search by email or name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 p-2 border rounded"
-                />
-                <Button variant="outline" size="sm" onClick={loadUsers} disabled={usersLoading}>
-                  <RefreshCw className={`w-4 h-4 ${!isMobile && 'mr-2'}`} />
-                  {!isMobile && t('refresh')}
-                </Button>
+            {usersLoading && <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>Loading users...</div>}
+
+            {!usersLoading && filteredUsers.length === 0 && (
+              <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>No users found</div>
+            )}
+
+            {/* Mobile: cards */}
+            {!usersLoading && isMobile && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {filteredUsers.map(user => (
+                  <div key={user.id} style={{ background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', padding: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#111', wordBreak: 'break-all' }}>{user.email}</div>
+                        {user.full_name && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{user.full_name}</div>}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                        <RoleBadge role={user.role} />
+                        <span style={{ fontSize: 10, color: '#9ca3af' }}>#{user.user_number ?? '-'}</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 10 }}>
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </div>
+                    <RoleButtons userId={user.id} currentRole={user.role} onUpdate={updateUserRole} disabled={updating} />
+                  </div>
+                ))}
               </div>
+            )}
 
-              {usersLoading && (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-                  <p className="mt-2 text-gray-600">Loading users...</p>
-                </div>
-              )}
-
-              {!usersLoading && (
-                <>
-                  {isMobile ? (
-                    <div className="space-y-3">
-                      {filteredUsers.map((user) => (
-                        <div key={user.id} className="bg-white rounded-lg border p-4 space-y-2">
-                          <div className="flex justify-between items-start">
-                            <span className="text-sm text-gray-500">#{user.user_number ?? '-'}</span>
-                            <span className="text-xs text-gray-400">
-                              {new Date(user.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <div className="font-medium text-sm break-all">{user.email}</div>
-                          {user.full_name && (
-                            <div className="text-sm text-gray-600">Name: {user.full_name}</div>
-                          )}
-                          <div className="flex gap-2 flex-wrap">
-                            <span
-                              className={cn(
-                                'px-2 py-1 rounded text-xs',
-                                user.account_type === 'freelancer'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              )}
-                            >
-                              {user.account_type}
-                            </span>
-                            {user.freelancer_tier && (
-                              <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">
-                                {user.freelancer_tier}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex gap-2 flex-wrap pt-2">
-                            <button
-                              onClick={() => updateUserRole(user.id, 'regular', null)}
-                              className="px-3 py-2 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 disabled:opacity-50"
-                              style={{ minHeight: '44px' }}
-                              disabled={updating}
-                            >
-                              Regular
-                            </button>
-                            <button
-                              onClick={() =>
-                                updateUserRole(user.id, 'freelancer', 'frontend')
-                              }
-                              className="px-3 py-2 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50"
-                              style={{ minHeight: '44px' }}
-                              disabled={updating}
-                            >
-                              Frontend
-                            </button>
-                            <button
-                              onClick={() =>
-                                updateUserRole(user.id, 'freelancer', 'full_stack')
-                              }
-                              className="px-3 py-2 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:opacity-50"
-                              style={{ minHeight: '44px' }}
-                              disabled={updating}
-                            >
-                              Full Stack
-                            </button>
-                            <button
-                              onClick={() =>
-                                updateUserRole(user.id, 'freelancer', 'professional')
-                              }
-                              className="px-3 py-2 bg-purple-500 text-white rounded text-xs hover:bg-purple-600 disabled:opacity-50"
-                              style={{ minHeight: '44px' }}
-                              disabled={updating}
-                            >
-                              Pro
-                            </button>
-                          </div>
-                        </div>
+            {/* Desktop: table */}
+            {!usersLoading && !isMobile && (
+              <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                      {['#', 'Email', 'Name', 'Role', 'Joined', 'Actions'].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                       ))}
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full bg-white border">
-                        <thead className="bg-gray-100">
-                          <tr>
-                            <th className="px-4 py-2 border text-left">#</th>
-                            <th className="px-4 py-2 border text-left">Email</th>
-                            <th className="px-4 py-2 border text-left">Name</th>
-                            <th className="px-4 py-2 border text-left">Account Type</th>
-                            <th className="px-4 py-2 border text-left">Tier</th>
-                            <th className="px-4 py-2 border text-left">Created</th>
-                            <th className="px-4 py-2 border text-left">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredUsers.map((user) => (
-                            <tr key={user.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-2 border text-sm">
-                                {user.user_number ?? '-'}
-                              </td>
-                              <td className="px-4 py-2 border text-sm">{user.email}</td>
-                              <td className="px-4 py-2 border text-sm">
-                                {user.full_name || '-'}
-                              </td>
-                              <td className="px-4 py-2 border">
-                                <span
-                                  className={cn(
-                                    'px-2 py-1 rounded text-xs',
-                                    user.account_type === 'freelancer'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                  )}
-                                >
-                                  {user.account_type}
-                                </span>
-                              </td>
-                              <td className="px-4 py-2 border text-sm">
-                                {user.freelancer_tier || '-'}
-                              </td>
-                              <td className="px-4 py-2 border text-sm">
-                                {new Date(user.created_at).toLocaleDateString()}
-                              </td>
-                              <td className="px-4 py-2 border">
-                                <div className="flex gap-1 flex-wrap">
-                                  <button
-                                    onClick={() => updateUserRole(user.id, 'regular', null)}
-                                    className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 disabled:opacity-50"
-                                    disabled={updating}
-                                  >
-                                    Regular
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      updateUserRole(user.id, 'freelancer', 'frontend')
-                                    }
-                                    className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50"
-                                    disabled={updating}
-                                  >
-                                    Frontend
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      updateUserRole(user.id, 'freelancer', 'full_stack')
-                                    }
-                                    className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:opacity-50"
-                                    disabled={updating}
-                                  >
-                                    Full Stack
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      updateUserRole(user.id, 'freelancer', 'professional')
-                                    }
-                                    className="px-2 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600 disabled:opacity-50"
-                                    disabled={updating}
-                                  >
-                                    Pro
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {!usersLoading && filteredUsers.length === 0 && (
-                <div className="text-center py-8 text-gray-500">No users found</div>
-              )}
-            </>
-          )}
-
-          {activeTab === 'projects' && (
-            <>
-              <div className="mb-4 flex items-center gap-2">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder={t('searchProjects')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Button variant="outline" size="sm" onClick={loadProjects}>
-                  <RefreshCw className={`w-4 h-4 ${!isMobile && 'mr-2'}`} />
-                  {!isMobile && t('refresh')}
-                </Button>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map((user, i) => (
+                      <tr key={user.id} style={{ borderBottom: i < filteredUsers.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                        <td style={{ padding: '10px 14px', fontSize: 12, color: '#9ca3af' }}>{user.user_number ?? '-'}</td>
+                        <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 500, color: '#111' }}>{user.email}</td>
+                        <td style={{ padding: '10px 14px', fontSize: 13, color: '#6b7280' }}>{user.full_name || '—'}</td>
+                        <td style={{ padding: '10px 14px' }}><RoleBadge role={user.role} /></td>
+                        <td style={{ padding: '10px 14px', fontSize: 12, color: '#9ca3af' }}>{new Date(user.created_at).toLocaleDateString()}</td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <RoleButtons userId={user.id} currentRole={user.role} onUpdate={updateUserRole} disabled={updating} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+            )}
+          </div>
+        )}
 
-              <ScrollArea className="h-[calc(100vh-280px)]">
-                <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
-                  {filteredProjects.map((project) => (
-                    <div
-                      key={project.id}
-                      className="bg-white rounded-lg border p-4 hover:shadow-md transition"
-                    >
-                      <div className="aspect-video bg-gray-100 rounded mb-3 flex items-center justify-center overflow-hidden">
-                        {project.thumbnail ? (
-                          <img
-                            src={project.thumbnail}
-                            alt={project.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="text-center text-gray-400">
-                            <FileText className="w-12 h-12 mx-auto mb-2" />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleGeneratePreview(project)}
-                            >
-                              {t('generatePreview')}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <h3 className="font-semibold mb-1">{project.name}</h3>
-                      <p className="text-sm text-gray-500 mb-2">
-                        {project.description || t('noDescription')}
-                      </p>
-                      <div className="text-xs text-gray-400">
-                        {new Date(project.updated_at).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
+        {/* ── PROJECTS TAB ── */}
+        {activeTab === 'projects' && (
+          <div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <input
+                type="text" placeholder="Search projects..."
+                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                style={{ flex: 1, padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 14, outline: 'none' }}
+              />
+              <button onClick={loadProjects} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff', cursor: 'pointer', fontSize: 13 }}>↻</button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+              {filteredProjects.map(project => (
+                <div key={project.id} style={{ background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+                  <div style={{ aspectRatio: '16/9', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {project.thumbnail
+                      ? <img src={project.thumbnail} alt={project.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : (
+                        <button onClick={() => handleGeneratePreview(project)} style={{ padding: '8px 14px', border: '1px solid #e5e7eb', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 13, color: '#6b7280' }}>
+                          Generate Preview
+                        </button>
+                      )
+                    }
+                  </div>
+                  <div style={{ padding: 12 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{project.name}</div>
+                    {project.description && <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>{project.description}</div>}
+                    <div style={{ fontSize: 11, color: '#9ca3af' }}>{new Date(project.updated_at).toLocaleString()}</div>
+                  </div>
                 </div>
-              </ScrollArea>
-            </>
-          )}
-        </main>
+              ))}
+            </div>
+
+            {filteredProjects.length === 0 && (
+              <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>No projects found</div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

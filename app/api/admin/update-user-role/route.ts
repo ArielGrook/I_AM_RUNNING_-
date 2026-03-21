@@ -13,15 +13,14 @@ const supabaseAdmin = createClient(
   }
 );
 
-/** Maps admin panel (account_type + tier) to useAuth 5-level role scale */
-function mapToAuthRole(
-  accountType: string,
-  tier: string | null
-): number {
-  if (accountType === 'regular') return 1;        // Free user
-  if (tier === 'frontend') return 3;              // Freelancer Basic
-  if (tier === 'full_stack') return 4;            // Freelancer Pro
-  if (tier === 'professional') return 5;           // Admin level
+function mapToAuthRole(accountType: string, tier: string | null): number {
+  if (accountType === 'regular') return 1;          // Free user
+  if (accountType === 'paid') return 2;             // Paid User ($20 one-time)
+  if (accountType === 'agency_owner') return 6;     // Agency Owner
+  if (accountType === 'agency_employee') return 7;  // Agency Employee
+  if (tier === 'frontend') return 3;                // Freelancer Basic
+  if (tier === 'full_stack') return 4;              // Freelancer Pro
+  if (tier === 'professional') return 5;            // Admin level
   return 1;
 }
 

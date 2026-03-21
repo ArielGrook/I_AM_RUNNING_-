@@ -20,7 +20,18 @@ export interface Profile {
   email: string;
   full_name?: string;
   company?: string;
-  role: number; // 0=anon, 1=Free User, 2=Paid User, 3=Freelancer Basic, 4=Freelancer Pro, 5=Admin
+  // Role system:
+  // 0 = Anonymous (not logged in)
+  // 1 = Free User (chat only)
+  // 2 = Paid User ($20 one-time) - editor, 1 project
+  // 3 = Freelancer Basic ($30/mo) - 5 projects
+  // 4 = Freelancer Pro ($100/mo) - unlimited
+  // 5 = Admin
+  // 6 = Agency Owner - manages team, unlimited projects
+  // 7 = Agency Employee - works under agency owner
+  role: number;
+  agency_id?: string | null;     // For role 7: ID of the Agency Owner
+  trial_expires_at?: string | null; // ISO date — for future Stripe trial
   ai_requests_today: number;
   ai_requests_limit: number;
   subscription_expires?: string;
@@ -56,6 +67,9 @@ type AuthContextValue = AuthState & {
   isFreelancer: boolean;
   isProFreelancer: boolean;
   isAdmin: boolean;
+  isAgencyOwner: boolean;
+  isAgencyEmployee: boolean;
+  isAgency: boolean;
   // Feature access
   canUseChat: boolean;
   canAccessEditor: boolean;
@@ -108,7 +122,9 @@ function buildProfileFromUser(user: User): Profile {
     email: user.email || '',
     full_name: metadata.full_name || metadata.name || null,
     company: metadata.company || null,
-    role: metadata.role ?? 1, // Default: Free User
+    role: metadata.role ?? 1,
+    agency_id: metadata.agency_id ?? null,
+    trial_expires_at: metadata.trial_expires_at ?? null,
     ai_requests_today: metadata.ai_requests_today ?? 0,
     ai_requests_limit: metadata.ai_requests_limit ?? 10,
     created_at: user.created_at,
@@ -433,9 +449,10 @@ function useAuthProvider(): AuthContextValue {
           });
           
           console.log('✅ Auth state updated');
-        } else if (event === 'TOKEN_REFRESHED') {
-          // For token refresh, use cached session (no need to hit server again)
-          console.log('🔐 Auth event: TOKEN_REFRESHED');
+        } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          // TOKEN_REFRESHED: normal session refresh
+          // USER_UPDATED: fires when admin changes user_metadata (role change) — no re-login needed
+          console.log('🔐 Auth event:', event);
           const user = session?.user;
           
           if (user) {
@@ -496,6 +513,9 @@ function useAuthProvider(): AuthContextValue {
   const isFreelancer = role >= 3;          // Monthly subscriber
   const isProFreelancer = role >= 4;       // Premium tier
   const isAdmin = role >= 5;               // Full access
+  const isAgencyOwner = role === 6;        // Agency owner — manages team
+  const isAgencyEmployee = role === 7;     // Agency employee — works under owner
+  const isAgency = role === 6 || role === 7; // Any agency member
 
   // Debug logging (only log when auth state changes)
   useEffect(() => {
@@ -518,10 +538,13 @@ function useAuthProvider(): AuthContextValue {
 
   // Project limits
   const getProjectLimit = (): number => {
-    if (role === 2) return 1;      // Paid User: 1 project
-    if (role === 3) return 5;      // Freelancer Basic: 5 projects
-    if (role >= 4) return 999;     // Pro/Admin: Unlimited (999 = practical unlimited)
-    return 0;                       // Free/Anonymous: No projects
+    if (role === 2) return 1;
+    if (role === 3) return 5;
+    if (role === 4) return 999;
+    if (role === 5) return 999;
+    if (role === 6) return 999;   // Agency Owner: unlimited
+    if (role === 7) return 10;    // Agency Employee: 10 projects
+    return 0;
   };
 
   const getAILimit = (): number => authState.profile?.ai_requests_limit || 0;
@@ -551,6 +574,9 @@ function useAuthProvider(): AuthContextValue {
     isFreelancer,
     isProFreelancer,
     isAdmin,
+    isAgencyOwner,
+    isAgencyEmployee,
+    isAgency,
 
     // Feature access
     canUseChat,
