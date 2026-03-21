@@ -45,7 +45,8 @@ interface Project {
 
 interface AdminUser {
   id: string; user_number?: number; email: string; full_name: string | null;
-  account_type: string; freelancer_tier: string | null; role?: number; created_at: string;
+  account_type: string; freelancer_tier: string | null; role?: number;
+  agency_id?: string | null; last_sign_in?: string | null; created_at: string;
 }
 
 type TabType = 'users' | 'projects';
@@ -398,7 +399,12 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 10 }}>
-                      {new Date(user.created_at).toLocaleDateString()}
+                      Joined: {new Date(user.created_at).toLocaleDateString()}
+                      {user.last_sign_in && (
+                        <span style={{ marginLeft: 8 }}>
+                          · Last seen: {new Date(user.last_sign_in).toLocaleDateString()}
+                        </span>
+                      )}
                     </div>
                     <RoleButtons userId={user.id} currentRole={user.role} onUpdate={updateUserRole} disabled={updating} />
                   </div>
@@ -412,7 +418,7 @@ export default function AdminPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                      {['#', 'Email', 'Name', 'Role', 'Joined', 'Actions'].map(h => (
+                      {['#', 'Email', 'Name', 'Role', 'Joined', 'Last seen', 'Actions'].map(h => (
                         <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                       ))}
                     </tr>
@@ -425,6 +431,7 @@ export default function AdminPage() {
                         <td style={{ padding: '10px 14px', fontSize: 13, color: '#6b7280' }}>{user.full_name || '—'}</td>
                         <td style={{ padding: '10px 14px' }}><RoleBadge role={user.role} /></td>
                         <td style={{ padding: '10px 14px', fontSize: 12, color: '#9ca3af' }}>{new Date(user.created_at).toLocaleDateString()}</td>
+                        <td style={{ padding: '10px 14px', fontSize: 12, color: '#9ca3af' }}>{user.last_sign_in ? new Date(user.last_sign_in).toLocaleDateString() : '—'}</td>
                         <td style={{ padding: '10px 14px' }}>
                           <RoleButtons userId={user.id} currentRole={user.role} onUpdate={updateUserRole} disabled={updating} />
                         </td>
