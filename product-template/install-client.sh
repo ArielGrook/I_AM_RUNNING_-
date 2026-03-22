@@ -308,7 +308,7 @@ PM2_NAME="iam-$CLIENT_SLUG"
 node "$IAM_DIR/product-template/generate-ecosystem.js" "$CLIENT_DIR" "$PM2_NAME" "$IAM_DIR"
 
 pm2 start "$CLIENT_DIR/ecosystem.config.js"
-pm2 save --quiet
+pm2 save
 log "PM2 process '$PM2_NAME' started on port $CLIENT_PORT"
 
 # Wait for process to start
@@ -471,7 +471,7 @@ echo "════════════════════════�
 echo ""
 
 
-pm2 save --quiet
+pm2 save
 log "PM2 process '$PM2_NAME' started on port $CLIENT_PORT"
 
 # Wait for process to start
