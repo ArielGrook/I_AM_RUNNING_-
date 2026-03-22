@@ -304,21 +304,8 @@ section "Starting PM2 Process"
 
 PM2_NAME="iam-$CLIENT_SLUG"
 
-# PM2 — create ecosystem.config.js and start
-node -e "
-const fs2 = require('fs');
-const lines = fs2.readFileSync('" + "'$CLIENT_DIR/.env'" + "', 'utf8').split('\n');
-const env = {};
-lines.forEach(l => {
-  l = l.trim();
-  if (!l || l.startsWith('#')) return;
-  const idx = l.indexOf('=');
-  if (idx < 0) return;
-  env[l.slice(0, idx).trim()] = l.slice(idx+1).trim();
-});
-const cfg = { apps: [{ name: '" + "'$PM2_NAME'" + "', script: 'npm', args: 'start', cwd: '" + "'$IAM_DIR'" + "', env: env }] };
-fs2.writeFileSync('" + "'$CLIENT_DIR/ecosystem.config.js'" + "', 'module.exports = ' + JSON.stringify(cfg, null, 2));
-"
+# PM2 — generate ecosystem.config.js via helper script
+node "$IAM_DIR/product-template/generate-ecosystem.js" "$CLIENT_DIR" "$PM2_NAME" "$IAM_DIR"
 
 pm2 start "$CLIENT_DIR/ecosystem.config.js"
 pm2 save --quiet
