@@ -931,8 +931,7 @@ export default function InteractivePage() {
   const router = useRouter();
   const locale = useLocale();
   const { user, isAuthenticated } = useAuth();
-  const [isPortrait, setIsPortrait] = useState(false);
-  const [dismissedRotate, setDismissedRotate] = useState(false);
+
   const [isDarkMode, setIsDarkMode] = useState(true);
 
   const [contract, setContract] = useState<ContractState>({
@@ -947,16 +946,6 @@ export default function InteractivePage() {
   const [craftJson, setCraftJson] = useState<string | null>(null);
   const [assembling, setAssembling] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    const check = () => {
-      const isMob = window.innerWidth < 768;
-      setIsPortrait(isMob && window.innerHeight > window.innerWidth);
-    };
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
 
   const selectedPreset = COLOR_PRESETS.find(p => p.id === contract.presetId) ?? null;
   const accentColor = selectedPreset?.accentColor ?? '#FF6B35';
@@ -1039,20 +1028,6 @@ export default function InteractivePage() {
         : [...prev.blocks, id],
     }));
   };
-
-  // Portrait overlay
-  if (isPortrait && !dismissedRotate) {
-    return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(135deg, #FF4500, #FF6B35)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', padding: 32, textAlign: 'center' }}>
-        <div style={{ fontSize: 64, marginBottom: 24 }}>📱↻</div>
-        <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12 }}>Rotate to Landscape</h2>
-        <p style={{ fontSize: 16, opacity: 0.9, marginBottom: 32, maxWidth: 300 }}>For the best experience, please rotate your device to landscape mode</p>
-        <button onClick={() => setDismissedRotate(true)} style={{ padding: '12px 32px', borderRadius: 100, border: '2px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
-          Continue anyway
-        </button>
-      </div>
-    );
-  }
 
   // Assembling
   if (assembling && !craftJson) {
