@@ -9,6 +9,31 @@
 
 ---
 
+### AI Runtime Topology — clarified 22.03.2026
+- **Главный вывод:** MCP и Dev Console — это **два разных интерфейса** к одному серверному runtime, а не одна и та же подсистема.
+- `app/api/mcp/route.ts` создаёт MCP server через `createMcpServer()` из `lib/mcp-server/index.ts`.
+- В `app/api/mcp/route.ts` есть `checkAuth(request)`, auth идёт через `Authorization: Bearer <token>` header.
+- Route поддерживает и `GET`, и `POST`: `GET` используется как SSE endpoint для MCP Streamable HTTP spec, `POST` — main protocol handler.
+- `app/api/mcp/token/route.ts` использует `loadConfig()` из `lib/dev-agent/config`; MCP token хранится как `mcpAuthToken`.
+- Следствие: **MCP не зависит от UI Dev Console**. Для переноса в другой продукт обязательны route layer + config/token management + tool exposure policy, а не сама web IDE.
+
+### Dev Agent / Dev Console Auth Pattern — confirmed 22.03.2026
+- Все `app/api/dev-agent/*` routes используют `createClient()` из `lib/supabase/server` и затем `supabase.auth.getUser()`.
+- Во всех ключевых endpoints есть дополнительная привязка к `DEVELOPER_USER_ID` (из env или config): если `user.id !== devUserId`, доступ запрещается.
+- Этот паттерн подтверждён для: `route.ts`, `config`, `deploy`, `git-log`, `files`, `files/read`, `files/write`, `files/delete`, `files/mkdir`, `rollback`.
+- Значит Dev Console — это защищённая web surface для одного разрешённого dev-оператора, а не публичный инструмент для всех admin-ов по умолчанию.
+
+### Dev Agent Main Loop — confirmed 22.03.2026
+- `app/api/dev-agent/route.ts` импортирует `executeTool` из `lib/dev-agent/tool-executor`.
+- В route есть tool-calling loop с `MAX_TOOL_ITERATIONS = 25`.
+- Следствие: встроенный AI route в проекте — это самостоятельный execution runtime, а не просто proxy к внешнему чату.
+
+### search_files / read_file limitations in I AM RUNNING MCP tool — discovered 22.03.2026
+- Через текущий MCP bridge `read_file` разрешён только для `.md/.json/.yaml/.yml/.txt`; `.ts/.tsx` читать напрямую нельзя.
+- Поэтому для аудита runtime-кода приходится использовать `search_files` + точечные сигнатуры + `list_directory`.
+- Это не мешает архитектурному аудиту, но мешает глубокому line-by-line reverse engineering.
+- Для дальнейшего улучшения MCP-инструментов стоит добавить безопасный read-only просмотр `.ts/.tsx` файлов.
+
 ### Interactive Step 1 Redesign (22.03.2026)
 - `NICHE_THUMBNAILS`: Record<string, ReactNode> — 16 детализированных SVG 140×88. Каждая отражает концепт ниши (не иконка). Живут прямо в interactive/page.tsx перед `BusinessTypeThumbnail`.
 - `BusinessTypeThumbnail`: функция теперь просто возвращает из `NICHE_THUMBNAILS[id]` — весь старый `svgs` объект удалён.
@@ -152,6 +177,8 @@
 | Duplicate imports | AI sometimes adds TronXxx twice in import line | Search before patching |
 | .well-known paths | Next.js middleware tries to add locale prefix | middleware.ts must exclude /.well-known |
 | pm2 self-kill | Deploy route can't respond if pm2 kills process | nohup sleep 2 pattern mandatory |
+| MCP bridge can't read .ts/.tsx directly | Current `read_file` restriction blocks direct source reading over MCP bridge | Use `search_files` + signatures, or improve tooling |
+| Confusing Dev Console with MCP | They share runtime, but are different access surfaces | Model them separately in docs and product architecture |
 
 ---
 
@@ -162,3 +189,5 @@
 - "Container-in-Container needed" → FALSE at current scale, Enhanced Monoliths sufficient
 - ".next cache causes deploy issues" → PARTIALLY TRUE, but main issue was pm2 self-kill
 - "GPT-4o can't handle Cyrillic in search_files" → TRUE, grep has encoding issues with Unicode
+- "MCP works through Dev Console UI" → FALSE, MCP has its own `/api/mcp/*` protocol layer and token flow
+- "Dev Console is required for MCP to function" → FALSE, both are parallel access surfaces over shared server runtime

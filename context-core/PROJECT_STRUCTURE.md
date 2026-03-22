@@ -112,10 +112,12 @@ Role: [EMPTY - to be filled]
 Role: [EMPTY - to be filled]
 
 ## app/api/admin/get-users/route.ts
-Role: [EMPTY - to be filled]
+Role: Admin API endpoint that returns current users and roles from Supabase Auth as the source of truth, protected by admin cookie auth.
+Key: GET, createClient, auth.admin.listUsers, checkAdminAuth
 
 ## app/api/admin/update-user-role/route.ts
-Role: [EMPTY - to be filled]
+Role: Admin API endpoint for changing user roles in Auth metadata and synced profile fields, protected by admin cookie auth.
+Key: POST, createClient, checkAdminAuth, updateUserRole
 
 ## app/api/chat/route.ts
 Role: [EMPTY - to be filled]
@@ -127,6 +129,34 @@ Role: [EMPTY - to be filled]
 Role: GET/POST endpoints for loading and saving dev agent config (API keys, GitHub token) with auth check.
 Key: GET, POST, loadConfig, saveConfig, maskConfig
 
+## app/api/dev-agent/deploy/route.ts
+Role: Protected dev-agent endpoint that deploys the project by running the server-side build/restart pipeline for the developer operator.
+Key: POST, createClient, DEVELOPER_USER_ID
+
+## app/api/dev-agent/files/route.ts
+Role: Protected file-tree endpoint for Dev Console that lists project directories/files for browser IDE navigation.
+Key: GET, createClient, DEVELOPER_USER_ID
+
+## app/api/dev-agent/files/read/route.ts
+Role: Protected file-read endpoint for Dev Console with path validation and size/security checks.
+Key: GET, createClient, DEVELOPER_USER_ID
+
+## app/api/dev-agent/files/write/route.ts
+Role: Protected file-write endpoint for Dev Console that saves edited project files to disk without auto-commit.
+Key: POST, createClient, DEVELOPER_USER_ID
+
+## app/api/dev-agent/files/delete/route.ts
+Role: Protected endpoint for deleting files or empty folders from the project tree in Dev Console.
+Key: DELETE, createClient, DEVELOPER_USER_ID
+
+## app/api/dev-agent/files/mkdir/route.ts
+Role: Protected endpoint for creating directories in the project tree from Dev Console.
+Key: POST, createClient, DEVELOPER_USER_ID
+
+## app/api/dev-agent/git-log/route.ts
+Role: Protected endpoint that exposes recent git history to Dev Console for inspection and rollback decisions.
+Key: GET, createClient, DEVELOPER_USER_ID
+
 ## app/api/dev-agent/rollback/route.ts
 Role: Rollback endpoint that reverts last git commit, rebuilds project, and restarts PM2 process.
 Key: POST, git reset --hard HEAD~1
@@ -134,6 +164,34 @@ Key: POST, git reset --hard HEAD~1
 ## app/api/dev-agent/route.ts
 Role: AI agent API endpoint with tool calling loop, context-core loading, git snapshot, build, and auto-deploy.
 Key: POST, executeTool, getProvider, loadContextCore, MAX_TOOL_ITERATIONS
+
+## app/api/mcp/route.ts
+Role: Main MCP protocol endpoint with Bearer-token auth, Streamable HTTP support, and server creation via `createMcpServer()`.
+Key: GET, POST, checkAuth, createMcpServer
+
+## app/api/mcp/authorize/route.ts
+Role: OAuth-style authorization endpoint for MCP clients that issues short-lived auth codes through the auto-approve flow.
+Key: GET
+
+## app/api/mcp/token/route.ts
+Role: OAuth-style token endpoint that exchanges auth codes for the configured MCP bearer token (`mcpAuthToken`).
+Key: POST, loadConfig, mcpAuthToken
+
+## app/api/mcp/setup/route.ts
+Role: Setup/status endpoint that creates or returns MCP auth configuration and human-readable connection instructions.
+Key: GET, loadConfig, saveConfig, mcpAuthToken
+
+## app/api/mcp-gpt/route.ts
+Role: Alternate MCP protocol endpoint intended for GPT-facing connector compatibility and separated safety handling.
+Key: GET, POST
+
+## app/api/mcp-gpt/authorize/route.ts
+Role: Authorization endpoint for the GPT-specific MCP connector flow.
+Key: GET
+
+## app/api/mcp-gpt/token/route.ts
+Role: Token exchange endpoint for the GPT-specific MCP connector flow.
+Key: POST
 
 ## app/api/health/route.ts
 Role: [EMPTY - to be filled]
@@ -541,8 +599,8 @@ Role: [EMPTY - to be filled]
 Role: [EMPTY - to be filled]
 
 ## middleware.ts
-Role: Next.js middleware for i18n routing with locale detection, excluding API/static routes and deployed sites.
-Key: middleware, intlMiddleware, locales, defaultLocale
+Role: Next.js middleware for i18n routing, admin route shielding, and exclusion of API, deployed-site, and OAuth discovery paths such as `/.well-known`.
+Key: middleware, intlMiddleware, locales, defaultLocale, recordAdminProbe
 
 ## next.config.js
 Role: [EMPTY - to be filled]
@@ -578,6 +636,10 @@ Role: [EMPTY - to be filled]
 ## lib/auth/clientAuthService.ts
 Role: Client-side auth for deployed sites using dynamic Supabase credentials with localStorage session storage.
 Key: signUp, signIn, signOut, saveSession, getStoredSession
+
+## lib/admin/checkAdminAuth.ts
+Role: Server-side guard for admin routes that validates the httpOnly admin session cookie and enforces admin API protection.
+Key: checkAdminAuth, setAdminSessionCookie, clearAdminSessionCookie
 
 ## lib/components/catalog.ts
 Role: [EMPTY - to be filled]
@@ -770,6 +832,22 @@ Key: loadConfig, saveConfig, maskConfig, DevAgentConfig
 Role: Executes AI agent tools (read_file, write_file, patch_file, search_files, git_snapshot) with path security validation.
 Key: executeTool, TOOL_DEFINITIONS, resolveSafePath, ToolResult
 
+## lib/mcp-gpt-oauth-codes.ts
+Role: In-memory store/manager for short-lived OAuth-style authorization codes used by the GPT-specific MCP connector flow.
+Key: auth code TTL, issue/redeem helpers
+
+## lib/mcp-oauth-codes.ts
+Role: In-memory store/manager for short-lived OAuth-style authorization codes used by the main MCP connector flow.
+Key: auth code TTL, issue/redeem helpers
+
+## lib/mcp-server/gpt-safe.ts
+Role: Safety adapter layer for the GPT-facing MCP stack, used to expose a constrained/safe connector surface.
+Key: GPT-safe MCP helpers
+
+## lib/mcp-server/index.ts
+Role: Core MCP server implementation that defines the tools exposed over the `/api/mcp` protocol surface.
+Key: createMcpServer
+
 ## lib/export/craft-json-to-html.ts
 Role: [EMPTY - to be filled]
 
@@ -877,7 +955,8 @@ Role: Server-side Supabase client factory using Next.js cookies for API routes a
 Key: createClient
 
 ## lib/supabase/updateUserRole.ts
-Role: [EMPTY - to be filled]
+Role: Shared server-side helper that applies role changes consistently across Auth metadata and profile-level business fields.
+Key: updateUserRole
 
 ## lib/types/chat.ts
 Role: [EMPTY - to be filled]

@@ -3,6 +3,38 @@
 
 ---
 
+## 0. ГЛАВНАЯ МОДЕЛЬ СИСТЕМЫ
+
+I AM RUNNING — это не просто сайт-билдер. Текущая система состоит из **трёх слоёв**, которые живут на одном серверном runtime:
+
+1. **Website / Product Layer**
+   - лендинг
+   - dashboard
+   - editor
+   - interactive pipeline
+   - deployed client sites
+
+2. **Operational / Dev Layer**
+   - admin panel
+   - dev console (браузерная IDE / file manager / git / deploy / rollback)
+   - dev-agent API
+
+3. **AI Access Layer**
+   - MCP server (`/api/mcp/*`)
+   - MCP GPT variant (`/api/mcp-gpt/*`)
+   - chat/dev-agent route (`/api/dev-agent/route.ts`)
+   - context-core как долговременная память проекта
+
+**Ключевой архитектурный вывод:** MCP и Dev Console — это **не одна и та же подсистема**. Это **два разных интерфейса** к одной и той же серверной среде.
+
+- **Dev Console** = web UI + dev-agent endpoints для человека / дешёвого исполнителя
+- **MCP** = protocol endpoint для внешней модели через Bearer token + OAuth-style setup/token flow
+- **Общий фундамент** = один и тот же код проекта, один и тот же сервер, одни и те же docs / git / deploy primitives
+
+Это критично для будущей продуктовой упаковки: переносимое ядро системы — не Dev Console UI, а **server runtime + context-core + AI access topology**.
+
+---
+
 ## 1. LANDING
 
 **Файл:** `app/[locale]/page.tsx`
@@ -21,70 +53,34 @@
 **Роли:**
 - 0 = Anonymous
 - 1 = Free User (только chat, default при регистрации)
-- 2 = Paid User (editor, 1 проект) — **недостижим через admin panel, нет кнопки**
+- 2 = Paid User (editor, 1 проект)
 - 3 = Freelancer Basic (5 проектов)
 - 4 = Freelancer Pro (unlimited)
 - 5 = Admin
+- 6 = Agency Owner
+- 7 = Agency Employee
 
-**Источник роли:** `user.user_metadata.role` — хранится в Supabase Auth токене, без запроса к БД. `buildProfileFromUser()` читает `user.user_metadata.role` при каждом auth event.
+**Источник роли:** `auth.users.user_metadata.role`
 
-**Флаги в useAuth:** `canAccessEditor = role >= 2`, `isFreelancer = role >= 3`, `isAdmin = role >= 5`
+**Session:** `supabase.auth.getSession()` при инициализации + `onAuthStateChange`
 
-**Session:** `supabase.auth.getSession()` при инициализации + `onAuthStateChange` слушает SIGNED_IN / TOKEN_REFRESHED / SIGNED_OUT
+**Guard-ы:**
+- `/dashboard` → `!isAuthenticated` → login redirect, `!canAccessEditor` → subscription
+- `/editor` → guard пока client-side, middleware не является source of truth для ролей
 
-**Guards (client-side, НЕ middleware):**
-- `/dashboard` → `!isAuthenticated` → `/auth/login?redirect=...`, `!canAccessEditor` → `/subscription`
-- `/editor` → guard только client-side ⚠️ (middleware не проверяет роли)
-
-  // Role system:
-  // 0 = Anonymous (not logged in)
-  // 1 = Free User (chat only, default при регистрации)
-  // 2 = Paid User ($20 one-time) - editor, 1 project
-  // 3 = Freelancer Basic ($30/mo) - 5 projects
-  // 4 = Freelancer Pro ($100/mo) - unlimited
-  // 5 = Admin
-  // 6 = Agency Owner - manages team, unlimited projects
-  // 7 = Agency Employee - works under owner (agency_id в user_metadata)
-
-**Новые поля в user_metadata (добавлены 21.03.2026):**
-- `agency_id` — для role 7: ID Agency Owner-а
-- `trial_expires_at` — ISO date, зарезервировано для Stripe trial
-
-**Фикс real-time role propagation (21.03.2026):**
-`USER_UPDATED` event от Supabase не стреляет при `admin.updateUserById()` — только при `updateUser()` от самого юзера. Настоящее решение: Realtime подписка на `profiles` таблицу (`id=eq.{userId}`). Когда `role` меняется в БД → `supabase.auth.refreshSession()` → новый JWT с обновлённым `user_metadata` → `buildProfileFromUser()` → UI обновляется без перелогина.
-
-Канал: `role-watch-{userId}`, cleanup при размонтировании AuthProvider.
-
-**Admin panel role buttons (обновлено 21.03.2026):**
-Free | Paid | Basic | Pro | Admin | Agency | Employee
-Текущая роль подсвечена с галочкой ✓. Все кнопки на мобиле в flex-wrap.
-`update-user-role` через Admin API меняет `user_metadata`, но браузерная сессия кэширует старый JWT токен до следующего TOKEN_REFRESHED (~60 мин). Решение: слушать `USER_UPDATED` event в `onAuthStateChange` и вызывать `refreshAuth()`.
-
-**Регистрационный триггер:**
-- Email signup: `role: 1` hardcode в `signUp()` → `user_metadata`
-- Google OAuth: fallback в `auth/callback/page.tsx` — если `role == null` → `updateUser({ data: { role: 1 } })`
-- Нет Supabase DB trigger — только client-side
-
-**Смена роли:**
-- Только через admin panel → `POST /api/admin/update-user-role`
-- Меняет: `users` таблица + `profiles` таблица + `auth.users.user_metadata` через Admin API
-- Stripe webhook для auto-upgrade — **не реализован**
-
-**Маппинг admin panel → role number:**
-```
-regular → 1, frontend → 3, full_stack → 4, professional → 5
-```
-⚠️ role 2 (Paid User) недостижим через admin panel — нет кнопки "Paid"
+**Фикс real-time role propagation:**
+`USER_UPDATED` от Supabase не покрывает `admin.updateUserById()`. Актуальное решение — realtime подписка на `profiles` → `refreshSession()` → новый JWT → обновление UI без перелогина.
 
 ---
 
 ## 3. DASHBOARD
 
 **Файл:** `app/[locale]/dashboard/page.tsx`
-**Guard:** `isAuthenticated` + `canAccessEditor` (role >= 2)
-**Загрузка проектов:** `supabase.from('projects').select(...).eq('user_id', uid).order('updated_at')`
-**Создание проекта:** INSERT в projects → `router.push(/${locale}/editor?id=${data.id})`
-⚠️ **БАГ:** новый проект создаётся с `data: { pages: [...] }` вместо `data: { craft: { pages: [...] } }`
+**Guard:** `isAuthenticated` + `canAccessEditor`
+**Загрузка проектов:** Supabase `projects` по `user_id`
+**Создание проекта:** INSERT → redirect в editor
+
+**Историческая ловушка:** ранее был баг формата `data` при создании проекта. Проверять, что создаётся `data.craft.pages`, а не упрощённый legacy shape.
 
 ---
 
@@ -94,26 +90,17 @@ regular → 1, frontend → 3, full_stack → 4, professional → 5
 **Стек:** Craft.js + LZUTF8 Base64 compression + Supabase
 
 **Загрузка проекта:**
-1. `loadProjectFromSupabase(projectId)` → `lib/store/supabase-sync.ts`
-2. `pd.craft.pages` → `PageState[]` → `setPages()`
-3. `lz.decompress(desktopData, Base64)` → `setFrameData(json)`
+1. загрузка проекта из Supabase
+2. извлечение `project.data.craft.pages`
+3. `lz.decompress(..., { inputEncoding: 'Base64' })`
 4. `<Frame key={activePageId-frameKey} data={frameData} />`
 
 **Сохранение:**
-1. `query.serialize()` (Craft.js) → JSON
-2. `lz.compress(json, Base64)` → compressed
-3. `saveProjectToSupabase()` → `projects.data.craft.pages[]`
+1. `query.serialize()`
+2. `lz.compress(..., { outputEncoding: 'Base64' })`
+3. запись в `projects.data.craft.pages[]`
 
-**Переключение страниц:**
-1. `query.serialize()` текущей страницы
-2. `handlePageChange(targetId, json)`
-3. `lz.decompress(targetPage.desktopData)` → `setFrameData()`
-4. `key` меняется → Frame remount
-
-**Color preset:**
-- Кнопки в `components/craft/Viewport.tsx` → `applyColorPreset()`
-- Диспатч `iam_color_preset_changed` → `applyColorPresetToAllPages()` в editor/page.tsx
-- Dark/light: `applySchemeToTronNodes()` → диспатч `iam_color_scheme_changed`
+**Переключение страниц:** serialize current → store compressed → decompress target → Frame remount через key
 
 **Регистрация компонента — 4 места:**
 1. `lib/craft/components/index.ts`
@@ -121,102 +108,223 @@ regular → 1, frontend → 3, full_stack → 4, professional → 5
 3. `app/sites/[slug]/SiteRenderer.tsx` resolver
 4. `components/craft/Toolbox.tsx`
 
-**Краеугольные камни (не ломать):**
-- `key={activePageId-frameKey}` на Frame — remount при смене страницы
-- `lz.compress/decompress` с `inputEncoding: 'Base64'` — иначе битые данные
-- `useMemo` для Supabase клиента — без него render loop
-- Token refresh перед каждым Supabase запросом в компонентах
-- `injectSupabaseCredentials` — единственный способ передать credentials в компонент
+**Краеугольные камни:**
+- `key={activePageId-frameKey}` нельзя ломать
+- lzutf8 только с Base64 options
+- Supabase client в компонентах — через `useMemo`
+- credentials в компоненты — только через `injectSupabaseCredentials.ts`
 
 ---
 
-## 5. DEPLOYED SITES
+## 5. INTERACTIVE PIPELINE
+
+**Файл:** `app/[locale]/interactive/page.tsx`
+
+**Назначение:** быстрый wizard для сборки сайта из контракта без ручной работы в Craft editor.
+
+**Текущий pipeline:**
+1. business type / niche
+2. style / preset
+3. blocks
+4. company name / финальные поля
+5. assembly → preview → save
+
+**Техническое ядро:**
+- contract-driven assembly
+- hidden Craft.js Editor
+- `buildElementsFromContract()` / assembler
+- `parseReactElement` / `addNodeTree` / `serialize()`
+- preview в read-only Editor
+- сохранение assembled JSON в проект
+
+**Ключевая роль в продукте:** это не просто UX wizard, а первый пример того, как идея быстро превращается в рабочий объект через AI-friendly contract → assembly pipeline.
+
+---
+
+## 6. DEPLOYED SITES
 
 **Файлы:** `app/sites/[slug]/page.tsx`, `app/sites/[slug]/SiteRenderer.tsx`
 
 **Деплой:**
-1. `POST /api/projects/[id]/deploy` → slug из email, `published: true`
-2. URL: `https://{slug}.iamrunning.online`
+1. `POST /api/projects/[id]/deploy`
+2. проект получает `slug`, `published: true`
+3. сайт открывается как `https://{slug}.iamrunning.online`
 
 **Рендер:**
-1. `supabase.from('projects').select().eq('slug', slug).eq('published', true)`
-2. `project.data.craft.pages[]` → `lz.decompress(page.desktopData)`
-3. `<Editor enabled={false}>` (read-only) → `<Frame data={craftJson} />`
-4. `SiteContext` — `navigateToPage()`, `toggleTheme()`
+1. загрузка published project по slug
+2. `project.data.craft.pages[]`
+3. `lz.decompress(page.desktopData)`
+4. read-only Craft.js `<Editor enabled={false}>`
+5. `SiteContext` для навигации и theme switching
 
-**Навигация:** только через `window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: slug } }))`
-**Auth в компонентах:** `clientAuthService.ts` + localStorage `iam_client_session`
+**Навигация на deployed sites:** только через
+`window.dispatchEvent(new CustomEvent('iam_navigate', { detail: { page: slug } }))`
 
----
-
-## 6. ADMIN PANEL
-
-**Файл:** `app/[locale]/admin/page.tsx`
-**Dev Console:** `app/[locale]/admin/dev-console/page.tsx`
-
-**Auth flow (обновлено 21.03.2026):**
-1. Юзер вводит TOTP → `POST /api/admin/verify-totp` (IP lockout: 5 попыток → 15 мин)
-2. При успехе: сервер выставляет httpOnly cookie `admin_token` (8 часов, secure, sameSite: strict)
-3. Все admin API routes вызывают `checkAdminAuth(request)` из `lib/admin/checkAdminAuth.ts`
-4. Cookie не совпадает или отсутствует → 401, без исключений
-5. Logout: `POST /api/admin/logout` → очищает cookie сервер-сайд + `sessionStorage.removeItem`
-
-**Переменная окружения:** `ADMIN_SESSION_SECRET` — случайный hex32, хранится в `.env`
-
-**API routes:**
-- `POST /api/admin/verify-totp` — TOTP проверка, выставляет cookie (не требует auth)
-- `POST /api/admin/logout` — очищает cookie (не требует auth)
-- `GET /api/admin/get-users` — список пользователей (**требует cookie**)
-- `POST /api/admin/update-user-role` — смена роли (**требует cookie**)
-
-**Функции:** список пользователей, смена ролей, список проектов, SEO настройки, Dev Console
-
-⚠️ **БЫЛО:** `/api/admin/get-users` и `/api/admin/update-user-role` не имели серверной авторизации — любой мог получить список юзеров и назначить себе роль Admin. Закрыто хотфиксом c62b9f2.
+**Auth в client-site компонентах:** `lib/auth/clientAuthService.ts` + localStorage session
 
 ---
 
-## 7. DEV CONSOLE — IDE
+## 7. ADMIN PANEL
 
-**Файл:** `app/[locale]/admin/dev-console/page.tsx`
+**Файлы:** `app/[locale]/admin/page.tsx`, `app/[locale]/admin/dev-console/page.tsx`
 
-**API Endpoints:**
-- `GET /api/dev-agent/files` — файловое дерево проекта
-- `GET /api/dev-agent/files/read?path=...` — чтение файла (макс 500KB, блокирует .env)
-- `POST /api/dev-agent/files/write` — создание/сохранение файла (не делает git commit)
-- `DELETE /api/dev-agent/files/delete` — удаление файла (папки только пустые)
-- `POST /api/dev-agent/files/mkdir` — создание папки
-- `GET /api/dev-agent/git-log` — последние 30 коммитов
-- `POST /api/dev-agent/deploy` — деплой (git push → build → pm2 restart через nohup)
-- `POST /api/dev-agent/rollback` — откат к хэшу или HEAD~1
+**Admin auth model:**
+1. TOTP verification
+2. сервер выставляет httpOnly cookie `admin_token`
+3. admin routes проверяют cookie через `lib/admin/checkAdminAuth.ts`
+4. logout очищает cookie сервер-сайд
 
-**Функции UI:**
-- Файловое дерево с контекстным меню (правый клик): New File, New Folder, Delete, Copy Path, Open in Edit
-- Code viewer (CodeMirror) с подсветкой синтаксиса: .ts/.tsx/.js/.jsx/.css/.html/.json
-- Edit mode — редактирование в браузере + Ctrl+S сохранение
-- Reference кнопка — выделил строки → путь + строки + код вставляются в промпт
-- Git History панель — список коммитов, rollback в один клик
-- Resizable panels (3 колонки), ширина в localStorage
-- Light/Dark тема
+**Назначение admin layer:**
+- управление пользователями и ролями
+- доступ к Dev Console
+- доступ к operational tooling
 
-**Краеугольные камни (не ломать):**
-- Edit mode НЕ делает git commit — только пишет файл на диск. Deploy нужен после
-- Delete работает только для пустых папок — рекурсивного удаления нет намеренно
-- Все endpoints используют одинаковый auth паттерн: Supabase session + DEVELOPER_USER_ID
-- Path security везде: no .., no absolute paths, BLOCKED_PATTERNS
-- PM2 рестартует через 2 секунды после deploy (nohup sleep 2) — сайт недоступен ~3-5 сек
+**Важный исторический факт:** admin API ранее был без серверной авторизации; это закрыто хотфиксом cookie-based auth.
 
 ---
 
-## 8. ИЗВЕСТНЫЕ БАГИ
+## 8. DEV CONSOLE — БРАУЗЕРНАЯ IDE / OPERATIONAL SURFACE
 
-| Баг | Файл | Статус |
+**UI:** `app/[locale]/admin/dev-console/page.tsx`
+
+**Server endpoints:**
+- `GET /api/dev-agent/files`
+- `GET /api/dev-agent/files/read?path=...`
+- `POST /api/dev-agent/files/write`
+- `DELETE /api/dev-agent/files/delete`
+- `POST /api/dev-agent/files/mkdir`
+- `GET /api/dev-agent/git-log`
+- `POST /api/dev-agent/deploy`
+- `POST /api/dev-agent/rollback`
+- `GET/POST /api/dev-agent/config`
+- `POST /api/dev-agent/route.ts` — main AI agent endpoint with tool loop
+
+**Auth model Dev Console / Dev Agent:**
+- server-side Supabase `createClient()`
+- `supabase.auth.getUser()` в каждом endpoint-е
+- optional hard restriction by `DEVELOPER_USER_ID` (env or config)
+- pattern подтверждён во всех dev-agent routes
+
+**Что это значит архитектурно:**
+Dev Console — это **не MCP**, а отдельная web surface к dev runtime.
+Она даёт человеку/оператору:
+- файловое дерево
+- чтение/запись файлов
+- git history
+- deploy
+- rollback
+- config management
+- prompt-based execution через dev-agent route
+
+**Main AI route:** `app/api/dev-agent/route.ts`
+- импортирует `executeTool` из `lib/dev-agent/tool-executor`
+- использует цикл tool calling
+- имеет `MAX_TOOL_ITERATIONS = 25`
+
+То есть Dev Console = UI над tool-executor и dev-agent runtime, а не обязательный слой для MCP.
+
+---
+
+## 9. MCP SERVER — AI PROTOCOL LAYER
+
+**HTTP routes:**
+- `app/api/mcp/route.ts`
+- `app/api/mcp/authorize/route.ts`
+- `app/api/mcp/token/route.ts`
+- `app/api/mcp/setup/route.ts`
+- также существует параллельный стек `app/api/mcp-gpt/*`
+
+**Подтверждённые связи по коду:**
+- `app/api/mcp/route.ts` импортирует `createMcpServer` из `lib/mcp-server/index`
+- `app/api/mcp/route.ts` содержит `checkAuth(request)`
+- auth идёт через `Authorization: Bearer <token>`
+- `app/api/mcp/token/route.ts` использует `loadConfig()` из `lib/dev-agent/config`
+- MCP token хранится/читается через `mcpAuthToken`
+- route имеет и `GET`, и `POST`
+- `GET` реализован как SSE stream endpoint (требование MCP Streamable HTTP spec)
+- `POST` является main MCP protocol handler
+
+**Что это означает:**
+MCP access не привязан к UI Dev Console. Он использует **свой протокольный вход**, но разделяет часть общей конфигурации с dev-agent stack (`loadConfig`, `mcpAuthToken`).
+
+**Практический вывод для будущего product template:**
+если переносить AI-native ядро в другой продукт, обязательны не Dev Console components как таковые, а:
+- MCP route layer
+- config/token management
+- tool exposure / server runtime
+- context-core docs
+- auth + access policy
+
+---
+
+## 10. AI RUNTIME — ОБЩАЯ КАРТИНА
+
+Текущий AI runtime проекта уже распадается на **три режима доступа**:
+
+### A. Chat / Dev-Agent mode
+- веб-интерфейс внутри проекта
+- main route: `app/api/dev-agent/route.ts`
+- tool loop + provider adapters + tool executor
+- удобен как встроенный execution surface
+
+### B. MCP mode
+- внешний AI-клиент подключается к `/api/mcp/*`
+- auth через bearer token + authorize/token/setup flow
+- сервер создаётся через `createMcpServer()`
+- не требует наличия Dev Console UI
+
+### C. Human operational mode
+- человек работает через Admin / Dev Console
+- получает file manager / git / deploy / rollback / reference UX
+
+**Ключевая архитектурная формула:**
+`One server runtime → multiple AI/human access surfaces`
+
+Это и есть основной кандидат на переносимое ядро будущей коммерческой системы.
+
+---
+
+## 11. КАНДИДАТЫ НА PRODUCT-TEMPLATE EXTRACTION
+
+То, что уже сейчас выглядит переносимым ядром:
+- `context-core/` как server-side memory and doctrine
+- `app/api/mcp/*` как protocol layer
+- `lib/mcp-server/*` как MCP runtime implementation
+- `app/api/dev-agent/*` как operational tooling API
+- `lib/dev-agent/*` как provider/config/tool execution layer
+- admin/dev access control patterns
+- deploy/git/file primitives
+
+То, что является вертикалью / продуктовым модулем, а не обязательным ядром:
+- landing
+- website builder/editor
+- interactive site assembly
+- Tron component system
+- deployed client sites как конкретная бизнес-вертикаль
+
+---
+
+## 12. ОТКРЫТЫЕ ВОПРОСЫ ДЛЯ ДОАУДИТА
+
+Нужно отдельно дочитать и задокументировать:
+- точный набор MCP tools, экспонируемых `createMcpServer()`
+- как связаны `mcp` и `mcp-gpt` стеки
+- где именно лежит safe tool exposure policy для MCP
+- какие части `lib/dev-agent/tool-executor.ts` переиспользуются MCP runtime, а какие только Dev Console / dev-agent route
+- точный auth/setup flow для внешнего подключения клиента
+
+---
+
+## 13. ИЗВЕСТНЫЕ БАГИ / РИСКИ
+
+| Баг / Риск | Зона | Статус |
 |-----|------|--------|
-| Dashboard создаёт проект с неправильным data форматом | dashboard/page.tsx:86 | Открыт |
-| Profile редирект без locale `/auth/login` | profile/page.tsx:15 | Открыт |
-| Subscription — оплата не реализована (coming soon) | subscription/page.tsx:41 | Открыт |
-- ~~Admin hardcoded логин/пароль~~ ✅ TOTP был уже реализован
-- ~~Admin API без авторизации~~ ✅ Закрыто хотфиксом 21.03.2026 — httpOnly cookie на всех /api/admin/* routes
+| Route protection editor остаётся в основном client-side | auth / middleware | Открыт |
+| Stripe / subscription automation не закрыты | payments | MVP blocker |
+| Interactive mobileData generation отсутствует | interactive | Открыт |
+| Anonymous → signup restore flow неполный | interactive/auth | Открыт |
+| Multi-deploy specific site flow не завершён | deploy | Открыт |
 
 ---
 
-*Последнее обновление: 15.03.2026*
+*Последнее обновление: 22.03.2026*
