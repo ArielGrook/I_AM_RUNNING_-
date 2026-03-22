@@ -219,6 +219,10 @@ PROJECT_ROOT=$IAM_DIR
 CLIENT_SLUG=$CLIENT_SLUG
 CLIENT_CONTEXT_CORE=$CLIENT_DIR/context-core
 
+# ── Client identity (used to show client landing instead of main IAM landing) ──
+NEXT_PUBLIC_CLIENT_SLUG=$CLIENT_SLUG
+NEXT_PUBLIC_CLIENT_NAME=$CLIENT_NAME
+
 # ── AI Access ─────────────────────────────────────────────────
 MCP_AUTH_TOKEN=$MCP_TOKEN
 GPT_MCP_SECRET=$GPT_SECRET
