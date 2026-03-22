@@ -5,9 +5,22 @@
 
 ---
 
-## Last updated: 20.03.2026
+## Last updated: 22.03.2026
 
 ---
+
+### Interactive Step 1 Redesign (22.03.2026)
+- `NICHE_THUMBNAILS`: Record<string, ReactNode> — 16 детализированных SVG 140×88. Каждая отражает концепт ниши (не иконка). Живут прямо в interactive/page.tsx перед `BusinessTypeThumbnail`.
+- `BusinessTypeThumbnail`: функция теперь просто возвращает из `NICHE_THUMBNAILS[id]` — весь старый `svgs` объект удалён.
+- ЛОВУШКА: при рефакторе был оставлен `_DEAD_SVGS` с переменными `bg/dim/mid/brt` которые уже не были определены → runtime error "bg is not defined". Удалён через `node -e` (23KB мёртвого кода).
+- `AnimatedBackground`: 120 иконок, CSS keyframe `diag` (translate bottom-right→top-left). `color` transition 1.3s — при выборе ниши весь фон перекрашивается в accent через CSS `currentColor`.
+- `NICHE_PRESET_MAP`: 16 ниш → preset ID. Выбор ниши автоматически ставит `presetId` в contract.
+- Light/Dark toggle: `isDarkMode` state, работает ТОЛЬКО на Step 1. Карточки: `#181818` dark / `#fff` light. Фон: `#0d0d0d` / `#f2eeea`.
+
+### Interactive Mobile — landscape restriction removed (22.03.2026)
+- Было: `isPortrait` + `dismissedRotate` state, useEffect детектил mobile portrait → показывал overlay "Rotate to Landscape"
+- Стало: удалены оба state, весь useEffect, весь overlay — Interactive работает в portrait на мобилке нативно
+- Причина удаления: вертикальный формат естественен для карточного UI, горизонтальный был лишним требованием
 
 ### Nginx Subdomain — no resolver для localhost (fixed 21.03.2026)
 - Когда в `proxy_pass` используется переменная (`$subdomain`), Nginx требует явный `resolver` для резолва hostname
@@ -130,6 +143,7 @@
 
 | Trap | Why | Solution |
 |------|-----|----------|
+| Dead code with undefined vars | При рефакторе старый блок переименован но не удалён — переменные (bg, dim, mid) уже не в scope → runtime ReferenceError | Удалять целиком через node -e, не переименовывать |
 | lzutf8 Base64 encoding | Must use `{ outputEncoding: 'Base64' }` / `{ inputEncoding: 'Base64' }` — without it, data is binary garbage | Always pass encoding option |
 | useMemo for Supabase client | Without it: render loop, thousands of GoTrueClient instances | Wrap in useMemo, deps: [url, key, accessToken] |
 | Token refresh before Supabase | Access tokens expire — request will fail silently | Call refresh_token before every REST request in components |

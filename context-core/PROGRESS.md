@@ -1,14 +1,21 @@
-# CURRENT STATE — updated 21.03.2026
+# CURRENT STATE — updated 22.03.2026
 
 ## Working ✅
-- Craft.js editor with 16 Tron components (TronCTA added)
+- Craft.js editor with 18 Tron components (TronCTA, TronServices, TronTeam added)
 - Client site deploy on subdomains (SSR, pixel-perfect)
 - Nginx subdomains: static served from disk (/_next/static/ alias), no Node.js overhead
 - Dev Console: Full IDE with file manager, code editor, git history, deploy/rollback
 - **MCP Connector: Claude has direct project access (read/write/deploy)**
 - **Interactive pipeline: 4-step wizard → assembly → preview → save**
 - **Assembler: canonical order enforced (header→hero→middle→footer), position badges in Step 3**
-- Context Core v2: 10 documents as system prompt
+- Context Core v2: 11 documents as system prompt
+- **Interactive Step 1: complete redesign (22.03.2026)**
+  - 16 detailed 140×88 SVG niche thumbnails (food, shop, ecommerce, startup, portfolio, beauty, health, education, agency, consulting, blog, event, real_estate, travel, craft, business_card)
+  - Animated diagonal background: 120 line-art SVG icons floating bottom-right → top-left
+  - Background icons: gray by default, transition to niche accent color on selection (1.3s ease)
+  - NICHE_PRESET_MAP: selecting a niche auto-applies matching color preset
+  - Light/Dark mode toggle (Step 1 only — subsequent steps use niche-driven color)
+  - Removed mobile landscape-only restriction — works in portrait naturally
 
 ## Security ✅
 - Admin API: httpOnly cookie auth (ADMIN_SESSION_SECRET) on all /api/admin/* routes
@@ -38,7 +45,6 @@
 - TronCTA features: GSAP word stagger, cursor spotlight, magnetic buttons, pulse glow, split/centered layout, editable card
 
 ## Open Issues ⚠️
-- Interactive: style doesn't map to color presets yet
 - Interactive: no mobileData generation
 - Delete Account button in TronHub (stub)
 - Profile page redirect missing locale
@@ -48,9 +54,14 @@
 ## MVP Blockers 🔴
 - Stripe integration (checkout, webhook, subscription check)
 - Route protection middleware (editor requires subscription)
-- Missing components: TronServices, TronTeam
 - Landing page needs pricing section + demo CTA
-- Interactive needs thumbnail previews for blocks
+
+## Interactive Pipeline — Step 1 (redesigned 22.03.2026)
+`NICHE_THUMBNAILS` — объект с 16 SVG 140×88, каждая иллюстрирует нишу (не иконка, а mini-сайт-концепт).
+`NICHE_PRESET_MAP` — маппинг 16 ниш → ID цветового пресета (food→coral_sunset, startup→cyber_lime и т.д.)
+`AnimatedBackground` — 120 line-art SVG иконок, анимация `diag` CSS keyframes, движение bottom-right→top-left, duration 28–50s.
+При выборе ниши: `bg` элемент получает `color: accentColor` через CSS transition 1.3s — все иконки перекрашиваются.
+Light/Dark тогл: только на Step 1, управляет `isDarkMode` state, карточки `#181818`/`#fff`, фон `#0d0d0d`/`#f2eeea`.
 
 ## Interactive Pipeline — Color Presets
 12 named presets in `app/[locale]/interactive/page.tsx`:
@@ -67,21 +78,19 @@ No external images — pure SVG, instant render.
 
 ## Next Priority — Roadmap
 
-### 🔴 Приоритет 1 — Frontend компоненты (MVP ниши)
-- [ ] TronServices — сейчас маппится на TronFeatures, нужен отдельный компонент
-- [ ] TronTeam — для agency/startup ниш
-- [ ] Дополнительные Tron компоненты под ниши: Shop, Portfolio, Agency, Business Card, Startup
-
-### 🟡 Приоритет 2 — Механики и полировка
-- [ ] Раздел "Механики" в Settings Panel (fireflies, particles, gradient blobs, magnetic select)
-- [ ] Thumbnail превью блоков в Interactive Step 3
+### 🔴 Приоритет 1 — Монетизация (блокеры запуска)
+- [ ] Stripe интеграция (checkout + webhook + role upgrade)
+- [ ] Route protection middleware (editor требует подписки)
 - [ ] Landing: pricing section + demo CTA
-- [ ] i18n для Interactive (ru/he)
 
-### 🟢 Приоритет 3 — Конверсия и UX
+### 🟡 Приоритет 2 — Interactive доработки
+- [ ] Step 2 (blocks) → Step 3 (style) → Step 4 (color override) → Step 5 (animations) restructure
+- [ ] i18n для Interactive (ru/he)
 - [ ] Anonymous → signup flow: проект из localStorage не восстанавливается после регистрации
-- [ ] Header в Interactive не обновляет навигацию под выбранные блоки
+
+### 🟢 Приоритет 3 — Компоненты и механики
+- [ ] Раздел "Механики" в Settings Panel (fireflies, particles, gradient blobs, magnetic select)
+- [ ] Нишевые Tron компоненты (Shop, Portfolio, Agency, Business Card, Startup)
 
 ### ⏳ Отложено (после запуска)
-- [ ] Route protection middleware (редактор без подписки)
-- [ ] Stripe checkout + webhook → апгрейд роли
+- [ ] Header в Interactive не обновляет навигацию под выбранные блоки
