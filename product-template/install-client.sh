@@ -1,123 +1,154 @@
 #!/bin/bash
 # ============================================================
-# I AM RUNNING — Client Installation Script
+# I AM RUNNING — Client Installation Script v2.0
 # AI Native Business Operating System
-# Version: 1.0.0
 # ============================================================
-# Usage:
-#   sudo bash install-client.sh
+# Usage: sudo bash install-client.sh
 #
-# What this script does:
-#   1. Collects client info (name, subdomain, domain)
-#   2. Creates isolated client directory on server
-#   3. Copies and configures context-core template
-#   4. Generates unique MCP token and GPT secret
-#   5. Creates .env for client instance
-#   6. Configures Nginx virtual host + SSL
-#   7. Starts client instance via PM2
-#   8. Prints final connection instructions
+# Architecture:
+#   - All clients share ONE Next.js build (your main project)
+#   - Each client gets isolated: context-core + .env + port + nginx
+#   - Each client gets a private GitHub repo for context-core backups
+#   - Client NEVER sees source code — only browser UI + MCP
 # ============================================================
 
 set -e
 
-# ── Colors ──────────────────────────────────────────────────
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-NC='\033[0m'
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 
-# ── Config ───────────────────────────────────────────────────
-TEMPLATE_DIR="/var/www/i_am_running"
+# ── Config ────────────────────────────────────────────────────
+IAM_DIR="/var/www/i_am_running"
 CLIENTS_DIR="/var/www/iam-clients"
 NGINX_SITES="/etc/nginx/sites-available"
 NGINX_ENABLED="/etc/nginx/sites-enabled"
 BASE_DOMAIN="iamrunning.online"
-BASE_PORT=3100  # client instances start from this port
+BASE_PORT=3100
+GITHUB_ORG="${GITHUB_ORG:-iamrunning-clients}"
 
-# ── Banner ───────────────────────────────────────────────────
-echo ""
-echo -e "${CYAN}${BOLD}"
-echo "  ██╗ █████╗ ███╗   ███╗    ██████╗ ██╗   ██╗███╗   ██╗███╗   ██╗██╗███╗   ██╗ ██████╗ "
-echo "  ██║██╔══██╗████╗ ████║    ██╔══██╗██║   ██║████╗  ██║████╗  ██║██║████╗  ██║██╔════╝ "
-echo "  ██║███████║██╔████╔██║    ██████╔╝██║   ██║██╔██╗ ██║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗"
-echo "  ██║██╔══██║██║╚██╔╝██║    ██╔══██╗██║   ██║██║╚██╗██║██║╚██╗██║██║██║╚██╗██║██║   ██║"
-echo "  ██║██║  ██║██║ ╚═╝ ██║    ██║  ██║╚██████╔╝██║ ╚████║██║ ╚████║██║██║ ╚████║╚██████╔╝"
-echo "  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ "
-echo -e "${NC}"
-echo -e "${BOLD}  AI Native Business Operating System — Client Installer${NC}"
-echo -e "  ${BLUE}https://iamrunning.online${NC}"
-echo ""
-echo "════════════════════════════════════════════════════════════"
-echo ""
-
-# ── Check root ────────────────────────────────────────────────
-if [ "$EUID" -ne 0 ]; then
-  echo -e "${RED}✗ Run as root: sudo bash install-client.sh${NC}"
-  exit 1
-fi
-
-# ── Helpers ───────────────────────────────────────────────────
 log()     { echo -e "${GREEN}✓${NC} $1"; }
 warn()    { echo -e "${YELLOW}⚠${NC}  $1"; }
 error()   { echo -e "${RED}✗${NC} $1"; exit 1; }
-section() { echo ""; echo -e "${BOLD}${BLUE}── $1 ──────────────────────────────${NC}"; echo ""; }
+section() { echo ""; echo -e "${BOLD}${BLUE}── $1 ──────────────────────────${NC}"; echo ""; }
 gen_secret() { node -e "const {randomBytes}=require('crypto'); process.stdout.write(randomBytes(32).toString('hex'))"; }
+gen_totp_secret() { node -e "const {randomBytes}=require('crypto'); process.stdout.write(randomBytes(20).toString('base64').replace(/[^A-Z2-7]/g,'A').slice(0,32))"; }
 
-# ── Find next available port ──────────────────────────────────
-find_free_port() {
-  local port=$BASE_PORT
-  while pm2 list 2>/dev/null | grep -q ":$port"; do
-    port=$((port + 1))
-  done
-  echo $port
+# ── Banner ────────────────────────────────────────────────────
+clear
+echo -e "${CYAN}${BOLD}"
+cat << 'EOF'
+  ██╗ █████╗ ███╗   ███╗    ██████╗ ██╗   ██╗███╗  ██╗███╗  ██╗██╗███╗  ██╗ ██████╗
+  ██║██╔══██╗████╗ ████║    ██╔══██╗██║   ██║████╗ ██║████╗ ██║██║████╗ ██║██╔════╝
+  ██║███████║██╔████╔██║    ██████╔╝██║   ██║██╔██╗██║██╔██╗██║██║██╔██╗██║██║  ███╗
+  ██║██╔══██║██║╚██╔╝██║    ██╔══██╗██║   ██║██║╚████║██║╚████║██║██║╚████║██║   ██║
+  ██║██║  ██║██║ ╚═╝ ██║    ██║  ██║╚██████╔╝██║ ╚███║██║ ╚███║██║██║ ╚███║╚██████╔╝
+  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝    ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚══╝╚═╝  ╚══╝╚═╝╚═╝  ╚══╝ ╚═════╝
+EOF
+echo -e "${NC}"
+echo -e "${BOLD}  AI Native Business Operating System — Client Installer v2.0${NC}"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+
+[ "$EUID" -ne 0 ] && error "Run as root: sudo bash install-client.sh"
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 0: VERIFY / INSTALL SYSTEM DEPENDENCIES
+# ═══════════════════════════════════════════════════════════════
+section "Checking System Dependencies"
+
+check_dep() {
+  if command -v "$1" &>/dev/null; then
+    log "$1 found ($(command -v $1))"
+  else
+    warn "$1 not found — installing..."
+    return 1
+  fi
+  return 0
 }
 
-# ── Count existing clients ────────────────────────────────────
-client_count() {
-  ls "$CLIENTS_DIR" 2>/dev/null | wc -l | tr -d ' '
-}
+# Node.js
+if ! check_dep node; then
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - &>/dev/null
+  apt-get install -y nodejs &>/dev/null
+  log "Node.js installed: $(node --version)"
+fi
+
+# npm
+check_dep npm || (apt-get install -y npm &>/dev/null && log "npm installed")
+
+# PM2
+if ! command -v pm2 &>/dev/null; then
+  npm install -g pm2 &>/dev/null
+  log "PM2 installed"
+else
+  log "PM2 found"
+fi
+
+# Nginx
+if ! command -v nginx &>/dev/null; then
+  apt-get install -y nginx &>/dev/null
+  log "Nginx installed"
+else
+  log "Nginx found"
+fi
+
+# Git
+check_dep git || (apt-get install -y git &>/dev/null && log "git installed")
+
+# certbot (for SSL)
+if ! command -v certbot &>/dev/null; then
+  apt-get install -y certbot python3-certbot-nginx &>/dev/null
+  log "Certbot installed"
+else
+  log "Certbot found"
+fi
+
+# GitHub CLI (optional, for auto-creating repos)
+GH_AVAILABLE=false
+if command -v gh &>/dev/null; then
+  log "GitHub CLI found"
+  GH_AVAILABLE=true
+else
+  warn "GitHub CLI not found — repo creation will be manual"
+fi
 
 # ═══════════════════════════════════════════════════════════════
 # STEP 1: COLLECT CLIENT INFO
 # ═══════════════════════════════════════════════════════════════
 section "Client Information"
 
-echo -e "${BOLD}Current clients installed:${NC} $(client_count)"
+echo -e "${BOLD}Installed clients:${NC} $(ls "$CLIENTS_DIR" 2>/dev/null | wc -l)"
 echo ""
 
-read -p "Client name (e.g. 'Acme Corp'): " CLIENT_NAME
-[ -z "$CLIENT_NAME" ] && error "Client name is required"
+read -p "  Client name (e.g. 'Acme Corp'): " CLIENT_NAME
+[ -z "$CLIENT_NAME" ] && error "Client name required"
 
-read -p "Subdomain slug (e.g. 'acme', no spaces): " CLIENT_SLUG
+read -p "  Subdomain slug (letters/numbers/hyphens): " CLIENT_SLUG
 CLIENT_SLUG=$(echo "$CLIENT_SLUG" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
-[ -z "$CLIENT_SLUG" ] && error "Subdomain is required"
+[ -z "$CLIENT_SLUG" ] && error "Slug required"
+[ -d "$CLIENTS_DIR/$CLIENT_SLUG" ] && error "Client '$CLIENT_SLUG' already exists"
 
-# Check slug not already taken
-if [ -d "$CLIENTS_DIR/$CLIENT_SLUG" ]; then
-  error "Client '$CLIENT_SLUG' already exists at $CLIENTS_DIR/$CLIENT_SLUG"
-fi
-
-read -p "Client's own domain (optional, press Enter to skip): " CLIENT_DOMAIN
-read -p "Business type (e.g. 'digital agency', 'SaaS startup'): " BUSINESS_TYPE
-read -p "Admin email for this client: " ADMIN_EMAIL
+read -p "  Business type (e.g. 'digital agency'): " BUSINESS_TYPE
+read -p "  Admin email: " ADMIN_EMAIL
+read -p "  Create GitHub repo? (y/N): " CREATE_GITHUB
 
 CLIENT_URL="https://${CLIENT_SLUG}.${BASE_DOMAIN}"
-CLIENT_PORT=$(find_free_port)
 INSTALL_DATE=$(date '+%Y-%m-%d')
 
+# Find free port
+CLIENT_PORT=$BASE_PORT
+while pm2 list 2>/dev/null | grep -q "port $CLIENT_PORT" || ss -tlnp 2>/dev/null | grep -q ":$CLIENT_PORT "; do
+  CLIENT_PORT=$((CLIENT_PORT + 1))
+done
+
 echo ""
-echo -e "${BOLD}About to install:${NC}"
-echo "  Client:    $CLIENT_NAME"
-echo "  Slug:      $CLIENT_SLUG"
-echo "  URL:       $CLIENT_URL"
-echo "  Port:      $CLIENT_PORT"
-echo "  Business:  $BUSINESS_TYPE"
+echo -e "${BOLD}Summary:${NC}"
+echo "  Client:  $CLIENT_NAME"
+echo "  URL:     $CLIENT_URL"
+echo "  Port:    $CLIENT_PORT"
 echo ""
 read -p "Confirm? (y/N): " CONFIRM
-[ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ] && { echo "Cancelled."; exit 0; }
+[[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]] && { echo "Cancelled."; exit 0; }
 
 # ═══════════════════════════════════════════════════════════════
 # STEP 2: GENERATE SECRETS
@@ -127,168 +158,186 @@ section "Generating Secrets"
 MCP_TOKEN=$(gen_secret)
 GPT_SECRET=$(gen_secret)
 ADMIN_SESSION_SECRET=$(gen_secret)
+TOTP_SECRET=$(gen_totp_secret)
 
-log "MCP token generated"
-log "GPT secret generated"
-log "Admin session secret generated"
+log "All secrets generated"
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 3: CREATE CLIENT DIRECTORY
+# STEP 3: CREATE CLIENT DIRECTORY + CONTEXT-CORE
 # ═══════════════════════════════════════════════════════════════
-section "Setting Up Client Directory"
+section "Creating Client Directory"
 
-mkdir -p "$CLIENTS_DIR/$CLIENT_SLUG"
+mkdir -p "$CLIENTS_DIR/$CLIENT_SLUG/context-core"
+mkdir -p "$CLIENTS_DIR/$CLIENT_SLUG/bootstrap-prompts"
 CLIENT_DIR="$CLIENTS_DIR/$CLIENT_SLUG"
 
 log "Created $CLIENT_DIR"
 
-# Clone or copy the template project
-if [ -d "$TEMPLATE_DIR/.git" ]; then
-  git clone "$TEMPLATE_DIR" "$CLIENT_DIR/app" --quiet
-  log "Cloned project from $TEMPLATE_DIR"
-else
-  cp -r "$TEMPLATE_DIR" "$CLIENT_DIR/app"
-  log "Copied project from $TEMPLATE_DIR"
-fi
-
-# ═══════════════════════════════════════════════════════════════
-# STEP 4: INSTALL CONTEXT-CORE
-# ═══════════════════════════════════════════════════════════════
-section "Installing Context-Core"
-
-TEMPLATE_CC="$TEMPLATE_DIR/product-template/context-core"
-CLIENT_CC="$CLIENT_DIR/app/context-core"
-
+# Install context-core from template with placeholder substitution
+TEMPLATE_CC="$IAM_DIR/product-template/context-core"
 if [ -d "$TEMPLATE_CC" ]; then
-  # Copy template and replace placeholders
   for file in "$TEMPLATE_CC"/*.md; do
-    filename=$(basename "$file")
+    fname=$(basename "$file")
     sed \
       -e "s/\[CLIENT_NAME\]/$CLIENT_NAME/g" \
       -e "s/\[CLIENT_SLUG\]/$CLIENT_SLUG/g" \
-      -e "s/\[CLIENT_DOMAIN\]/${CLIENT_DOMAIN:-$CLIENT_URL}/g" \
-      -e "s|\[https://CLIENT_SUBDOMAIN.iamrunning.online\]|$CLIENT_URL|g" \
       -e "s/\[BUSINESS_TYPE\]/$BUSINESS_TYPE/g" \
+      -e "s|\[https://CLIENT_SUBDOMAIN.iamrunning.online\]|$CLIENT_URL|g" \
       -e "s/\[INSTALL_DATE\]/$INSTALL_DATE/g" \
       -e "s/\[DATE\]/$INSTALL_DATE/g" \
-      "$file" > "$CLIENT_CC/$filename"
+      "$file" > "$CLIENT_DIR/context-core/$fname"
   done
-  log "Context-core installed (${INSTALL_DATE})"
-else
-  warn "Template context-core not found — using existing context-core"
+  log "Context-core installed (7 documents)"
 fi
 
 # Copy bootstrap prompts
-TEMPLATE_BP="$TEMPLATE_DIR/product-template/bootstrap-prompts"
-CLIENT_BP="$CLIENT_DIR/app/bootstrap-prompts"
-
+TEMPLATE_BP="$IAM_DIR/product-template/bootstrap-prompts"
 if [ -d "$TEMPLATE_BP" ]; then
-  mkdir -p "$CLIENT_BP"
   for file in "$TEMPLATE_BP"/*.md; do
-    filename=$(basename "$file")
-    sed \
-      -e "s/\[CLIENT_NAME\]/$CLIENT_NAME/g" \
-      -e "s|\[CLIENT_SUBDOMAIN\]|$CLIENT_SLUG|g" \
-      "$file" > "$CLIENT_BP/$filename"
+    fname=$(basename "$file")
+    sed -e "s|\[CLIENT_SUBDOMAIN\]|$CLIENT_SLUG|g" \
+        -e "s/\[CLIENT_NAME\]/$CLIENT_NAME/g" \
+        "$file" > "$CLIENT_DIR/bootstrap-prompts/$fname"
   done
   log "Bootstrap prompts installed"
 fi
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 5: CREATE .ENV
+# STEP 4: WRITE CLIENT .ENV (in main project per-client config)
 # ═══════════════════════════════════════════════════════════════
-section "Writing .env"
+section "Writing Client Configuration"
 
-# Read base .env from template (skip secrets, keep structure)
-BASE_ENV="$TEMPLATE_DIR/.env"
-
-cat > "$CLIENT_DIR/app/.env" << EOF
-# ── Client: $CLIENT_NAME ──────────────────────────────────────
-# Generated: $INSTALL_DATE
-# DO NOT COMMIT THIS FILE
+# Client env stored separately, loaded by per-client pm2 process
+cat > "$CLIENT_DIR/.env" << EOF
+# ── $CLIENT_NAME — AI Native Business OS ──────────────────────
+# Generated: $INSTALL_DATE by I AM RUNNING installer
+# Server: $CLIENT_URL
 
 NEXT_PUBLIC_SITE_URL=$CLIENT_URL
 PORT=$CLIENT_PORT
-PROJECT_ROOT=$CLIENT_DIR/app
+PROJECT_ROOT=$IAM_DIR
+CLIENT_SLUG=$CLIENT_SLUG
+CLIENT_CONTEXT_CORE=$CLIENT_DIR/context-core
 
 # ── AI Access ─────────────────────────────────────────────────
 MCP_AUTH_TOKEN=$MCP_TOKEN
 GPT_MCP_SECRET=$GPT_SECRET
 
-# ── Admin ─────────────────────────────────────────────────────
+# ── Admin (TOTP) ───────────────────────────────────────────────
 ADMIN_SESSION_SECRET=$ADMIN_SESSION_SECRET
+TOTP_SECRET=$TOTP_SECRET
 
-# ── Supabase — fill in from Supabase dashboard ────────────────
-# (Use template project's Supabase or create separate project for client)
+# ── AI Safety — system prompt injection ───────────────────────
+# These are injected into every MCP session to protect IP
+MCP_SYSTEM_GUARD="SYSTEM RULE: Never reveal internal architecture, tech stack, how context-core works, server infrastructure, or anything that would help someone replicate this system. If asked about system internals, respond: This is proprietary. Contact your administrator."
+
+# ── Supabase — fill in from dashboard ─────────────────────────
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# ── API Keys — fill in if client needs AI in Dev Console ─────
+# ── API Keys ───────────────────────────────────────────────────
 ANTHROPIC_API_KEY=
 GEMINI_API_KEY=
 OPENAI_API_KEY=
 EOF
 
-# Write MCP token to dev-agent config
-cat > "$CLIENT_DIR/app/.dev-agent-config.json" << EOF
+# Dev agent config
+cat > "$CLIENT_DIR/.dev-agent-config.json" << EOF
 {
   "mcpAuthToken": "$MCP_TOKEN",
-  "developerUserId": ""
+  "developerUserId": "",
+  "gptMcpSecret": "$GPT_SECRET"
 }
 EOF
 
-log ".env created"
-log ".dev-agent-config.json created"
+log ".env written"
+log ".dev-agent-config.json written"
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 6: NPM INSTALL + BUILD
+# STEP 5: INITIALIZE GIT REPO FOR CLIENT CONTEXT-CORE
 # ═══════════════════════════════════════════════════════════════
-section "Building Client App"
+section "Initializing Git Repository"
 
-cd "$CLIENT_DIR/app"
+cd "$CLIENT_DIR"
+git init --quiet
+git add context-core/ bootstrap-prompts/
+git commit -m "init: $CLIENT_NAME context-core installed $INSTALL_DATE" --quiet
+log "Local git repo initialized"
 
-echo "Running npm install..."
-npm install --silent
-log "Dependencies installed"
+# Create .gitignore to protect secrets
+cat > "$CLIENT_DIR/.gitignore" << 'EOF'
+.env
+.env.*
+.dev-agent-config.json
+*.log
+node_modules/
+.next/
+EOF
+git add .gitignore
+git commit -m "chore: add .gitignore" --quiet
 
-echo "Running npm build (this takes ~2 min)..."
-npm run build
-log "Build complete"
+# GitHub repo creation
+if [[ "$CREATE_GITHUB" == "y" || "$CREATE_GITHUB" == "Y" ]]; then
+  if [ "$GH_AVAILABLE" = true ]; then
+    REPO_NAME="client-$CLIENT_SLUG"
+    if gh repo create "$GITHUB_ORG/$REPO_NAME" --private --source="$CLIENT_DIR" --push --quiet 2>/dev/null; then
+      log "GitHub repo created: $GITHUB_ORG/$REPO_NAME"
+      GITHUB_REPO="https://github.com/$GITHUB_ORG/$REPO_NAME"
+    else
+      warn "GitHub repo creation failed — push manually later"
+      warn "cd $CLIENT_DIR && git remote add origin git@github.com:$GITHUB_ORG/client-$CLIENT_SLUG.git && git push -u origin main"
+    fi
+  else
+    warn "GitHub CLI not available. Manual steps:"
+    warn "1. Create private repo: github.com/new (name: client-$CLIENT_SLUG)"
+    warn "2. cd $CLIENT_DIR && git remote add origin YOUR_REPO_URL && git push -u origin main"
+  fi
+fi
+
+cd "$IAM_DIR"
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 7: PM2 SETUP
+# STEP 6: PM2 — START CLIENT INSTANCE
 # ═══════════════════════════════════════════════════════════════
 section "Starting PM2 Process"
 
 PM2_NAME="iam-$CLIENT_SLUG"
 
+# PM2 ecosystem entry for this client
 pm2 start npm \
   --name "$PM2_NAME" \
-  --cwd "$CLIENT_DIR/app" \
-  -- start \
-  --env PORT=$CLIENT_PORT
+  --cwd "$IAM_DIR" \
+  --env-file "$CLIENT_DIR/.env" \
+  -- start
 
-pm2 save
+pm2 save --quiet
 log "PM2 process '$PM2_NAME' started on port $CLIENT_PORT"
 
+# Wait for process to start
+sleep 3
+if pm2 show "$PM2_NAME" 2>/dev/null | grep -q "online"; then
+  log "Process is online"
+else
+  warn "Process may not be running. Check: pm2 logs $PM2_NAME"
+fi
+
 # ═══════════════════════════════════════════════════════════════
-# STEP 8: NGINX CONFIGURATION
+# STEP 7: NGINX CONFIGURATION
 # ═══════════════════════════════════════════════════════════════
 section "Configuring Nginx"
 
 NGINX_CONF="$NGINX_SITES/${CLIENT_SLUG}.${BASE_DOMAIN}"
 
 cat > "$NGINX_CONF" << EOF
-# Client: $CLIENT_NAME
-# Subdomain: ${CLIENT_SLUG}.${BASE_DOMAIN}
-# Generated: $INSTALL_DATE
+# ── Client: $CLIENT_NAME ─────────────────────────────
+# URL: ${CLIENT_SLUG}.${BASE_DOMAIN}
+# Port: ${CLIENT_PORT}
+# Installed: ${INSTALL_DATE}
 
 server {
     listen 80;
     server_name ${CLIENT_SLUG}.${BASE_DOMAIN};
-
-    # Redirect to HTTPS
     return 301 https://\$host\$request_uri;
 }
 
@@ -296,21 +345,38 @@ server {
     listen 443 ssl;
     server_name ${CLIENT_SLUG}.${BASE_DOMAIN};
 
+    # SSL — wildcard cert
     ssl_certificate     /etc/letsencrypt/live/${BASE_DOMAIN}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${BASE_DOMAIN}/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
-    # Static assets served from disk
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Static assets from disk (fast)
     location /_next/static/ {
-        alias $CLIENT_DIR/app/.next/static/;
+        alias ${IAM_DIR}/.next/static/;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 
-    # Proxy to Next.js
+    # MCP + API routes (no cache)
+    location ~ ^/(api|\.well-known) {
+        proxy_pass http://127.0.0.1:${CLIENT_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # App
     location / {
-        proxy_pass http://127.0.0.1:$CLIENT_PORT;
+        proxy_pass http://127.0.0.1:${CLIENT_PORT};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -325,31 +391,21 @@ EOF
 
 ln -sf "$NGINX_CONF" "$NGINX_ENABLED/${CLIENT_SLUG}.${BASE_DOMAIN}"
 
-# Test nginx config
 if nginx -t 2>/dev/null; then
   systemctl reload nginx
   log "Nginx configured and reloaded"
 else
-  warn "Nginx config test failed — check $NGINX_CONF manually"
-  warn "Run: nginx -t"
+  warn "Nginx config failed — check: nginx -t"
 fi
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 9: SAVE INSTALLATION RECORD
+# STEP 8: SAVE INSTALLATION RECORD
 # ═══════════════════════════════════════════════════════════════
 section "Saving Installation Record"
 
-REGISTRY="$CLIENTS_DIR/registry.json"
+mkdir -p "$CLIENTS_DIR/_registry"
 
-# Read existing registry or create empty
-if [ -f "$REGISTRY" ]; then
-  EXISTING=$(cat "$REGISTRY")
-else
-  EXISTING="[]"
-fi
-
-# Append new client record (simple approach)
-cat > "$CLIENT_DIR/installation.json" << EOF
+cat > "$CLIENTS_DIR/_registry/$CLIENT_SLUG.json" << EOF
 {
   "client_name": "$CLIENT_NAME",
   "slug": "$CLIENT_SLUG",
@@ -359,51 +415,60 @@ cat > "$CLIENT_DIR/installation.json" << EOF
   "business_type": "$BUSINESS_TYPE",
   "admin_email": "$ADMIN_EMAIL",
   "installed": "$INSTALL_DATE",
+  "github_repo": "${GITHUB_REPO:-not created}",
   "status": "active"
 }
 EOF
 
-log "Installation record saved to $CLIENT_DIR/installation.json"
+log "Registry entry saved"
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 10: PRINT SUMMARY
+# FINAL SUMMARY
 # ═══════════════════════════════════════════════════════════════
 echo ""
-echo "════════════════════════════════════════════════════════════"
-echo -e "${GREEN}${BOLD}  ✓ INSTALLATION COMPLETE${NC}"
-echo "════════════════════════════════════════════════════════════"
+echo "════════════════════════════════════════════════════════════════"
+echo -e "${GREEN}${BOLD}  ✓  INSTALLATION COMPLETE${NC}"
+echo "════════════════════════════════════════════════════════════════"
 echo ""
-echo -e "${BOLD}Client:${NC}         $CLIENT_NAME"
-echo -e "${BOLD}URL:${NC}            $CLIENT_URL"
-echo -e "${BOLD}Port:${NC}           $CLIENT_PORT"
-echo -e "${BOLD}PM2 process:${NC}    $PM2_NAME"
+printf "  %-16s %s\n" "Client:" "$CLIENT_NAME"
+printf "  %-16s %s\n" "URL:" "$CLIENT_URL"
+printf "  %-16s %s\n" "Port:" "$CLIENT_PORT"
+printf "  %-16s %s\n" "PM2:" "$PM2_NAME"
+printf "  %-16s %s\n" "Files:" "$CLIENT_DIR"
+[ -n "$GITHUB_REPO" ] && printf "  %-16s %s\n" "GitHub:" "$GITHUB_REPO"
 echo ""
-echo -e "${BOLD}${YELLOW}⚠  REQUIRED: Fill in Supabase keys in .env${NC}"
-echo "   $CLIENT_DIR/app/.env"
+echo "────────────────────────────────────────────────────────────────"
+echo -e "  ${BOLD}${YELLOW}⚠  REQUIRED: Add Supabase keys to .env${NC}"
+echo "  nano $CLIENT_DIR/.env"
 echo ""
-echo "────────────────────────────────────────────────────────────"
-echo -e "${BOLD}MCP Token (for Claude Connector):${NC}"
-echo "   $MCP_TOKEN"
+echo "  Then rebuild:"
+echo "  cd $IAM_DIR && npm run build && pm2 restart $PM2_NAME --update-env"
 echo ""
-echo -e "${BOLD}GPT Secret (for ChatGPT App):${NC}"
-echo "   $GPT_SECRET"
-echo "────────────────────────────────────────────────────────────"
+echo "────────────────────────────────────────────────────────────────"
+echo -e "  ${BOLD}Admin TOTP Secret (for Google Authenticator):${NC}"
+echo "  $TOTP_SECRET"
 echo ""
-echo -e "${BOLD}Claude setup:${NC}"
-echo "   1. Open claude.ai → Settings → Connectors"
-echo "   2. Add: $CLIENT_URL/api/mcp"
-echo "   3. Complete OAuth flow"
-echo "   4. Send bootstrap prompt from: bootstrap-prompts/claude-start.md"
+echo -e "  ${YELLOW}⚠  Show this to client ONE TIME. Not stored in plaintext after this.${NC}"
 echo ""
-echo -e "${BOLD}ChatGPT setup:${NC}"
-echo "   1. Open chatgpt.com → Settings → Connected Apps"
-echo "   2. Add: $CLIENT_URL/api/mcp-gpt"
-echo "   3. OAuth Client ID: iamrunning-chatgpt-mcp"
-echo "   4. Send bootstrap prompt from: bootstrap-prompts/chatgpt-start.md"
+echo "────────────────────────────────────────────────────────────────"
+echo -e "  ${BOLD}MCP Token (for Claude Connector):${NC}"
+echo "  $MCP_TOKEN"
 echo ""
-echo -e "${BOLD}Next step:${NC}"
-echo "   Fill in Supabase keys in .env, then rebuild:"
-echo "   cd $CLIENT_DIR/app && npm run build && pm2 restart $PM2_NAME"
+echo -e "  ${BOLD}GPT Secret (for ChatGPT App):${NC}"
+echo "  $GPT_SECRET"
 echo ""
-echo "════════════════════════════════════════════════════════════"
+echo "────────────────────────────────────────────────────────────────"
+echo -e "  ${BOLD}Claude setup:${NC}"
+echo "  1. claude.ai → Settings → Connectors → Add"
+echo "  2. URL: $CLIENT_URL/api/mcp"
+echo "  3. Complete OAuth"
+echo "  4. Paste: $CLIENT_DIR/bootstrap-prompts/claude-start.md"
+echo ""
+echo -e "  ${BOLD}ChatGPT setup:${NC}"
+echo "  1. chatgpt.com → Settings → Connected Apps → Add"
+echo "  2. URL: $CLIENT_URL/api/mcp-gpt"
+echo "  3. Client ID: iamrunning-chatgpt-mcp"
+echo ""
+echo "  Bootstrap prompts: $CLIENT_DIR/bootstrap-prompts/"
+echo "════════════════════════════════════════════════════════════════"
 echo ""
