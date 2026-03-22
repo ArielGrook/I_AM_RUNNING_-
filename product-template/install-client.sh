@@ -304,10 +304,23 @@ section "Starting PM2 Process"
 
 PM2_NAME="iam-$CLIENT_SLUG"
 
-# PM2 ecosystem entry for this client
-# PM2 — export env vars first, then start
-export $(grep -v '^#' "$CLIENT_DIR/.env" | grep -v '^
+# PM2 — create ecosystem.config.js and start
+node -e "
+const fs2 = require('fs');
+const lines = fs2.readFileSync('" + "'$CLIENT_DIR/.env'" + "', 'utf8').split('\n');
+const env = {};
+lines.forEach(l => {
+  l = l.trim();
+  if (!l || l.startsWith('#')) return;
+  const idx = l.indexOf('=');
+  if (idx < 0) return;
+  env[l.slice(0, idx).trim()] = l.slice(idx+1).trim();
+});
+const cfg = { apps: [{ name: '" + "'$PM2_NAME'" + "', script: 'npm', args: 'start', cwd: '" + "'$IAM_DIR'" + "', env: env }] };
+fs2.writeFileSync('" + "'$CLIENT_DIR/ecosystem.config.js'" + "', 'module.exports = ' + JSON.stringify(cfg, null, 2));
+"
 
+pm2 start "$CLIENT_DIR/ecosystem.config.js"
 pm2 save --quiet
 log "PM2 process '$PM2_NAME' started on port $CLIENT_PORT"
 
@@ -469,33 +482,7 @@ echo ""
 echo "  Bootstrap prompts: $CLIENT_DIR/bootstrap-prompts/"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
- | xargs) 2>/dev/null
 
-# Create PM2 ecosystem file for this client
-cat > "$CLIENT_DIR/ecosystem.config.js" << ECOEOF
-module.exports = {
-  apps: [{
-    name: '$PM2_NAME',
-    script: 'npm',
-    args: 'start',
-    cwd: '$IAM_DIR',
-    env: $(node -e "
-      const fs = require('fs');
-      const env = {};
-      fs.readFileSync('$CLIENT_DIR/.env', 'utf8')
-        .split('\n')
-        .filter(l => l && !l.startsWith('#') && l.includes('='))
-        .forEach(l => {
-          const [k, ...v] = l.split('=');
-          env[k.trim()] = v.join('=').trim();
-        });
-      process.stdout.write(JSON.stringify(env, null, 2));
-    ")
-  }]
-};
-ECOEOF
-
-pm2 start "$CLIENT_DIR/ecosystem.config.js"
 
 pm2 save --quiet
 log "PM2 process '$PM2_NAME' started on port $CLIENT_PORT"
