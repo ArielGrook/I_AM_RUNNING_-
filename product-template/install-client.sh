@@ -305,11 +305,197 @@ section "Starting PM2 Process"
 PM2_NAME="iam-$CLIENT_SLUG"
 
 # PM2 ecosystem entry for this client
-pm2 start npm \
-  --name "$PM2_NAME" \
-  --cwd "$IAM_DIR" \
-  --env-file "$CLIENT_DIR/.env" \
-  -- start
+# PM2 — export env vars first, then start
+export $(grep -v '^#' "$CLIENT_DIR/.env" | grep -v '^
+
+pm2 save --quiet
+log "PM2 process '$PM2_NAME' started on port $CLIENT_PORT"
+
+# Wait for process to start
+sleep 3
+if pm2 show "$PM2_NAME" 2>/dev/null | grep -q "online"; then
+  log "Process is online"
+else
+  warn "Process may not be running. Check: pm2 logs $PM2_NAME"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 7: NGINX CONFIGURATION
+# ═══════════════════════════════════════════════════════════════
+section "Configuring Nginx"
+
+NGINX_CONF="$NGINX_SITES/${CLIENT_SLUG}.${BASE_DOMAIN}"
+
+cat > "$NGINX_CONF" << EOF
+# ── Client: $CLIENT_NAME ─────────────────────────────
+# URL: ${CLIENT_SLUG}.${BASE_DOMAIN}
+# Port: ${CLIENT_PORT}
+# Installed: ${INSTALL_DATE}
+
+server {
+    listen 80;
+    server_name ${CLIENT_SLUG}.${BASE_DOMAIN};
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name ${CLIENT_SLUG}.${BASE_DOMAIN};
+
+    # SSL — wildcard cert
+    ssl_certificate     /etc/letsencrypt/live/${BASE_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${BASE_DOMAIN}/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Static assets from disk (fast)
+    location /_next/static/ {
+        alias ${IAM_DIR}/.next/static/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # MCP + API routes (no cache)
+    location ~ ^/(api|\.well-known) {
+        proxy_pass http://127.0.0.1:${CLIENT_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # App
+    location / {
+        proxy_pass http://127.0.0.1:${CLIENT_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOF
+
+ln -sf "$NGINX_CONF" "$NGINX_ENABLED/${CLIENT_SLUG}.${BASE_DOMAIN}"
+
+if nginx -t 2>/dev/null; then
+  systemctl reload nginx
+  log "Nginx configured and reloaded"
+else
+  warn "Nginx config failed — check: nginx -t"
+fi
+
+# ═══════════════════════════════════════════════════════════════
+# STEP 8: SAVE INSTALLATION RECORD
+# ═══════════════════════════════════════════════════════════════
+section "Saving Installation Record"
+
+mkdir -p "$CLIENTS_DIR/_registry"
+
+cat > "$CLIENTS_DIR/_registry/$CLIENT_SLUG.json" << EOF
+{
+  "client_name": "$CLIENT_NAME",
+  "slug": "$CLIENT_SLUG",
+  "url": "$CLIENT_URL",
+  "port": $CLIENT_PORT,
+  "pm2_name": "$PM2_NAME",
+  "business_type": "$BUSINESS_TYPE",
+  "admin_email": "$ADMIN_EMAIL",
+  "installed": "$INSTALL_DATE",
+  "github_repo": "${GITHUB_REPO:-not created}",
+  "status": "active"
+}
+EOF
+
+log "Registry entry saved"
+
+# ═══════════════════════════════════════════════════════════════
+# FINAL SUMMARY
+# ═══════════════════════════════════════════════════════════════
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo -e "${GREEN}${BOLD}  ✓  INSTALLATION COMPLETE${NC}"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+printf "  %-16s %s\n" "Client:" "$CLIENT_NAME"
+printf "  %-16s %s\n" "URL:" "$CLIENT_URL"
+printf "  %-16s %s\n" "Port:" "$CLIENT_PORT"
+printf "  %-16s %s\n" "PM2:" "$PM2_NAME"
+printf "  %-16s %s\n" "Files:" "$CLIENT_DIR"
+[ -n "$GITHUB_REPO" ] && printf "  %-16s %s\n" "GitHub:" "$GITHUB_REPO"
+echo ""
+echo "────────────────────────────────────────────────────────────────"
+echo -e "  ${BOLD}${YELLOW}⚠  REQUIRED: Add Supabase keys to .env${NC}"
+echo "  nano $CLIENT_DIR/.env"
+echo ""
+echo "  Then rebuild:"
+echo "  cd $IAM_DIR && npm run build && pm2 restart $PM2_NAME --update-env"
+echo ""
+echo "────────────────────────────────────────────────────────────────"
+echo -e "  ${BOLD}Admin TOTP Secret (for Google Authenticator):${NC}"
+echo "  $TOTP_SECRET"
+echo ""
+echo -e "  ${YELLOW}⚠  Show this to client ONE TIME. Not stored in plaintext after this.${NC}"
+echo ""
+echo "────────────────────────────────────────────────────────────────"
+echo -e "  ${BOLD}MCP Token (for Claude Connector):${NC}"
+echo "  $MCP_TOKEN"
+echo ""
+echo -e "  ${BOLD}GPT Secret (for ChatGPT App):${NC}"
+echo "  $GPT_SECRET"
+echo ""
+echo "────────────────────────────────────────────────────────────────"
+echo -e "  ${BOLD}Claude setup:${NC}"
+echo "  1. claude.ai → Settings → Connectors → Add"
+echo "  2. URL: $CLIENT_URL/api/mcp"
+echo "  3. Complete OAuth"
+echo "  4. Paste: $CLIENT_DIR/bootstrap-prompts/claude-start.md"
+echo ""
+echo -e "  ${BOLD}ChatGPT setup:${NC}"
+echo "  1. chatgpt.com → Settings → Connected Apps → Add"
+echo "  2. URL: $CLIENT_URL/api/mcp-gpt"
+echo "  3. Client ID: iamrunning-chatgpt-mcp"
+echo ""
+echo "  Bootstrap prompts: $CLIENT_DIR/bootstrap-prompts/"
+echo "════════════════════════════════════════════════════════════════"
+echo ""
+ | xargs) 2>/dev/null
+
+# Create PM2 ecosystem file for this client
+cat > "$CLIENT_DIR/ecosystem.config.js" << ECOEOF
+module.exports = {
+  apps: [{
+    name: '$PM2_NAME',
+    script: 'npm',
+    args: 'start',
+    cwd: '$IAM_DIR',
+    env: $(node -e "
+      const fs = require('fs');
+      const env = {};
+      fs.readFileSync('$CLIENT_DIR/.env', 'utf8')
+        .split('\n')
+        .filter(l => l && !l.startsWith('#') && l.includes('='))
+        .forEach(l => {
+          const [k, ...v] = l.split('=');
+          env[k.trim()] = v.join('=').trim();
+        });
+      process.stdout.write(JSON.stringify(env, null, 2));
+    ")
+  }]
+};
+ECOEOF
+
+pm2 start "$CLIENT_DIR/ecosystem.config.js"
 
 pm2 save --quiet
 log "PM2 process '$PM2_NAME' started on port $CLIENT_PORT"
