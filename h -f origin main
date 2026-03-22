@@ -1,0 +1,741 @@
+[33mb86ae89[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m snapshot: feat: interactive step1 - light colorful cards + desktop bg fix
+[33m3829b7b[m snapshot: before: niche thumbnails light colorful redesign
+[33m9dda29e[m snapshot: docs: update PROGRESS.md and ENGINEERING_MEMORY.md - step1 redesign, landscape removal
+[33m4da6e5b[m snapshot: fix: remove mobile landscape-only restriction from interactive - works in portrait now
+[33m2c046c3[m snapshot: fix: remove dead _DEAD_SVGS block causing bg/mid/dim undefined error in interactive
+[33m870e482[m snapshot: feat: interactive step1 - detailed 140x88 SVG thumbnails per niche replacing icon-only design
+[33m94b19d0[m snapshot: feat: interactive step1 — animated diagonal bg, new card design, light/dark toggle, niche→preset auto-map
+[33m81c8ef0[m snapshot: feat: Interactive Step 1 - SVG thumbnails for all 16 business types
+[33m2dee2be[m snapshot: feat: Interactive - 12 color presets with names + SVG block thumbnails + assembler accepts full color preset
+[33m2545d79[m snapshot: feat: TronTeam - dynamic social platform picker (10 platforms), back button with LinkPicker
+[33m5a0d627[m snapshot: fix: TronTeam missing from Toolbox import - caused ReferenceError crash
+[33m5b251a8[m snapshot: feat: TronTeam - 3 layouts (grid/minimal/spotlight), card tilt, IntersectionObserver reveal, pulse avatar ring, social links, badge, Media Library, registered in 4 places
+[33md998226[m snapshot: fix: TronServices - cards are full CTA links, accordion no double text on collapse
+[33mef892d8[m snapshot: feat: TronServices v2 - accordion horizontal, CTA per item, scroll reveal steps (IntersectionObserver), collapsible settings items
+[33m3a53fe2[m snapshot: fix: TronServices - remove broken GSAP stagger, fix settings panel item layout (title top, icon+tag bottom row)
+[33m460d59c[m snapshot: feat: TronServices - 3 layouts (cards/steps/horizontal), tag badges, GSAP stagger, registered in 4 places + assembler
+[33me507381[m snapshot: docs: update PROGRESS with new priority order 1-2-3-deferred
+[33ma9a60d8[m snapshot: docs: add MECHANICS.md + update COMPONENTS.md + MAIN.md with mechanics doctrine
+[33ma950ba3[m snapshot: fix: TronCTA - remove own cursor spotlight, global Viewport spotlight handles everything
+[33mb8fe9d6[m snapshot: fix: color preset no longer reloads frame (unsaved nodes preserved) + TronCTA icon picker + remove glow intensity
+[33mb9e4179[m snapshot: fix: TronCTA - remove glow blob, fix vertical centering (section flex+alignItems)
+[33mc541ebb[m snapshot: docs: update PROGRESS and ENGINEERING_MEMORY - full session 21.03.2026
+[33mb4f174c[m snapshot: fix: TronCTA - vertical centering, 70vh default, editable split card (cardTitle/cardText/cardBadge)
+[33mc764b5e[m snapshot: feat: add TronCTA component - registered in all 4 places + assembler + interactive
+[33me55222f[m snapshot: docs: update ARCHITECTURE with correct role propagation mechanism
+[33me25132d[m snapshot: fix: real-time role propagation via Realtime profiles subscription + refreshSession()
+[33m4cb3a48[m snapshot: docs: update PROGRESS.md - full session summary 21.03.2026
+[33mc2f3133[m snapshot: fix: get-users now returns numeric role from auth.admin.listUsers - badge updates instantly after role change
+[33mcdaac50[m snapshot: docs: add supabase migration file for role system v2
+[33mf0d5ebc[m snapshot: docs: update ARCHITECTURE with role v2 - agency roles, USER_UPDATED fix
+[33mbdd3048[m snapshot: feat: role system v2 - agency roles (6,7), USER_UPDATED fix, admin panel mobile rewrite + Paid button
+[33ma01b669[m snapshot: docs: role system audit - update ARCHITECTURE with full role flow analysis
+[33ma5fbf4f[m snapshot: docs: update ARCHITECTURE and ENGINEERING_MEMORY with admin security audit
+[33mc62b9f2[m snapshot: hotfix: secure admin API routes with httpOnly cookie auth (checkAdminAuth)
+[33m8d7e8c0[m snapshot: docs: update ENGINEERING_MEMORY and PROGRESS with interactive ordering fix
+[33m02735f4[m snapshot: feat: fix footer always-last ordering in assembler + position badges in interactive step 3
+[33m13dc05c[m snapshot: docs: Context Core v2 — MCP spec, engineering memory, debug map, interactive pipeline, MVP path, updated rules/progress/main
+[33mdc75944[m snapshot: feat: interactive assembler — builds real Craft.js project from selected blocks with preview
+[33m87a8baf[m snapshot: before: interactive assembler + preview
+[33m86378e2[m snapshot: feat: interactive page with 4-step wizard + landing button
+[33m4fe4d58[m snapshot: revert: editor button back to orange
+[33m6a22737[m snapshot: feat: editor button green (god mode proof)
+[33mce2c51e[m snapshot: before: change editor button to green (god mode test)
+[33ma91ea59[m feat: OAuth discovery endpoints for Claude MCP Connector
+[33mff90f87[m feat: MCP server for Claude Connector with full project access
+[33m8bd1673[m feat: add TronAbout component
+[33m9759af6[m fix: TronAbout registration and imports
+[33mbf80414[m fix: add paddingBottom to root canvas for drop zone
+[33m8660c92[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33md596cba[m feat: live file updates in Code Viewer during AI execution
+[33m1700342[m snapshot: docs: update ARCHITECTURE and PROGRESS with Dev Console IDE
+[33mbc23329[m fix: isMobile detection using window.innerWidth for Admin Panel
+[33m54b6f41[m feat: mobile vertical cards for Admin Panel + logout redirect
+[33m0366580[m feat: mobile-responsive Admin Panel and SEO pages
+[33m7169186[m feat: mobile Dev Console with portrait dropdown panels
+[33m4a85174[m feat: mobile-responsive Dev Console with tab layout
+[33me872460[m feat: resizable panels and git history in Dev Console
+[33m8722124[m fix: context menu buttons now trigger correctly
+[33md48a765[m feat: right-click context menu in file tree with create/delete folder
+[33m32104d4[m feat: edit mode, file create/delete in Dev Console
+[33m856a4cd[m fix: Dev Console viewport-locked layout, no page scroll
+[33m8798a7d[m feat: three-panel resizable Dev Console with CodeMirror and chat UI
+[33mf6f0116[m feat: add /api/dev-agent/files/read endpoint
+[33ma2d4aea[m feat: file tree sidebar in Dev Console
+[33mfcbbc38[m feat: add /api/dev-agent/files endpoint for file tree
+[33mecbb96e[m fix: file tree parsing and UX improvements
+[33m523b076[m feat: add file tree sidebar to dev console
+[33m854d66e[m fix: remove unused otplib import from admin page
+[33m54bf74e[m fix: use @otplib/preset-default for TOTP verification
+[33m343875c[m fix: otplib import for Next.js API route
+[33m111fbf5[m feat: passwordless TOTP admin login via API
+[33mf0692dd[m feat: replace admin login with passwordless TOTP
+[33me858791[m fix: correct data format for new project creation
+[33ma220ee0[m docs: add ARCHITECTURE.md to context-core
+[33mac5a25b[m fix: correct login redirect path in editor
+[33m05193ba[m fix: propagate dark/light scheme change to all pages
+[33m1b1c613[m fix: dispatch iam_color_preset_changed from applyColorPreset
+[33m9960040[m fix: force Frame remount on color preset change via frameKey
+[33me25aa9b[m fix: setTimeout for setFrameData outside setPages updater
+[33mc5cb639[m fix: reload Frame after color preset applied to all pages
+[33m6111fff[m fix: deploy script uses nohup to avoid self-kill
+[33m5609f3c[m refactor(deploy): remove health check and auto-rollback
+[33m992bba0[m revert: editor button orange
+[33m402642b[m refactor(deploy): use spawnSync for deploy script execution
+[33m657de5e[m fix: ignore stderr in deploy script
+[33m249419b[m snapshot: test: green editor button
+[33m5fed5cf[m snapshot: chore: remove test-deploy-check
+[33me8a6564[m snapshot: test: deploy check folder
+[33mf8a6ba3[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33mcc1acc2[m fix: Gemini adapter functionResponse format for tool results
+[33m9b44f96[m snapshot: before: remove test-deploy-check directory
+[33mabc551a[m feat: add delete_file tool to tool-executor
+[33m057cd64[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m90159f7[m fix: use deploy script in rollback
+[33me1fdac8[m fix: use deploy script with sudo
+[33m521d4d5[m snapshot: test: deploy check folder
+[33m9d20e9e[m fix: use absolute pm2 path in deploy
+[33m9847f42[m feat(deploy): health check + auto-rollback in deploy endpoint
+[33mfe5dcf1[m feat(dev-console): separate deploy button, remove auto-deploy toggle
+[33m304f9dd[m fix: default model + command injection
+[33md002d59[m snapshot: before: update hero tagline
+[33m10d6814[m snapshot: before: update HeroSection.tsx button color
+[33m4950ba8[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33md5896f6[m feat(dev-agent): wire Gemini API key in route and config
+[33m1cdde9e[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m6e37eff[m feat(dev-console): add Gemini provider support
+[33m34a6cf0[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m0544c7c[m feat(dev-console): update providers, fix AI Output scroll, add Gemini
+[33m5838f26[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m80269ca[m feat(context-core): add system prompt documentation and project structure
+[33m73cd4a7[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33mdeaed46[m feat: ColorPresetSync component applies colors to all nodes via Craft.js actions
+[33m88ac583[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33mdc72516[m fix: reload active page Frame after color preset applied to all pages
+[33mc60738b[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33md6f7f37[m fix: add accentColor to HeroTronSettings destructuring, remove debug logs
+[33md193413[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m996e80f[m debug: add logs for color preset event chain
+[33m5827aca[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m2da885a[m feat: auto-apply color preset to all pages on accentColor/darkBg/lightBg change
+[33md4b708c[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m4b1084b[m fix: adjust island padding and height for 40px avatar
+[33mae7c86c[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m2f82631[m fix: set avatar size to 40px in HeaderTron island
+[33m2564862[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m91fbf0d[m feat: display avatar image in HeaderTron island from user_metadata
+[33mb07f441[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m7c14878[m fix: update session with new avatar_url after PUT user, triggers HeaderTron refresh
+[33m771f72f[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33mb02f1c9[m fix: refresh access_token before opening MediaLibrary
+[33m5e25b39[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33mc6d5edc[m fix: pass accessToken to useMediaLibrary for Storage RLS auth
+[33m345269b[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33me8b62bf[m fix: enable RLS on storage.objects in runMigrations
+[33m8f2d3b5[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m57b122a[m feat: add Storage RLS policies for media bucket in runMigrations
+[33m9460e09[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m34103e6[m fix: memoize Supabase client in useMediaLibrary to prevent render loop
+[33me773d9e[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33md92db73[m feat: save selected avatar to Supabase user_metadata
+[33m18c1335[m feat: pass client Supabase credentials to MediaLibrary for avatar upload
+[33m46c446f[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m6034559[m feat: auto-create media Storage bucket on backend Connect
+[33m0dec267[m resolve: take origin version of index.ts
+[33mbb0c53d[m chore: remove dead components from resolvers, index and Toolbox
+[33m7d6e3bb[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m8f2a930[m fix: add INSERT policy for profiles in runMigrations
+[33mb053d8a[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m11882b2[m fix: refresh access_token before updateUser to prevent 403
+[33m36fe83c[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m902c7b9[m fix: use fetch REST API for updateUser and profiles sync instead of createClient
+[33m1e242e7[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m203694c[m fix: use getUser() for userId in profiles upsert instead of stale localStorage
+[33m1068099[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33mb722357[m fix: restore setFrameKey in toggleTheme, preserve active dashboard section
+[33m1a5b31f[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m738e053[m feat: sync first/last name to profiles table on Save Changes
+[33m5067ca7[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m18df528[m feat: inject Supabase credentials into TronHub, fix handleSave with real client
+[33m6e70203[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33mc899b92[m fix: use fetch with access_token for updateUser instead of Supabase client
+[33m7bad96d[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m5a0c174[m feat: connect Save Changes to Supabase updateUser for first/last name
+[33m5830b22[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33me8eab52[m fix: remove setFrameKey from toggleTheme to prevent dashboard section reset
+[33m432c19a[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33ma6a5973[m fix: connect TronHub theme toggle to siteCtx.toggleTheme
+[33m597edda[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m877b231[m fix: initialize session from localStorage to prevent flash on dashboard entry
+[33m76a2583[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m247013f[m fix: reduce wide avatar island size to match theme toggle height
+[33meed0e1b[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33mdf20e4f[m fix: wide avatar island height auto when closed
+[33m89f0e68[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m8ef5e1b[m feat: add previewLoggedIn, avatarStyle compact/wide, showUsernameInHeader to HeaderTron
+[33m28fb789[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m897e4fb[m fix: remove tronhub-fadein CSS animation to prevent double animation on dashboard entry
+[33ma36325f[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m6466a2f[m fix: pass pending dashboard section via window to avoid race condition
+[33mb832fb6[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m832d1f2[m fix: remove page transition fade — instant navigation
+[33m0089b87[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m1543335[m fix: add root background to prevent white flash during transitions
+[33mdf06e29[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m6ee0a37[m fix: move pathname check after all hooks, add hostname check for subdomains
+[33mfa30698[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m10e8569[m fix: skip LoadingProvider on /sites/ routes
+[33md5e0a42[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m796df52[m fix: remove white flash during page transitions
+[33md75e201[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m2933688[m fix: split loader state — branded loader on first load only, opacity transition on page navigation
+[33mef26526[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m0318516[m feat: register Hero (HeroDefault) in editor, SiteRenderer, and Toolbox
+[33md03a561[m snapshot: before: register HeroDefault component in remaining files
+[33m1faa9fd[m dev-agent: Perfect! I've successfully created the  component file. Here's a summary of what wa
+[33m0fd5d53[m dev-agent: The  file doesn't exist in this project. There is a  director
+[33m20e767b[m fix: correct PROJECT_ROOT path to /var/www/i_am_running
+[33m6f57d3f[m feat: add AI output panel, expandable log entries, and rollback endpoint
+[33m9add79f[m feat: add settings panel with API key management to Dev Console
+[33m1646808[m feat: add config system for Dev Console API keys
+[33m34fb73a[m feat: add Dev Console page with provider selection, execution log, and rollback
+[33m7babb61[m feat: add Dev Console API route with tool call loop and auto-deploy
+[33m64bc711[m feat: add AI provider adapters (Claude, OpenAI, DeepSeek)
+[33mafc8a65[m feat: add tool executor for Dev Console
+[33m54ec6ac[m refactor: extract buildTokens to shared lib/craft/tokens.ts module
+[33m06d3995[m fix: stale closure for colorScheme in navigateToPage
+[33md46b08c[m fix: TronHub prioritizes siteCtx.colorScheme on deployed site
+[33m478bb3e[m fix: TronHub uses SiteContext for theme sync
+[33mf07da93[m fix: limit Account fields width on desktop
+[33m86920f7[m fix: move Logout to sections list, add Back button
+[33me857cf7[m fix: add colorScheme and accentColor to TronHub craft props
+[33mb7eec1c[m fix: TronHub color presets + remove TronDashboard
+[33mfa839cd[m fix: add theme and color preset support to TronHub
+[33mcf90061[m fix: add theme support and avatar upload to TronHub
+[33mcde18d3[m feat: add TronHub component (user dashboard replacement)
+[33mc314295[m refactor: rewrite avatar dropdown with proper structure
+[33ma85b188[m fix: z-index for dropdown buttons
+[33m8362be6[m debug: log section button clicks
+[33me80a4ea[m fix: island overflow visible + mouse leave on island not wrapper
+[33m4cc99e8[m fix: island buttons clickable + overlap avatar top
+[33mf9d1eb0[m fix: center dropdown island under avatar
+[33m7a90cab[m fix: remove duplicate avatar dropdown block
+[33m83d3ec4[m feat(editor): link HeaderTron dropdown to TronDashboard via custom events
+[33m1033e6e[m fix: dropdown buttons navigate to specific Dashboard sections
+[33m35d651e[m fix: HeaderTron round island behind avatar + dynamic sections
+[33m2d5c23a[m fix: HeaderTron round island behind avatar + dynamic sections
+[33m37e46cd[m fix: connect dropdown to avatar, clip logout glow
+[33m0fec3cb[m fix: HeaderTron one connected island with light theme support
+[33m15ceefb[m fix: repair HeaderTron TSX structure after dropdown refactor
+[33m2b2c579[m fix: dropdown absolute below avatar, not in flex flow
+[33m449e372[m fix: HeaderTron dropdown grows downward not upward
+[33m3e1b3cd[m fix: avatar island position relative not absolute
+[33m00cd999[m fix: HeaderTron right controls truly horizontal
+[33m3fdce16[m fix: HeaderTron controls horizontal row not column
+[33m5984c47[m fix: HeaderTron theme switcher and avatar in same flex row
+[33m5d4d93b[m fix: remove useCallback from handleLogout in TronDashboard
+[33mf4b8d96[m fix: HeaderTron island style, z-index, dynamic sections, section navigation
+[33m2de795c[m fix: HeaderTron island style, z-index, dynamic sections, section navigation
+[33m2ebe36a[m fix: HeaderTron dropdown as connected island + working navigation
+[33m1c8bc65[m fix: useCallback import + sync logout in TronDashboard
+[33m714a991[m fix(dashboard): logout without credentials - just clear storage
+[33md767d2e[m fix(auth): inject credentials into ALL project pages not just current
+[33me52ed15[m fix(dashboard): remove enabled guard from logout
+[33m7e17598[m fix(dashboard): remove enabled guard from logout
+[33m120a111[m fix(dashboard): verify logout button onClick connection
+[33mbaadf23[m fix(dashboard): logout clears session and redirects to landing
+[33mb146f15[m fix(TronDashboard): Logout button now works correctly
+[33m97d7e1b[m fix(craft): minHeight 100vh для auth компонентов в редакторе
+[33m9b7b678[m fix(auth): убрать route protection из TronDashboard для стабильности редактора
+[33mf4e9033[m fix(auth): устранить падение редактора при загрузке
+[33mc6c20e4[m fix(auth): починка всего auth pipeline
+[33mbf37a1c[m fix(auth): settings panel selects, redirects, SVG dropdown
+[33mcca75f3[m feat(dashboard): TronDashboard + SVG icon dropdown in HeaderTron
+[33m81338d0[m fix(auth): persist database password in backend canvas
+[33mccb3ef1[m fix(auth): trigger exception handling + mask sensitive fields in BackendCanvas
+[33mdd276a8[m fix(auth): pg direct migrations + persist all credentials
+[33m37724f4[m fix(auth): run migrations via service role client instead of Management API
+[33m88e99c6[m fix(auth): avatar duplicate, redirects, profile click, profiles table migration
+[33m6f571ea[m feat(auth): full Supabase auth pipeline - backend canvas, login, register, header avatar
+[33m3ddeb05[m feat(auth): add password visibility toggle in TronLogin and TronRegister
+[33m22451ac[m fix(auth): enable input fields in preview and deployed site
+[33m3ef210d[m fix(navigation): restore page navigation in preview after LinkPicker changes
+[33md50904f[m fix(auth): fix Another Page selection in TronLogin and TronRegister LinkPicker
+[33m1478b36[m fix(linkpicker): another page dropdown and remove section tab for auth
+[33mc04acba[m fix(register): last name overflow and mobile input height
+[33m5e44bb3[m feat(auth): add LinkPicker to TronLogin and TronRegister buttons
+[33m26d6dd1[m feat(components): rewrite TronLogin and TronRegister per writing rules
+[33m2347f93[m chore(presets): remove Dark Lounge and Pricing CYC presets
+[33m531df8b[m style(editor): white canvas background instead of black
+[33m92b4459[m fix(editor): restore landing theme on unmount when leaving editor
+[33m0c12129[m fix(editor): strip landing dark class on mount so toolbar and Settings stay light
+[33m1da2945[m chore: remove dead files and GrapesJS CSS
+[33m026f4df[m fix(editor): pass onAddPageNamed via EditorLayout prop, inline callback to fix ReferenceError
+[33m31117ea[m fix(editor): define handleAddPageNamed early to fix client ReferenceError
+[33md673611[m fix(craft): TronLogin/TronRegister add to new page on click, not after drop
+[33m1d63d1e[m feat(craft): add TronLogin and TronRegister auth components
+[33m4c41d8c[m style(craft): SvgLines use cubic bezier for site→node and block→db
+[33m17e8a48[m feat(craft): make YOUR SITE and SUPABASE cards draggable
+[33m1c4385e[m feat(BackendCanvas): перетаскиваемые карточки с realtime линиями
+[33m87bba4f[m feat(BackendCanvas): категорийные цвета для блоков
+[33m7e8d7a1[m fix(BackendCanvas): prevent text selection при drag панорамирования
+[33mbf2868e[m feat(BackendCanvas): фоновый паттерн + zoom/pan мышью
+[33mea13c9c[m refactor(BackendCanvas): заменить ReactFlow на чистый React + SVG
+[33m089d29b[m feat(BackendCanvas): изометрические 3D CSS блоки для всех нод
+[33m429cfc2[m feat(BackendCanvas): GSAP-like анимации — частицы, свечение нод, пульсация
+[33m86479b0[m feat(editor): Backend режим — переключатель в Toolbar + ReactFlow canvas
+[33mf65a4ee[m refactor(Toolbox): очистить Toolbox - оставить только Tron компоненты
+[33m329e741[m refactor(editor): remove Basic components from Toolbox UI
+[33m72bd0c1[m fix(editor): auto-save and exit on back button with unsaved changes
+[33mdaad02c[m feat(editor): redesign toast and add unsaved changes warning
+[33mdccb900[m feat(editor): add toast notifications, remove window.confirm dialogs
+[33m18a67b1[m feat(ui): replace window.confirm with toast system, redesign loader
+[33m9b75caa[m fix(ui): SVG icons, mobile header CTA, loading screen redesign
+[33m1e3140a[m feat(site): add I AM RUNNING loading screen for client sites
+[33m742c432[m fix(components): Copy to Mobile, section scroll IDs, mobile header CTA
+[33mb71f3cf[m fix(components): mobile link clicks, Copy to Mobile sync, theme toggle visibility
+[33mb80e036[m feat(components): add universal LinkPicker for all CTA buttons
+[33mefa2f91[m feat(sites): add multi-page routing with dynamic page navigation
+[33m50c7885[m feat(sites): add theme/language switchers in HeaderTron via SiteContext
+[33m0c7c257[m feat(header): add theme and language toggles via SiteContext
+[33mc6b52b0[m fix(sites): rebuild Frame on theme toggle + add spotlight intensity
+[33m04b7120[m feat(sites): pass project theme to ThemeProvider + add dark/light toggle
+[33m9c61906[m feat(sites): pass theme to ThemeProvider + add dark/light toggle
+[33m13c4459[m feat(sites): add GSAP scroll animations to SiteRenderer
+[33m52b6220[m feat(toolbar): auto-save before deploy
+[33mf2a6cea[m fix(sites): spotlight DOM-direct update + disable on mobile
+[33m03ac3cc[m fix(sites): spotlight color from Craft data + RAF for smooth movement
+[33mac6a204[m feat(sites): add global cursor spotlight to SiteRenderer
+[33mfeb70a7[m add sites renderer
+[33mc562ec1[m feat(deploy): switch deploy to slug + Next.js rendering
+[33mdc4b084[m feat(export): improve Tron HTML export visuals
+[33m24bb9f9[m feat(deploy): деплой проекта на VPS через ZIP
+[33mdade46a[m feat(export): полноценный рендер Tron секций для ZIP
+[33m190adeb[m feat(export): добавить ZIP export API и базовый renderer
+[33m82d3c04[m fix(craft): сброс layout при смене темы — key только на grid div
+[33m9d8fdbd[m refactor(craft): технический долг — EditableText, ResizeObserver, TronFooter
+[33m6d142a5[m feat(showcase): загрузка видео через MediaLibrary
+[33mc55bb45[m chore(storage): увеличить лимит media bucket до 50MB
+[33mf14e2a4[m feat(media): Supabase Storage media library вместо base64
+[33m928ec44[m feat(editor): EditableText across all Tron components
+[33m31dbaa0[m feat(editor): double-click text editing in TronStats and HeroTron
+[33me3f3c3d[m fix(editor): TronPortfolioSettings item card layout
+[33m3266710[m style(editor): unified Settings Panel styles across Tron components
+[33m171d2bb[m feat(editor): Animation Presets in mini toolbar
+[33m11a6497[m fix(editor): Settings Panel dark/light mode support
+[33mbb3c0e0[m fix(admin): sync role system with useAuth 5-level scale
+[33ma1fd8cb[m refactor(toolbox): remove CLASSIC group from Toolbox and resolver
+[33m01581aa[m fix(grid): grid overlay with key for theme update in HeroTron, TronContact, TronShowcase
+[33mbde7d16[m fix(hero): ResizeObserver + remove key on HeroTron section
+[33m417cb86[m fix(tron): ResizeObserver + grid theme fixes
+[33m58ba75b[m refactor(TronShowcase): align grid declaration order with TronFAQ
+[33m9192251[m refactor(TronShowcase): copy grid pattern from TronFAQ
+[33m304a5af[m fix(TronShowcase): grid update without layout reset on theme change
+[33m064d9a1[m fix(TronShowcase): auto-update grid on theme change
+[33mf8e375d[m fix(TronShowcase): layoutStyle used before initialization
+[33m16df0d8[m fix(TronShowcase): centering + layout bug on theme change
+[33m213adce[m feat(TronShowcase): media block size + YouTube/Vimeo video support
+[33m31e09ef[m feat(TronShowcase): rewrite with tabs-left/tabs-top and mobile accordion
+[33m7249f89[m feat(TronFAQ): rewrite with centered/split layouts and styled accordion
+[33m5c846db[m fix(TronPortfolio): correct TronPortfolioSettings closing syntax
+[33m4fc4fc5[m refactor(TronPortfolio): carousel with translate, prev/next, dots, autoplay
+[33m2488570[m refactor(TronPortfolio): rewrite from scratch with new interface
+[33mad95a0a[m fix(TronPricing): isAnnual state reaches cards, price toggle works
+[33m0cc4d1c[m fix(TronPricing): Monthly/Annually toggle and discount badge
+[33mb3ea763[m feat(TronPricing): Monthly/Annually billing toggle with discount label
+[33mc604200[m feat(TronPricing): editable popular badge text
+[33m4705b69[m refactor(TronPricing): rewrite from scratch with plans as props
+[33ma9535c8[m refactor(TronTestimonials): replace avatar URL with file upload (base64)
+[33m159abd5[m feat(TronTestimonials): second row on mobile + avatar photo
+[33m3aaa010[m fix(TronTestimonials): prevent charAt crash on legacy testimonial data
+[33m5061c07[m refactor(TronTestimonials): rewrite from scratch with CSS animation carousel
+[33mdf2b2ab[m fix(TronFeatures): grid layout breaks on theme/cardStyle change
+[33md4faa0c[m fix(TronFeatures): white outline, grid stretch, card opacity
+[33meb30b63[m fix(TronFeatures): theme, accentColor, hover tactility
+[33m468cff0[m refactor(TronFeatures): rewrite from scratch with props-based structure
+[33me32d22f[m fix(HeaderTron): revert to previous version, add showCta and sticky toggles
+[33m1b677fd[m refactor(HeaderTron): rewrite from scratch with new patterns
+[33mb7e7bd9[m fix(spotlight): clip by canvas container top, not header
+[33m253a1dc[m fix(spotlight): use rect.bottom for header clip, call once without scroll listener
+[33mc498237[m fix(spotlight): use fixed header height for clip on scroll
+[33m0641c3a[m feat(Viewport): limit spotlight to area below header
+[33md28849a[m fix(components): ResizeObserver threshold 768→520 to avoid false isMobile
+[33m73ab76d[m refactor(Viewport): integrate spotlight, single cursor button
+[33m75844e5[m fix(HeroTron): auto-update grid on colorScheme change
+[33m50fad90[m fix(Viewport): restrict spotlight to canvas in preview mode only
+[33mb0927b6[m feat(Viewport): add global spotlight cursor to mini toolbar
+[33m67f24a4[m refactor(HeroTron): rewrite from scratch with props-based structure
+[33mbaf1e65[m refactor(TronFooter): rewrite from scratch with props-based structure
+[33m9927517[m refactor(TronFAQ): rewrite with props-based items and ResizeObserver
+[33m7da8d35[m fix(TronContact): use ResizeObserver for mobile layout in iframe editor
+[33md35ea68[m fix(TronContact): full vertical stack on mobile, form not clipped
+[33mfaf9f0e[m fix(TronContact): improve mobile layout and prevent overflow
+[33mefd22b5[m feat(Tron): add darkBg/lightBg props to all Tron components
+[33m9d15145[m feat(TronContact): bg color picker + mobile layout
+[33mbab4bf4[m refactor(craft): TronContact theme/color pattern from TronStats
+[33mdb45483[m fix(craft): TronContact title first-word accent and tokens
+[33m43e5fc8[m refactor(craft): TronContact per Guide v3 - SVG icons, iconKey, tokens
+[33m6ce6da2[m refactor(craft): rewrite TronContact per Component Guide v3
+[33me133e95[m fix(editor): stretch right panel to screen edge
+[33m8c06f03[m fix(editor): right panel width and SettingsPanel layout
+[33m0bc02ac[m fix(editor): widen right panel to 23rem
+[33m36dbb89[m fix(editor): widen right panel from 19rem to 22rem for SettingsPanel
+[33m23cfbca[m feat(TronStats): remove dividers, add count-up animation, fix data-animate scope
+[33mbe46786[m fix(SettingsPanel): widen right panel from 320px to 340px
+[33mf87382f[m refactor(TronStats): rewrite as monolithic component per Component Guide v3
+[33m41ba68c[m style(blocks): resize handles always invisible, resize still works
+[33m35b5ba6[m style(blocks): resize handles - transparent by default, appear on hover, thinner lines
+[33m8f1a6a7[m fix(blocks): drag vs resize conflict - onResizeStart stopPropagation, remove inner minHeight
+[33m8317b17[m fix(blocks): resize handles - white outline, all corners, visible only when selected
+[33m187143a[m fix(blocks): resize handles visual - CardBlock, PricingCardBlock
+[33m1ad30e6[m fix(blocks): CardBlock, PricingCardBlock, LayoutBlock - resize and card behavior
+[33m72ec5aa[m fix(editor): CardBlock drag vs resize, craft-node-selected for CiC blocks
+[33m6079c0d[m feat(editor): Container-in-Container architecture
+[33m05757e4[m fix(TronPortfolio): card width slider range 60-150%
+[33m36de78e[m fix(TronPricing): card width slider range 60-150%
+[33m04ea80a[m feat(TronPortfolio): card width and image min-height sliders in settings
+[33mfb2916c[m feat(TronPricing): PricingCard width and minHeight sliders in Settings
+[33m72bef68[m feat(TronTestimonials): TestimonialCard width and minHeight sliders in Settings
+[33m94f41f6[m feat(TronFeatures): add/remove cards 1-9, card width and minHeight sliders
+[33m1f92b2b[m feat(Tron): section height range slider in Settings
+[33m1eca4f8[m style(Tron): section height 75vh for all Tron sections
+[33md12570b[m style(Tron): full-height sections and grid-aligned background
+[33mab67501[m style(Tron): black background to match Features block
+[33m281e47e[m fix(TronShowcase): remove accent dot from content panel
+[33mc2fa4bb[m fix(HeroTron): strict #0a0a0a background for dark theme
+[33m0903066[m fix(TronShowcase): bg 0a0a0a, 60vh, grid-aligned divider, remove counter
+[33medc2b75[m feat(TronShowcase): height 75vh, tab numbers, progress line, counter, accent dot, mobile tweaks
+[33m5fd6c74[m fix(TronShowcase): replace Tailwind responsive with inline styles for canvas editor
+[33m034fd18[m fix(components): TronShowcase layout - tabs left, content right
+[33m9d8d9ed[m fix(components): remove garbage text from TronShowcase.tsx
+[33m95d1444[m feat(components): add TronShowcase block with tabs
+[33mb57d82a[m chore(craft): remove TronShowcase component
+[33m3499f4c[m fix(showcase): TronShowcase layout 65/35, mobile, animation
+[33mf6c03b1[m refactor(TronShowcase): rewrite from scratch, tabs and text only, no media
+[33m3416005[m fix(TronShowcase): min-height 100vh, effectiveTabs defaults, mobile 60vh
+[33m1b48e36[m refactor(TronShowcase): tabsPosition, layout by reference, mobile fix
+[33m458c1e8[m feat(TronShowcase): interactive tabs section with ShowcaseTab
+[33m64e67b3[m fix(TronStats): mobile grid 1 col, sm 2 lg 4, label and dividers responsive
+[33m4058265[m fix(TronStats): mobile stats in column and label wrap
+[33m008ae06[m feat(TronStats): animated stats section with StatItem
+[33m9c83dd1[m feat(Toolbar): page navigation in Preview mode
+[33m7b720bf[m fix(HeaderTron): nav in preview + dynamic link dropdowns
+[33m3c8e679[m fix(editor): add parens for nullish coalescing with logical OR
+[33m5406386[m feat(craft): smart links for page/section nav and Header
+[33m73a79e6[m feat(editor): delete pages with Г— button, keep min 1 page
+[33m8076a24[m style(craft): orange style for viewport switcher (Desktop/768/375)
+[33mb898a37[m style(craft): zoom/page orange style, canvas theme in mini toolbar
+[33ma7571b7[m style(craft): mini toolbar and Toolbar button styles
+[33m58465f5[m feat(craft): Copy Desktop to Mobile button in mini toolbar
+[33m630c39f[m feat(craft): canvas color scheme toggle in toolbar
+[33mc092788[m feat(craft): add/remove testimonial cards in TronTestimonials Settings
+[33ma833517[m fix(craft): gradient presets display in color picker circles
+[33m26c9cb4[m feat(presets): gradient color presets - ocean update, add Rose and Shadow
+[33m189fcfd[m fix(tron): instant grid update on colorScheme change - add key to section/footer
+[33m2795177[m fix(tron): grid in light mode + showGrid prop for all Tron except HeaderTron
+[33m62847bc[m fix(canvas): revert click-insert, restore drag-drop with blue indicator and margin-bottom
+[33mab4821c[m feat(canvas): click + position insert instead of drag - PendingInsertContext, InsertButtons overlay, Toolbox onClick, Escape/click-outside cancel
+[33md3772fd[m feat(canvas): simplify drop zone - root flexDirection, 24px gap between nodes
+[33m1dcc2f4[m fix(preview): РјРіРЅРѕРІРµРЅРЅРѕРµ РїРµСЂРµРєР»СЋС‡РµРЅРёРµ СЃРІРµС‚Р»РѕРіРѕ/С‚С‘РјРЅРѕРіРѕ СЂРµР¶РёРјР°
+[33mb95e6d6[m fix(components): TronFAQ mobile - items no longer stack/overlap
+[33m0519669[m fix(components): TronPortfolio 1 card on mobile via ResizeObserver
+[33m74b7246[m fix(editor): canvas fully filled - no white strips on sides
+[33m58f16f1[m fix(editor): remove padding around canvas on mobile viewport
+[33m70648cb[m feat(editor): sync desktop canvas to mobile in real-time when mobileData empty
+[33m0e6c402[m fix(editor): desktop/mobile dual save and viewport switching
+[33m8655718[m feat(craft): add light/dark toggle in preview mode for Tron components
+[33m7cd0461[m fix(craft): HeroTron heading/subheading contentEditable loses focus on each keystroke
+[33mf038269[m fix(editor): apply color presets to TronTestimonials, TronFAQ, TronFooter
+[33md67e115[m fix(HeroTron): use dangerouslySetInnerHTML for contentEditable heading and subheading
+[33mcfa0055[m fix(HeroTron): use uncontrolled contentEditable for heading and subheading
+[33m5004f85[m fix(editor): remove all outlines from nodes, selection via badge only
+[33m7811a41[m fix(editor): replace Tailwind outline with craft-node-selected classes
+[33m30dd8e8[m fix(editor): remove gray outline on Craft.js canvas nodes
+[33m9c15253[m chore(craft): РґРёР°РіРЅРѕСЃС‚РёРєР° - Frame СЃ РїСѓСЃС‚С‹Рј Container
+[33mc5484df[m chore(style): РґРёР°РіРЅРѕСЃС‚РёРєР° - Р·Р°РєРѕРјРјРµРЅС‚РёСЂРѕРІР°С‚СЊ border-border
+[33mfc07262[m chore(craft): RenderNode РјРёРЅРёРјР°Р»СЊРЅР°СЏ РІРµСЂСЃРёСЏ РґР»СЏ РґРёР°РіРЅРѕСЃС‚РёРєРё РіСЂР°РЅРёС†
+[33me71d450[m fix(craft): СѓР±СЂР°С‚СЊ СЃРµСЂС‹Рµ РіСЂР°РЅРёС†С‹ РЅРѕРґ
+[33m1d4d91a[m fix(craft): СЃР±СЂРѕСЃ РіСЂР°РЅРёС† РЅРѕРґ С‡РµСЂРµР· border revert
+[33m9ccb499[m fix(craft): СЃР±СЂРѕСЃ СЂР°РјРѕРє СЃ РЅРµРІС‹РґРµР»РµРЅРЅС‹С… РЅРѕРґ
+[33mf6d24da[m fix(craft): РїРµСЂРµРєСЂС‹С‚СЊ Craft.js inline borders С‡РµСЂРµР· CSS
+[33mc938d0c[m feat(craft): РїРѕРґРєР»СЋС‡РёС‚СЊ РєРЅРѕРїРєСѓ Outlines Рє canvas С‡РµСЂРµР· data-outlines
+[33mcc4cd47[m fix(craft): СѓР±СЂР°С‚СЊ СЃРµСЂС‹Рµ РіСЂР°РЅРёС†С‹ РѕС‚ Tailwind base
+[33m2f94cd8[m fix(craft): СѓР±СЂР°С‚СЊ hover-СЂР°РјРєСѓ РЅРѕРґ РІ RenderNode
+[33mce8fa16[m fix(craft): СѓР±СЂР°С‚СЊ СЃРµСЂС‹Рµ РіСЂР°РЅРёС†С‹ РЅРѕРґ РІ СЂРµРґР°РєС‚РѕСЂРµ Рё preview
+[33m8442f5d[m fix(craft): remove gray borders around decomposed nodes (HeroTron sub-elements)
+[33ma5ae11a[m fix(craft): prevent [object Object] in HeroTron text props
+[33m2b3ffd8[m fix(craft): remove gray borders around decomposed sub-nodes
+[33mfdf9e4c[m feat(craft): Tron decomposition into clickable sub-nodes
+[33m9819657[m feat(craft): TronFeatures cards as editable Craft.js nodes (FeatureCard)
+[33ma788dfd[m fix(craft): light mode for all Tron components + editor getNode guard
+[33med88712[m fix(craft): color presets show real gradients in accent circles
+[33md4b9d81[m refactor(craft): TronPricing cards as editable Craft.js nodes
+[33m7488011[m feat(craft): add 4 gradient color presets
+[33m451b692[m refactor(craft): TronTestimonials carousel full width, double row, directions
+[33m4e63d6d[m feat(viewport): spotlight color follows color preset
+[33ma5aff6a[m feat(craft): TronTestimonials auto carousel and TronPricing per-card animations
+[33m257d4df[m refactor(craft): TRON toolbox group and global cursor spotlight
+[33m7e06315[m fix(editor): preview animations dark canvas and scroll-trigger once
+[33m9a5fefe[m feat(craft): add 5 Tron components with cursor spotlight
+[33m45bc342[m refactor(craft): Header2/Hero2 -> HeaderTron/HeroTron, TronPortfolio image upload
+[33m7670567[m feat(craft): add Tron components and Tron preset
+[33mfe06b9b[m feat(Hero2): add spotlight intensity and show grid settings
+[33m8ebb410[m feat(craft): add Hero 2 block with cursor spotlight
+[33m04b90f7[m fix(canvas): hide Craft.js drop indicator and renderer pseudo-elements
+[33m1128de7[m style(canvas): remove diagonal dashed background from drop zone
+[33m615e5e5[m fix(canvas): restore canvas scroll, refine dashed-outline selector
+[33m4edecdc[m fix(canvas): remove dashed outlines on canvas
+[33m3d13873[m refactor(seo): move SEO settings from dashboard to admin panel
+[33m29fffeb[m feat(seo): SEO metadata from admin and dynamic meta
+[33m6580d03[m feat(editor): connect theme toggle to Settings and mini toolbar
+[33md727b15[m fix(editor): Settings panel dark inputs + mini toolbar class
+[33m39a152f[m fix(editor): remove dashed outlines; style: mini toolbar + dark inputs in Settings
+[33m1a9f857[m feat(editor): РѕС‚РґРµР»СЊРЅС‹Рµ СЃРѕСЃС‚РѕСЏРЅРёСЏ РєР°РЅРІС‹ РґР»СЏ desktop Рё mobile viewport
+[33m8c5ab7a[m feat(editor): secondary toolbar redesign with viewport pill, color presets, zoom
+[33mb7a7962[m fix(editor): mobile canvas containment and Header2 dropdown
+[33m92ce53a[m feat(editor): viewport mobile emulation and Header2 dynamic nav links
+[33m26e1747[m feat(craft): add Header 2 Dark Red v2 mobile-responsive header
+[33mfd7fd21[m refactor(editor): GSAP preview fromTo+inViewport, run only in preview mode
+[33m21bbcd7[m fix(next): transpile ESM packages to fix Unexpected token export in layout
+[33mc5b5b7e[m fix(preview): show backgrounds in preview mode
+[33m27e73f2[m fix(craft): useEditor enabled selector so data-animate renders in preview
+[33m26fcd5a[m chore(hero): add temporary debug log for data-animate in preview
+[33m22caaac[m fix(editor,craft): GSAP timing and animation settings in all components
+[33m4574909[m fix(craft): IconProps type for build - optional object member syntax
+[33m329b8f0[m feat(craft): replace Toolbox emoji icons with minimal SVG icons
+[33m243af5f[m fix(editor): preview animations + Replay button, narrow left panel
+[33m6e12460[m fix(editor): GSAP animations in preview mode
+[33m5346811[m fix(components): mobile-first responsive layout
+[33m09a46be[m refactor(editor): remove Layers panel, Toolbox takes full left sidebar
+[33m95fb443[m style(editor): replace bluish tints with neutral gray palette
+[33m442afe2[m fix(editor): remove dividers and scrollbars
+[33m2bdb692[m fix(editor): remove white stripes at canvas edges, round sidebar toggles
+[33mab32e2a[m fix(editor): UX fixes - dark mode, scroll, delete, layers, toolbox, mobile
+[33m12a874b[m fix(editor): save/load project from Supabase
+[33m23cbafb[m fix(editor): UX improvements - rename, clear, panels, animations
+[33m3b39f2e[m feat(editor): Add HtmlBlock + ZIP parser integration
+[33mc22d33e[m refactor(craft): unify all components to dark premium style (Hero reference)
+[33m48b9fbb[m feat(toolbox): Presets tab and Dark Launch preset
+[33m4f659d4[m feat(editor): inline edit buttons, delete via trash only, GSAP in preview
+[33maaf1b45[m feat(hero): inline editing for title, titleAccent, subtitle
+[33m56736fa[m feat(hero): rewrite Hero as Stripe/Linear-style landing block
+[33m760a656[m fix(editor): Craft.js setOptions expects updater function, not object
+[33m055ebc2[m feat(editor): preview mode disables editing, setProp throttle, duplicate node
+[33m8c231eb[m refactor(editor): Remove mandatory Container wrapper between ROOT and sections
+[33m3e83b21[m fix(editor): Fix drag-and-drop + add alignment grid
+[33mcebfacc[m feat(editor): Free drag-and-drop everywhere + 5 new components
+[33m9b64ab0[m feat(editor): Major editor overhaul — canvas mechanics, panels, navigation
+[33mc14a64a[m feat(editor): Light/dark theme toggle + free drag-and-drop for all components
+[33m6e6114b[m feat(editor): Full UI polish + crash fixes + keyboard shortcuts — Phase 2.5
+[33m9b54d20[m fix(editor): Bug fixes & UX polishing — Phase 2
+[33m6cab0b9[m feat(editor): Deep Editor Refinement — Phase 1 Foundation
+[33mcf5e5aa[m fix(craft): LayersPanel crash - undefined parent access
+[33m58d96da[m feat(craft): Craft.js Editor Extension - 6 components, Toolbox categories, Undo/Redo, LayersPanel, PreviewModal
+[33mf624732[m refactor(editor): migrate from Puck to Craft.js
+[33m63d302b[m feat(editor): extend Puck with components, layers panel, preview modal
+[33m5df1ab8[m refactor(editor): clean slate Puck editor - remove GrapesJS mix
+[33mbdd642c[m feat(editor): Puck custom fields, right panel overrides, undo/redo, theming
+[33m1d4459f[m feat(editor): Puck custom fields, right panel overrides, undo/redo, theming and i18n doc
+[33mb53f032[m feat(editor): Puck production ready - right panel removed, Pages tab, editor-puck removed
+[33m1f57239[m feat(editor): replace GrapesJS with Puck — full migration (Phases 1-4)
+[33m6b0400b[m feat(editor): upload ZIP images to Supabase Storage instead of base64
+[33m48e9841[m feat(components): F03 premium component library Phase 1 (9 components)
+[33m3b4d0da[m feat(editor): UX overhaul - TraitsPanel, LayersPanel, GradientBuilder
+[33m28a75b8[m feat(editor): add Traits Panel (P7) - context-aware attribute editor
+[33mfe0b2c3[m fix(editor): Windsurf improvements - styles, undo/redo, preview, i18n
+[33mca21bdf[m feat(editor): add Layers panel (component tree) to left sidebar
+[33mda8ddf2[m fix(editor): rebuild slider component and fix CSS conflicts causing misalignment and invisible elements
+[33mb576f5b[m fix(editor): stabilize sliders and swatches across themes
+[33m6de75c1[m style(editor): unify right panel styles across themes
+[33m26852f8[m fix(editor): widen style panel and improve background image upload UX
+[33mafa2a80[m fix(editor): background image upload uses project Supabase client
+[33m548fc94[m fix(editor): fix StyleManager bg upload client and init crash
+[33m30f5226[m feat(editor): add background image controls to StyleManager
+[33mc7b2e30[m Merge origin/main into main (resolve GrapeEditor.tsx)
+[33m1c59dfb[m fix(editor): enable canvas device scaling
+[33m6347238[m fix(editor): restore canvas device scaling behavior
+[33m1a00329[m fix(editor): device scale commands and toolbar gaps
+[33mb7216e5[m fix(editor): toolbar layout, language button size, device scale buttons
+[33m80dd937[m Merge origin/main into main (resolve toolbar conflicts)
+[33m717e986[m refactor(editor): redesign toolbar and project name editing
+[33m48303ef[m feat(editor): remove grid buttons and add editable project name
+[33me74d26a[m feat(editor): remove grid buttons, add editable project name
+[33mb645750[m feat(editor): add Page and Hide grid buttons
+[33mf970cd1[m feat(editor): canvas drop zones + grid toggle
+[33mc11c55b[m fix(editor): load Tailwind CSS correctly in GrapesJS canvas
+[33m396c02f[m fix(components): add React import to library components for sync script
+[33m5d8b640[m feat(components): implement F03 frontend components library
+[33m5ef1cdb[m fix(projects): fix version increment on save
+[33m05a45db[m feat(projects): implement multi-page support and metadata (F05)
+[33m687f304[m fix(editor): canvas full width, panels w-64, orange accents everywhere
+[33m48b93ce[m fix(editor): canvas width + properties panel contrast
+[33mc37793f[m feat(dashboard): complete Hebrew translations
+[33md2a0536[m fix(editor): remove RTL layout for Hebrew - same layout as English
+[33m896a787[m fix(landing): remove RTL layout for Hebrew - same layout as English
+[33m0fad461[m fix(ui): remove RTL layout and fix editor dark mode contrast
+[33m59c0575[m fix(ui): contrast fixes + remove fake AI chat
+[33m9cc60ee[m style(dashboard): gray/orange color scheme + i18n support
+[33maea3cd0[m feat(dashboard): modern UI, dark mode, multi-page save fix
+[33m754c914[m feat(dashboard): add Project Dashboard with full flow
+[33mc19e043[m feat(editor): implement One-Way Ejection architecture
+[33mbdbe65b[m fix(editor): load project data into GrapesJS canvas after Supabase load
+[33m53abada[m feat(editor): add project LOAD from Supabase on editor open
+[33mf323a80[m feat(editor): connect Save button to Supabase
+[33m56f6e84[m feat(projects): add contract support to supabase-sync
+[33mbd4cedb[m feat(admin): complete admin panel with user management
+[33m1b10f63[m fix(admin): update admin panel to use users table
+[33m84637b9[m fix(auth): migrate to users table and update admin panel auth
+[33mbe54168[m fix(components): extract only component-specific CSS, not entire page
+[33m1db4034[m fix(parser): correct script load order - head scripts before body content
+[33mf9b8d7e[m feat(parser): expand CDN maps with animation and interaction libraries
+[33m4be8fb5[m fix: remove duplicate grapesEditor variable declaration
+[33mc75d559[m fix: preserve all HTML elements during ZIP import
+[33mb8add31[m fix: eliminate JS duplication + add fonts/imports processing
+[33m2755c93[m fix: DOM parser for JS files + localStorage cleanup + CSS backgrounds
+[33m5136461[m fix: convert local JS to base64 and clear page tabs
+[33mb69831a[m feat: preserve JavaScript in templates with CDN conversion
+[33m3825b8e[m feat(parser): add multi-page template support with page tabs
+[33m3cff937[m fix: migrate from Parser V2 to SimpleParser V3
+[33m37248bd[m fix: clear localStorage before ZIP import
+[33m65b363e[m fix(editor): resolve SimpleParser type error in GrapeEditor
+[33m4c3dfdb[m fix(parser): add path replacement for assets in CSS and HTML
+[33m65497a1[m debug(parser): add extensive logging to zip-extractor for asset detection debugging
+[33mfb39428[m feat(parser): add Parser V2 core modules - Complete ZIP parser rewrite with 10 specialized modules
+[33m0c15693[m feat(editor): integrate Parser V2 with progress UI - Replace handleImport with parseZipProject, add 8-stage tracking with icons
+[33m09fe086[m cleanup: remove projects API routes (reverting to localStorage)
+[33m4fd31e0[m feat(supabase): add server-side client for API routes
+[33m063ef2c[m feat(api): add projects CRUD API routes with RLS protection
+[33mb893daf[m refactor(auth): use user_metadata cache + dual-write pattern for role updates
+[33m5ef970f[m perf(auth): reduce profile fetch timeout to 3 seconds
+[33m7b7d704[m fix(auth): add 5-second timeout to profile fetch to prevent infinite hang
+[33maa087d1[m feat(auth): fetch profile from database on SIGNED_IN instead of user_metadata
+[33m5acc407[m fix(auth-ui): refresh metadata on sign-in + close user menu - P1
+[33m5f8abc5[m fix(auth): Fix infinite loading in Google OAuth - add missing else block
+[33mcdeda4f[m fix(auth+ui): Force refresh user metadata on login + Fix mobile user menu
+[33m283f3f3[m fix(editor): Fix subscription redirects, mobile responsiveness, and i18n
+[33m1568db9[m feat(subscription): Update subscription page styling and plan pricing
+[33m9e3aee8[m feat(auth,subscription): Google OAuth flow + subscription plans - clean
+[33mf73eccb[m Revert "chore(repo): Cleanup assets and add subscription plans - bulk update"
+[33md67689f[m chore(repo): Cleanup assets and add subscription plans - bulk update
+[33mdb81082[m fix(auth): Enhance mobile confirmation handling and refine Google OAuth - Critical mobile bug fix
+[33m2216c96[m [fix](auth): add Google OAuth + mobile confirm fix - critical
+[33mbf36463[m [fix](ui): auth success icon + mobile responsiveness - high
+[33me7090a3[m [fix](auth-ui): remove debug output and green checkmark - quick UI
+[33ma37bc2e[m [fix](auth): remove debug text from signup success screen - production ready
+[33mfc01f39[m [debug](auth): comprehensive diagnostics + fix LoadingProvider blocking success screen
+[33m7c18db7[m [fix](auth): success screen now renders above loading overlay - critical bugfix
+[33m5ef49a2[m [debug](auth): add comprehensive diagnostic logging to signup flow
+[33m61b76c5[m [fix](auth): clear loading state after signup to show success screen - critical bugfix
+[33m08288e5[m [fix](auth): visual tweaks only - green checkmark and localized thank-you text
+[33mbfacd1f[m Revert "[fix](auth): tweak success visuals - low risk"
+[33m6018610[m [fix](auth): tweak success visuals - low risk
+[33m49198df[m Revert "[fix](auth): finalize auth ui - high priority - signup success localized; callback green check; clear messaging no spinner"
+[33m2f743c9[m [fix](auth): finalize auth ui - high priority - signup success localized; callback green check; clear messaging no spinner
+[33me79cb82[m fix(auth): finalize auth ui flow
+[33me1d14f7[m fix(auth): Complete signup and email confirmation flow fixes
+[33mf7df687[m fix(auth): Complete auth flow improvements - signup, confirmation, and button text
+[33m7f65a97[m feat(auth): Show success message after email confirmation sent
+[33m97fb2e3[m feat(auth): Add email confirmation callback page
+[33m5be99f4[m fix: Add missing router.push in editor button handler
+[33mac72d68[m fix(auth): Fix editor access for role 5 + signup hanging issues
+[33mbbdfbaf[m refactor(auth): Use user metadata for profile - remove database queries
+[33m82bf50f[m feat(auth): Implement complete 5-tier role-based access system
+[33m63b89c8[m fix(auth): Fix role-based editor access - users with role >= 1 can now access editor
+[33m8874769[m fix(auth): Implement aggressive profile caching strategy
+[33m867a377[m perf(auth): Speed up auth with localStorage caching and fix loading timing
+[33m258c405[m fix(auth): Complete rewrite - fixed infinite loadProfile() hang with timeout protection
+[33m65d5a1d[m refactor(auth): remove createProfile, use database trigger - simplified auth flow
+[33m446dc7b[m refactor(auth): radical simplification - remove all timeouts, reduce 160 lines
+[33m70c7c32[m fix(auth): increase timeouts to 10s for loadProfile/createProfile, 12s defensive
+[33m5180bd7[m feat(auth): optimize loading screen - auth happens during load
+[33m52a7fef[m fix(auth): add 5s timeout to loadProfile/createProfile + fallback default profile
+[33mdb222d8[m fix(auth): remove artificial timeouts from sign-in/sign-up
+[33m0ba775d[m fix(auth): add defensive 3s timeout to clear loading state on auth pages
+[33mc25f600[m fix(auth): remove refreshAuth timeout on init, implement Supabase singleton
+[33mb54e7f4[m fix(auth): Consolidate auth provider to stop timeout races - critical
+[33mdd5bbc8[m fix(auth): Resolve authentication race condition bug
+[33m225e048[m fix(auth): clear auth timeout on errors - hotfix
+[33ma8318dc[m fix(auth): improve error handling and timeout cleanup in auth functions
+[33m8a2a2a9[m fix(auth): resolve cookieConsent undefined error in useAuth hook
+[33mf8ae211[m fix(auth): resolve infinite loading race conditions in useAuth hook
+[33m7d41f57[m fix(auth): Resolve authentication errors and multiple client instances
+[33m4a221e5[m feat(auth): Fix authentication loading bugs and mobile responsiveness
+[33mdeea64e[m fix: Emergency infinite loading loop fix - disabled problematic auth initialization
+[33mf9811e5[m fix: Emergency fix for infinite loading loop - simplified auth logic
+[33m97f9c3d[m fix(auth): Complete authentication system overhaul with Google OAuth
+[33m1e54896[m feat(auth): Complete authentication system with cookie consent & UI improvements
+[33m1cee13e[m style(chat): Major sizing and positioning improvements - enhanced UX
+[33m25efd1d[m style(chat): Interface sizing refinements - improved readability and comfort
+[33m05e5f7b[m polish(chat): Final UX refinements - borderless interface with navigation
+[33m6506a94[m feat(chat): Claude-style chat interface redesign - professional UX upgrade
+[33me95412d[m feat(theme): complete dark theme with specific color palette - #262626 and #525151
+[33mdfe4ba4[m feat(theme): complete dark theme integration - loading screen, chat page, and GrapesJS editor
+[33mfbe5c27[m fix: correct keyword highlighting in landing page description - fixed duplicate words and color consistency
+[33m29aaffe[m feat(ui): complete frontend UI/UX fixes - loading screen, custom icons, editor themes, chat page, auth improvements
+[33m4ef3708[m feat: complete authentication system and theme overhaul - added user avatars, profile dropdown, theme improvements
+[33m8863806[m feat(ui): enhance landing page authentication and navigation flow
+[33m043480c[m Merge branch 'main' of https://github.com/ArielGrook/I_AM_RUNNING_-
+[33m022427c[m feat(auth): implement complete authentication system with role-based access - Module 1.1
+[33m3d6f429[m fix(storage): reliable save/load fast-path first - urgent
+[33m896a4cd[m fix(slider): immediate onInput updates - urgent
+[33m9b6a2cb[m fix(editor): restore slider updates and reliable restore - urgent
+[33m37e1b0f[m feat(storage): compress and chunk saves for any size - urgent
+[33m16c1521[m fix(editor): sync manual save status with store - n/a
+[33mcb8a14b[m feat: real-time slider updates + manual save button
+[33m7cf7fe8[m merge: Resolve conflicts - keep clean minimal fixes
+[33m24dc5c6[m fix(editor): Slider smoothness + UndoManager init + Auto-save - Clean minimal fixes
+[33mcb96741[m fix(editor): Critical performance regressions - drag lag, ZIP import hang, auto-save
+[33m1cb7bf2[m feat(editor): Fix slider performance + Undo/Redo init + Auto-save system - Tasks 1.2 & 1.3 complete
+[33m6da51f2[m feat(editor): Smooth sliders + Undo/Redo toolbar relocation - Task 1.2 complete
+[33ma47091f[m feat(editor): Fix slider colors and expand right panel - Task 1.1 complete
+[33m88b8082[m fix: Add missing slider component to complete f4f6aa5 - ETALON BUILD
+[33mf4f6aa5[m feat(editor): Clean right panel UI and add advanced gradient builder
+[33mb437884[m fix(editor): UX improvements - contrast, drag, style manager, undo/redo
+[33mc32866a[m fix(editor): UX improvements - undo/redo, image resize, UI visibility, translations, chat styling
+[33m3825b0b[m[33m ([m[1;32mfix-zip-issues[m[33m)[m Fix: restore reliable drag/move for components
+[33m2b7013f[m Editor polish: smooth drag, working resize handles
+[33mf098c8e[m Editor polish: responsive preview, devices, smooth drag/resize
+[33m21167df[m Adopt improved ZIP version with multilingual support and black backgrounds
+[33ma8fff44[m Export: Standalone landing page ZIP package for editor import
+[33mc2db1eb[m Hero fix: Restore bright orange, fix translation display
+[33m8e6ce59[m Hero fixes: Remove clutter, soften colors, correct text hierarchy
+[33mf00f944[m Complete website redesign: 6 content blocks, new Hero, full translations en/ru/he
+[33mf893044[m Phase 2 Core: Typewriter effects, animated counters, assembly, parallax scaffolds
+[33mcd698b3[m Phase 1: Core animations foundation with performance optimization
+[33mf7bf6d0[m Emergency Fix: Recreate corrupted translation JSON files
+[33mfb9c830[m Fix: Resolve JSON parsing errors in translation files
+[33m70cf42a[m Design Corrections: Orange-red palette + animations + localization fix
+[33md11cc4c[m Phase A: Landing foundation with running theme and user profile schema
+[33m26dfb1b[m Fix: FINAL solution for JSON serialization - found real root cause
+[33mf330345[m Fix: Complete solution for component JSON serialization issue
+[33m7f3efdd[m Fix: Components loading as JSON instead of HTML on canvas
+[33m6616098[m Fix: Resolve HTML attribute corruption root cause in sanitization
+[33m848501d[m Fix: Resolve HTML attribute corruption in SVG components
+[33mdf3c874[m Fix: Resolve HTML extraction bug in component saving
+[33mb4067a4[m Fix: Resolve CSS rendering issue in component system
+[33me4693fa[m Phase 2: Component saving cleanup and UX improvements
+[33m5eaa7ab[m Phase 1: Structured component saving with StyleSelector, TagSelector, and smart navigation auto-detection
+[33ma5479b1[m Rewrite ZIP import to client-side processing - fix FileReader and localStorage issues
+[33mcfb0211[m Fix localStorage QuotaExceededError for large ZIP imports
+[33ma00d178[m[33m ([m[1;33mtag: [m[1;33mv1.0-zip-working[m[33m)[m 🎉 MAJOR BREAKTHROUGH: ZIP import working! Extracting 3 components successfully
+[33m8682256[m Add detailed extractComponent() error logging and element inspection
+[33mb4d5b3c[m Capture parser logs in API response - make server-side logs visible in browser console
+[33m10f74ae[m Add detailed HTML structure analysis logging to identify component extraction issues
+[33m14a74eb[m Add detailed component extraction logging - track why componentsCount = 0
+[33m4ac8a37[m Add comprehensive logging to ZIP import workflow - track import from UI to API to parser
+[33ma56076d[m Fix HTML content extraction in ZIP import - use element.toString() for full HTML structure
+[33m06303c3[m Fix HTML content loss in ZIP import - fix node-html-parser outerHTML extraction and add debugging
+[33mb8908fa[m Fix ZIP import CSS - convert CSS classes to inline styles (matching working legacy approach)
+[33m31e8dbd[m Fix debug page to show imported site properly - clear default blocks, load HTML, fix images
+[33mdf03d5d[m Fix CSS parsing issue - use inline styles instead of canvas.styles array for CSS strings
+[33me37d7be[m Fix middleware to allow debug routes without locale prefix
+[33m43f104e[m Fix debug page block content - add proper HTML for Simple Test
+[33m21d3463[m Fix ZipParseError import and verify debug page
+[33mefc5f58[m Fix missing Russian i18n translations and add GrapesJS debug test
+[33m20cc578[m Fix: Canvas CSS loading, add real ZIP components, restore clear button
+[33me21f5c5[m Fix: Identify and resolve GrapesJS init config issue - minimal config with debugging
+[33m8eba24b[m Fix: Register blocks during init config instead of after (matching legacy pattern)
+[33m8e21c4b[m Fix: Move block registration after canvas is fully ready
+[33m7ef665d[m Fix: Use canvas:frame:loaded event instead of load event
+[33mafa519a[m Fix: Canvas initialization timing - wrap load callback in setTimeout
+[33mde47688[m Fix: GrapesJS black canvas - add HTML sanitization and legacy config
