@@ -41,8 +41,8 @@ export function HeroSection() {
   }, []);
 
   const rows = useMemo(() => {
-    const base = PLATFORM_TERMS.join(' • ');
-    return Array.from({ length: 8 }, (_, i) => `${base} • ${base} • ${base} • row-${i}`);
+    const base = PLATFORM_TERMS.join('  ·  ');
+    return Array.from({ length: 10 }, (_, i) => `${base}  ·  ${base}  ·  ${base}`);
   }, []);
 
   const handleEditorClick = (e: React.MouseEvent) => {
@@ -127,7 +127,7 @@ export function HeroSection() {
         id="hero"
         className="relative min-h-screen overflow-hidden bg-[#050505] text-white"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,107,53,0.22),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(255,140,70,0.18),transparent_30%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,107,53,0.28),transparent_40%),radial-gradient(ellipse_at_bottom_right,rgba(255,140,70,0.15),transparent_35%)]" />
 
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute inset-0 flex flex-col justify-center gap-5 sm:gap-7">
@@ -138,7 +138,7 @@ export function HeroSection() {
               >
                 <div
                   className={[
-                    'inline-block text-[32px] sm:text-[52px] lg:text-[72px] font-black uppercase tracking-[0.14em] text-white/[0.065]',
+                    'inline-block text-[11px] sm:text-[13px] lg:text-[15px] font-medium uppercase tracking-[0.35em] text-white/[0.04]',
                     index % 2 === 0 ? 'animate-iam-marquee-left' : 'animate-iam-marquee-right',
                   ].join(' ')}
                 >
@@ -152,13 +152,33 @@ export function HeroSection() {
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 sm:px-6">
           <div className="flex items-center justify-between py-5 sm:py-7">
             <div>
-              <div className="text-sm font-black tracking-[0.25em] uppercase">I AM RUNNING</div>
+              <div className="text-sm font-black tracking-[0.25em] uppercase text-white">I AM RUNNING</div>
               <div className="text-xs text-white/60">full-cycle AI development platform</div>
             </div>
 
-            <div className="hidden md:flex items-center gap-3">
-              <LanguageSwitcher />
-              <ThemeToggle />
+            <div className="flex items-center gap-3">
+              <div className="hidden md:flex items-center gap-3">
+                <LanguageSwitcher />
+                <ThemeToggle />
+              </div>
+              {isAuthenticated ? (
+                <UserAvatar />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/${locale}/auth/login`}
+                    className="hidden sm:block rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white/80 hover:border-white/30 hover:text-white transition"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href={`/${locale}/auth/signup`}
+                    className="rounded-full bg-[#FF6B35] px-4 py-2 text-sm font-black text-white hover:bg-[#ff7a4b] transition"
+                  >
+                    Start Running
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
 
@@ -295,29 +315,18 @@ export function HeroSection() {
 
         <style jsx global>{`
           @keyframes iam-marquee-left {
-            0% {
-              transform: translate3d(0, 0, 0);
-            }
-            100% {
-              transform: translate3d(-18%, 0, 0);
-            }
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-50%, 0, 0); }
           }
-
           @keyframes iam-marquee-right {
-            0% {
-              transform: translate3d(-18%, 0, 0);
-            }
-            100% {
-              transform: translate3d(0, 0, 0);
-            }
+            0% { transform: translate3d(-50%, 0, 0); }
+            100% { transform: translate3d(0, 0, 0); }
           }
-
           .animate-iam-marquee-left {
-            animation: iam-marquee-left 32s linear infinite;
+            animation: iam-marquee-left 90s linear infinite;
           }
-
           .animate-iam-marquee-right {
-            animation: iam-marquee-right 32s linear infinite;
+            animation: iam-marquee-right 90s linear infinite;
           }
         `}</style>
       </header>
