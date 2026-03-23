@@ -1,95 +1,98 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useTranslations } from 'next-intl';
+
+const pillars = [
+  {
+    title: 'Speed',
+    value: '15 min',
+    text: 'Start from your phone and get to a live first version fast.',
+  },
+  {
+    title: 'Quality',
+    value: 'Curated',
+    text: 'Structured flows, polished components and a cleaner launch process.',
+  },
+  {
+    title: 'Price',
+    value: 'Market-friendly',
+    text: 'Strong value compared to typical digital product and agency pricing.',
+  },
+];
+
+const journey = [
+  'Register',
+  'Choose a path',
+  'Build your first version',
+  'Launch on our platform',
+  'Enter your fresh website',
+];
 
 export function SpeedSection() {
-  const t = useTranslations('Landing.speed');
-
-  const steps = [
-    { icon: '⚡', label: t('concept') },
-    { icon: '🎨', label: t('design') },
-    { icon: '🚀', label: t('launch') },
-  ];
-
   return (
-    <section 
-      className="py-16 sm:py-24 bg-white dark:bg-black"
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+    <section id="speed" className="bg-white py-16 text-black dark:bg-black dark:text-white sm:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-12"
+          className="mx-auto mb-12 max-w-3xl text-center"
         >
-          <span className="inline-block text-sm font-semibold text-[#FF6B35] uppercase tracking-widest mb-4">
-            {t('eyebrow')}
-          </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 dark:text-white mb-6">
-            {t('title')}
+          <div className="mb-4 inline-flex rounded-full border border-black/10 bg-black/[0.03] px-4 py-2 text-xs uppercase tracking-[0.22em] text-black/55 dark:border-white/10 dark:bg-white/5 dark:text-white/55">
+            Speed + quality + price
+          </div>
+          <h2 className="text-3xl font-black sm:text-5xl">
+            Fast. High-quality. Fairly priced.
           </h2>
-          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            {t('content')}
+          <p className="mt-4 text-black/65 dark:text-white/70 sm:text-lg">
+            We guide clients from the moment of registration to the first login inside a fresh live
+            website.
           </p>
         </motion.div>
 
-        {/* Speed Visual */}
+        <div className="grid gap-6 md:grid-cols-3">
+          {pillars.map((pillar, index) => (
+            <motion.div
+              key={pillar.title}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.08 }}
+              className="rounded-[28px] border border-black/10 bg-[#faf7f4] p-6 dark:border-white/10 dark:bg-[#111]"
+            >
+              <div className="text-sm uppercase tracking-[0.22em] text-black/45 dark:text-white/45">
+                {pillar.title}
+              </div>
+              <div className="mt-3 text-3xl font-black text-[#FF6B35]">{pillar.value}</div>
+              <p className="mt-4 text-black/65 dark:text-white/70">{pillar.text}</p>
+            </motion.div>
+          ))}
+        </div>
+
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-gray-50 dark:bg-[#262626] rounded-3xl p-6 sm:p-10"
+          className="mt-10 rounded-[30px] border border-black/10 bg-gradient-to-br from-[#111] to-[#1b1b1b] p-6 text-white dark:border-white/10"
         >
-          {/* Steps Timeline */}
-          <div className="flex justify-center items-center gap-4 md:gap-8 flex-wrap mb-10">
-            {steps.map((step, i) => (
-              <div key={step.label} className="flex items-center gap-4 md:gap-8">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  whileInView={{ scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15, type: 'spring' }}
-                  className="flex flex-col items-center"
-                >
-                  <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF4500] flex items-center justify-center text-2xl sm:text-3xl shadow-lg shadow-orange-500/30">
-                    {step.icon}
-                  </div>
-                  <span className="mt-2 text-sm sm:text-base font-bold text-gray-900 dark:text-white">{step.label}</span>
-                </motion.div>
-                {i < steps.length - 1 && (
-                  <span className="text-3xl text-[#FF6B35] font-bold hidden md:block">→</span>
+          <div className="mb-6 text-xl font-black sm:text-2xl">
+            From signup to first login — without chaos
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {journey.map((step, index) => (
+              <div key={step} className="flex items-center gap-3">
+                <div className="rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm sm:text-base">
+                  <span className="mr-2 text-[#FFB08A]">{index + 1}.</span>
+                  {step}
+                </div>
+                {index < journey.length - 1 && (
+                  <div className="text-[#FF6B35]">→</div>
                 )}
               </div>
             ))}
           </div>
-
-          {/* Time Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="flex justify-center"
-          >
-            <div className="inline-flex items-center gap-4 bg-white dark:bg-[#262626] px-6 py-4 sm:px-8 rounded-2xl shadow-xl">
-              <span className="text-3xl sm:text-4xl">⏱️</span>
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-[#FF6B35]">{t('time')}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">{t('timeLabel')}</div>
-              </div>
-            </div>
-          </motion.div>
         </motion.div>
-
-        {/* Quote */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="text-center text-lg sm:text-2xl font-bold text-gray-900 dark:text-white mt-10"
-        >
-          "{t('quote')}"
-        </motion.p>
       </div>
     </section>
   );

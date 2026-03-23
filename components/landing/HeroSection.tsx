@@ -3,205 +3,324 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useTranslations, useLocale } from 'next-intl';
+import { useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
-import { ParticleField } from '@/components/motion/Particles';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { useEffect, useMemo, useState } from 'react';
+
+const PLATFORM_TERMS = [
+  'websites',
+  'online stores',
+  'business software',
+  'freelancers',
+  'deployment',
+  'hosting',
+  'security',
+  'analytics',
+  'statistics',
+  'SEO optimization',
+  'back-end',
+  'growth',
+];
 
 export function HeroSection() {
-  const t = useTranslations('Landing.hero');
-  const tPricing = useTranslations('Landing.pricing');
   const locale = useLocale();
   const { isAuthenticated, canAccessEditor, role } = useAuth();
   const router = useRouter();
+  const [showHeader, setShowHeader] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowHeader(window.scrollY > 110);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const rows = useMemo(() => {
+    const base = PLATFORM_TERMS.join(' • ');
+    return Array.from({ length: 8 }, (_, i) => `${base} • ${base} • ${base} • row-${i}`);
+  }, []);
 
   const handleEditorClick = (e: React.MouseEvent) => {
-    console.log('🖱️ Editor button clicked');
-    console.log('🔐 Auth state:', { 
-      isAuthenticated, 
-      canAccessEditor, 
-      role 
-    });
-    
     if (!isAuthenticated) {
-      console.log('🚫 Not authenticated, redirecting to login');
       e.preventDefault();
       router.push(`/${locale}/auth/login?redirect=/${locale}/dashboard`);
       return;
     }
-    
+
     if (!canAccessEditor) {
-      console.log(`🚫 No editor access (role: ${role}), redirecting to subscription`);
       e.preventDefault();
       router.push(`/${locale}/subscription?reason=editor_access&current_role=${role}`);
       return;
     }
-    
-    console.log('✅ Editor access OK, navigating to dashboard...');
+
     router.push(`/${locale}/dashboard`);
   };
 
   return (
-    <header 
-      className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-[#FF4500] via-[#FF6B35] to-[#FF4500] text-white flex flex-col"
-    >
-      {/* Animated background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <ParticleField />
-        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.3),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.2),transparent_40%)]" />
-      </div>
+    <>
+      <motion.nav
+        initial={false}
+        animate={{
+          opacity: showHeader ? 1 : 0,
+          y: showHeader ? 0 : -18,
+          pointerEvents: showHeader ? 'auto' : 'none',
+        }}
+        transition={{ duration: 0.28 }}
+        className="fixed top-4 left-1/2 z-50 w-[calc(100%-1rem)] max-w-7xl -translate-x-1/2"
+      >
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-white shadow-2xl backdrop-blur-xl">
+          <a href="#hero" className="shrink-0">
+            <div className="text-sm font-black tracking-[0.22em] uppercase">I AM RUNNING</div>
+            <div className="text-[10px] text-white/60">full-cycle AI development platform</div>
+          </a>
 
-      {/* Header Nav */}
-      <nav className="relative z-20 w-full px-4 sm:px-6 py-4 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center sm:text-left"
-        >
-          <div className="text-xl font-black tracking-wide">I AM RUNNING</div>
-          <div className="text-xs text-white/80">Next generation development platform</div>
-        </motion.div>
+          <div className="hidden lg:flex items-center gap-2 text-sm">
+            <a href="#doors" className="rounded-full px-3 py-2 text-white/75 hover:bg-white/10 hover:text-white transition">
+              Doors
+            </a>
+            <a href="#speed" className="rounded-full px-3 py-2 text-white/75 hover:bg-white/10 hover:text-white transition">
+              Speed
+            </a>
+            <a href="#hosting" className="rounded-full px-3 py-2 text-white/75 hover:bg-white/10 hover:text-white transition">
+              Hosting
+            </a>
+            <a href="#savings" className="rounded-full px-3 py-2 text-white/75 hover:bg-white/10 hover:text-white transition">
+              Savings
+            </a>
+            <a href="#final-cta" className="rounded-full px-3 py-2 text-white/75 hover:bg-white/10 hover:text-white transition">
+              Start Running
+            </a>
+          </div>
 
-        <div className="flex items-center gap-3 flex-wrap justify-center">
-          <LanguageSwitcher />
-          <ThemeToggle />
-          {isAuthenticated ? (
-            <UserAvatar />
-          ) : (
-            <>
-              <Button
-                asChild
-                variant="ghost"
-                className="text-white hover:bg-white/20 font-semibold px-3 py-2 text-sm sm:px-4 sm:py-2 sm:text-base"
-              >
-                <Link href="/auth/login">
-                  {t('login')}
-                </Link>
-              </Button>
-              <Button
-                asChild
-                className="bg-white/20 backdrop-blur-sm text-white border border-white/30 hover:bg-white/30 font-semibold rounded-full px-3 py-2 text-sm sm:px-4 sm:py-2 sm:text-base"
-              >
-                <Link href="/auth/signup">
-                  {t('signUp')}
-                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
-                </Link>
-              </Button>
-            </>
-          )}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher />
+            <ThemeToggle />
+            {isAuthenticated ? (
+              <UserAvatar />
+            ) : (
+              <>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="hidden sm:inline-flex text-white hover:bg-white/10"
+                >
+                  <Link href={`/${locale}/auth/login`}>Log in</Link>
+                </Button>
+                <Button
+                  asChild
+                  className="bg-[#FF6B35] text-white hover:bg-[#ff7a4b] rounded-full"
+                >
+                  <Link href={`/${locale}/auth/signup`}>Start Running</Link>
+                </Button>
+              </>
+            )}
+          </div>
         </div>
-      </nav>
+      </motion.nav>
 
-      {/* Hero Content */}
-      <div className="relative z-10 flex-1 flex items-center justify-center w-full px-4 sm:px-6">
-        <div className="w-full max-w-5xl mx-auto text-center space-y-8">
-          {/* Intro text */}
-          <motion.p
-            className="text-base sm:text-lg md:text-xl text-white/90 font-normal max-w-3xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            {t('intro')}
-          </motion.p>
+      <header
+        id="hero"
+        className="relative min-h-screen overflow-hidden bg-[#050505] text-white"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,107,53,0.22),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(255,140,70,0.18),transparent_30%)]" />
 
-          {/* Main headline */}
-          <motion.h1
-            className="text-2xl sm:text-4xl md:text-5xl lg:text-7xl font-black leading-tight"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4, type: 'spring', stiffness: 100 }}
-          >
-            {t('headline')} <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)]">{t('headlineHighlight')}</span>
-          </motion.h1>
-
-          {/* Subheadline with highlighted keywords */}
-          <motion.p
-            className="text-base sm:text-lg md:text-2xl text-white/95 max-w-4xl mx-auto leading-relaxed"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            {t('subheadline')}{' '}
-            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-xl sm:text-2xl">{t('quality')}</span>{' '}
-            {t('subheadlineMid')}{' '}
-            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-xl sm:text-2xl">{t('speed')}</span>{' '}
-            {t('subheadlineMid2')}{' '}
-            <span className="text-[#FFA500] drop-shadow-[0_0_20px_rgba(255,165,0,0.5)] font-black text-xl sm:text-2xl">{t('price')}</span>
-            {t('subheadlineEnd')}
-          </motion.p>
-
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="pt-6 flex flex-col sm:flex-row gap-4 justify-center items-center"
-          >
-            {/* Interactive button - for everyone */}
-            <Button
-              asChild
-              size="lg"
-              className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-white text-[#FF4500] hover:bg-white/90 shadow-lg hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all duration-300 rounded-full sm:min-w-[200px]"
-            >
-              <Link href={`/${locale}/interactive`}>
-                {t('tryInteractive')}
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Link>
-            </Button>
-
-            {/* Editor button - only for role >= 2 */}
-            {canAccessEditor && (
-              <Button
-                onClick={handleEditorClick}
-                size="lg"
-                className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full sm:min-w-[200px]"
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 flex flex-col justify-center gap-5 sm:gap-7">
+            {rows.map((row, index) => (
+              <div
+                key={index}
+                className="relative left-[-10%] w-[120%] overflow-hidden whitespace-nowrap"
               >
-                {t('enterEditor')}
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
-            )}
-
-            {/* Upgrade CTA for role 1 who can't access editor */}
-            {isAuthenticated && !canAccessEditor && (
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold border-2 border-[#ffa500] text-[#ffa500] hover:bg-[#ffa500] hover:text-white shadow-lg transition-all duration-300 rounded-full sm:min-w-[200px]"
-              >
-                <Link href={`/${locale}/subscription?reason=editor_access&current_role=1`}>
-                  {tPricing('upgradePlan')}
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Link>
-              </Button>
-            )}
-
-            {/* Sign up CTA for guests */}
-            {!isAuthenticated && (
-              <Button
-                asChild
-                size="lg"
-                className="w-full sm:w-auto px-6 py-4 text-base sm:px-8 sm:py-6 sm:text-lg font-bold bg-[#ffa500] text-white hover:bg-[#8f4701] shadow-lg hover:shadow-[0_0_30px_rgba(143,71,1,0.5)] transition-all duration-300 rounded-full sm:min-w-[200px]"
-              >
-                <Link href="/auth/signup">
-                  Get Started Free
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Link>
-              </Button>
-            )}
-          </motion.div>
+                <div
+                  className={[
+                    'inline-block text-[32px] sm:text-[52px] lg:text-[72px] font-black uppercase tracking-[0.14em] text-white/[0.065]',
+                    index % 2 === 0 ? 'animate-iam-marquee-left' : 'animate-iam-marquee-right',
+                  ].join(' ')}
+                >
+                  {row}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Bottom fade to white/black */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white dark:from-black to-transparent pointer-events-none" />
-    </header>
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 sm:px-6">
+          <div className="flex items-center justify-between py-5 sm:py-7">
+            <div>
+              <div className="text-sm font-black tracking-[0.25em] uppercase">I AM RUNNING</div>
+              <div className="text-xs text-white/60">full-cycle AI development platform</div>
+            </div>
+
+            <div className="hidden md:flex items-center gap-3">
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
+          </div>
+
+          <div className="flex flex-1 items-center justify-center py-12">
+            <div className="w-full max-w-5xl text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45 }}
+                className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs sm:text-sm uppercase tracking-[0.22em] text-white/70 backdrop-blur-sm"
+              >
+                Platform of a new generation for building, launching and scaling digital products
+              </motion.div>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.55 }}
+                className="mx-auto mt-6 max-w-5xl text-4xl font-black leading-[0.95] sm:text-6xl lg:text-8xl"
+              >
+                I AM RUNNING —{' '}
+                <span className="bg-gradient-to-r from-[#FFB08A] via-[#FF6B35] to-[#FFA86C] bg-clip-text text-transparent">
+                  full-cycle AI development platform
+                </span>
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.55 }}
+                className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-white/80 sm:text-xl"
+              >
+                Build your dream website from your phone in 15 minutes — whether it’s a landing
+                page or an online store.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.55 }}
+                className="mx-auto mt-6 max-w-4xl rounded-3xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-white/80 backdrop-blur-md sm:text-base"
+              >
+                Starting from <span className="font-black text-white">$20/month</span> — with the{' '}
+                <span className="font-black text-[#FFB08A]">first month free</span> — you get
+                hosting, deployment, free SSL and regular backups on our platform.
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.55 }}
+                className="mt-8 flex flex-wrap items-center justify-center gap-3"
+              >
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75">
+                  websites
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75">
+                  business software
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75">
+                  deployment
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75">
+                  hosting
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75">
+                  security
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75">
+                  analytics
+                </span>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.55 }}
+                className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+              >
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full rounded-full bg-white px-8 py-6 text-base font-black text-black hover:bg-white/90 sm:w-auto"
+                >
+                  <Link href={`/${locale}/interactive`}>
+                    Run Interactive
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+
+                {canAccessEditor && (
+                  <Button
+                    onClick={handleEditorClick}
+                    size="lg"
+                    className="w-full rounded-full bg-[#FF6B35] px-8 py-6 text-base font-black text-white hover:bg-[#ff7a4b] sm:w-auto"
+                  >
+                    Run Editor
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                )}
+
+                {isAuthenticated && !canAccessEditor && (
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="w-full rounded-full border-white/20 bg-white/5 px-8 py-6 text-base font-black text-white hover:bg-white/10 sm:w-auto"
+                  >
+                    <Link href={`/${locale}/subscription?reason=editor_access&current_role=${role}`}>
+                      Unlock Editor
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                  </Button>
+                )}
+
+                {!isAuthenticated && (
+                  <Button
+                    asChild
+                    size="lg"
+                    className="w-full rounded-full bg-[#FF6B35] px-8 py-6 text-base font-black text-white hover:bg-[#ff7a4b] sm:w-auto"
+                  >
+                    <Link href={`/${locale}/auth/signup`}>
+                      Start Running
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                  </Button>
+                )}
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black to-transparent" />
+
+        <style jsx global>{`
+          @keyframes iam-marquee-left {
+            0% {
+              transform: translate3d(0, 0, 0);
+            }
+            100% {
+              transform: translate3d(-18%, 0, 0);
+            }
+          }
+
+          @keyframes iam-marquee-right {
+            0% {
+              transform: translate3d(-18%, 0, 0);
+            }
+            100% {
+              transform: translate3d(0, 0, 0);
+            }
+          }
+
+          .animate-iam-marquee-left {
+            animation: iam-marquee-left 32s linear infinite;
+          }
+
+          .animate-iam-marquee-right {
+            animation: iam-marquee-right 32s linear infinite;
+          }
+        `}</style>
+      </header>
+    </>
   );
 }
-
-

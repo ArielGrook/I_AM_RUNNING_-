@@ -1,13 +1,12 @@
 'use client';
 
 import { HeroSection } from '@/components/landing/HeroSection';
-import { OriginStory } from '@/components/landing/OriginStory';
-import { TechnologySection } from '@/components/landing/TechnologySection';
 import { SpeedSection } from '@/components/landing/SpeedSection';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { ServicesSection } from '@/components/landing/ServicesSection';
-import { ShowcaseSection } from '@/components/landing/ShowcaseSection';
 import { Footer } from '@/components/landing/Footer';
+import { ThreeDoorsSection } from '@/components/landing/ThreeDoorsSection';
+import { FinalCtaSection } from '@/components/landing/FinalCtaSection';
 import ClientLanding from '@/app/[locale]/client-home/page';
 
 // If this is a client instance (CLIENT_SLUG set), show client onboarding instead
@@ -17,14 +16,13 @@ export default function LandingPage() {
   if (IS_CLIENT_INSTANCE) return <ClientLanding />;
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-black">
       <HeroSection />
-      <OriginStory />
-      <TechnologySection />
+      <ThreeDoorsSection />
       <SpeedSection />
-      <PricingSection />
       <ServicesSection />
-      <ShowcaseSection />
+      <PricingSection />
+      <FinalCtaSection />
       <Footer />
     </main>
   );
