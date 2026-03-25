@@ -56,9 +56,12 @@ function timestamp(): string {
 /**
  * Загрузить все .md файлы из context-core/ и собрать system prompt
  */
-async function loadContextCore(): Promise<string> {
+async function loadContextCore(clientSlug?: string): Promise<string> {
   try {
-    const files = await readdir(CONTEXT_CORE_DIR);
+    const dir = clientSlug
+      ? `/var/www/iam-clients/${clientSlug}/context-core`
+      : CONTEXT_CORE_DIR;
+    const files = await readdir(dir);
     const mdFiles = files.filter(f => f.endsWith('.md')).sort();
 
     if (mdFiles.length === 0) {
@@ -67,7 +70,7 @@ async function loadContextCore(): Promise<string> {
 
     const parts: string[] = [];
     for (const file of mdFiles) {
-      const content = await readFile(join(CONTEXT_CORE_DIR, file), 'utf-8');
+      const content = await readFile(join(dir, file), 'utf-8');
       parts.push(`# --- ${file} ---\n${content}`);
     }
 
@@ -175,8 +178,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<DevAgentR
 
     // ── LOAD CONTEXT CORE ──
     log.push({ time: timestamp(), type: 'status', message: 'Loading context-core...' });
-    const systemPrompt = await loadContextCore();
-    log.push({ time: timestamp(), type: 'status', message: `Context loaded (${systemPrompt.length} chars)` });
+    const clientSlug = request.headers.get('x-client-slug') || undefined;
+    const systemPrompt = await loadContextCore(clientSlug);
+    log.push({ time: timestamp(), type: 'status', message: `Context loaded (${systemPrompt.length} chars)${clientSlug ? ' [client: ' + clientSlug + ']' : ''}` });
 
     // ── INIT PROVIDER ──
     log.push({ time: timestamp(), type: 'status', message: `Using ${providerName} / ${model}` });
