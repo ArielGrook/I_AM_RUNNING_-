@@ -304,7 +304,75 @@ MCP access не привязан к UI Dev Console. Он использует **
 
 ---
 
-## 12. ОТКРЫТЫЕ ВОПРОСЫ ДЛЯ ДОАУДИТА
+## 12. AI NATIVE BUSINESS SOFTWARE — MULTI-TENANCY ARCHITECTURE (Option A, chosen 25.03.2026)
+
+### Схема
+```
+gooner.lego-base.online  →  Nginx: add_header X-Client-Slug "gooner"  →  port 3000 (shared PM2)
+client2.lego-base.online →  Nginx: add_header X-Client-Slug "client2" →  port 3000 (shared PM2)
+iamrunning.online        →  no X-Client-Slug header                   →  port 3000 (shared PM2)
+```
+
+### Файлы которые нужно изменить
+
+**middleware.ts**
+```ts
+// Добавить ДО intlMiddleware:
+const host = request.headers.get('host') || '';
+const clientMatch = host.match(/^([^.]+)\.lego-base\.online$/);
+if (clientMatch) {
+  const slug = clientMatch[1];
+  const response = intlMiddleware(request);
+  response.headers.set('x-client-slug', slug);
+  return response;
+}
+```
+
+**app/api/dev-agent/route.ts — loadContextCore()**
+```ts
+// Сделать динамическим:
+const clientSlug = request.headers.get('x-client-slug');
+const contextDir = clientSlug
+  ? `/var/www/iam-clients/${clientSlug}/context-core`
+  : join(PROJECT_ROOT, 'context-core');
+```
+
+**Nginx — новый server block для gooner.lego-base.online**
+```nginx
+server {
+  listen 443 ssl;
+  server_name gooner.lego-base.online;
+  # ... ssl certs ...
+  add_header X-Client-Slug "gooner" always;
+  location / { proxy_pass http://127.0.0.1:3000; }
+}
+```
+
+**install-client.sh — Option A version**
+- Создаёт `/var/www/iam-clients/SLUG/context-core/` из шаблона
+- Пишет `.env` клиента (только переменные, не PM2)
+- Добавляет Nginx server block
+- НЕ создаёт отдельный PM2 процесс
+
+### Клиентские файлы
+```
+/var/www/iam-clients/
+  gooner/
+    context-core/          ← AI читает это для Гриши
+      SYSTEM_IDENTITY.md
+      CURRENT_GOAL.md
+      ...
+    bootstrap-prompts/
+      claude-start.md
+    .env                   ← client-specific vars
+```
+
+### Безопасность прототипа
+- Грише дать доступ к `/admin/dev-console` через TOTP (уже реализован)
+- Full multi-tenant auth — после первых продаж
+- AI не может читать context-core другого клиента (slug hardcoded в Nginx)
+
+## 13. ОТКРЫТЫЕ ВОПРОСЫ ДЛЯ ДОАУДИТА
 
 Нужно отдельно дочитать и задокументировать:
 - точный набор MCP tools, экспонируемых `createMcpServer()`
