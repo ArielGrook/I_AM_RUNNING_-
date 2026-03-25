@@ -7,6 +7,12 @@ import { resolve } from 'path';
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 
+// ── Resolve project root for a given client slug (or main project if none) ──
+function resolveRoot(clientSlug?: string): string {
+  if (clientSlug) return `/var/www/iam-clients/${clientSlug}`;
+  return PROJECT_ROOT;
+}
+
 // ── Whitelist for run_command ─────────────────────────────────────────────
 const ALLOWED_PREFIXES = [
   'npm install', 'npm run build', 'npm run dev', 'npm list',
@@ -29,7 +35,8 @@ function err(message: string) {
 }
 
 // ── MCP Server factory ────────────────────────────────────────────────────
-export function createMcpServer(): McpServer {
+export function createMcpServer(clientSlug?: string): McpServer {
+  const clientRoot = resolveRoot(clientSlug);
   const server = new McpServer({
     name: 'i-am-running',
     version: '1.0.0',
@@ -41,6 +48,16 @@ export function createMcpServer(): McpServer {
     'Read file contents from the project. Returns the full file text. Blocked: .env* files.',
     { path: z.string().describe('Relative path from project root, e.g. "app/page.tsx"') },
     async ({ path }) => {
+      // If client slug present and path is context-core/* — read from client dir
+      if (clientSlug && path.startsWith('context-core/')) {
+        try {
+          const absolute = resolve(clientRoot, path);
+          const content = await readFile(absolute, 'utf-8');
+          return ok(content);
+        } catch (e) {
+          return err(`context-core file not found: ${path}`);
+        }
+      }
       const result = await executeTool({ name: 'read_file', args: { path } });
       return result.success ? ok(result.data ?? '') : err(result.error ?? 'Unknown error');
     }

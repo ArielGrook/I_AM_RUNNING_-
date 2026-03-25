@@ -30,7 +30,8 @@ async function handleMcp(request: NextRequest): Promise<Response> {
     enableJsonResponse: true,      // return JSON instead of SSE stream for simple requests
   });
 
-  const server = createMcpServer();
+  const clientSlug = request.headers.get('x-client-slug') || undefined;
+  const server = createMcpServer(clientSlug);
   await server.connect(transport);
 
   try {
