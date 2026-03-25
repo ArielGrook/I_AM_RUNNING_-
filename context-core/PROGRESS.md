@@ -31,6 +31,26 @@
 - Roles 0-7, source of truth: auth.users.user_metadata.role
 - Real-time propagation via Realtime subscription → refreshSession()
 
+## Session 25.03.2026 — DONE ✅
+
+### Что сделано за сессию:
+- middleware.ts: tenant routing *.lego-base.online → x-client-slug header
+- dev-agent/route.ts: loadContextCore(clientSlug?) — динамический context-core
+- lib/mcp-server/index.ts: createMcpServer(clientSlug?) — MCP читает context-core клиента
+- install-client.sh v3: Option A (без PM2, только Nginx + файлы)
+- SSL wildcard lego-base.online получен (expires 2026-06-23)
+- Первый тестовый клиент follin.lego-base.online установлен
+- Новый репо ArielGrook/iam-client-os создан и запушен
+- iam-client-os задеплоен на Vercel (iam-client-os.vercel.app)
+- MCP OAuth подключение к Claude — РАБОТАЕТ ✅
+- Схема изолированного продукта доказана
+
+### Что осталось на завтра (MVP финал):
+- Admin панель для iam-client-os (урезанный Dev Console)
+- Онбординг: заполнение context-core при установке
+- Stripe + route protection (I AM RUNNING core)
+- Тест на реальном VPS (Hetzner €4/мес)
+
 ## Active Focus 🎯 — AI Business Software Prototype
 
 **Goal:** First working client installation (Grisha on gooner.lego-base.online)

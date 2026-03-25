@@ -103,8 +103,7 @@ export default function Home() {
           marginBottom: 24,
           color: '#0a0a0a',
         }}>
-          Your AI business operator<br />
-          <span style={{ color: ORANGE }}>is ready to work.</span>
+          <span style={{ color: ORANGE }}>ХУЙ</span>
         </h1>
 
         <p style={{

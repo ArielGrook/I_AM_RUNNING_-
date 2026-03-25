@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-  const base = new URL(request.url).origin;
+  // Vercel rewrites request.url — use x-forwarded-host for real hostname
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const proto = request.headers.get('x-forwarded-proto') || 'https';
+  const base = forwardedHost
+    ? `${proto}://${forwardedHost}`
+    : new URL(request.url).origin;
+
   return NextResponse.json({
     issuer: base,
     authorization_endpoint: `${base}/authorize`,
