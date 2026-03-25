@@ -25,6 +25,17 @@ export default function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── Tenant routing for *.lego-base.online ──────────────────
+  const host = request.headers.get('host') || '';
+  const clientMatch = host.match(/^([^.]+)\.lego-base\.online$/);
+  if (clientMatch) {
+    const slug = clientMatch[1];
+    const response = intlMiddleware(request);
+    response.headers.set('x-client-slug', slug);
+    return response;
+  }
+  // ────────────────────────────────────────────────────────────
+
   return intlMiddleware(request);
 }
 
