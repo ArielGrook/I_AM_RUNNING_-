@@ -2,19 +2,17 @@
 
 import { useLocale } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
-import { Globe } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
 
 const languages = [
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺' },
-  { code: 'he', label: 'עברית', flag: '🇮🇱' },
+  { code: 'en', label: 'English', short: 'EN' },
+  { code: 'ru', label: 'Русский', short: 'RU' },
+  { code: 'he', label: 'עברית', short: 'HE' },
 ];
 
 export function LanguageSwitcher() {
@@ -23,7 +21,6 @@ export function LanguageSwitcher() {
   const router = useRouter();
 
   const switchLocale = (newLocale: string) => {
-    // Remove current locale from path and add new one
     const pathWithoutLocale = pathname.replace(/^\/(en|ru|he)/, '');
     const newPath = `/${newLocale}${pathWithoutLocale || ''}`;
     router.push(newPath);
@@ -34,23 +31,21 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-white/90 hover:text-white hover:bg-white/10 gap-2"
-        >
-          <Globe className="h-4 w-4" />
-          <span className="hidden sm:inline">{currentLang.flag}</span>
-        </Button>
+        <button className="flex items-center gap-1.5 rounded-full px-2.5 py-2 text-sm font-semibold transition-colors hover:bg-foreground/5 text-foreground">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+          </svg>
+          <span className="hidden sm:inline text-xs">{currentLang.short}</span>
+        </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[140px]">
+      <DropdownMenuContent align="end" className="min-w-[130px]">
         {languages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
             onClick={() => switchLocale(lang.code)}
-            className={`cursor-pointer ${locale === lang.code ? 'bg-orange-50 text-orange-600' : ''}`}
+            className={`cursor-pointer text-sm ${locale === lang.code ? 'bg-[#FF6B35]/10 text-[#FF6B35] font-semibold' : ''}`}
           >
-            <span className="mr-2">{lang.flag}</span>
+            <span className="mr-2 text-xs font-mono opacity-50">{lang.short}</span>
             {lang.label}
           </DropdownMenuItem>
         ))}

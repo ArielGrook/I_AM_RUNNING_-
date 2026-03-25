@@ -1,97 +1,35 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 
-/* ── Detailed SVG icons for infrastructure features ── */
-function HostingIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="8" y="8" width="32" height="10" rx="3" stroke="#FF6B35" strokeWidth="2" fill="#FF6B35" fillOpacity="0.08"/>
-      <circle cx="14" cy="13" r="2" fill="#FF6B35" opacity="0.6"/>
-      <circle cx="20" cy="13" r="2" fill="#FF6B35" opacity="0.4"/>
-      <rect x="30" y="11" width="6" height="4" rx="1" fill="#FF6B35" opacity="0.2"/>
-      <rect x="8" y="22" width="32" height="10" rx="3" stroke="#FF6B35" strokeWidth="2" fill="#FF6B35" fillOpacity="0.05"/>
-      <circle cx="14" cy="27" r="2" fill="#FF6B35" opacity="0.4"/>
-      <circle cx="20" cy="27" r="2" fill="#FF6B35" opacity="0.3"/>
-      <rect x="30" y="25" width="6" height="4" rx="1" fill="#FF6B35" opacity="0.15"/>
-      <rect x="8" y="36" width="32" height="5" rx="2.5" stroke="#FF6B35" strokeWidth="1.5" fill="#FF6B35" fillOpacity="0.03" strokeDasharray="3 2"/>
-      <path d="M24 18v4M24 32v4" stroke="#FF6B35" strokeWidth="1.5" opacity="0.3"/>
-    </svg>
-  );
-}
-
-function DeployIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="24" cy="24" r="16" stroke="#FFB08A" strokeWidth="2" fill="#FFB08A" fillOpacity="0.06"/>
-      <path d="M24 14v14" stroke="#FFB08A" strokeWidth="2.5" strokeLinecap="round"/>
-      <path d="M18 22l6-8 6 8" stroke="#FFB08A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M16 34h16" stroke="#FFB08A" strokeWidth="2" strokeLinecap="round"/>
-      <circle cx="24" cy="24" r="3" fill="#FFB08A" opacity="0.2"/>
-    </svg>
-  );
-}
-
-function SSLIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="12" y="20" width="24" height="18" rx="4" stroke="#7bc6ff" strokeWidth="2" fill="#7bc6ff" fillOpacity="0.06"/>
-      <path d="M16 20v-4a8 8 0 0116 0v4" stroke="#7bc6ff" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-      <circle cx="24" cy="30" r="3" fill="#7bc6ff" opacity="0.5"/>
-      <path d="M24 33v3" stroke="#7bc6ff" strokeWidth="2" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function BackupIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 28a12 12 0 0124 0" stroke="#a8e6a3" strokeWidth="2" fill="none"/>
-      <path d="M12 28c-2 0-4-2-4-5s2-6 6-6c1-5 5-9 10-9s9 4 10 9c4 0 6 3 6 6s-2 5-4 5" stroke="#a8e6a3" strokeWidth="2" fill="#a8e6a3" fillOpacity="0.06" strokeLinecap="round"/>
-      <path d="M24 26v10" stroke="#a8e6a3" strokeWidth="2.5" strokeLinecap="round"/>
-      <path d="M20 30l4-4 4 4" stroke="#a8e6a3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M18 38h12" stroke="#a8e6a3" strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/>
-    </svg>
-  );
-}
-
-const features = [
-  {
-    Icon: HostingIcon,
-    title: 'Hosting included',
-    desc: 'Your site lives on our infrastructure. No DigitalOcean, no AWS, no config hell.',
-    color: '#FF6B35',
-  },
-  {
-    Icon: DeployIcon,
-    title: 'Instant deployment',
-    desc: 'One click from builder to live URL. No pipelines, no DevOps, no waiting.',
-    color: '#FFB08A',
-  },
-  {
-    Icon: SSLIcon,
-    title: 'Free SSL',
-    desc: 'HTTPS out of the box. Every site, every domain, every plan. Always secure.',
-    color: '#7bc6ff',
-  },
-  {
-    Icon: BackupIcon,
-    title: 'Regular backups',
-    desc: 'Your work is safe. Automatic backups keep your data protected at all times.',
-    color: '#a8e6a3',
-  },
+const infra = [
+  { title: 'Hosting', desc: 'Your site lives on our infrastructure — no AWS, no config.', icon: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+  )},
+  { title: 'Deployment', desc: 'One click from builder to live URL — instant.', icon: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+  )},
+  { title: 'Free SSL', desc: 'HTTPS on every site, every domain, every plan.', icon: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+  )},
+  { title: 'Backups', desc: 'Automatic backups keep your data safe at all times.', icon: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+  )},
 ];
 
 const tiers = [
-  { name: 'Starter', price: '$20', popular: false },
-  { name: 'Business', price: '$29', popular: true },
-  { name: 'Pro', price: '$59', popular: false },
-  { name: 'Enterprise', price: '$99', popular: false },
+  { id: 'starter', name: 'Starter', price: '$20', desc: 'Perfect for personal projects and landing pages. Everything you need to get started.' },
+  { id: 'business', name: 'Business', price: '$29', desc: 'For small businesses that need more features, multi-page sites and priority support.' },
+  { id: 'pro', name: 'Pro', price: '$59', desc: 'For growing companies and agencies. Advanced features, more projects, premium support.' },
+  { id: 'enterprise', name: 'Enterprise', price: '$99', desc: 'For serious businesses. Custom solutions, dedicated support, maximum performance.' },
 ];
 
 export function HostingSection() {
+  const [selectedTier, setSelectedTier] = useState(tiers[0]);
+
   return (
-    <section id="hosting" className="relative bg-background py-20 sm:py-28">
+    <section id="hosting" className="relative bg-foreground/[0.02] py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         {/* Header */}
         <motion.div
@@ -100,76 +38,102 @@ export function HostingSection() {
           viewport={{ once: true, margin: '-80px' }}
           className="mx-auto mb-14 max-w-3xl text-center"
         >
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-foreground/10 bg-foreground/[0.03] px-4 py-2 text-xs uppercase tracking-[0.22em] text-foreground/50">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-            Infrastructure included
-          </div>
           <h2 className="text-3xl font-black tracking-tight sm:text-5xl text-foreground">
             Everything you need to{' '}
             <span className="text-[#FF6B35]">go live</span>
           </h2>
-          <p className="mt-5 text-foreground/55 sm:text-lg leading-relaxed">
-            Hosting, deployment, SSL, and backups — all built into the platform. You build, we run.
+          <p className="mt-5 text-foreground/55 sm:text-lg">
+            Hosting, deployment, SSL, and backups — built into every plan. First month free.
           </p>
         </motion.div>
 
-        {/* Feature grid */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-10">
-          {features.map(({ Icon, title, desc, color }, i) => (
-            <motion.div
-              key={title}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ delay: i * 0.07 }}
-              className="rounded-3xl border border-foreground/8 bg-foreground/[0.015] p-6 transition-all duration-300 hover:border-foreground/15"
-            >
-              <div className="mb-5">
-                <Icon />
-              </div>
-              <div className="font-black text-foreground mb-2">{title}</div>
-              <p className="text-sm leading-relaxed text-foreground/50">{desc}</p>
-            </motion.div>
+        {/* Infrastructure icons — horizontal row */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12"
+        >
+          {infra.map(({ title, desc, icon }) => (
+            <div key={title} className="flex flex-col items-center text-center gap-3 rounded-2xl border border-foreground/8 bg-background p-5 transition-all hover:border-[#FF6B35]/20 hover:shadow-[0_8px_30px_rgba(255,107,53,0.06)]">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FF6B35]/8">{icon}</div>
+              <div className="font-black text-foreground text-sm">{title}</div>
+              <p className="text-xs text-foreground/45 leading-relaxed">{desc}</p>
+            </div>
           ))}
-        </div>
+        </motion.div>
 
-        {/* Pricing banner */}
+        {/* Pricing interactive block */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
-          className="rounded-3xl border border-[#FF6B35]/20 bg-gradient-to-br from-[#FF6B35]/[0.05] to-transparent p-7 sm:p-10"
+          viewport={{ once: true }}
+          className="rounded-3xl border border-[#FF6B35]/15 bg-gradient-to-br from-[#FF6B35]/[0.04] to-transparent p-7 sm:p-10"
         >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div>
-              <div className="text-2xl sm:text-3xl font-black text-foreground">
-                Starting from{' '}
-                <span className="text-[#FF6B35]">$20/month</span>
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Left: description that changes */}
+            <div className="lg:w-1/2">
+              <div className="text-sm uppercase tracking-[0.2em] text-[#FF6B35]/60 font-medium mb-3">
+                Starting from <span className="text-[#FF6B35] font-black">$20/month</span> · first month free
               </div>
-              <div className="mt-2 text-foreground/55">
-                with the{' '}
-                <span className="font-black text-[#FF6B35]">first month free</span>{' '}
-                — hosting, deployment, free SSL and regular backups included
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={selectedTier.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="text-3xl sm:text-4xl font-black text-foreground mb-2">
+                    {selectedTier.name}{' '}
+                    <span className="text-[#FF6B35]">{selectedTier.price}</span>
+                    <span className="text-foreground/40 text-lg font-medium">/mo</span>
+                  </div>
+                  <p className="text-foreground/55 text-base leading-relaxed max-w-md">{selectedTier.desc}</p>
+                </motion.div>
+              </AnimatePresence>
+
+              <div className="mt-5 flex flex-wrap gap-2 text-xs text-foreground/35">
+                <span className="flex items-center gap-1.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Hosting included
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Free SSL
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Auto backups
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Instant deploy
+                </span>
               </div>
             </div>
 
-            {/* Tier pills */}
-            <div className="flex flex-wrap gap-2.5">
-              {tiers.map(({ name, price, popular }) => (
-                <div
-                  key={name}
-                  className={`rounded-2xl px-4 py-2.5 text-sm font-semibold transition-all ${
-                    popular
-                      ? 'bg-[#FF6B35]/10 border border-[#FF6B35]/25 text-[#FF6B35]'
-                      : 'bg-foreground/[0.04] border border-foreground/8 text-foreground/50'
-                  }`}
-                >
-                  <span className="text-xs text-foreground/35 block">{name}</span>
-                  <span className={popular ? 'text-[#FF6B35]' : ''}>{price}</span>/mo
-                </div>
-              ))}
+            {/* Right: tier buttons */}
+            <div className="lg:w-1/2 grid grid-cols-2 gap-3">
+              {tiers.map((tier) => {
+                const isActive = selectedTier.id === tier.id;
+                return (
+                  <button
+                    key={tier.id}
+                    onClick={() => setSelectedTier(tier)}
+                    className={`rounded-2xl p-5 text-left transition-all duration-250 border-2 ${
+                      isActive
+                        ? 'border-[#FF6B35] bg-[#FF6B35]/10 shadow-[0_4px_20px_rgba(255,107,53,0.15)]'
+                        : 'border-foreground/8 bg-background hover:border-foreground/15'
+                    }`}
+                  >
+                    <div className={`text-xs uppercase tracking-[0.15em] font-medium ${isActive ? 'text-[#FF6B35]' : 'text-foreground/35'}`}>{tier.name}</div>
+                    <div className={`text-2xl font-black mt-1 ${isActive ? 'text-[#FF6B35]' : 'text-foreground'}`}>{tier.price}</div>
+                    <div className="text-[10px] text-foreground/30 mt-0.5">per month</div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </motion.div>
