@@ -3,105 +3,88 @@
 ## Working ✅
 
 ### Core Platform
-- Craft.js editor with 18 Tron components
-- Client site deploy on subdomains (SSR, pixel-perfect)
+- Craft.js editor with 18 Tron components (HeroTron, HeaderTron, TronFeatures, TronStats, TronAbout, TronPortfolio, TronTestimonials, TronPricing, TronFAQ, TronFooter, TronContact, TronShowcase, TronLogin, TronRegister, TronHub, TronCTA, TronServices, TronTeam)
+- Client site deploy on subdomains *.iamrunning.online (SSR, pixel-perfect)
 - Dev Console: Full IDE with file manager, code editor, git history, deploy/rollback
-- MCP Connector: Claude has direct project access via `/api/mcp/*`
-- MCP GPT: ChatGPT safe audit endpoint `/api/mcp-gpt/*` (read + context-core write)
-- Interactive pipeline: 4-step wizard → assembly → preview → save
-- Context Core: 19 documents, actively maintained as AI runtime memory
+- MCP Connector: Claude has direct project access via `/api/mcp/*` — primary dev tool
+- MCP GPT Safe: ChatGPT audit endpoint `/api/mcp-gpt/*` (read all sources + write context-core only)
+- Interactive pipeline: 4-step wizard → assembly → preview → save (16 light SVG niche thumbnails)
+- Context Core: 19 documents actively maintained as AI runtime memory
+- Landing v3: Hero (orange bg, marquee, smart nav), ThreeDoors, Speed, Hosting, SavingsCalculator, FinalCTA
 
-### Interactive Step 1 (redesigned 22.03.2026)
-- 16 light colorful SVG thumbnails (140×88), each in its own color family
-- Cards always light — background transparent, SVG sets the color
-- AnimatedBackground: 140 icons, left-based (0..130%), translate(-160vw,-140vh)
-
-### AI Access Layer
-- MCP server: 12 tools (full access)
-- MCP GPT safe server (lib/mcp-server/gpt-safe.ts): 7 tools — read_file with offset/limit, read_range, file_stat, list_directory, search_files, read_multiple_files, write context-core only
-- OAuth flow for both Claude and ChatGPT connectors
-- Both connectors working and tested
-
-### Landing (iamrunning.online) — current state
-- Latest commit: 9ccd896 "landing v3 - black dark theme, fire gradient title, i18n marquee..."
-- Sections: Hero → ThreeDoors → Speed → Hosting → SavingsCalculator → FinalCTA → Footer
-- Hero: solid orange background, slow small marquee text, auth in static header
-- Status: functional but needs visual polish — NOT current priority
-
-### AI Native Business OS — Product Template (22.03.2026)
-- `product-template/` — full installation package
-- `install-client.sh` v2: creates context-core, generates secrets, Nginx config
-- `generate-ecosystem.js`: PM2 env helper (Option B only — deprecated for Option A)
-- `manage-clients.sh`, `auto-backup.sh`
-- Context-core template: 8 documents
+### AI Native Integrated Business Software — Product Template ✅
+- `product-template/` — complete installation package
+- `install-client.sh` v2: deps check, secrets generation, context-core setup, Nginx config
+- `generate-ecosystem.js`: PM2 env injection helper (no bash quoting issues)
+- `manage-clients.sh`: list/status/logs/restart/backup/remove
+- `auto-backup.sh`: daily cron — git commit + push context-core to GitHub
+- Context-core template: 8 docs (SYSTEM_IDENTITY, CURRENT_GOAL, IDEAS, MVP_BRIEF, NEXT_ACTIONS, WEEKLY_PROGRESS, ARCHITECTURE, ENGINEERING_MEMORY)
 - Bootstrap prompts: claude-start.md + chatgpt-start.md
+- INSTALL.md: founder guide with pricing ($1000-2500 setup + $300-600/мес)
 
-## Security ✅
-- Admin API: httpOnly cookie auth on all /api/admin/* routes
-- Admin UI: 404 for non-admins + IP ban after 3 probes
-- MCP: Bearer token auth, separate secrets per endpoint
+### Security ✅
+- Admin: httpOnly cookie TOTP auth, 404 for non-admins, IP ban after 3 probes
+- MCP: Bearer token, separate tokens per endpoint
+- GPT MCP: read-only + context-core write only, audit log
 
-## Role System v2 ✅
+### Role System v2 ✅
 - Roles 0-7, source of truth: auth.users.user_metadata.role
-- Real-time role propagation via Realtime subscription
+- Real-time propagation via Realtime subscription → refreshSession()
 
-## ACTIVE FOCUS 🎯 — AI Native Business Software Prototype
-Two tracks running in parallel:
-1. **I AM RUNNING** — website builder SaaS (iamrunning.online)
-2. **AI Native Integrated Business Software** — installable AI OS for clients
+## Active Focus 🎯 — AI Business Software Prototype
 
-Current focus: Track 2 prototype → first real client install (Grisha on gooner.lego-base.online)
+**Goal:** First working client installation (Grisha on gooner.lego-base.online)
 
-## Architecture Decision: OPTION A (chosen 25.03.2026) ✅
-Single PM2 process, Nginx-based tenant routing:
-
+**Architecture DECIDED: Option A — Single PM2, X-Client-Slug routing**
 ```
-gooner.lego-base.online  →  Nginx adds X-Client-Slug: gooner  →  port 3000
-client2.lego-base.online →  Nginx adds X-Client-Slug: client2 →  port 3000
-iamrunning.online        →  no header                          →  port 3000
+gooner.lego-base.online
+  → Nginx: proxy_pass 127.0.0.1:3000 + add_header X-Client-Slug "gooner"
+  → middleware.ts: reads x-client-slug header
+  → if slug present: serve client onboarding page (no i18n needed)
+  → MCP /api/mcp: loads context-core from /var/www/iam-clients/gooner/context-core/
+  → Claude/ChatGPT connects MCP → reads Grisha's context-core → works
 ```
 
-**middleware.ts** — добавляет slug detection перед intlMiddleware:
-- читает hostname → если `*.lego-base.online` → sets x-client-slug header
-- локали не ломаются
+**Why Option A:**
+- Zero new PM2 processes — no .next build conflicts
+- One codebase serves all clients
+- Nginx config per client is the only "installation" needed
+- lego-base.online as client domain (iamrunning.online stays clean)
 
-**dev-agent/route.ts** — `loadContextCore()` становится dynamic:
-- если `x-client-slug` есть → грузит из `/var/www/iam-clients/SLUG/context-core/`
-- иначе → грузит из `/var/www/i_am_running/context-core/` (текущее поведение)
+**What Grisha gets:**
+- `gooner.lego-base.online` — onboarding page with instructions
+- MCP endpoint: `gooner.lego-base.online/api/mcp` with his token
+- context-core pre-filled with his business info
+- Bootstrap prompts to paste into Claude/ChatGPT
+- NO embedded chat needed — he uses Claude.ai or ChatGPT directly
 
-**install-client.sh** — упрощается для Option A:
-- создаёт `/var/www/iam-clients/SLUG/context-core/` из шаблона
-- добавляет Nginx server block с `add_header X-Client-Slug "SLUG"`
-- НЕ создаёт отдельный PM2 процесс
+**No auth for prototype** — Grisha's system is the MCP endpoint + context-core.
+Admin Panel (Dev Console) stays as founder-only tool.
 
-## MVP Blockers 🔴
-- [ ] Stripe integration (checkout, webhook, subscription check)
-- [ ] Route protection middleware (editor requires paid role)
-- [ ] Landing: final visual polish
+## MVP Blockers 🔴 (I AM RUNNING website builder)
+- Stripe integration (checkout, webhook, role upgrade)
+- Route protection middleware (editor requires subscription)
+- Landing: needs polish pass after Business Software prototype done
 
 ## Open Issues ⚠️
-- page.tsx: CLIENT_SLUG patch was reverted — clean, no action needed
-- client-home/page.tsx: still exists but unused — can delete when Option A is implemented
-- Grisha first install: pending Option A implementation
+- `install-client.sh` written for Option B (separate PM2) — needs rewrite for Option A
+- `client-home/page.tsx` exists but not wired — needs proper routing via middleware
+- Landing v3: multiple iterations, not final — deprioritized until first client live
+- `app/[locale]/page.tsx` is clean (no CLIENT_SLUG patch) — good
 
-## Roadmap
+## Next Actions (ordered)
 
-### 🔴 Priority 1 — AI Native OS (current focus, this week)
-- [ ] middleware.ts: add x-client-slug detection for *.lego-base.online
-- [ ] dev-agent/route.ts: dynamic context-core loading by client slug
-- [ ] update install-client.sh for Option A (no separate PM2)
-- [ ] Nginx config for lego-base.online + gooner.lego-base.online
-- [ ] First install: Grisha on gooner.lego-base.online
-- [ ] Bootstrap session with Grisha
+### 🔴 This session — Business Software Prototype
+1. Add lego-base.online to Nginx (server_name + SSL or use existing cert)
+2. Update middleware.ts: read x-client-slug → route to client page
+3. Update MCP server: load context-core from env CLIENT_CONTEXT_CORE path
+4. Rewrite install-client.sh for Option A (no PM2, just Nginx + files)
+5. Install Grisha: `bash install-client.sh` → gooner.lego-base.online live
+6. Connect Claude MCP to gooner.lego-base.online/api/mcp → test
 
-### 🔴 Priority 2 — Monetization
-- [ ] Stripe integration
-- [ ] Route protection middleware
+### 🟡 Next — Stripe
+7. Stripe checkout + webhook + role upgrade
+8. Route protection middleware for editor
 
-### 🟡 Priority 3 — Landing polish
-- [ ] Full visual redesign (after first client case study)
-- [ ] Pricing section finalization
-
-### 🟢 Priority 4 — Product polish
-- [ ] Interactive: steps 2-5 restructure
-- [ ] Niche-specific Tron components
+### 🟢 Later — Landing polish
+9. Full landing redesign pass (after live client case)
