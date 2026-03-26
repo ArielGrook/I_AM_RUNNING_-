@@ -129,7 +129,8 @@ NEXT_PUBLIC_CLIENT_DOMAIN=https://$CLIENT_DOMAIN
 BUSINESS_TYPE=$BUSINESS_TYPE
 
 PROJECT_ROOT=$APP_DIR
-CONTEXT_CORE_DIR=$APP_DIR/context-core
+CONTEXT_CORE_DIR=$APP_DIR/memory
+MEMORY_DIR=$APP_DIR/memory
 
 # ── AI Access ──────────────────────────────────────────────────
 MCP_AUTH_TOKEN=$MCP_TOKEN
@@ -153,16 +154,25 @@ log ".env.local written"
 # ─────────────────────────────────────────────────────────────
 # STEP 5: FILL CONTEXT-CORE WITH CLIENT INFO
 # ─────────────────────────────────────────────────────────────
-section "Setting Up Context-Core"
+section "Setting Up Memory"
 
-sed -i \
-  -e "s/\[CLIENT_NAME\]/$CLIENT_NAME/g" \
-  -e "s/\[BUSINESS_TYPE\]/$BUSINESS_TYPE/g" \
-  -e "s/\[CLIENT_DOMAIN\]/https:\/\/$CLIENT_DOMAIN/g" \
-  -e "s/\[INSTALL_DATE\]/$INSTALL_DATE/g" \
-  "$APP_DIR/context-core/SYSTEM_IDENTITY.md"
+# Replace placeholders in all memory files
+for f in "$APP_DIR/memory/"*.md; do
+  sed -i \
+    -e "s/CLIENT_NAME_PLACEHOLDER/$CLIENT_NAME/g" \
+    -e "s/BUSINESS_TYPE_PLACEHOLDER/$BUSINESS_TYPE/g" \
+    -e "s|CLIENT_DOMAIN_PLACEHOLDER|https://$CLIENT_DOMAIN|g" \
+    -e "s/INSTALL_DATE_PLACEHOLDER/$INSTALL_DATE/g" \
+    "$f"
+done
 
-log "context-core/SYSTEM_IDENTITY.md filled"
+# Generate RULES.md checksum and write it into the file
+RULES_BODY=$(tail -n +8 "$APP_DIR/memory/RULES.md")
+RULES_CHECKSUM=$(echo "$RULES_BODY" | sha256sum | cut -d' ' -f1)
+sed -i "s/^checksum: \"\"$/checksum: \"$RULES_CHECKSUM\"/" "$APP_DIR/memory/RULES.md"
+
+log "memory/ files configured (5 files with YAML frontmatter)"
+log "RULES.md checksum: $RULES_CHECKSUM"
 
 # ─────────────────────────────────────────────────────────────
 # STEP 6: BUILD
@@ -217,6 +227,33 @@ NGINX
 ln -sf /etc/nginx/sites-available/iam-os /etc/nginx/sites-enabled/iam-os
 nginx -t && systemctl reload nginx
 log "Nginx configured"
+
+# ─────────────────────────────────────────────────────────────
+# STEP 8.5: WATCHDOG + GIT HOOK
+# ─────────────────────────────────────────────────────────────
+section "Setting Up Watchdog"
+
+# Make watchdog executable
+chmod +x "$APP_DIR/scripts/watchdog.sh"
+
+# Install git post-commit hook
+cp "$APP_DIR/scripts/post-commit.sh" "$APP_DIR/.git/hooks/post-commit"
+chmod +x "$APP_DIR/.git/hooks/post-commit"
+log "Git post-commit hook installed"
+
+# Store initial RULES.md checksum for watchdog
+RULES_BODY_WD=$(tail -n +8 "$APP_DIR/memory/RULES.md")
+echo "$RULES_BODY_WD" | sha256sum | cut -d' ' -f1 > "$APP_DIR/.rules-checksum"
+log "RULES.md watchdog checksum stored"
+
+# Create backup directory
+mkdir -p /var/backups/iam-memory
+log "Backup directory created"
+
+# Add watchdog to cron (every 5 minutes)
+CRON_LINE="*/5 * * * * APP_DIR=$APP_DIR $APP_DIR/scripts/watchdog.sh >> /var/log/iam-watchdog.log 2>&1"
+(crontab -l 2>/dev/null | grep -v "watchdog.sh"; echo "$CRON_LINE") | crontab -
+log "Watchdog cron installed (every 5 minutes)"
 
 # ─────────────────────────────────────────────────────────────
 # STEP 9: SSL

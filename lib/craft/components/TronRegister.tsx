@@ -154,7 +154,7 @@ export const TronRegister = React.memo(function TronRegister() {
   );
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'light';
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
 
@@ -540,7 +540,7 @@ function TronRegisterSettings() {
 const tronRegisterCraft = {
   displayName: 'Tron Register',
   props: {
-    colorScheme: 'dark',
+    colorScheme: 'light',
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',

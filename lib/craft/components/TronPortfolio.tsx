@@ -231,7 +231,7 @@ export const TronPortfolio = React.memo(function TronPortfolio() {
   }, []);
 
   const accentColor = propAccent ?? theme?.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme?.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme?.colorScheme ?? 'light';
   const tokensBuilt = buildTokens(darkBg, lightBg);
   const t = {
     ...tokensBuilt[scheme],
@@ -910,7 +910,7 @@ function TronPortfolioSettings() {
 const tronPortfolioCraft = {
   displayName: 'Tron Portfolio',
   props: {
-    colorScheme: 'dark',
+    colorScheme: 'light',
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',

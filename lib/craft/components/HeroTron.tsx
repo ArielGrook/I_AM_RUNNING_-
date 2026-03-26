@@ -99,7 +99,7 @@ export const HeroTron = React.memo(function HeroTron() {
   } = props;
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'light';
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
   const rgb = hexToRgb(accentColor);
@@ -587,7 +587,7 @@ function HeroTronSettings() {
 const heroTronCraft = {
   displayName: 'Hero Tron',
   props: {
-    colorScheme: 'dark' as const,
+    colorScheme: 'light' as const,
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',
@@ -675,7 +675,7 @@ function HeroTronHeadingSettings() {
 
 (HeroTronHeading as unknown as { craft: object }).craft = {
   displayName: 'Hero Tron Heading',
-  props: { text: 'Build faster.', accentColor: '#FF6B35', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
+  props: { text: 'Build faster.', accentColor: '#FF6B35', colorScheme: 'light' as const, animationType: 'none', animateDelay: '0' },
   related: { settings: HeroTronHeadingSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
 };
@@ -725,7 +725,7 @@ function HeroTronSubheadingSettings() {
 
 (HeroTronSubheading as unknown as { craft: object }).craft = {
   displayName: 'Hero Tron Subheading',
-  props: { text: 'Create modern websites in minutes.', accentColor: '#FF6B35', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
+  props: { text: 'Create modern websites in minutes.', accentColor: '#FF6B35', colorScheme: 'light' as const, animationType: 'none', animateDelay: '0' },
   related: { settings: HeroTronSubheadingSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
 };
@@ -788,7 +788,7 @@ function HeroTronButtonSettings() {
 
 (HeroTronButton as unknown as { craft: object }).craft = {
   displayName: 'Hero Tron Button',
-  props: { text: 'Get Started', href: '#', style: 'filled' as HeroTronButtonStyle, accentColor: '#FF6B35', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
+  props: { text: 'Get Started', href: '#', style: 'filled' as HeroTronButtonStyle, accentColor: '#FF6B35', colorScheme: 'light' as const, animationType: 'none', animateDelay: '0' },
   related: { settings: HeroTronButtonSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
 };

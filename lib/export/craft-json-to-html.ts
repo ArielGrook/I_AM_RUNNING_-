@@ -110,7 +110,7 @@ function hexToRgb(hex: string): string {
 }
 
 function sectionWrap(content: string, props: Record<string, unknown>, name: string): string {
-  const colorScheme = String(props.colorScheme ?? 'dark');
+  const colorScheme = String(props.colorScheme ?? 'light');
   const bg = colorScheme === 'dark' ? String(props.darkBg ?? '#0a0a0a') : String(props.lightBg ?? '#ffffff');
   const minH = `${String(props.sectionHeight ?? 80)}vh`;
   const accent = String(props.accentColor ?? '#FF6B35');
@@ -132,7 +132,7 @@ function sectionHeader(title: unknown, subtitle: unknown, textColor: string, sec
 }
 
 function getColors(props: Record<string, unknown>) {
-  const dark = String(props.colorScheme ?? 'dark') === 'dark';
+  const dark = String(props.colorScheme ?? 'light') === 'dark';
   return {
     text: dark ? '#ffffff' : '#0a0a0a',
     secondary: dark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
@@ -144,7 +144,7 @@ function getColors(props: Record<string, unknown>) {
 
 // ─── RENDERERS ───────────────────────────────────────────────────────────────
 function renderHeaderTron(props: Record<string, unknown>): string {
-  const dark = String(props.colorScheme ?? 'dark') === 'dark';
+  const dark = String(props.colorScheme ?? 'light') === 'dark';
   const bg = dark ? String(props.darkBg ?? '#0a0a0a') : String(props.lightBg ?? '#ffffff');
   const text = dark ? '#ffffff' : '#0a0a0a';
   const secondary = dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
@@ -169,11 +169,11 @@ function renderHeaderTron(props: Record<string, unknown>): string {
 
 function renderHeroTron(props: Record<string, unknown>): string {
   const c = getColors(props);
-  const dark = String(props.colorScheme ?? 'dark') === 'dark';
+  const dark = String(props.colorScheme ?? 'light') === 'dark';
   const bg = dark ? String(props.darkBg ?? '#0a0a0a') : String(props.lightBg ?? '#ffffff');
   const minH = `${String(props.sectionHeight ?? 85)}vh`;
   const showGrid = props.showGrid !== false;
-  const gridColor = String(props.colorScheme ?? 'dark') === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)';
+  const gridColor = String(props.colorScheme ?? 'light') === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)';
 
   return `<section style="background:${bg};min-height:${minH};position:relative;">
   ${showGrid ? `<div style="position:absolute;inset:0;background-image:linear-gradient(${gridColor} 1px,transparent 1px),linear-gradient(90deg,${gridColor} 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:0;"></div>` : ''}
@@ -458,7 +458,7 @@ function renderTronContact(props: Record<string, unknown>): string {
 }
 
 function renderTronFooter(props: Record<string, unknown>): string {
-  const dark = String(props.colorScheme ?? 'dark') === 'dark';
+  const dark = String(props.colorScheme ?? 'light') === 'dark';
   const bg = dark ? String(props.darkBg ?? '#0a0a0a') : String(props.lightBg ?? '#ffffff');
   const text = dark ? '#ffffff' : '#0a0a0a';
   const secondary = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';

@@ -114,7 +114,7 @@ export const TronFooter = React.memo(function TronFooter() {
   } = props;
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'light';
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
 
@@ -727,7 +727,7 @@ function TronFooterSettings() {
 const tronFooterCraft = {
   displayName: 'Tron Footer',
   props: {
-    colorScheme: 'dark' as const,
+    colorScheme: 'light' as const,
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',
@@ -771,7 +771,7 @@ export interface FooterColumnProps {
 export const FooterColumn = React.memo(function FooterColumn(props: FooterColumnProps) {
   const { connectors: { connect, drag } } = useNode();
   const isSelected = useNode((n) => n.events.selected);
-  const { title, links, description, accentColor = '#FF6B35', colorScheme = 'dark' } = props;
+  const { title, links, description, accentColor = '#FF6B35', colorScheme = 'light' } = props;
   const tokens = buildTokens('#0a0a0a', '#ffffff');
   const t = { ...tokens[colorScheme], accent: accentColor };
   const isBrand = description != null && description !== '';
@@ -855,7 +855,7 @@ function FooterColumnSettings() {
 
 (FooterColumn as unknown as { craft: object }).craft = {
   displayName: 'Footer Column',
-  props: { title: 'Links', links: [{ label: 'Link', href: '#' }], accentColor: '#FF6B35', colorScheme: 'dark' as const, animationType: 'none', animateDelay: '0' },
+  props: { title: 'Links', links: [{ label: 'Link', href: '#' }], accentColor: '#FF6B35', colorScheme: 'light' as const, animationType: 'none', animateDelay: '0' },
   related: { settings: FooterColumnSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
 };

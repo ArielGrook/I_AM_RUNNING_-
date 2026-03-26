@@ -13,7 +13,7 @@ export interface ThemeState {
 
 const defaultTheme: ThemeState = {
   accentColor: '#FF6B35',
-  colorScheme: 'dark',
+  colorScheme: 'light',
   accentType: 'solid',
 };
 

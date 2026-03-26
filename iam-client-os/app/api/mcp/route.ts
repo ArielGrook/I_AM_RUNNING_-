@@ -3,13 +3,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { z } from 'zod';
 import { readFile, readdir, writeFile, mkdir } from 'fs/promises';
-import { resolve, join, dirname } from 'path';
+import { resolve, join, dirname, basename } from 'path';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || process.cwd();
-const CONTEXT_CORE_DIR = process.env.CONTEXT_CORE_DIR || join(PROJECT_ROOT, 'context-core');
+const MEMORY_DIR = process.env.MEMORY_DIR || process.env.CONTEXT_CORE_DIR || join(PROJECT_ROOT, 'memory');
 const MCP_TOKEN = process.env.MCP_AUTH_TOKEN || '';
 
 // ── Auth ──────────────────────────────────────────────────────
@@ -28,6 +28,40 @@ function err(msg: string) {
   return { content: [{ type: 'text' as const, text: `Error: ${msg}` }], isError: true };
 }
 
+// ── Sandboxing ────────────────────────────────────────────────
+
+// Blocked directories — never allow read or write
+const BLOCKED_PATHS = [
+  '/etc/',
+  '/var/log/',
+  '/root/',
+  '/home/',
+  '/proc/',
+  '/sys/',
+  '/dev/',
+  '/tmp/',
+  '/usr/',
+  '/boot/',
+  '/sbin/',
+  '/bin/',
+];
+
+// Blocked file patterns — never allow write
+const BLOCKED_WRITE_PATTERNS = [
+  '.env',
+  '.env.local',
+  '.env.production',
+  'nginx.conf',
+  'pm2.config',
+  '.dev-agent-config.json',
+  '.ssh/',
+  '.gitconfig',
+  'package-lock.json',
+];
+
+/**
+ * Resolve path within PROJECT_ROOT. Blocks path traversal.
+ */
 function safePath(relativePath: string): string {
   const clean = relativePath.replace(/^\/+/, '');
   const absolute = resolve(PROJECT_ROOT, clean);
@@ -37,21 +71,77 @@ function safePath(relativePath: string): string {
   return absolute;
 }
 
+/**
+ * Validate a path for READ access.
+ * Allowed: anything within PROJECT_ROOT, except blocked system dirs.
+ */
+function validateReadPath(relativePath: string): string {
+  const absolute = safePath(relativePath);
+
+  // Block system directories
+  for (const blocked of BLOCKED_PATHS) {
+    if (absolute.startsWith(blocked)) {
+      throw new Error(`Access denied: ${blocked} is a protected system directory`);
+    }
+  }
+
+  return absolute;
+}
+
+/**
+ * Validate a path for WRITE access.
+ * Allowed: memory/ and project files, except blocked patterns and RULES.md.
+ */
+function validateWritePath(relativePath: string, operation: string = 'write'): string {
+  const absolute = validateReadPath(relativePath); // inherits read restrictions
+  const fileName = basename(absolute);
+  const lowerPath = relativePath.toLowerCase();
+
+  // Block sensitive files
+  for (const pattern of BLOCKED_WRITE_PATTERNS) {
+    if (lowerPath.includes(pattern.toLowerCase()) || fileName.toLowerCase() === pattern.toLowerCase()) {
+      throw new Error(`${operation} denied: ${fileName} is a protected file`);
+    }
+  }
+
+  // Block node_modules
+  if (absolute.includes('node_modules')) {
+    throw new Error(`${operation} denied: cannot modify node_modules`);
+  }
+
+  // Block .next build directory
+  if (absolute.includes('.next')) {
+    throw new Error(`${operation} denied: cannot modify .next build directory`);
+  }
+
+  return absolute;
+}
+
+/**
+ * Extra check: RULES.md is locked — never allow modification.
+ */
+function assertNotRulesFile(relativePath: string, operation: string): void {
+  const fileName = basename(relativePath).toUpperCase();
+  if (fileName === 'RULES.MD') {
+    throw new Error(`${operation} denied: memory/RULES.md is locked by the system and cannot be modified`);
+  }
+}
+
 // ── MCP Server ────────────────────────────────────────────────
 function createServer(): McpServer {
   const server = new McpServer({
     name: 'iam-client-os',
-    version: '1.0.0',
+    version: '1.2.0',
   });
 
-  // read_file
+  // read_file — sandboxed read
   server.tool(
     'read_file',
-    'Read a file from the project. Use for context-core docs.',
-    { path: z.string().describe('Relative path, e.g. "context-core/SYSTEM_IDENTITY.md"') },
+    'Read a file from the project. Use for memory/ docs.',
+    { path: z.string().describe('Relative path, e.g. "memory/SYSTEM_IDENTITY.md"') },
     async ({ path }) => {
       try {
-        const absolute = safePath(path);
+        const absolute = validateReadPath(path);
         const content = await readFile(absolute, 'utf-8');
         return ok(content);
       } catch (e) {
@@ -60,17 +150,18 @@ function createServer(): McpServer {
     }
   );
 
-  // write_file — works on VPS, read-only on Vercel (but won't crash)
+  // write_file — sandboxed write, blocks RULES.md
   server.tool(
     'write_file',
-    'Write content to a file. Works on VPS. Read-only on Vercel.',
+    'Write content to a file. Blocked for: .env, RULES.md, node_modules, .next, system configs.',
     {
       path: z.string(),
       content: z.string(),
     },
     async ({ path, content }) => {
       try {
-        const absolute = safePath(path);
+        assertNotRulesFile(path, 'Write');
+        const absolute = validateWritePath(path, 'Write');
         await mkdir(dirname(absolute), { recursive: true });
         await writeFile(absolute, content, 'utf-8');
         return ok(`Written: ${path}`);
@@ -80,10 +171,10 @@ function createServer(): McpServer {
     }
   );
 
-  // patch_file
+  // patch_file — sandboxed patch, blocks RULES.md
   server.tool(
     'patch_file',
-    'Replace a unique text fragment in a file.',
+    'Replace a unique text fragment in a file. Blocked for: .env, RULES.md, node_modules, .next.',
     {
       path: z.string(),
       old_text: z.string(),
@@ -91,7 +182,8 @@ function createServer(): McpServer {
     },
     async ({ path, old_text, new_text }) => {
       try {
-        const absolute = safePath(path);
+        assertNotRulesFile(path, 'Patch');
+        const absolute = validateWritePath(path, 'Patch');
         const content = await readFile(absolute, 'utf-8');
         const count = content.split(old_text).length - 1;
         if (count === 0) return err(`old_text not found in ${path}`);
@@ -104,14 +196,14 @@ function createServer(): McpServer {
     }
   );
 
-  // list_directory
+  // list_directory — sandboxed read
   server.tool(
     'list_directory',
     'List files in a directory.',
-    { path: z.string().default('context-core').describe('Relative path') },
+    { path: z.string().default('memory').describe('Relative path') },
     async ({ path }) => {
       try {
-        const absolute = safePath(path);
+        const absolute = validateReadPath(path);
         const entries = await readdir(absolute, { withFileTypes: true });
         const lines = entries.map(e => `${e.isDirectory() ? '[dir]' : '[file]'} ${e.name}`);
         return ok(lines.join('\n') || '(empty)');
@@ -121,23 +213,23 @@ function createServer(): McpServer {
     }
   );
 
-  // read_context_core — convenience: read all context-core docs at once
+  // read_memory — convenience: read all memory/ docs at once
   server.tool(
-    'read_context_core',
-    'Read ALL context-core documents at once. Use this at the start of every session.',
+    'read_memory',
+    'Read ALL memory/ documents at once. Use this at the start of every session.',
     {},
     async () => {
       try {
-        const files = (await readdir(CONTEXT_CORE_DIR)).filter(f => f.endsWith('.md')).sort();
-        if (files.length === 0) return ok('No context-core files found.');
+        const files = (await readdir(MEMORY_DIR)).filter(f => f.endsWith('.md')).sort();
+        if (files.length === 0) return ok('No memory files found.');
         const parts: string[] = [];
         for (const file of files) {
-          const content = await readFile(join(CONTEXT_CORE_DIR, file), 'utf-8');
+          const content = await readFile(join(MEMORY_DIR, file), 'utf-8');
           parts.push(`# --- ${file} ---\n${content}`);
         }
         return ok(parts.join('\n\n'));
       } catch (e) {
-        return err(`Cannot read context-core: ${e instanceof Error ? e.message : String(e)}`);
+        return err(`Cannot read memory: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   );

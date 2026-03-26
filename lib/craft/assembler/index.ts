@@ -47,7 +47,7 @@ export interface InteractiveContract {
 }
 
 export function buildElementsFromContract(contract: InteractiveContract): React.ReactElement[] {
-  const colorScheme: 'dark' | 'light' = contract.style === 'light' ? 'light' : 'dark';
+  const colorScheme: 'dark' | 'light' = contract.style === 'dark' ? 'dark' : 'light';
   const accentColor = contract.accentColor ?? '#FF6B35';
   const darkBg = contract.darkBg ?? '#0a0a0a';
   const lightBg = contract.lightBg ?? '#ffffff';

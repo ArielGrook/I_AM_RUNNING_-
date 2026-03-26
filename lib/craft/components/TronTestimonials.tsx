@@ -311,7 +311,7 @@ export const TronTestimonials = React.memo(function TronTestimonials() {
   }, []);
 
   const accentColor = propAccent ?? theme?.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme?.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme?.colorScheme ?? 'light';
   const tokensBuilt = buildTokens(darkBg, lightBg);
   const t = {
     ...tokensBuilt[scheme],
@@ -578,7 +578,7 @@ function TestimonialCardSettings() {
     role: 'CEO',
     company: 'Acme Inc',
     accentColor: '#FF6B35',
-    colorScheme: 'dark',
+    colorScheme: 'light',
   },
   related: { settings: TestimonialCardSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
@@ -943,7 +943,7 @@ function TronTestimonialsSettings() {
 const tronTestimonialsCraft = {
   displayName: 'Tron Testimonials',
   props: {
-    colorScheme: 'dark',
+    colorScheme: 'light',
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',

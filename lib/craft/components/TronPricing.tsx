@@ -364,7 +364,7 @@ export const TronPricing = React.memo(function TronPricing() {
   }, []);
 
   const accentColor = propAccent ?? theme?.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme?.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme?.colorScheme ?? 'light';
   const tokensBuilt = buildTokens(darkBg, lightBg);
   const t = {
     ...tokensBuilt[scheme],
@@ -693,7 +693,7 @@ function PricingCardSettings() {
     highlighted: false,
     ctaText: 'Get started',
     accentColor: '#FF6B35',
-    colorScheme: 'dark',
+    colorScheme: 'light',
   },
   related: { settings: PricingCardSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
@@ -1129,7 +1129,7 @@ function TronPricingSettings() {
 const tronPricingCraft = {
   displayName: 'Tron Pricing',
   props: {
-    colorScheme: 'dark',
+    colorScheme: 'light',
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',

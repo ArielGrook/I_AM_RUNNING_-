@@ -103,7 +103,7 @@ export const HeroDefault = React.memo(function HeroDefault() {
   } = props;
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'light';
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
   const rgb = hexToRgb(accentColor);
@@ -457,7 +457,7 @@ function HeroDefaultSettings() {
 const heroDefaultCraft = {
   displayName: 'Hero Default',
   props: {
-    colorScheme: 'dark' as const,
+    colorScheme: 'light' as const,
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',

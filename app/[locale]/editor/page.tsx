@@ -69,7 +69,7 @@ function EditorSiteContextBridge({ children }: { children: ReactNode }) {
   const activePageSlug = pages.find((p) => p.id === currentPage)?.slug ?? '';
   const value = useMemo(
     () => ({
-      colorScheme: 'dark' as const,
+      colorScheme: 'light' as const,
       toggleTheme: () => {},
       showThemeToggle: false,
       language: 'en',

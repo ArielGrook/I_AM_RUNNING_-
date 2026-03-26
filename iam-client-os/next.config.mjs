@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Include memory/ in serverless bundle so MCP tools can read it
+  outputFileTracingIncludes: {
+    '/api/mcp': ['./memory/**/*'],
+  },
   env: {
     NEXT_PUBLIC_CLIENT_NAME: process.env.NEXT_PUBLIC_CLIENT_NAME || 'Your Business',
     NEXT_PUBLIC_CLIENT_DOMAIN: process.env.NEXT_PUBLIC_CLIENT_DOMAIN || '',

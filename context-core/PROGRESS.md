@@ -22,13 +22,19 @@
 - Repo: ArielGrook/iam-client-os (private)
 - Deployed: iam-client-os.vercel.app ✅
 - MCP OAuth connection to Claude: WORKS ✅ (tested and verified)
-- MCP tools: read_file, write_file, patch_file, list_directory, read_context_core
+- MCP tools: read_file, write_file, patch_file, list_directory, read_memory (v1.2.0)
+- MCP Sandboxing: validateReadPath + validateWritePath + assertNotRulesFile ✅
 - OAuth flow: /authorize → /api/mcp/authorize → /api/mcp/token
 - .well-known/oauth-authorization-server: working via next.config.mjs rewrite
-- Landing: white + orange, I AM RUNNING style, 4-step how-it-works, copy bootstrap prompt
-- install.sh: full VPS setup (Node, PM2, Nginx, SSL, app, secrets)
-- context-core template: 4 docs (SYSTEM_IDENTITY, CURRENT_GOAL, NEXT_ACTIONS, WEEKLY_PROGRESS)
-- bootstrap-prompts/claude-start.md: basic version
+- memory/ with YAML frontmatter: 5 files (SYSTEM_IDENTITY, CURRENT_GOAL, NEXT_ACTIONS, WEEKLY_PROGRESS, RULES) ✅
+- RULES.md: locked, sha256 checksum, cannot be modified via MCP ✅
+- Watchdog: scripts/watchdog.sh (cron 5min) + scripts/post-commit.sh (git hook) + daily backup ✅
+- Admin panel: /admin — TOTP auth + YAML dashboard + file editor + git history + deploy ✅
+- Landing v2: two audiences (devs + business) + security block + bootstrap prompt copy ✅
+- Next.js: 15.5.14 (all CVEs patched, 0 vulnerabilities) ✅
+- install.sh: full VPS setup with memory/ YAML placeholders + watchdog + git hooks ✅
+- Bootstrap prompt: autonomous (reads RULES.md first, YAML update instructions) ✅
+- Мы сами работаем через этот MCP каждый день — proof of concept
 
 ## MVP Blockers 🔴
 
@@ -37,21 +43,22 @@
 - Route protection middleware (editor requires paid subscription)
 
 ### Track 2 (AI Business OS)
-- Admin панель для iam-client-os (клиент должен видеть и редактировать memory/)
-- Автономный bootstrap промт (Claude сам читает memory, сам обновляет в конце сессии)
-- memory/RULES.md — защита от tool poisoning
-- Переименовать context-core → memory в iam-client-os
-- Тест install.sh на чистом VPS (Hetzner €4/мес)
+- ✅ ~~Admin панель~~ DONE 26.03.2026
+- ✅ ~~Автономный bootstrap промт~~ DONE 26.03.2026
+- ✅ ~~memory/RULES.md~~ DONE 26.03.2026
+- ✅ ~~Переименовать context-core → memory~~ DONE 26.03.2026
+- ✅ ~~Sandboxing MCP~~ DONE 26.03.2026
+- ✅ ~~Watchdog~~ DONE 26.03.2026
+- 📋 Тест install.sh на чистом VPS (Hetzner €4/мес) — LAST BLOCKER
+- 🟡 Лендинг дизайн-полировка (не блокер MVP)
 
 ## Next Actions (ordered by priority)
 
-### 🔴 Этот спринт — iam-client-os MVP финал
+### 🔴 Этот спринт — iam-client-os ФИНАЛ
 
-1. **memory/ + RULES.md** — переименовать context-core → memory, добавить security rules
-2. **Автономный bootstrap промт** — один промт, Claude сам всё делает
-3. **Admin панель** — список файлов memory/, просмотр/редактирование, deploy кнопка
-4. **Лендинг v2** — имя клиента подставляется, scroll-based steps анимация
-5. **VPS тест** — install.sh на чистый Hetzner, полный цикл
+1. **G07: Тест install.sh на чистом Hetzner CX22** — ПОСЛЕДНИЙ БЛОКЕР до первого клиента
+2. **Лендинг полировка** — дизайн, анимации (не блокер, можно после)
+3. **Найти первого клиента** — $200-500/мес, $0 setup
 
 ### 🟡 Следующий спринт — Туннель (killer feature)
 

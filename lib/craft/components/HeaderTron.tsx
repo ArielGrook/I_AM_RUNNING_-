@@ -1087,7 +1087,7 @@ const HeaderTronSettings = () => {
 HeaderTron.craft = {
   displayName: 'Header Tron',
   props: {
-    colorScheme: 'dark',
+    colorScheme: 'light',
     accentColor: '#e11d48',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',

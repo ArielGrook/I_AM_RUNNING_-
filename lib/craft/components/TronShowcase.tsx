@@ -355,7 +355,7 @@ export const TronShowcase = React.memo(function TronShowcase() {
   } = props;
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'light';
   const t = {
     ...tokens[scheme],
     accent: accentColor,
@@ -1254,7 +1254,7 @@ function TronShowcaseSettings() {
 const tronShowcaseCraft = {
   displayName: 'Tron Showcase',
   props: {
-    colorScheme: 'dark' as const,
+    colorScheme: 'light' as const,
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',

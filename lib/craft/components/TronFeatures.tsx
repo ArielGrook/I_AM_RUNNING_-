@@ -213,7 +213,7 @@ export const TronFeatures = React.memo(function TronFeatures() {
   }, []);
 
   const accentColor = propAccent ?? theme?.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme?.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme?.colorScheme ?? 'light';
   const t = {
     ...tokens[scheme],
     accent: accentColor,
@@ -415,7 +415,7 @@ const FeatureCardSettings = () => {
     title: 'Feature Title',
     description: 'Feature description.',
     accentColor: '#FF6B35',
-    colorScheme: 'dark',
+    colorScheme: 'light',
   },
   related: { settings: FeatureCardSettings },
   rules: { canDrag: () => true, canMoveIn: () => false },
@@ -693,7 +693,7 @@ function TronFeaturesSettings() {
 const tronFeaturesCraft = {
   displayName: 'Tron Features',
   props: {
-    colorScheme: 'dark',
+    colorScheme: 'light',
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',

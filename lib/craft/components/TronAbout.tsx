@@ -138,7 +138,7 @@ export const TronAbout = React.memo(function TronAbout() {
   } = props;
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'light';
   const tokens = buildTokens(darkBg, lightBg);
   const t = { ...tokens[scheme], accent: accentColor };
   const rgb = hexToRgb(accentColor);
@@ -832,7 +832,7 @@ function TronAboutSettings() {
 const tronAboutCraft = {
   displayName: 'About Tron',
   props: {
-    colorScheme: 'dark' as const,
+    colorScheme: 'light' as const,
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',

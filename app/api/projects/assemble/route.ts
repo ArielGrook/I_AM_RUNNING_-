@@ -9,7 +9,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   header: {
     resolvedName: 'HeaderTron',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       logoText: 'BRAND', showCta: true, ctaText: 'Get Started', ctaHref: '#', ctaHrefType: 'external',
       sticky: true, animationType: 'none', animateDelay: '0', showThemeToggle: false,
       navLinks: [
@@ -22,7 +22,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   hero: {
     resolvedName: 'HeroTron',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       sectionHeight: 100, showGrid: true, spotlightIntensity: 15,
       showBadge: true, badge: '✦ Welcome',
       headline: 'Your Business Name', subheadline: 'Professional website in minutes',
@@ -36,7 +36,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   about: {
     resolvedName: 'TronAbout',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       sectionHeight: 80, showGrid: true, spotlightIntensity: 10,
       title: 'About Us', subtitle: 'Our Story',
       description: 'We are dedicated to providing the best service in the industry.',
@@ -55,7 +55,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   features: {
     resolvedName: 'TronFeatures',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       sectionHeight: 80, showGrid: true,
       title: 'Our Features', subtitle: 'What we offer',
       animationType: 'none', animateDelay: '0',
@@ -64,7 +64,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   portfolio: {
     resolvedName: 'TronPortfolio',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       sectionHeight: 80, showGrid: true,
       title: 'Our Work', subtitle: 'Portfolio',
       animationType: 'none', animateDelay: '0',
@@ -73,7 +73,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   stats: {
     resolvedName: 'TronStats',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       sectionHeight: 60, showGrid: true,
       animationType: 'none', animateDelay: '0',
     },
@@ -81,7 +81,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   testimonials: {
     resolvedName: 'TronTestimonials',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       sectionHeight: 80, showGrid: true,
       title: 'Testimonials', subtitle: 'What our clients say',
       animationType: 'none', animateDelay: '0',
@@ -90,7 +90,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   pricing: {
     resolvedName: 'TronPricing',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       sectionHeight: 80, showGrid: true,
       title: 'Pricing', subtitle: 'Choose your plan',
       animationType: 'none', animateDelay: '0',
@@ -99,7 +99,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   faq: {
     resolvedName: 'TronFAQ',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       sectionHeight: 80, showGrid: true,
       title: 'FAQ', subtitle: 'Frequently asked questions',
       animationType: 'none', animateDelay: '0',
@@ -108,7 +108,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   contact: {
     resolvedName: 'TronContact',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       sectionHeight: 80, showGrid: true,
       title: 'Contact Us', subtitle: 'Get in touch',
       animationType: 'none', animateDelay: '0',
@@ -117,7 +117,7 @@ const BLOCK_TO_COMPONENT: Record<string, { resolvedName: string; defaultProps: R
   footer: {
     resolvedName: 'TronFooter',
     defaultProps: {
-      colorScheme: 'dark', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
+      colorScheme: 'light', accentColor: '#FF6B35', darkBg: '#0a0a0a', lightBg: '#ffffff',
       showGrid: false,
       brandName: 'BRAND', brandDescription: 'Built with I AM RUNNING',
       animationType: 'none', animateDelay: '0',
@@ -130,7 +130,7 @@ function generateId(): string {
 }
 
 function buildCraftJson(blocks: string[], companyName: string, style: string): string {
-  const isDark = style !== 'light';
+  const isDark = style === 'dark';
   const craftNodes: Record<string, unknown> = {};
   const childIds: string[] = [];
 

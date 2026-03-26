@@ -215,7 +215,7 @@ export const TronStats = React.memo(function TronStats() {
   } = props;
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'light';
   const t = {
     ...tokens[scheme],
     accent: accentColor,
@@ -530,7 +530,7 @@ function TronStatsSettings() {
 const tronStatsCraft = {
   displayName: 'Tron Stats',
   props: {
-    colorScheme: 'dark',
+    colorScheme: 'light',
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',
@@ -580,6 +580,6 @@ export const StatItem = React.memo(function StatItem(props: { value?: number; su
 });
 (StatItem as unknown as { craft: { displayName: string; props: Record<string, unknown>; rules: Record<string, () => boolean> } }).craft = {
   displayName: 'Stat Item',
-  props: { value: 0, suffix: '', label: 'Label', accentColor: '#FF6B35', colorScheme: 'dark' as const },
+  props: { value: 0, suffix: '', label: 'Label', accentColor: '#FF6B35', colorScheme: 'light' as const },
   rules: { canDrag: () => true, canMoveIn: () => false },
 };

@@ -16,7 +16,7 @@ interface SiteContextValue {
 }
 
 const SiteContext = React.createContext<SiteContextValue>({
-  colorScheme: 'dark',
+  colorScheme: 'light',
   toggleTheme: () => {},
   showThemeToggle: false,
   language: 'en',

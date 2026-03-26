@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { createGptSafeMcpServer } from '@/lib/mcp-server/gpt-safe';
+import { createMcpServer } from '@/lib/mcp-server/index';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,7 +27,7 @@ async function handleMcp(request: NextRequest): Promise<Response> {
     enableJsonResponse: true,
   });
 
-  const server = createGptSafeMcpServer();
+  const server = createMcpServer();
   await server.connect(transport);
 
   try {

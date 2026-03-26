@@ -111,7 +111,7 @@ export const TronFAQ = React.memo(function TronFAQ() {
   } = props;
 
   const accentColor = propAccent ?? theme.accentColor ?? '#FF6B35';
-  const scheme = colorScheme ?? theme.colorScheme ?? 'dark';
+  const scheme = colorScheme ?? theme.colorScheme ?? 'light';
   const t = {
     ...tokens[scheme],
     accent: accentColor,
@@ -660,7 +660,7 @@ function TronFAQSettings() {
 const tronFAQCraft = {
   displayName: 'Tron FAQ',
   props: {
-    colorScheme: 'dark' as const,
+    colorScheme: 'light' as const,
     accentColor: '#FF6B35',
     darkBg: '#0a0a0a',
     lightBg: '#ffffff',

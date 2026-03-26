@@ -606,7 +606,7 @@ export default function InteractivePage() {
     const preset = selectedPreset;
     const interactiveContract: InteractiveContract = {
       businessType: contract.businessType!,
-      style: preset?.colorScheme === 'light' ? 'light' : 'dark',
+      style: preset?.colorScheme === 'dark' ? 'dark' : 'light',
       blocks: contract.blocks,
       companyName: contract.companyName,
       accentColor: preset?.accentColor,
@@ -619,7 +619,7 @@ export default function InteractivePage() {
         <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>Building your website...</h2>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15 }}>Assembling {contract.blocks.length} sections</p>
         <div style={{ position: 'absolute', left: -9999, top: -9999, width: 1, height: 1, overflow: 'hidden' }}>
-          <ThemeProvider initialAccent={preset?.accentColor ?? '#FF6B35'} initialScheme={preset?.colorScheme ?? 'dark'}>
+          <ThemeProvider initialAccent={preset?.accentColor ?? '#FF6B35'} initialScheme={preset?.colorScheme ?? 'light'}>
             <Editor resolver={resolver} enabled={true}>
               <AssemblerInner contract={interactiveContract} onAssembled={handleAssembled} />
               <Frame><Element is={Container} canvas /></Frame>
@@ -643,7 +643,7 @@ export default function InteractivePage() {
           </button>
         </div>
         <div style={{ flex: 1, overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <PreviewFrame craftJson={craftJson} colorScheme={selectedPreset?.colorScheme ?? 'dark'} />
+          <PreviewFrame craftJson={craftJson} colorScheme={selectedPreset?.colorScheme ?? 'light'} />
         </div>
       </div>
     );
