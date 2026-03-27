@@ -83,3 +83,33 @@ Workflow этого спринта: Opus пишет файлы через I AM R
 - NEXT_PUBLIC_* переменные не подходят для runtime-значений на VPS — нужны серверные env
 - Репо нужно либо сделать публичным для curl-установки, либо добавить GitHub PAT в install.sh
 
+---
+
+# СПРИНТ 27.03.2026 ВЕЧЕР (Opus 4.6)
+
+149. TEAM AI WORKSPACE — АРХИТЕКТУРА СПРОЕКТИРОВАНА 27.03.2026
+Детальный план Team Workspace (TEAM_WORKSPACE_PLAN.md, ~300 строк). 6 архитектурных решений: (D1) Token→role resolution через sha256 хеши в TEAM_ROLES.md — code-enforced, не prompt-based; (D2) sha256 хеши токенов, plaintext никогда не хранится; (D3) Коммуникация через файлы (tasks/, messages/), не Supabase; (D4) Pull-pool как sandbox для non-admin writes; (D5) ARCHITECTURE.md как полная карта проекта; (D6) Bootstrap prompts — дополнение, не основная защита. Файловая структура: memory/ (7 файлов), tasks/, messages/to-{role}/, pull-pool/pr-{id}/, bootstrap-prompts/ (4 роли).
+
+150. ROUTE.TS V2.0 — ROLE ENGINE 27.03.2026
+Полная перезапись app/api/mcp/route.ts. Новые функции: parseFrontmatter() (ручной YAML парсер без зависимостей), hashToken() (sha256), resolveRole() (token→TEAM_ROLES.md→role), matchesGlob() (path scoping), createPullPoolEntry() (PR в pull-pool/), readRoleScopedMemory() (role header + filtered memory + tasks + messages). createServer() теперь принимает ResolvedRole — tools регистрируются только если role.tools.includes(). write_file/patch_file: admin→direct, non-admin→pull-pool. Backward compat: нет TEAM_ROLES.md или mode=solo → MCP_AUTH_TOKEN из .env → admin. Version 2.0.0.
+
+151. ADMIN ПАНЕЛЬ V2 — 6 ТАБОВ 27.03.2026
+Полная перезапись admin панели. API: 8 новых endpoints (team-list/add/revoke, team-mode, tasks-list/save, messages-list/send, pull-pool-list/read/approve/reject). UI: 6 табов (Dashboard, Team, Tasks, Messages, Pull Pool, Files). Team tab: add member (генерация токена, показ один раз), revoke, mode toggle. Tasks tab: select role → markdown editor. Messages tab: send комментарий конкретному пользователю. Pull Pool tab: список PR, preview, approve (git snapshot + copy to production), reject (комментарий в messages/). Всё на light theme с оранжевым акцентом.
+
+152. OAUTH TEAM FLOW — STATELESS AUTH CODES 27.03.2026
+Проблема: OAuth flow всегда выдавал один MCP_AUTH_TOKEN. Нужно чтобы каждый team member авторизовался своим токеном. Решение: (1) authorize GET в team mode показывает HTML страницу "Enter your team token"; (2) authorize POST валидирует токен против TEAM_ROLES.md; (3) encodeToken() — AES-256-GCM шифрует team token в auth code; (4) token endpoint decodeToken() расшифровывает → возвращает как access_token. Stateless — никакого shared state между endpoints. Ключ шифрования = sha256(MCP_AUTH_TOKEN). Добавлен /api/mcp/register для dynamic client registration. Фикс .well-known route — использует CLIENT_DOMAIN env, не request.url.origin.
+
+153. YAML PARSER BUG — CURRENTARRAY NOT INITIALIZED 27.03.2026
+Критический баг: parseFrontmatter() не мог распарсить массив roles из TEAM_ROLES.md. Причина: когда ключ "roles:" имел пустое значение (начало блочного массива), currentArray оставался null. Первый элемент "  - token_hash:" создавал currentArrayItem но не инициализировал currentArray. Фикс: одна строка — `if (!currentArray) currentArray = []` при первом "  - " элементе. Этот баг блокировал всю Team авторизацию — route.ts не мог найти роли → 401 на все team tokens.
+
+154. TEAM WORKSPACE — END-TO-END VERIFICATION 27.03.2026
+Полный тест Team Workspace на test.lego-base.online. Steve (developer) подключился через бесплатный Claude аккаунт. OAuth: страница ввода токена → валидация → redirect → access_token. read_memory вернул: "Your Role: developer, Name: Steve" + задачи + сообщение от админа ("Просто сделай это дерьмо сейчас"). write_file("test-steve.md") → перенаправлен в pull-pool/pr-1774642209212/ (meta.md + файл). Sandboxing подтверждён. TEAM AI WORKSPACE РАБОТАЕТ END-TO-END.
+
+ИНСАЙТЫ ВЕЧЕРНЕГО СПРИНТА:
+- In-memory code store (Map/globalThis) не работает между Next.js routes — разные worker-ы. Stateless encrypted tokens — единственное надёжное решение
+- YAML парсер без зависимостей — хрупкий. Баг с пустым значением ключа перед блочным массивом был неочевиден. При усложнении рассмотреть gray-matter
+- Operator precedence в JS: `A || B ? C : D` читается как `(A||B) ? C : D` — вызвал redirect loop в OAuth
+- Бесплатный Claude поддерживает custom MCP connectors (лимит 1 коннектор)
+- OAuth debug log (appendFileSync) — критически полезен, без него не нашли бы проблему
+- lego-base MCP не имеет git_snapshot — надо добавить, это критичная дыра в безопасности
+
