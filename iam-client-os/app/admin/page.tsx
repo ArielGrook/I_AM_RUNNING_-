@@ -100,37 +100,109 @@ export default function AdminPage() {
   };
 
   // ── TOTP Screen ───────────────────────────────────────────
+  const [setupMode, setSetupMode] = useState(false);
+  const [qrUrl, setQrUrl] = useState('');
+  const [setupSecret, setSetupSecret] = useState('');
+  const [secretCopied, setSecretCopied] = useState(false);
+
+  const loadSetup = async () => {
+    try {
+      const res = await fetch('/api/admin/totp-setup');
+      if (res.ok) {
+        const data = await res.json();
+        setQrUrl(data.qrUrl);
+        setSetupSecret(data.secret);
+        setSetupMode(true);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const copySecret = () => {
+    navigator.clipboard.writeText(setupSecret);
+    setSecretCopied(true);
+    setTimeout(() => setSecretCopied(false), 2000);
+  };
+
   if (!authed) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8f8f8', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-        <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: 14, padding: 36, width: 340, textAlign: 'center', boxShadow: '0 2px 20px rgba(0,0,0,0.06)' }}>
+        <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: 14, padding: 36, width: setupMode ? 380 : 340, textAlign: 'center', boxShadow: '0 2px 20px rgba(0,0,0,0.06)' }}>
           <div style={{ fontSize: 28, marginBottom: 4 }}>🔐</div>
           <h2 style={{ color: '#111', fontSize: 18, margin: '8px 0 12px', fontWeight: 700 }}>Admin Panel</h2>
-          <p style={{ color: '#888', fontSize: 13, marginBottom: 20 }}>Enter your Google Authenticator code</p>
-          <input
-            type="text" inputMode="numeric" maxLength={6} placeholder="000000"
-            value={totpInput}
-            onChange={e => setTotpInput(e.target.value.replace(/\D/g, ''))}
-            onKeyDown={e => e.key === 'Enter' && handleTotp()}
-            style={{
-              width: '100%', padding: '10px 12px', fontSize: 20, textAlign: 'center',
-              letterSpacing: 8, background: '#fafafa', border: '1px solid #e0e0e0',
-              borderRadius: 8, color: '#111', outline: 'none', boxSizing: 'border-box',
-            }}
-            autoFocus
-          />
-          {totpError && <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8 }}>{totpError}</p>}
-          <button
-            onClick={handleTotp}
-            disabled={loading || totpInput.length !== 6}
-            style={{
-              width: '100%', marginTop: 16, padding: '10px 0', background: ORANGE,
-              color: '#fff', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600,
-              cursor: loading ? 'wait' : 'pointer', opacity: totpInput.length !== 6 ? 0.5 : 1,
-            }}
-          >
-            {loading ? 'Verifying...' : 'Enter'}
-          </button>
+
+          {setupMode ? (
+            <>
+              <p style={{ color: '#555', fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>
+                Scan this QR code with<br /><strong>Google Authenticator</strong>
+              </p>
+              {qrUrl && (
+                <div style={{ margin: '0 auto 16px', width: 200, height: 200, borderRadius: 12, overflow: 'hidden', border: '1px solid #eee' }}>
+                  <img src={qrUrl} alt="TOTP QR Code" width={200} height={200} />
+                </div>
+              )}
+              <p style={{ color: '#999', fontSize: 11, marginBottom: 8 }}>Or enter this key manually:</p>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
+                background: '#fafafa', border: '1px solid #e0e0e0', borderRadius: 8,
+                padding: '8px 12px', marginBottom: 16,
+              }}>
+                <code style={{ fontSize: 12, color: '#333', letterSpacing: 1, wordBreak: 'break-all' }}>{setupSecret}</code>
+                <button onClick={copySecret} style={{
+                  background: secretCopied ? '#22c55e' : ORANGE, color: '#fff', border: 'none',
+                  borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer', flexShrink: 0,
+                }}>
+                  {secretCopied ? '✓' : 'Copy'}
+                </button>
+              </div>
+              <button
+                onClick={() => setSetupMode(false)}
+                style={{
+                  width: '100%', padding: '10px 0', background: ORANGE,
+                  color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                I&apos;ve scanned it → Enter code
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ color: '#888', fontSize: 13, marginBottom: 20 }}>Enter your Google Authenticator code</p>
+              <input
+                type="text" inputMode="numeric" maxLength={6} placeholder="000000"
+                value={totpInput}
+                onChange={e => setTotpInput(e.target.value.replace(/\D/g, ''))}
+                onKeyDown={e => e.key === 'Enter' && handleTotp()}
+                style={{
+                  width: '100%', padding: '10px 12px', fontSize: 20, textAlign: 'center',
+                  letterSpacing: 8, background: '#fafafa', border: '1px solid #e0e0e0',
+                  borderRadius: 8, color: '#111', outline: 'none', boxSizing: 'border-box',
+                }}
+                autoFocus
+              />
+              {totpError && <p style={{ color: '#ef4444', fontSize: 13, marginTop: 8 }}>{totpError}</p>}
+              <button
+                onClick={handleTotp}
+                disabled={loading || totpInput.length !== 6}
+                style={{
+                  width: '100%', marginTop: 16, padding: '10px 0', background: ORANGE,
+                  color: '#fff', border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 600,
+                  cursor: loading ? 'wait' : 'pointer', opacity: totpInput.length !== 6 ? 0.5 : 1,
+                }}
+              >
+                {loading ? 'Verifying...' : 'Enter'}
+              </button>
+              <button
+                onClick={loadSetup}
+                style={{
+                  width: '100%', marginTop: 10, padding: '8px 0', background: 'transparent',
+                  color: '#999', border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 12,
+                  cursor: 'pointer',
+                }}
+              >
+                First time? Set up Google Authenticator
+              </button>
+            </>
+          )}
         </div>
       </div>
     );

@@ -44,7 +44,7 @@
 - TOTP Secret: APA3AAMAXQAAAWAAAAAAAAGAWGAA (Google Authenticator)
 - MCP Token: 6fbf0ae1022211c552c632913feb75ca9960d9b98e4bed6e1c44746fd1539f04
 - install.sh: все 10 шагов прошли успешно ✅
-- ПРОБЛЕМА: /.well-known/oauth-authorization-server возвращает localhost:3000 — Claude Connector не работает
+- ПРОБЛЕМА РЕШЕНА: /.well-known route файл (app/.well-known/oauth-authorization-server/route.ts) перехватывал запрос ДО rewrite из next.config.mjs. Удаление файла + rebuild = fix. MCP Connector работает ✅
 
 ## MVP Blockers 🔴
 
@@ -59,45 +59,36 @@
 - ✅ ~~Переименовать context-core → memory~~ DONE 26.03.2026
 - ✅ ~~Sandboxing MCP~~ DONE 26.03.2026
 - ✅ ~~Watchdog~~ DONE 26.03.2026
-- ✅ ~~G07: Тест install.sh на чистом VPS~~ DONE 27.03.2026 — установка работает
-- 🔴 **OAuth metadata bug**: `/.well-known/oauth-authorization-server` возвращает `localhost:3000` вместо `https://test.lego-base.online`
+- ✅ ~~G07: Тест install.sh на чистом VPS~~ DONE 27.03.2026 — test.lego-base.online LIVE, MCP WORKS
+- ✅ ~~OAuth metadata bug~~ FIXED 27.03.2026 — удалён app/.well-known route, rewrite теперь работает
 - 🟡 Лендинг iamrunning.online — переработка визуала
 - 🟡 Лендинг iam-client-os — дизайн-полировка
 
-## OAuth Metadata Bug — детали (27.03.2026)
+## OAuth Metadata Bug — РЕШЕНО 27.03.2026
 
-**Симптом:** curl https://test.lego-base.online/.well-known/oauth-authorization-server возвращает localhost:3000
+**Симптом:** `/.well-known/oauth-authorization-server` возвращал `localhost:3000` вместо реального домена на VPS.
 
-**Файл:** iam-client-os/app/api/oauth-metadata/route.ts
-
-**Что пробовали:**
-1. Добавили `clientDomain = process.env.NEXT_PUBLIC_CLIENT_DOMAIN` → не помогло
-2. Добавили `X-Forwarded-Host` в Nginx → не помогло
+**4+ часа дебага. Что НЕ помогло:**
+1. Добавить CLIENT_DOMAIN env → PM2 видит, Next.js игнорирует
+2. X-Forwarded-Host в Nginx → не помогло
 3. rm -rf .next + rebuild → не помогло
+4. PM2 ecosystem.config.js с env → не помогло
+5. export + pm2 --update-env → pm2 env показывает, curl = localhost
+6. Хардкод домена в route.ts → всё равно localhost
 
-**Гипотеза:** NEXT_PUBLIC_* переменные инлайнятся на этапе билда из окружения где запускается `npm run build`. На VPS .env.local читается правильно (проверено cat), но в скомпилированный бандл значение не попадает — возможно Next.js кеширует пустое значение из первого билда.
+**КОРЕНЬ ПРОБЛЕМЫ:** Файл `app/.well-known/oauth-authorization-server/route.ts` существовал как файловый route. Next.js правило: **app/ файловый route ВСЕГДА побеждает rewrite из next.config.mjs**. Rewrite на `/api/oauth-metadata` никогда не срабатывал. Старый route.ts использовал `new URL(request.url).origin` = `localhost:3000`.
 
-**Что проверить:**
-```bash
-grep -r "test.lego-base" /var/www/iam-os/.next/server/
-grep -r "NEXT_PUBLIC_CLIENT_DOMAIN" /var/www/iam-os/.next/server/
-```
+**ФИКС:** `rm -rf app/.well-known` + rebuild. Теперь rewrite работает → `/api/oauth-metadata` → читает CLIENT_DOMAIN env → правильный URL.
 
-**Возможный правильный фикс:** использовать серверный env без NEXT_PUBLIC_ префикса:
-```ts
-const clientDomain = process.env.CLIENT_DOMAIN || process.env.NEXT_PUBLIC_CLIENT_DOMAIN || '';
-```
-И добавить `CLIENT_DOMAIN` в .env.local. Серверные переменные (без NEXT_PUBLIC_) не инлайнятся — читаются в runtime.
-
-**На Vercel работало** потому что NEXT_PUBLIC_CLIENT_DOMAIN не задан → код падал на x-forwarded-host который Vercel выставляет правильно автоматически.
+**ПРАВИЛО ДЛЯ БУДУЩЕГО:** Никогда не иметь файловый route и rewrite на один путь. Выбрать одно.
 
 ## Next Actions (ordered by priority)
 
-1. **Фикс OAuth metadata** — использовать серверный env CLIENT_DOMAIN вместо NEXT_PUBLIC_
-2. **Подключить Claude Connector к test.lego-base.online** — после фикса OAuth
-3. **Лендинг iamrunning.online** — переработка по платформенному манифесту, поэтапно
-4. **Лендинг iam-client-os** — дизайн-полировка
-5. **Найти первого клиента** — Upwork, стартапы без технаря, малый бизнес
+1. **Лендинг iamrunning.online** — полная переработка визуала, поэтапно по компонентам
+2. **Лендинг iam-client-os** — дизайн-полировка + admin панель в светлой теме
+3. **Найти первого клиента** — $200-500/мес, $0 setup, система готова к продаже
+4. **G08: Tunnel агент** — Cloudflare Tunnel к локальному проекту (killer feature)
+5. **Stripe** — монетизация Track 1
 
 ## Продуктовое видение (зафиксировано 27.03.2026)
 
@@ -119,11 +110,15 @@ const clientDomain = process.env.CLIENT_DOMAIN || process.env.NEXT_PUBLIC_CLIENT
 
 ## Известные технические детали
 
-- lego-base.online SSL — manual cert, ренью через certbot --manual до 2026-06-23
-- test.lego-base.online SSL — auto-renew через certbot timer, expires 2026-06-25
-- Vercel: iam-client-os.vercel.app — OAuth работает (используй для MCP пока не починен VPS)
+- lego-base.online DNS: `test` A → 185.5.55.111 (новый VPS), `@` A → 185.5.55.111. Wildcard и старые записи удалены
+- test.lego-base.online: LIVE ✅, SSL ✅, MCP Connector WORKS ✅, PM2+Nginx+certbot
+- OAuth на VPS: app/.well-known/ route УДАЛЁН — rewrite в next.config.mjs теперь единственный путь
+- Next.js правило: файловый route в app/ ВСЕГДА побеждает rewrite из next.config.mjs. Нельзя иметь оба
+- Next.js `next start` НЕ читает .env.local — env должен быть в PM2 ecosystem или в export перед pm2 start --update-env
+- NEXT_PUBLIC_* инлайнятся при билде, серверные env (без NEXT_PUBLIC_) читаются в runtime
+- PM2 ecosystem.config.js парсит .env.local и передаёт env в процесс — это надёжнее чем export
+- Vercel hostname: iam-client-os.vercel.app — OAuth работает
 - write_file/patch_file не работают на Vercel (serverless) — только на VPS
-- Git push в iam-client-os-repo требует: git config user.email → ArielGrook email
-- Токен для пуша в GitHub хранится в remote URL (не коммить его)
-- NEXT_PUBLIC_* переменные инлайнятся в билд — на VPS нужно использовать серверные env без префикса для runtime-значений
-- pm2 restart --update-env нужен когда меняются env переменные
+- ChatGPT MCP endpoint теперь имеет полные права (12 инструментов = Claude)
+- Theme defaults: все компоненты переведены на 'light' default (26.03.2026, ~30 файлов)
+- GitHub token для push — ОТОЗВАТЬ старый, создать новый (утёк в чат 27.03.2026)

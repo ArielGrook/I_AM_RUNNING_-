@@ -33,7 +33,14 @@ Vercel заблокировал билд из-за уязвимости Next.js 
 
 ---
 
-ИТОГИ СПРИНТА 26.03.2026
+145. G07: ТЕСТ НА ЧИСТОМ VPS — УСПЕХ + OAUTH BUG FIX 27.03.2026
+Полная установка iam-client-os на чистый VPS (Time4VPS, 185.5.55.111, Ubuntu 24.04). Домен: test.lego-base.online. DNS: удалены wildcard и старые записи с основного сервера, оставлены только `test` A → 185.5.55.111 и `@` A → 185.5.55.111. Установлены: Node 20, PM2 6.0.14, Nginx, certbot, SSL. 4+ часа дебага OAuth metadata бага — `/.well-known/oauth-authorization-server` возвращал `localhost:3000`. Причина: файл `app/.well-known/oauth-authorization-server/route.ts` перехватывал запрос ДО rewrite из next.config.mjs. Next.js правило: файловый route ВСЕГДА приоритетнее rewrite. Фикс: `rm -rf app/.well-known` + rebuild. MCP Connector подключён к Claude и работает. Memory/ read/write через MCP верифицировано. G07 ЗАКРЫТ. Все G01-G07 закрыты. Система готова к первому клиенту.
+
+146. РЕШЕНИЕ: СТРОИТЬ НА ЦЕЛЕВОМ СЕРВЕРЕ, НЕ ЧЕРЕЗ GITHUB ЦЕПОЧКУ 27.03.2026
+Цепочка "MCP правка на основном сервере → commit → push на GitHub → pull на новом VPS" ненадёжна — файлы теряются или не обновляются. Решение: для клиентских инсталляций строить прямо на целевом сервере, потом пушить рабочую версию на GitHub как шаблон. Это быстрее и надёжнее.
+
+147. GITHUB TOKEN УТЁК В ЧАТ 27.03.2026
+GitHub Personal Access Token случайно отправлен в чат. Нужно: GitHub → Settings → Developer settings → Personal access tokens → Delete старый → Create new.
 
 За один день (6 часов работы):
 - ✅ Полное ревью архитектуры с 7 решениями
