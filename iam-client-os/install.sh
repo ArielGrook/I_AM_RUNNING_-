@@ -126,6 +126,7 @@ cat > "$APP_DIR/.env.local" << EOF
 
 NEXT_PUBLIC_CLIENT_NAME=$CLIENT_NAME
 NEXT_PUBLIC_CLIENT_DOMAIN=https://$CLIENT_DOMAIN
+CLIENT_DOMAIN=https://$CLIENT_DOMAIN
 BUSINESS_TYPE=$BUSINESS_TYPE
 
 PROJECT_ROOT=$APP_DIR
@@ -215,6 +216,7 @@ server {
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
