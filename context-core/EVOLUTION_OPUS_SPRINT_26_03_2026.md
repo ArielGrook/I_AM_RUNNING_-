@@ -53,3 +53,26 @@ Vercel заблокировал билд из-за уязвимости Next.js 
 - 📋 Найти первого клиента
 
 Workflow этого спринта: Opus пишет файлы через I AM RUNNING MCP → Ariel копирует cp из /var/www/i_am_running/iam-client-os/ в ~/iam-client-os-repo/ → git push → Vercel auto-deploy. Быстро, эффективно, без ручного кодинга.
+
+---
+
+# СПРИНТ 27.03.2026 (Sonnet 4.6)
+
+145. ПРОДУКТОВОЕ ПОЗИЦИОНИРОВАНИЕ — ФИНАЛИЗАЦИЯ 27.03.2026
+Зафиксировано позиционирование AI Business OS: не "надстройка над Claude", а инфраструктура для работы любого AI с любым проектом. Продукт универсален, но для первых клиентов нужна конкретная боль. Целевые сегменты: (1) стартапы без CTO — Claude заменяет технаря; (2) малый бизнес — SaaS схема без setup fee, $400-500/мес; (3) средний бизнес/агентства — $2-15k first launch + $700-1500/мес. Канал привлечения: Upwork (описание + список болей + ссылка на сайт). Примеры живых кейсов сформулированы: магазин (автозагрузка каталога), агентство (память между клиентами), стартап без CTO (итерационный MVP).
+
+146. G07: ТЕСТ INSTALL.SH НА ЧИСТОМ VPS — ВЫПОЛНЕНО 27.03.2026
+Куплен VPS на Time4VPS (не Hetzner — Hetzner ввёл KYC верификацию по паспорту 20.03.2026). Сервер: 2GB RAM, 20GB SSD, Ubuntu 24.04, IP: 185.5.55.111. Домен: test.lego-base.online (A-запись добавлена). install.sh запущен вручную (репо приватное — curl из GitHub не работает без токена). Все 10 шагов прошли успешно: Node 20, PM2 6.0.14, Nginx, certbot, git clone, npm install, build, memory/ YAML файлы, watchdog cron, git hook. SSL получен на test.lego-base.online (expires 2026-06-25). TOTP: APA3AAMAXQAAAWAAAAAAAAGAWGAA. MCP Token: 6fbf0ae1022211c552c632913feb75ca9960d9b98e4bed6e1c44746fd1539f04.
+
+147. OAUTH METADATA BUG — НЕ РЕШЁН 27.03.2026
+/.well-known/oauth-authorization-server возвращает localhost:3000 вместо https://test.lego-base.online. Claude Connector не подключается. Попытки: (1) добавили clientDomain = process.env.NEXT_PUBLIC_CLIENT_DOMAIN в oauth-metadata/route.ts — не помогло; (2) добавили X-Forwarded-Host в Nginx — не помогло; (3) rm -rf .next + rebuild — не помогло. Корневая причина: NEXT_PUBLIC_* переменные инлайнятся в билд на этапе компиляции. На VPS переменная из .env.local не попадает в скомпилированный бандл. На Vercel работало потому что NEXT_PUBLIC_CLIENT_DOMAIN не задан → fallback на x-forwarded-host который Vercel выставляет автоматически. Правильный фикс: использовать серверный env CLIENT_DOMAIN (без NEXT_PUBLIC_ префикса) — читается в runtime, не инлайнится. Передать в Opus для решения.
+
+148. ЛЕНДИНГ IAMRUNNING.ONLINE — МАНИФЕСТ ЗАФИКСИРОВАН 27.03.2026
+Детальный манифест переработки лендинга согласован. Ключевые решения: платформенное позиционирование ("full-cycle AI development platform"), не инструментальное; умный header скрыт до скролла; Hero с marquee-фоном из возможностей платформы; три карточки дверей с разным характером (Door A — mobile/fast, Door B — professional/desktop, Door C — premium/powerful); CTA языком Run (Run Interactive, Run Editor, Run Business); Speed секция = Fast launch + Premium result + Fair price; Savings калькулятор со столбиками вместо donut chart; пульсирующий финальный CTA "Start Running". Работа не начата — ждёт следующего спринта.
+
+ИНСАЙТЫ СПРИНТА 27.03.2026:
+- Hetzner теперь требует KYC (паспорт + селфи) при регистрации — альтернативы: Time4VPS, DigitalOcean, Vultr
+- install.sh работает на Ubuntu 24.04 ✅ но требует ручного запуска для приватного репо
+- NEXT_PUBLIC_* переменные не подходят для runtime-значений на VPS — нужны серверные env
+- Репо нужно либо сделать публичным для curl-установки, либо добавить GitHub PAT в install.sh
+

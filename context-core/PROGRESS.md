@@ -1,4 +1,4 @@
-# PROGRESS — updated 26.03.2026
+# PROGRESS — updated 27.03.2026
 
 ## Working ✅
 
@@ -20,8 +20,8 @@
 
 ### Track 2: iam-client-os (AI Native Business OS)
 - Repo: ArielGrook/iam-client-os (private)
-- Deployed: iam-client-os.vercel.app ✅
-- MCP OAuth connection to Claude: WORKS ✅ (tested and verified)
+- Deployed: iam-client-os.vercel.app ✅ (OAuth работает на Vercel)
+- MCP OAuth connection to Claude: WORKS on Vercel ✅ (tested and verified)
 - MCP tools: read_file, write_file, patch_file, list_directory, read_memory (v1.2.0)
 - MCP Sandboxing: validateReadPath + validateWritePath + assertNotRulesFile ✅
 - OAuth flow: /authorize → /api/mcp/authorize → /api/mcp/token
@@ -34,7 +34,17 @@
 - Next.js: 15.5.14 (all CVEs patched, 0 vulnerabilities) ✅
 - install.sh: full VPS setup with memory/ YAML placeholders + watchdog + git hooks ✅
 - Bootstrap prompt: autonomous (reads RULES.md first, YAML update instructions) ✅
-- Мы сами работаем через этот MCP каждый день — proof of concept
+- G07: install.sh протестирован на чистом VPS (Time4VPS) 27.03.2026 ✅
+
+### Test VPS (27.03.2026)
+- Provider: Time4VPS, IP: 185.5.55.111, Ubuntu 24.04
+- Domain: test.lego-base.online (A-запись → 185.5.55.111)
+- SSL: ✅ (certbot, expires 2026-06-25)
+- App: /var/www/iam-os, PM2 process: iam-os, port 3000
+- TOTP Secret: APA3AAMAXQAAAWAAAAAAAAGAWGAA (Google Authenticator)
+- MCP Token: 6fbf0ae1022211c552c632913feb75ca9960d9b98e4bed6e1c44746fd1539f04
+- install.sh: все 10 шагов прошли успешно ✅
+- ПРОБЛЕМА: /.well-known/oauth-authorization-server возвращает localhost:3000 — Claude Connector не работает
 
 ## MVP Blockers 🔴
 
@@ -49,73 +59,71 @@
 - ✅ ~~Переименовать context-core → memory~~ DONE 26.03.2026
 - ✅ ~~Sandboxing MCP~~ DONE 26.03.2026
 - ✅ ~~Watchdog~~ DONE 26.03.2026
-- ✅ ~~Тест install.sh на чистом VPS~~ DONE 27.03.2026 — сервер поднят на Time4VPS (185.5.55.111), Ubuntu 24.04, install.sh отработал успешно, SSL получен на test.lego-base.online
-- 🔴 OAuth metadata endpoint возвращает localhost:3000 вместо https://test.lego-base.online — NEXT_PUBLIC_CLIENT_DOMAIN не инлайнится в билд на VPS. Нужен фикс в oauth-metadata/route.ts
-- 🟡 Лендинг iamrunning.online — переработка визуала (платформенное позиционирование)
+- ✅ ~~G07: Тест install.sh на чистом VPS~~ DONE 27.03.2026 — установка работает
+- 🔴 **OAuth metadata bug**: `/.well-known/oauth-authorization-server` возвращает `localhost:3000` вместо `https://test.lego-base.online`
+- 🟡 Лендинг iamrunning.online — переработка визуала
 - 🟡 Лендинг iam-client-os — дизайн-полировка
+
+## OAuth Metadata Bug — детали (27.03.2026)
+
+**Симптом:** curl https://test.lego-base.online/.well-known/oauth-authorization-server возвращает localhost:3000
+
+**Файл:** iam-client-os/app/api/oauth-metadata/route.ts
+
+**Что пробовали:**
+1. Добавили `clientDomain = process.env.NEXT_PUBLIC_CLIENT_DOMAIN` → не помогло
+2. Добавили `X-Forwarded-Host` в Nginx → не помогло
+3. rm -rf .next + rebuild → не помогло
+
+**Гипотеза:** NEXT_PUBLIC_* переменные инлайнятся на этапе билда из окружения где запускается `npm run build`. На VPS .env.local читается правильно (проверено cat), но в скомпилированный бандл значение не попадает — возможно Next.js кеширует пустое значение из первого билда.
+
+**Что проверить:**
+```bash
+grep -r "test.lego-base" /var/www/iam-os/.next/server/
+grep -r "NEXT_PUBLIC_CLIENT_DOMAIN" /var/www/iam-os/.next/server/
+```
+
+**Возможный правильный фикс:** использовать серверный env без NEXT_PUBLIC_ префикса:
+```ts
+const clientDomain = process.env.CLIENT_DOMAIN || process.env.NEXT_PUBLIC_CLIENT_DOMAIN || '';
+```
+И добавить `CLIENT_DOMAIN` в .env.local. Серверные переменные (без NEXT_PUBLIC_) не инлайнятся — читаются в runtime.
+
+**На Vercel работало** потому что NEXT_PUBLIC_CLIENT_DOMAIN не задан → код падал на x-forwarded-host который Vercel выставляет правильно автоматически.
 
 ## Next Actions (ordered by priority)
 
-### 🔴 Этот спринт — АКТИВНЫЕ ЗАДАЧИ
-
-1. **Фикс OAuth metadata endpoint** — `/.well-known/oauth-authorization-server` возвращает localhost:3000 вместо реального домена. Файл: `iam-client-os/app/api/oauth-metadata/route.ts`. Гипотеза: NEXT_PUBLIC_* не инлайнится в билд на VPS т.к. переменная задаётся в .env.local после билда. Нужно использовать серверный env (без NEXT_PUBLIC_ префикса) или захардкодить через next.config.mjs иначе.
+1. **Фикс OAuth metadata** — использовать серверный env CLIENT_DOMAIN вместо NEXT_PUBLIC_
 2. **Подключить Claude Connector к test.lego-base.online** — после фикса OAuth
-3. **Лендинг iamrunning.online** — переработка по манифесту (платформа, не конструктор). Поэтапно, 1 компонент за раз.
+3. **Лендинг iamrunning.online** — переработка по платформенному манифесту, поэтапно
 4. **Лендинг iam-client-os** — дизайн-полировка
-5. **Найти первого клиента** — Upwork, стартапы без технаря
+5. **Найти первого клиента** — Upwork, стартапы без технаря, малый бизнес
 
-### 🟡 Следующий спринт
-6. **Tunnel агент (G08)** — agent.sh, Cloudflare Tunnel
-7. **Стратегия монетизации зафиксирована** — малый бизнес: SaaS без setup fee, ~$400-500/мес. Средний/стартап: $2-15k first launch + $700-1500/мес
+## Продуктовое видение (зафиксировано 27.03.2026)
 
-### 🟡 Следующий спринт — Туннель (killer feature)
+**I AM RUNNING = full-cycle AI development platform. Три продукта:**
+- Door A (Interactive) — mobile-first wizard, 15 мин до живого сайта
+- Door B (Editor) — Craft.js visual editor для фрилансеров
+- Door C (AI Business OS) — AI-агрегатор с памятью и доступом к проекту
 
-6. **Tunnel агент** — один скрипт поднимает Cloudflare Tunnel к локальному проекту
-   - Сценарий A: локальная разработка → Claude видит localhost
-   - Сценарий B: существующий VPS → Claude видит его сервер
-   - Сценарий C: новый проект на нашем Hetzner (текущая архитектура)
-7. **agent.sh** — скрипт установки туннеля, добавляет MCP URL в memory/SYSTEM_IDENTITY.md
+**AI Business OS позиционирование:**
+- Не "AI для бизнеса" — инфраструктура для работы любого AI с любым проектом
+- Малый бизнес: SaaS без setup fee, ~$400-500/мес подписка
+- Средний бизнес/стартап без CTO: $2-15k first launch + $700-1500/мес
+- Killer сегмент: стартапы которые ищут технаря — Claude заменяет CTO
 
-### 🟢 Позже — Позиционирование и рост
-
-8. **Лендинг iamrunning.online** — новое позиционирование (AI aggregator, не просто надстройка)
-9. **Multi-AI bootstrap** — разные инструкции для Claude/ChatGPT/Gemini в одном промте
-10. **Stripe** — монетизация Track 1
-
-## Продуктовое видение (зафиксировано 26.03.2026)
-
-**Что мы строим:** не надстройку над Claude, а AI-агрегатор с памятью и доступом к проекту.
-
-```
-Клиент открывает браузер
-    ↓
-Видит свою рабочую среду
-    ↓
-Выбирает AI: Claude / ChatGPT / Gemini
-    ↓
-Каждый подключён к одному MCP серверу
-    ↓
-MCP знает весь контекст бизнеса клиента
-    ↓
-Claude — архитектура и разработка
-Gemini — анализ и сёрфинг по коду
-ChatGPT — маркетинг и тексты
-```
-
-**Ценность:** инфраструктура памяти и доступа, которая работает со всеми AI сейчас и в будущем.
-**Цена:** €4/мес сервер + Claude Pro клиента. Ты берёшь $200-500/мес за setup и поддержку.
-**Killer feature:** туннель к любому проекту — локальному, чужому VPS, существующему сайту.
-
-## Безопасность — tool poisoning
-
-MCP серверы уязвимы к tool poisoning — вредоносные инструкции в описаниях инструментов.
-Защита: RULES.md в memory/ с явным запретом на инструкции извне.
-На лендинге: предупреждение "подключайте только наш MCP сервер".
+**Монетизация Track 2:**
+- Beta (первые 2-3 клиента): $0 setup, $200-500/мес
+- После кейсов: $300-500 setup + $300-500/мес
+- Scale: $500-2000 setup + $300-700/мес
 
 ## Известные технические детали
 
 - lego-base.online SSL — manual cert, ренью через certbot --manual до 2026-06-23
-- Vercel hostname: iam-client-os.vercel.app (используй этот для MCP, не длинный preview URL)
+- test.lego-base.online SSL — auto-renew через certbot timer, expires 2026-06-25
+- Vercel: iam-client-os.vercel.app — OAuth работает (используй для MCP пока не починен VPS)
 - write_file/patch_file не работают на Vercel (serverless) — только на VPS
 - Git push в iam-client-os-repo требует: git config user.email → ArielGrook email
 - Токен для пуша в GitHub хранится в remote URL (не коммить его)
+- NEXT_PUBLIC_* переменные инлайнятся в билд — на VPS нужно использовать серверные env без префикса для runtime-значений
+- pm2 restart --update-env нужен когда меняются env переменные
