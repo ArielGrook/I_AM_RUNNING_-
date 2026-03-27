@@ -59,9 +59,8 @@ function parseFrontmatter(content: string): { data: Record<string, unknown>; bod
 
     // Array item start: "  - key: value"
     if (/^\s{2}- \w/.test(line) && currentKey) {
-      if (currentArrayItem && currentArray) {
-        currentArray.push(currentArrayItem);
-      }
+      if (!currentArray) currentArray = [];
+      if (currentArrayItem) currentArray.push(currentArrayItem);
       currentArrayItem = {};
       const itemContent = trimmed.replace(/^\s*-\s*/, '');
       const [k, ...v] = itemContent.split(':');
