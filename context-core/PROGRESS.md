@@ -90,23 +90,37 @@
 4. **G08: Tunnel агент** — Cloudflare Tunnel к локальному проекту (killer feature)
 5. **Stripe** — монетизация Track 1
 
-## Продуктовое видение (зафиксировано 27.03.2026)
+## Продуктовое видение (обновлено 27.03.2026)
 
-**I AM RUNNING = full-cycle AI development platform. Три продукта:**
-- Door A (Interactive) — mobile-first wizard, 15 мин до живого сайта
-- Door B (Editor) — Craft.js visual editor для фрилансеров
-- Door C (AI Business OS) — AI-агрегатор с памятью и доступом к проекту
+**iam-client-os = Team AI Workspace.** Не "AI для одного" — "AI workspace для команды".
 
-**AI Business OS позиционирование:**
-- Не "AI для бизнеса" — инфраструктура для работы любого AI с любым проектом
-- Малый бизнес: SaaS без setup fee, ~$400-500/мес подписка
-- Средний бизнес/стартап без CTO: $2-15k first launch + $700-1500/мес
-- Killer сегмент: стартапы которые ищут технаря — Claude заменяет CTO
+**Два режима:**
+- **Solo** (готов, работает) — один пользователь, flat memory/, все инструменты
+- **Team** (следующий билд) — multi-user, роли, ARCHITECTURE.md, pull pool, per-role токены
 
-**Монетизация Track 2:**
-- Beta (первые 2-3 клиента): $0 setup, $200-500/мес
-- После кейсов: $300-500 setup + $300-500/мес
-- Scale: $500-2000 setup + $300-700/мес
+**Архитектура Team режима:**
+- Каждый пользователь подключает один MCP URL к своему Claude/ChatGPT/Gemini
+- MCP route проверяет Bearer token → определяет роль (admin, developer, marketer, reviewer)
+- Роль ограничивает: read paths, write paths, allowed tools
+- Все non-admin writes идут в `pull-pool/` — не напрямую в код
+- ARCHITECTURE.md — единый файл связей, все AI читают перед работой
+- Reviewer AI проверяет pull-pool на ошибки и конфликты
+- Admin (главный в команде) решает деплоить или фиксить
+
+**Pitch:** "I'll set up a private AI system where your whole team's Claude or ChatGPT remembers your business context, goals, and decisions — so nobody starts from zero."
+
+**Pricing:**
+- Solo: 1 user, $200/мес
+- Team: до 5 users, $400/мес
+- Business: до 15 users, $700/мес
+
+**Target (Upwork):** бизнесы ищущие AI integration, AI automation, virtual CTO, AI workflow setup.
+
+## Схема деплоя iam-client-os
+
+Полная документация в `memory/SYSTEM_IDENTITY.md` на клиентском VPS (через lego-base MCP).
+
+Краткая схема: Claude MCP → файлы в iam-client-os/ → Ариэль cp в ~/iam-client-os-repo/ → git push → на VPS: `git checkout -- . && git pull && rm -rf .next && npm run build && pm2 restart iam-os`
 
 ## Известные технические детали
 
