@@ -49,16 +49,24 @@
 - ✅ ~~Переименовать context-core → memory~~ DONE 26.03.2026
 - ✅ ~~Sandboxing MCP~~ DONE 26.03.2026
 - ✅ ~~Watchdog~~ DONE 26.03.2026
-- 📋 Тест install.sh на чистом VPS (Hetzner €4/мес) — LAST BLOCKER
-- 🟡 Лендинг дизайн-полировка (не блокер MVP)
+- ✅ ~~Тест install.sh на чистом VPS~~ DONE 27.03.2026 — сервер поднят на Time4VPS (185.5.55.111), Ubuntu 24.04, install.sh отработал успешно, SSL получен на test.lego-base.online
+- 🔴 OAuth metadata endpoint возвращает localhost:3000 вместо https://test.lego-base.online — NEXT_PUBLIC_CLIENT_DOMAIN не инлайнится в билд на VPS. Нужен фикс в oauth-metadata/route.ts
+- 🟡 Лендинг iamrunning.online — переработка визуала (платформенное позиционирование)
+- 🟡 Лендинг iam-client-os — дизайн-полировка
 
 ## Next Actions (ordered by priority)
 
-### 🔴 Этот спринт — iam-client-os ФИНАЛ
+### 🔴 Этот спринт — АКТИВНЫЕ ЗАДАЧИ
 
-1. **G07: Тест install.sh на чистом Hetzner CX22** — ПОСЛЕДНИЙ БЛОКЕР до первого клиента
-2. **Лендинг полировка** — дизайн, анимации (не блокер, можно после)
-3. **Найти первого клиента** — $200-500/мес, $0 setup
+1. **Фикс OAuth metadata endpoint** — `/.well-known/oauth-authorization-server` возвращает localhost:3000 вместо реального домена. Файл: `iam-client-os/app/api/oauth-metadata/route.ts`. Гипотеза: NEXT_PUBLIC_* не инлайнится в билд на VPS т.к. переменная задаётся в .env.local после билда. Нужно использовать серверный env (без NEXT_PUBLIC_ префикса) или захардкодить через next.config.mjs иначе.
+2. **Подключить Claude Connector к test.lego-base.online** — после фикса OAuth
+3. **Лендинг iamrunning.online** — переработка по манифесту (платформа, не конструктор). Поэтапно, 1 компонент за раз.
+4. **Лендинг iam-client-os** — дизайн-полировка
+5. **Найти первого клиента** — Upwork, стартапы без технаря
+
+### 🟡 Следующий спринт
+6. **Tunnel агент (G08)** — agent.sh, Cloudflare Tunnel
+7. **Стратегия монетизации зафиксирована** — малый бизнес: SaaS без setup fee, ~$400-500/мес. Средний/стартап: $2-15k first launch + $700-1500/мес
 
 ### 🟡 Следующий спринт — Туннель (killer feature)
 
