@@ -4,7 +4,10 @@ export async function GET(request: NextRequest) {
   // Vercel rewrites request.url — use x-forwarded-host for real hostname
   const forwardedHost = request.headers.get('x-forwarded-host');
   const proto = request.headers.get('x-forwarded-proto') || 'https';
-  const base = forwardedHost
+  const clientDomain = process.env.NEXT_PUBLIC_CLIENT_DOMAIN || '';
+  const base = clientDomain
+    ? clientDomain.replace(/\/$/, '')
+    : forwardedHost
     ? `${proto}://${forwardedHost}`
     : new URL(request.url).origin;
 
