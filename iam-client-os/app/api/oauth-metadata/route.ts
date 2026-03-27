@@ -1,21 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-  // SERVER-SIDE env (no NEXT_PUBLIC_ prefix) — reads at runtime, not inlined at build time
-  // This fixes the localhost:3000 bug on VPS where NEXT_PUBLIC_* gets inlined as empty string
-  const clientDomain =
-    process.env.CLIENT_DOMAIN ||
-    process.env.NEXT_PUBLIC_CLIENT_DOMAIN ||
-    '';
-
+  // ── Determine base URL ──────────────────────────────────────────
+  // Priority: CLIENT_DOMAIN env > x-forwarded-host header > Host header > request.url
+  // This handles both Vercel (x-forwarded-host) and VPS (Host header from Nginx)
+  
+  const clientDomain = process.env.CLIENT_DOMAIN || process.env.NEXT_PUBLIC_CLIENT_DOMAIN || '';
   const forwardedHost = request.headers.get('x-forwarded-host');
+  const hostHeader = request.headers.get('host'); // Nginx always sends this
   const proto = request.headers.get('x-forwarded-proto') || 'https';
 
-  const base = clientDomain
-    ? clientDomain.replace(/\/$/, '')
-    : forwardedHost
-    ? `${proto}://${forwardedHost}`
-    : new URL(request.url).origin;
+  let base: string;
+
+  if (clientDomain) {
+    // Explicit env variable — highest priority
+    base = clientDomain.replace(/\/$/, '');
+  } else if (forwardedHost) {
+    // Vercel or reverse proxy with x-forwarded-host
+    base = `${proto}://${forwardedHost}`;
+  } else if (hostHeader && !hostHeader.includes('localhost') && !hostHeader.includes('127.0.0.1')) {
+    // Nginx sends Host: test.lego-base.online
+    base = `https://${hostHeader}`;
+  } else {
+    // Last resort — request.url (will be localhost on VPS, but at least won't crash)
+    base = new URL(request.url).origin;
+  }
 
   return NextResponse.json({
     issuer: base,
