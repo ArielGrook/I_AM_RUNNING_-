@@ -18,23 +18,37 @@
 - SSL wildcard lego-base.online ✅ (expires 2026-06-23 — renew manually)
 - follin.lego-base.online: test client installed, MCP reads correct context-core ✅
 
-### Track 2: iam-client-os (AI Native Business OS)
+### Track 2: iam-client-os (AI Native Business OS) — Team Workspace
 - Repo: ArielGrook/iam-client-os (private)
-- Deployed: iam-client-os.vercel.app ✅ (OAuth работает на Vercel)
-- MCP OAuth connection to Claude: WORKS on Vercel ✅ (tested and verified)
-- MCP tools: read_file, write_file, patch_file, list_directory, read_memory (v1.2.0)
-- MCP Sandboxing: validateReadPath + validateWritePath + assertNotRulesFile ✅
-- OAuth flow: /authorize → /api/mcp/authorize → /api/mcp/token
-- .well-known/oauth-authorization-server: working via next.config.mjs rewrite
-- memory/ with YAML frontmatter: 5 files (SYSTEM_IDENTITY, CURRENT_GOAL, NEXT_ACTIONS, WEEKLY_PROGRESS, RULES) ✅
-- RULES.md: locked, sha256 checksum, cannot be modified via MCP ✅
-- Watchdog: scripts/watchdog.sh (cron 5min) + scripts/post-commit.sh (git hook) + daily backup ✅
-- Admin panel: /admin — TOTP auth + YAML dashboard + file editor + git history + deploy ✅
-- Landing v2: two audiences (devs + business) + security block + bootstrap prompt copy ✅
-- Next.js: 15.5.14 (all CVEs patched, 0 vulnerabilities) ✅
-- install.sh: full VPS setup with memory/ YAML placeholders + watchdog + git hooks ✅
-- Bootstrap prompt: autonomous (reads RULES.md first, YAML update instructions) ✅
-- G07: install.sh протестирован на чистом VPS (Time4VPS) 27.03.2026 ✅
+- Deployed: iam-client-os.vercel.app ✅ (OAuth на Vercel)
+- Test VPS: test.lego-base.online ✅ (Time4VPS, 185.5.55.111, Ubuntu 24.04)
+- **route.ts v2.0 — Role Engine** ✅:
+  - parseFrontmatter() YAML parser (known bug: empty value before array — fixed)
+  - resolveRole() token→TEAM_ROLES.md→ResolvedRole
+  - matchesGlob() path scoping per role
+  - createPullPoolEntry() sandbox for non-admin writes
+  - readRoleScopedMemory() role header + filtered memory + tasks + messages
+  - 11 admin tools: read_file, write_file, patch_file, list_directory, read_memory,
+    git_snapshot, git_log, search_files, delete_file, run_command, deploy
+  - Activity logging: every MCP call → logs/activity.jsonl
+  - PR description field: write_file/patch_file accept optional description for pull-pool
+- **OAuth Team Flow** ✅:
+  - Solo mode: auto-approve with env token
+  - Team mode: HTML token input page → AES-256-GCM encrypt → stateless auth codes
+  - /api/mcp/register for dynamic client registration
+  - Free Claude supports 1 custom MCP connector
+- **Admin Panel v2** ✅ (7 tabs):
+  - Dashboard, Team (add/revoke members, mode toggle), Tasks, Messages, Pull Pool (approve/reject), Activity (MCP log with user filter), Files
+  - team-edit API exists but NO UI for role switching yet ← NEXT TASK
+- **User Dashboard /dashboard** ✅:
+  - Login by team token, shows: role, tasks, messages, PRs, activity, bootstrap prompt with Copy button
+- **End-to-end verified** ✅:
+  - Steve (developer) connected via free Claude, read_memory + write_file→pull-pool confirmed
+- **install.sh v2** ✅: team directories (tasks/, messages/, pull-pool/, logs/), ecosystem.config.js
+- **Watchdog updated** ✅: checks TEAM_ROLES.md + ARCHITECTURE.md, recreates team dirs if missing
+- MCP Sandboxing v1.2.0 → v2.0.0: validateReadPath + validateWritePath + assertNotRulesFile + role scoping ✅
+- memory/ with YAML frontmatter: 7 files (5 core + TEAM_ROLES.md + ARCHITECTURE.md) ✅
+- Pricing finalized: Phase 1 (first 10): Solo $300/mo, Team $200/person (5+ → $150, 10+ → $125). Phase 2: $2-5k setup + $500-800/mo
 
 ### Test VPS (27.03.2026)
 - Provider: Time4VPS, IP: 185.5.55.111, Ubuntu 24.04
@@ -82,13 +96,23 @@
 
 **ПРАВИЛО ДЛЯ БУДУЩЕГО:** Никогда не иметь файловый route и rewrite на один путь. Выбрать одно.
 
-## Next Actions (ordered by priority)
+## Next Actions (ordered by priority) — updated 28.03.2026
 
-1. **Лендинг iamrunning.online** — полная переработка визуала, поэтапно по компонентам
-2. **Лендинг iam-client-os** — дизайн-полировка + admin панель в светлой теме
-3. **Найти первого клиента** — $200-500/мес, $0 setup, система готова к продаже
-4. **G08: Tunnel агент** — Cloudflare Tunnel к локальному проекту (killer feature)
-5. **Stripe** — монетизация Track 1
+### Block 1: iam-client-os technical (TODAY)
+1. **Admin Panel Team tab UI** — role dropdown per member, member detail view (PRs, activity, tasks), tool management
+2. install-agent.sh v1 — lightweight sidecar for existing servers (scenario B)
+
+### Block 2: Landing iam-client-os
+3. Redesign for Team Workspace + positioning ("custom AI infrastructure for your business")
+4. "Go to Dashboard" button, three deployment scenarios section
+
+### Block 3: Landing iamrunning.online
+5. Hero component per manifest (entry 148) — one component at a time
+
+### 29-30.03 — Go to market
+6. Upwork profile + 3 proposals
+7. Cold DM templates (Reddit, LinkedIn, email)
+8. Video guide script
 
 ## Продуктовое видение (обновлено 27.03.2026)
 
@@ -109,10 +133,11 @@
 
 **Pitch:** "I'll set up a private AI system where your whole team's Claude or ChatGPT remembers your business context, goals, and decisions — so nobody starts from zero."
 
-**Pricing:**
-- Solo: 1 user, $200/мес
-- Team: до 5 users, $400/мес
-- Business: до 15 users, $700/мес
+**Pricing (finalized 27.03.2026):**
+- Phase 1 (first 10 clients, portfolio): Solo $300/mo flat. Team: 1-4 ppl $200/person, 5-9 $150/person, 10+ $125/person. $0 setup.
+- Phase 2 (after 10): Setup $2000-5000 + Solo $500/mo, Team $200-250/person. Enterprise $5000-15000 setup + $800-1500/mo.
+
+**Positioning:** NOT selling "AI workspace software". SELLING "Custom AI solution configured for YOUR business". Service with a product inside.
 
 **Target (Upwork):** бизнесы ищущие AI integration, AI automation, virtual CTO, AI workflow setup.
 
