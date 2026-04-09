@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-
 const BASE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://iamrunning.online').replace(/\/$/, '');
-
 export async function GET() {
   return NextResponse.json({
     issuer: BASE,
     authorization_endpoint: `${BASE}/api/mcp/authorize`,
     token_endpoint: `${BASE}/api/mcp/token`,
+    registration_endpoint: `${BASE}/api/mcp/register`,
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code'],
     code_challenge_methods_supported: ['S256'],
