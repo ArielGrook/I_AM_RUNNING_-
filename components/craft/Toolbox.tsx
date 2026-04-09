@@ -23,6 +23,7 @@ import {
   TronRegister,
   TronHub,
   HtmlBlock,
+  IamHero,
 } from '@/lib/craft/components';
 import { PRESETS } from '@/lib/craft/presets';
 import { Icons } from '@/lib/craft/icons';
@@ -37,7 +38,14 @@ const tabs: { id: TabId; label: string }[] = [
   { id: 'presets', label: '⚡ Presets' },
 ];
 
-const categories: { key: 'tronSections'; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean; newPageName?: string }[] }[] = [
+const categories: { key: string; title: string; items: { name: string; label: string; icon: string; component: React.ComponentType<any>; canvas: boolean; newPageName?: string }[] }[] = [
+  {
+    key: 'iamSections',
+    title: 'IAM Client OS',
+    items: [
+      { name: 'IamHero', label: 'IAM Hero', icon: '⚡', component: IamHero, canvas: true },
+    ],
+  },
   {
     key: 'tronSections',
     title: 'Legacy (Tron)',
@@ -69,8 +77,8 @@ export const Toolbox = ({ onAddPageNamed }: { onAddPageNamed?: (name: string) =>
   const { t } = useEditorTheme();
   const [activeTab, setActiveTab] = useState<TabId>('components');
   const [importing, setImporting] = useState(false);
-  const [openGroups, setOpenGroups] = useState({ tronSections: true });
-  const toggleGroup = (key: 'tronSections') =>
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ iamSections: true, tronSections: true });
+  const toggleGroup = (key: string) =>
     setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleZipImport = useCallback(

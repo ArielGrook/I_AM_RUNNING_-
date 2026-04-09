@@ -35,6 +35,7 @@ import {
   TronHub,
   TronShowcase,
   HtmlBlock,
+  IamHero,
 } from '@/lib/craft/components';
 import { ThemeProvider } from '@/lib/craft/context/ThemeContext';
 import { SiteContext } from '@/lib/craft/context/SiteContext';
@@ -67,6 +68,7 @@ const resolver = {
   TronHub,
   TronShowcase,
   HtmlBlock,
+  IamHero,
 };
 
 type Project = {

@@ -18,3 +18,4 @@ export { TronLogin } from './TronLogin';
 export { TronRegister } from './TronRegister';
 export { TronHub } from './TronHub';
 export { HtmlBlock } from './HtmlBlock';
+export { IamHero } from './IamHero';

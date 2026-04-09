@@ -46,6 +46,7 @@ import {
   TronRegister,
   TronHub,
   HtmlBlock,
+  IamHero,
 } from '@/lib/craft/components';
 import { PagesProvider, PagesContext } from '@/lib/craft/context/PagesContext';
 import { SiteContext } from '@/lib/craft/context/SiteContext';
@@ -1100,6 +1101,7 @@ export default function EditorPage() {
           TronRegister,
           TronHub,
           HtmlBlock,
+          IamHero,
         }}
         onRender={RenderNode}
         indicator={{
