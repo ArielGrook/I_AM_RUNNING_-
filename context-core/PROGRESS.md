@@ -37,18 +37,30 @@
   - Team mode: HTML token input page → AES-256-GCM encrypt → stateless auth codes
   - /api/mcp/register for dynamic client registration
   - Free Claude supports 1 custom MCP connector
-- **Admin Panel v2** ✅ (7 tabs):
-  - Dashboard, Team (add/revoke members, mode toggle), Tasks, Messages, Pull Pool (approve/reject), Activity (MCP log with user filter), Files
-  - team-edit API exists but NO UI for role switching yet ← NEXT TASK
-- **User Dashboard /dashboard** ✅:
-  - Login by team token, shows: role, tasks, messages, PRs, activity, bootstrap prompt with Copy button
-- **End-to-end verified** ✅:
-  - Steve (developer) connected via free Claude, read_memory + write_file→pull-pool confirmed
-- **install.sh v2** ✅: team directories (tasks/, messages/, pull-pool/, logs/), ecosystem.config.js
-- **Watchdog updated** ✅: checks TEAM_ROLES.md + ARCHITECTURE.md, recreates team dirs if missing
-- MCP Sandboxing v1.2.0 → v2.0.0: validateReadPath + validateWritePath + assertNotRulesFile + role scoping ✅
-- memory/ with YAML frontmatter: 7 files (5 core + TEAM_ROLES.md + ARCHITECTURE.md) ✅
-- Pricing finalized: Phase 1 (first 10): Solo $300/mo, Team $200/person (5+ → $150, 10+ → $125). Phase 2: $2-5k setup + $500-800/mo
+- **Admin Panel v3** ✅ (9 tabs + Logs):
+  - Dashboard (goal+team with last_seen+git with rollback+deploy log), Team (role dropdown+member detail view+tools mgmt),
+    Goals (structured goals with subgoals+assignment+progress bars+create-task-from-goal),
+    Tasks (structured JSON, status columns, link to goals, Formulate with AI prompt),
+    Messages (structured JSON, topic+body+goalRef), Pull Pool (PR review prompt, approve/reject),
+    Activity (MCP log), Files (full file browser, edit, delete), Logs (deploy success/fail with error output),
+    Settings (Supabase vars, TOTP setup)
+  - TOTP setup moved behind auth (security fix)
+  - Persistent auth: admin cookie check on mount, user sessionStorage
+  - 30s polling on user dashboard
+- **User Dashboard v2** ✅ (4 tabs):
+  - Overview (tasks with Start Working prompt, messages with topic/body, PRs with description)
+  - Goals (visible to all, subgoals with "You" badges, assigned-to-you section)
+  - Activity (MCP log)
+  - Setup (bootstrap prompt + role info)
+- **MCP Tools v2.1** ✅: create_task, send_message, create_goal, list_goals (admin only)
+  - AI writes to structured JSON → visible in admin panel + user dashboard
+  - ARCHITECTURE.md updated with Data Flow Rules
+- **Bootstrap Prompts v2** ✅: tool tables, description param workflow, role-specific guidance
+  - Formulate Task prompt (admin), Start Working prompt (user), Review prompt (PR)
+- **Goals System** ✅: structured goals.json, subgoals with assignee, progress bars, create-task-from-goal
+- **wisdom/ folder** ✅: ROADMAP, EVOLUTION, ARCHITECTURE_DEBT, LESSONS + cron reminder every 3 days
+- **Deploy Error Logging** ✅: deploy-logged.sh captures build output → logs/deploy.jsonl → Logs tab in admin
+- **Pricing updated**: Solo $300/mo, Team per-seat $200/person (5+ → $150, 10+ → $125), $0 setup for first 10
 
 ### Test VPS (27.03.2026)
 - Provider: Time4VPS, IP: 185.5.55.111, Ubuntu 24.04
@@ -96,23 +108,25 @@
 
 **ПРАВИЛО ДЛЯ БУДУЩЕГО:** Никогда не иметь файловый route и rewrite на один путь. Выбрать одно.
 
-## Next Actions (ordered by priority) — updated 28.03.2026
+## Next Actions (ordered by priority) — updated 28.03.2026 night
 
-### Block 1: iam-client-os technical (TODAY)
-1. **Admin Panel Team tab UI** — role dropdown per member, member detail view (PRs, activity, tasks), tool management
-2. install-agent.sh v1 — lightweight sidecar for existing servers (scenario B)
+### Immediate (29.03.2026)
+1. **Fix Logs tab display** — deploy errors showing but ANSI codes need cleanup
+2. **Super Admin role** — admin panel as primary workspace, not just settings
+3. **Landing iam-client-os** — Steve's redesign PR (dark green + fireflies) needs review + deploy
 
 ### Block 2: Landing iam-client-os
-3. Redesign for Team Workspace + positioning ("custom AI infrastructure for your business")
-4. "Go to Dashboard" button, three deployment scenarios section
+4. Finalize landing redesign after Steve's PR
+5. "Go to Dashboard" button, three deployment scenarios
 
 ### Block 3: Landing iamrunning.online
-5. Hero component per manifest (entry 148) — one component at a time
+6. Hero component per manifest (entry 148)
 
 ### 29-30.03 — Go to market
-6. Upwork profile + 3 proposals
-7. Cold DM templates (Reddit, LinkedIn, email)
-8. Video guide script
+7. Upwork profile + 3 proposals
+8. Cold DM templates (Reddit, LinkedIn, email)
+9. Connect Ariel's brother as second team member
+10. Video guide script
 
 ## Продуктовое видение (обновлено 27.03.2026)
 
