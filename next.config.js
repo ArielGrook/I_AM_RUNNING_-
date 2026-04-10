@@ -11,9 +11,6 @@ const nextConfig = {
   // Transpile ESM-only packages so layout/client chunks don't get raw "export" (Unexpected token 'export')
   transpilePackages: ['next-intl', 'next-themes'],
 
-  // Standalone output for Docker
-  output: 'standalone',
-  
   // TypeScript configuration
   // ⚠️ TEMPORARY: Enabled to allow deployment while fixing type errors incrementally
   // TODO: Fix all type errors and set this back to false
