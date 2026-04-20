@@ -2,7 +2,11 @@
 
 ## Week of 14–20 April 2026
 
-### 15.04 Tuesday (night after bagrut)
+*End-of-week. This week spans Tuesday 14.04 through Monday 20.04 (Ariel's Tue–Mon week convention). Rotates to legacy when next week's file is created on Tuesday 21.04.*
+
+---
+
+### 14.04 Tuesday — pre-sprint prep (night after bagrut)
 - MCP Tool Injection Roadmap v2 finalized (Opus review → 7 improvements accepted)
 - Session docs fully actualized
 - Ready for Sonnet executor tomorrow
@@ -49,29 +53,109 @@
 - Preamble → ✅ `[ROLE | SESSION x/80 | 15:01 UTC+3]`
 - All documentation updated
 
-**Morning (Sonnet executor):**
-- 6 mega-tools refactor (files, tasks, communication, goals, code_review, devops)
-- iam. prefix everywhere (/iam.admin, PM2 iam.{name})
-- Opus audit: pr-approve-deploy + dev-git-snapshot routing bugs fixed
-- /api/push/test removed (was unauthenticated)
-- 1494 lines dead code deleted
-- Docs updated (MCP_API, PR_TASKS, MEGA_TOOLS)
+### 16.04 Thursday — GTM launch day
 
-**Afternoon (Sonnet + Cursor):**
-- iam-client.sh written (769 lines)
-- iam-backup.sh written
-- Operator API created (/api/operator)
-- --no-landing flag (server-side redirect)
-- Tested on both servers — 12/12 pass
-- 12 bugs found and fixed during testing
-- TOTP label: "I AM RUNNING" → "IAM Client OS"
+- Upwork profile finalized with MCP positioning (Custom Workflows via MCP | Local AI via Ollama)
+- LinkedIn profile set up (headline, services, experience)
+- MCP market research: $4.5B market, 97M monthly SDK downloads, 5800+ servers, simple MCP servers sell $4-15k with 2-4 week delivery; SMB niche empty
+- Gmail `iamrunning.online@gmail.com` secured for cold email
+- 6 GTM channels identified and ranked by ROI (LinkedIn DMs, YouTube, Cold email, Facebook, Reddit, Upwork)
+- Hebrew DM templates written for Israeli AI influencers (Gilad Shoham, Leon Mulumud)
+- 🔴 Upwork account suspended (camera verification bug), Appeal pending 24–72h
+- Pricing finalized for Phase 1 beta: $300–500 setup, free usage for feedback
 
-**Evening (this Opus session):**
-- Dev Console inverted file tree: deployed + bug-fixed on live test
-- Cookie secure bug: found NODE_ENV hardcode, fixed to COOKIE_SECURE env var
-- Symlink, SYSTEM_CODE filtering, devConsoleHiddenPaths — all fixed
-- All fixes synced lego-base → GitHub → iamrunning
-- IDEAS/ organized: 29 files → 7 categories
-- Persistent memory architecture brainstorm (DRAFT spec)
-- ariel-workflow/ personal system created
-- MCP tool injection discovered as key behavior control mechanism
+### 17.04 Friday — Dev Console file delete + Stage 1 skeleton infrastructure
+
+**Morning:**
+- Stage 0 install cleanup session (install.sh → thin wrapper, README rewritten, DEVELOPMENT_VS_CLIENT.md)
+- INSTALLER_SPEC_v1 written
+- Phantom hardcoded paths fixed in 5 source files (commits 5546822, 1f7da3b)
+
+**Evening:**
+- Admin Dev Console file delete bug fixed — action name mismatch (`delete` → `delete-file`) + missing folder delete UI + tree refresh preserves expanded state (commit `2ed817b`)
+- Stage 1 infrastructure written: `scripts/sync-to-skeleton/` (MANIFEST + sync.sh + 28 overrides)
+- All docs/ + source-of-truth/ + memory templates translated EN
+- Wisdom English templates created (structure for future population)
+- sed sanitization pass added to sync.sh
+- Stage 1 handoff doc written
+
+### 18.04 Saturday — Stage 1 skeleton sync completed
+
+- ✅ Stage 1: skeleton sync first run successful — 173 files sanitized, 180 committed, pushed to `ArielGrook/iam-client-skeleton`
+- ✅ middleware.ts removed from manifest fix
+- ✅ lego-base dev → GitHub push (commits 2ed817b..145bc73)
+- GitHub PAT for skeleton push generated
+- Phase 1 Section 4 of CURRENT_GOAL completed
+
+### 19.04 Sunday — BIG DAY (7 iam-client-os commits + 12 iamrunning.ai commits)
+
+**iam-client-os (lego-base dev, 7 commits):**
+- `250144d` fix(mcp): reset session counter on `read_memory`/`onboard`/`session_handoff`
+- `76a8c03` docs(skeleton): replace dev-facing docs with ADMIN_PANEL_INTEGRATION
+- `a06a622` fix: BUG 1 CLIENT_DOMAIN scheme (pre-existing)
+- `2207e23` fix(mcp-oauth): gate debug logging behind `OAUTH_DEBUG` env flag
+- `4805376` feat(dev-console): persist open tabs + warn on unsaved changes
+- `7c9ee18` fix(team): super_admin token generate uses `ALL_TOOLS`
+- `427ca7c` fix(dashboard): restore Setup tab (was silently removed)
+- `a56198d` docs: evening handoff 19.04 + memory updates
+- Skeleton resynced 5 times, all fixes pushed
+- Stage 3 test install live at `iam-test.lego-base.online:4742`, verified end-to-end
+
+**iamrunning.ai (12 commits, Phases 17A + 17B complete, ~13h Cursor time):**
+- 17A.0 Ollama num_ctx/num_predict/temperature + OOM banner
+- 17A.1 Indexer scoped to `{project}/rag/`
+- 17A.2 KB as thin layer over rag/
+- 17A.3 Batched scheduler + debounce
+- 17A.4 Targeted chunk deletion via metadata.path
+- 17A.5 Migration + bge-m3 swap (also closed clearIndex state reset)
+- HOTFIX bge-m3 cold-start timeout 15s → 120s
+- 17A.6 Windows/OneDrive guards + normalizePathForChunkId
+- 17A.7 queryChunks filters + QueryOptions
+- 17A.8 Live RAG stats + Clear Index UI + embedding-model guard
+- 17A.9 Bilingual EN+RU with auto language detection + 4 RU translations
+- 17B RAG structure + manifest + memory foundation + EN/RU sync cleanup
+
+**Known issue surfaced in 17A.9 verification:**
+- Test 3 failed: Qwen said file not found for existing `src/main/ai-provider.ts`. This is Qwen tool-call instability, addressed by Phase 17D.
+
+### 20.04 Monday — Platform migration begins
+
+**Morning:**
+- SHARED_CONTEXT section 4 refreshed for iam-client-os 19.04 state
+
+**Evening (this session — Claude Opus 4.7 web MCP):**
+- PLATFORM_REFACTORING.md anchor document created (Step 0 DONE)
+- Migration Step 1.1 + 1.2 completed (docs transferred from lego-base, Ariel pushed via GitHub)
+- Migration Step 1.3 completed: `context-core/` on iamrunning actualized
+  - `PROGRESS.md` v9 written
+  - `MAIN.md` v2 written
+  - `PLATFORM.md` v2 written
+  - `PROJECT_STRUCTURE.md` marked STALE with regen TODO
+- `bootstrap-prompts/SUCCESS_CHAT_PATTERNS.md` created (based on Ariel's observation about first-prompt attractor behavior)
+- `current-state/` + `legacy/` rotation pattern formalized:
+  - `current-state/README.md` written (canonical entry point + rotation rule)
+  - `legacy/README.md` rewritten (purpose, naming convention)
+  - Rotation demonstrated: `session-state.yaml` 19.04 → legacy, new 20.04 written; `next-actions.md` 18.04 → legacy, new 20.04 written; this file expanded 14–20
+
+Commits: `73b0d2a`, `ca0632c`, (session-end snapshot pending)
+
+---
+
+## Stats for the week
+
+- **iam-client-os commits (lego-base dev):** 7 on 19.04, plus ~5 on 15.04 sprint and skeleton infra on 17–18.04
+- **iamrunning.ai commits:** 12 on 19.04 (Phases 17A+17B)
+- **iamrunning.online commits (this server):** 3 so far on 20.04 (migration Steps 0 + 1.3 + pattern formalization)
+- **Stage 3 test install:** live and verified
+- **GTM progress:** 6 channels identified + Upwork suspended + LinkedIn/Gmail/Hebrew DM templates ready. No paying client yet.
+- **Big documentation wins:** anchor doc for migration, rotation pattern formalized, SUCCESS_CHAT_PATTERNS codified
+
+## Rollup
+
+This was the week where (a) iam-client-os went from "almost production" to "verified production-ready on Stage 3 test install", (b) iamrunning.ai defrosted and closed Phases 17A+17B of RAG pipeline unification, (c) GTM got real (MCP research, channels, profiles), and (d) platform migration kicked off due to lego-base VPS sunset.
+
+Next week's file starts Tuesday 21.04.
+
+---
+
+*Updated: 20.04.2026 21:30 UTC+3. Rotation to legacy happens 21.04 morning when new week file is created.*

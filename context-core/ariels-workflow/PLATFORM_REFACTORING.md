@@ -199,7 +199,7 @@ Admin страница делается ДО переноса исходного
 | 0 — Документация решений | ✅ DONE | 2026-04-20 | PLATFORM_REFACTORING.md создан |
 | 1.1 — Аудит структуры iam-client-os | ✅ DONE | 2026-04-20 | прошлая сессия |
 | 1.2 — Перенос docs с lego-base | ✅ DONE | 2026-04-20 | Ariel через GitHub, 13 папок, ~100 файлов в `ariels-workflow/` |
-| 1.3 — Актуализация context-core/ iamrunning | ✅ DONE | 2026-04-20 | PROGRESS v9, MAIN v2, PLATFORM v2, SUCCESS_CHAT_PATTERNS.md, PROJECT_STRUCTURE помечен stale |
+| 1.3 — Актуализация context-core/ iamrunning | ✅ DONE | 2026-04-20 | PROGRESS v9, MAIN v2, PLATFORM v2, SUCCESS_CHAT_PATTERNS.md, PROJECT_STRUCTURE помечен stale, + current-state/legacy rotation pattern формализован (README.md в обеих папках, session-state и next-actions ротированы) |
 | 1.4 — Legacy cleanup | ⏳ READY | — | Следующий шаг: product-template/ → legacy/, пометить устаревшие INSTALL.md |
 | 2 — Подготовить iam-clients-os/ | ⏳ PENDING | — | — |
 | 3 — Admin page frontend | ⏳ PENDING | — | — |
@@ -225,4 +225,4 @@ Ariel делает полный `git clone` всех репозиториев le
 
 ---
 
-*Последнее обновление: 2026-04-20 21:10 UTC+3 | Step 1.3 complete, awaiting Ariel's go-ahead for Step 1.4*
+*Последнее обновление: 2026-04-20 21:45 UTC+3 | Step 1.3 complete (incl. current-state/legacy rotation pattern), awaiting Ariel's go-ahead for Step 1.4*

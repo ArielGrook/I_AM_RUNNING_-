@@ -1,69 +1,89 @@
 ---
-last_session_ended: "2026-04-19T23:30:00Z"
+last_session_ended: "2026-04-20T21:30:00Z"
 last_model: "claude-opus-4-7"
-mode: "dev-session-close"
-focus: "iam-client-os stabilization complete + iamrunning.ai Phase 17A + 17B complete"
+mode: "platform-migration"
+focus: "lego-base → iamrunning.online migration, Step 1.3 COMPLETE + current-state/legacy rotation pattern formalized"
+previous_session: "2026-04-19 evening (iam-client-os stabilization + iamrunning.ai Phase 17A+17B close)"
+previous_session_archived: "legacy/2026-04-19-session-state.yaml"
 
 current_status:
-  iam_client_os: "production-ready for first client"
-  iamrunner_ai: "Roadmap 17 — Phases 17A + 17B complete (12 commits on github.com/ArielGrook/iamrunning.ai). Remaining: 17D (Ollama tool polish) → 17C (shadow hints)"
-  skeleton: "fully synced ArielGrook/iam-client-skeleton"
-  iam_test: "live at iam-test.lego-base.online:4742, verified"
+  migration: "Steps 0, 1.1, 1.2, 1.3 DONE. Step 1.4 READY (legacy cleanup)."
+  iam_client_os: "production-ready, FROZEN (on lego-base, awaiting migration)"
+  iamrunner_ai: "Roadmap 17 — Phases 17A + 17B complete. 17D next (via Cursor, not this chat)."
+  platform_docs: "3-product architecture now reflected in PROGRESS v9, MAIN v2, PLATFORM v2"
+  iam_test: "live at iam-test.lego-base.online:4742 — will be decommissioned in Step 6"
 
-session_19_04_stats:
-  iam_client_os_commits_on_dev: 7
-  skeleton_syncs: 5
-  security_fixes: 2
-  ux_fixes: 3
-  stage_3_install: "successful, iam-test online"
-  iamrunning_ai_commits: 12
-  iamrunning_ai_phases_closed: "17A (10/10) + 17B (1/1)"
-  iamrunning_ai_total_hours: "~13h Cursor Composer 2 thinking"
+this_session_accomplishments:
+  - "Read PLATFORM_REFACTORING.md, SHARED_CONTEXT.md, current-goal.md, session-state.yaml"
+  - "Verified 13 folders + ~100 files from Step 1.1-1.2 migration are present in context-core/ariels-workflow/"
+  - "Answered Ariel's first-prompt-attractor observation in depth"
+  - "Created bootstrap-prompts/SUCCESS_CHAT_PATTERNS.md (TL;DR, 5-part template, 6 anti-patterns, poisoned-chat detection, status table pattern, Client OS application)"
+  - "Rewrote context-core/PROGRESS.md to v9 (3-product architecture, current state per product, GTM, migration)"
+  - "Rewrote context-core/MAIN.md to v2 (infrastructure table, GitHub repos, entry points)"
+  - "Rewrote context-core/PLATFORM.md to v2 (RU, 3 products, migration, sales funnel, rules)"
+  - "Added STALE-marker + TODO(regen script) to context-core/PROJECT_STRUCTURE.md"
+  - "Updated PLATFORM_REFACTORING.md: Step 1 expanded into 1.1/1.2/1.3/1.4; 1.1-1.3 DONE"
+  - "Formalized current-state + legacy rotation pattern"
+  - "Wrote current-state/README.md — canonical entry point + rotation rule"
+  - "Rewrote legacy/README.md — purpose + naming convention"
+  - "Demonstrated rotation: session-state (19.04 → legacy), next-actions (18.04 → legacy), new versions written"
+  - "Updated weekly-progress.md with entries for 16-20 April"
+
+this_session_commits:
+  - "73b0d2a before: Step 1.3 — SUCCESS_CHAT_PATTERNS.md + actualize context-core/"
+  - "ca0632c Step 1.3 DONE: PROGRESS v9 + MAIN v2 + PLATFORM v2 + SUCCESS_CHAT_PATTERNS.md + PROJECT_STRUCTURE stale-marker + status table update"
+  - "(current) current-state + legacy rotation pattern formalized"
 
 next_focus:
-  morning_20_04: "iam-client-os (Ariel focus)"
-  evening_20_04_or_later: "iamrunning.ai — Phase 17D Ollama tool polish via new Cursor chat"
+  immediate: "Step 1.4 — legacy cleanup (product-template/ + root-level fix docs → context-core/legacy/)"
+  tomorrow: "Steps 2 and 3 — iam-clients-os/ folder structure + Admin page frontend"
+  by_23_04: "Steps 4, 5, 6 — source code migration + validation + lego-base decommission"
+  parallel: "iamrunning.ai Phase 17D via separate Cursor chat (2-3h)"
+  gtm: "LinkedIn DMs, YouTube outreach, Reddit engagement — Ariel's parallel work"
 
-recent_commits_iam_client_os:
-  - "7c9ee18 fix(team): super_admin token generate uses ALL_TOOLS"
-  - "427ca7c fix(dashboard): restore Setup tab (was removed)"
-  - "2207e23 fix(mcp-oauth): gate debug logging behind OAUTH_DEBUG env flag"
-  - "4805376 feat(dev-console): persist open tabs across tab switches"
-  - "250144d fix(mcp): reset session counter on read_memory/onboard/session_handoff"
-  - "76a8c03 docs(skeleton): replace dev-facing docs with ADMIN_PANEL_INTEGRATION"
-  - "a06a622 fix: BUG 1 CLIENT_DOMAIN scheme (pre-existing)"
+blockers_and_risks:
+  - "lego-base Time4VPS billing ~22-23.04 — 3 working days for Steps 1.4 through 6"
+  - "Claude Max + Cursor subscription time remaining — focus is on specs so Cursor can continue independently"
+  - "roadmap.md in current-state/ still dated 14.04, needs platform-level revision (rotate+rewrite at some point)"
 
-recent_commits_iamrunning_ai:
-  - "7d66300 feat(rag): structure, manifest, templates, memory foundation + EN sync (17B)"
-  - "7316add feat(rag): bilingual EN+RU support with auto language detection + translations (17A.9)"
-  - "d7d9db1 feat(rag): 17A.8 nuances — live stats + clear index UI + settings guard"
-  - "9ea82b3 feat(rag): queryChunks filters + update all call sites (17A.7)"
-  - "38f18ee feat(rag): Windows/OneDrive guards in indexer (17A.6)"
-  - "hotfix feat(rag): bge-m3 cold-start timeout — bump to 120s"
-  - "1f9a5ff feat(rag): transactional migration + embedder swap to bge-m3 (17A.5)"
-  - "8e83095 feat(rag): targeted chunk deletion on KB remove (17A.4)"
-  - "8060a4f feat(rag): batched KB adds with debounced reindex (17A.3)"
-  - "e471557 feat(rag): KB as thin layer over rag/ (17A.2)"
-  - "15d3527 feat(rag): scope indexer to {project}/rag/ only (17A.1)"
-  - "7d1599b feat(ollama): expose num_ctx, num_predict, temperature in Settings (17A.0)"
+open_questions:
+  - "Continue to Step 1.4 now, or pause here?"
+  - "Any objection to the current-state rotation scheme as documented in current-state/README.md?"
+  - "roadmap.md revision scope — update in place or rotate+rewrite?"
+  - "workspace-README.md sitting in current-state/ — doesn't belong, move to rules/ or delete?"
 
-iam_test_server:
-  url: "https://iam-test.lego-base.online"
-  path: "/var/www/iam.test"
-  pm2: "iam.iam-test"
-  port: 4742
-  mcp_token_hash: "sha256:67f9d78c793fcbdfd3b310d0e89e8c83b8f8f7f408ff24de9036b2ed88f50875"
-  ssl: "pending — certbot --nginx -d iam-test.lego-base.online --non-interactive --agree-tos -m admin@iam-test.lego-base.online --redirect"
+file_paths_changed_this_session:
+  created:
+    - "context-core/ariels-workflow/bootstrap-prompts/SUCCESS_CHAT_PATTERNS.md"
+    - "context-core/ariels-workflow/current-state/README.md"
+    - "context-core/ariels-workflow/legacy/2026-04-19-session-state.yaml"
+    - "context-core/ariels-workflow/legacy/2026-04-18-next-actions.md"
+  rewritten:
+    - "context-core/PROGRESS.md (v9)"
+    - "context-core/MAIN.md (v2)"
+    - "context-core/PLATFORM.md (v2)"
+    - "context-core/ariels-workflow/legacy/README.md"
+    - "context-core/ariels-workflow/current-state/session-state.yaml (this file)"
+    - "context-core/ariels-workflow/current-state/next-actions.md"
+    - "context-core/ariels-workflow/current-state/weekly-progress.md"
+  patched:
+    - "context-core/PROJECT_STRUCTURE.md (added STALE header)"
+    - "context-core/ariels-workflow/PLATFORM_REFACTORING.md (status table update)"
 
-backlog_iam_client_os:
-  - "team-regenerate-token should refresh tools[], not just token_hash"
-  - "MANIFEST explicit exclude for app/api/admin/totp-test-flow"
-  - "certbot SSL on iam-test"
-  - "end-to-end worker->PR->approve+deploy test (during first client onboarding)"
+servers:
+  iamrunning_online:
+    ip: "94.176.238.108"
+    path: "/var/www/i_am_running"
+    pm2: "i-am-running"
+    status: "ACTIVE — all work in this session happened here"
+  lego_base:
+    ip: "185.5.55.111"
+    path: "/var/www/iam-os"
+    pm2: "iam-os + iam.iam-test"
+    status: "SUNSET by ~23.04.2026"
+    note: "No work done on lego-base this session; full migration of remaining state happens in Steps 4-6"
 
-backlog_iamrunning_ai:
-  - "17D Ollama tool calling polish — resolves Qwen tool-call failure (test 3 from 17A.9 verification)"
-  - "17C Persistent memory via shadow hints (now unblocked: 17B laid manifest + memory/ foundation)"
-  - "Known issue: test 3 verification failed — Qwen said file not found for existing src/main/ai-provider.ts. This is exactly what 17D addresses."
-  - "Roadmap 18 — Fine-tune v1 (after Roadmap 17 closes)"
+github_status:
+  iamrunning_online_local_commits: "73b0d2a, ca0632c, (current) — LOCAL on iamrunning VPS, not pushed to origin. Ariel manages pushes."
+  lego_base: "clean tree as of 19.04 evening per previous session-state"
 ---
