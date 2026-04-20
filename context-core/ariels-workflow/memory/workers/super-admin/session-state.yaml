@@ -1,0 +1,35 @@
+---
+date: "2026-04-19"
+time: "14:40 UTC"
+session: "session-handoff-2026-04-19-14"
+---
+
+# Session State
+
+## Current Focus
+Full-day iam-client-os stabilization session. Platform now production-ready. Switching focus to iamrunner.ai Electron client next session.
+
+## Completed This Session
+  - "Morning: MCP session counter reset bug fixed (commit 250144d)"
+  - "Morning: Dev Console tab persistence with unsaved-changes warning in Admin and Dashboard (commit 4805376)"
+  - "Morning: docs/architecture cleanup replaced with client-facing ADMIN_PANEL_INTEGRATION.md (commit 76a8c03)"
+  - "Morning: OAuth debug logging gated behind OAUTH_DEBUG env flag, security fix (commit 2207e23)"
+  - "Morning: Stage 3 fresh install on iam-test.lego-base.online successful, 11/11 steps"
+  - "Morning: 3 skeleton syncs verified"
+  - "Evening: Super Admin token generate uses ALL_TOOLS from registry (commit 7c9ee18)"
+  - "Evening: Dashboard Setup tab restored in header, was silently removed (commit 427ca7c)"
+  - "Evening: 2 more skeleton syncs, 5 total today"
+  - "Evening: end-to-end verification via MCP connector on iam-test"
+  - "Evening: rotated compromised MCP super_admin token"
+  - "Evening: docs updated (CURRENT_GOAL v20, NEXT_ACTIONS v11, WEEKLY_PROGRESS v8)"
+  - "Evening: handoff document written"
+
+## Next Actions
+  - "Next session: switch to iamrunner.ai work"
+  - "Start with B: RAG Nuances 10A-10D (warm-up, 1 session)"
+  - "Then A: Roadmap 17 RAG Pipeline Unification (2-3 sessions)"
+  - "Then C: MCP Provider AI-as-a-Service architecture spec review"
+  - "iam-client-os frozen unless real client surfaces issue"
+  - "Backlog for iam-client-os documented in NEXT_ACTIONS.md v11"
+  - "GTM parallel by Ariel: LinkedIn DMs, YouTube channels, cold email, Reddit r/mcp, Facebook Israeli groups"
+  - "Create demo viewer account (read-only admin) for outreach"

@@ -1,0 +1,301 @@
+---
+last_updated: "2026-04-14T23:15:00+03:00"
+updated_by: "opus-brainstorm"
+total_entries: 11
+---
+
+# AI Wisdom — Index of All Concepts, Audits, and Ideas
+
+# ══════════════════════════════════════════════════
+# CONCEPTS
+# ══════════════════════════════════════════════════
+
+concepts:
+
+  - name: "Chain-of-Thought Fine-Tune"
+    path: "IDEAS/concepts/CHAIN_OF_THOUGHT_FINETUNE.md"
+    date: "2026-04-07"
+    status: "concept"
+    importance_now: 2  # 1-5, 5=urgent. Not needed until local model fine-tune phase
+    importance_overall: 5  # Game-changing for local AI quality
+    summary: "Fine-tune local models using instruction→thinking→output triples. ~900 potential examples exist. Pipeline: collect → Claude generates thinking → JSONL → QLoRA on Qwen2.5-Coder 7B."
+    relevant_to: "iamrunner.ai (frozen until IAM Client OS launches)"
+
+  - name: "Self-Learning Workspace"
+    path: "IDEAS/concepts/SELF_LEARNING_WORKSPACE_CONCEPT.md"
+    date: "2026-04-07"
+    status: "concept"
+    importance_now: 1  # iamrunner.ai is frozen
+    importance_overall: 5  # Core product vision for desktop client
+    summary: "Closed loop: drag & drop → RAG + dataset generation → fine-tune by button → smarter model. Business: encrypted LoRA adapter tied to subscription."
+    relevant_to: "iamrunner.ai"
+
+  - name: "Workflow Brainstorm — AI + Manual Parity"
+    path: "IDEAS/concepts/WORKFLOW_BRAINSTORM_02_04_2026.md"
+    date: "2026-04-02"
+    status: "mostly_implemented"
+    importance_now: 3  # Unrealized ideas still valuable
+    importance_overall: 4
+    summary: "Worker workflow: AI + manual. Dev Console, push, permissions — done. NOT done: Code Reference System (file+lines→prompt), Work Groups, Task Priority."
+    unrealized_ideas:
+      - "[P3] Code Reference System — file + line range → structured reference + AI prompt"
+      - "[P5] Task Priority ordering"
+      - "Work Groups — dynamic team groups with shared folders"
+
+  - name: "Dashboard UX Ideas"
+    path: "IDEAS/concepts/DASHBOARD_UX_IDEAS.md"
+    date: "2026-04-01"
+    status: "mostly_implemented"
+    importance_now: 1  # Almost everything done
+    importance_overall: 2
+    summary: "4 UX ideas: hierarchical communication, spec requests, clickable tasks, feature parity. Most implemented."
+
+  - name: "MCP Persistent Memory — Session Handoff"
+    path: "IDEAS/concepts/MCP_PERSISTENT_MEMORY.md"
+    date: "2026-04-06"
+    status: "partially_implemented"
+    importance_now: 5  # CRITICAL — directly blocks quality of AI behavior
+    importance_overall: 5
+    summary: "90% trigger auto-saves session state. SESSION_STATE.yaml as handoff. Universal bootstrap prompt. Counter works but auto-trigger NOT implemented."
+    critical_unrealized:
+      - "🔴 90% auto-trigger: AI auto-calls session_handoff() before hitting limit"
+      - "🔴 session_handoff MCP action: save state + next actions + current goal in one call"
+      - "🟡 session-stats.jsonl: log session ends for empirical limit research"
+      - "🟡 Universal bootstrap prompt (role-specific only, in Russian)"
+
+  - name: "MCP Fine-Tune Experiments"
+    path: "IDEAS/concepts/MCP_FINETUNE_EXPERIMENTS.md"
+    date: "2026-04-01"
+    status: "partially_implemented"
+    importance_now: 4  # Tool injection is THE mechanism for behavior control
+    importance_overall: 5
+    summary: "9 experiments controlling AI via tool response text. 3 done, 1 partial, 1 not started. Detailed version: IDEAS/specs/IAM_CLIENT_OS_MCP_FINETUNE.md"
+    unrealized:
+      - "🟡 Experiment 4: file-specific hints in status response"
+      - "🟡 Experiment 5: error recovery instructions"
+      - "🟡 Metrics collection (never started)"
+
+# ══════════════════════════════════════════════════
+# AUDITS
+# ══════════════════════════════════════════════════
+
+audits:
+
+  - name: "ClickUp Competitive Analysis"
+    path: "IDEAS/audits/CLICKUP_COMPETITIVE_ANALYSIS.md"
+    date: "2026-04-01"
+    importance_now: 3  # Useful for pitch preparation
+    importance_overall: 3
+    summary: "Different category than ClickUp. 5 advantages: AI-native, private server, code workflow, MCP fine-tune, managed service."
+    extracted_to: "ariel-workflow/competitive-advantages.yaml"
+
+  - name: "Evolution Blocks 187-191"
+    path: "IDEAS/audits/EVOLUTION_BLOCKS_187_191.md"
+    date: "2026-04-10"
+    importance_now: 1  # Historical
+    importance_overall: 3  # Training data value
+    summary: "Implementation log: dark mode, Messages, Gemini AI Chat, workspace boundary. Insights valuable as training pairs for EVOLUTION.md."
+
+  - name: "Full Platform Audit (Opus 4)"
+    path: "IDEAS/audits/FULL_PLATFORM_AUDIT.md"
+    date: "2026-04-06"
+    importance_now: 3
+    importance_overall: 4
+    summary: "80+ files, rating 7.5/10. Router 9/10, security 8.5/10, tests 1/10."
+    open_issues:
+      - "🔴 Test coverage = 0"
+      - "🟡 CSRF server-side validation on admin panel"
+      - "🟡 push.ts sync fs without file lock"
+      - "🟡 enforceCapability → can() migration"
+
+  - name: "Platform Integration Analysis"
+    path: "IDEAS/audits/IAM_RUNNING_PLATFORM_AUDIT_05_04_2026.md"
+    date: "2026-04-05"
+    importance_now: 2  # Strategic, not urgent
+    importance_overall: 4
+    summary: "Both products + 3 integration models. Track 1 needs Stripe. Track 2 can sell now. Integration premature."
+
+  - name: "System Security Deep Dive"
+    path: "IDEAS/audits/SYSTEM_AUDIT_RESULTS_03_04_2026.md"
+    date: "2026-04-02"
+    importance_now: 3  # Open security issues
+    importance_overall: 4
+    summary: "6000+ LOC, 14 security issues found. Most fixed since then."
+    open_issues:
+      - "🔴 search_files command injection — execFileSync not confirmed fixed"
+      - "🔴 Test coverage still 0"
+      - "🟡 Rate limit missing on dashboard/admin APIs"
+      - "🟡 CSRF missing on dashboard API"
+      - "🟡 withFileLock timeout proceeds without lock instead of failing"
+    note: "Needs internal marking of what's fixed vs still open"
+
+# ══════════════════════════════════════════════════
+# DOCS (rules, checklists, UI principles)
+# ══════════════════════════════════════════════════
+
+docs:
+
+  - name: "Dashboard = Admin Panel UI Principle"
+    path: "IDEAS/docs/DASHBOARD_EQUALS_ADMIN_PANEL_UI.md"
+    importance_now: 4
+    importance_overall: 5
+    summary: "Architectural law: Dashboard copies Admin Panel 1:1. No simplifications. 5 rules: no role gaps, reuse UI, review task → Pull Pool, no duplicates, reviewer sees only own."
+    status: "active_law"
+
+  - name: "Implementation Rules"
+    path: "IDEAS/docs/IMPLEMENTATION_RULES.md"
+    importance_now: 5
+    importance_overall: 5
+    summary: "10 iron rules: backend↔frontend parity, capability gating via single module, 'no access = hidden', audit before patch, one commit = one task, no type casts, cut&paste refactoring, one MCP connector per chat, parity check before deploy, operator invisible."
+    status: "active_law"
+    note: "Should be embedded into MCP tool injection and bootstrap prompts for Sonnet"
+
+  - name: "Platform QA Checklist"
+    path: "IDEAS/docs/PLATFORM_CHECKLIST.md"
+    importance_now: 3
+    importance_overall: 4
+    summary: "Full QA checklist: all roles, MCP workflow, push, infra. ~60% of 'not done' items now done (Tool Registry, Dev Console, backup). Still missing: Marketer, Stripe, Code Reference, SSE."
+    status: "outdated — needs checkbox update"
+
+# ══════════════════════════════════════════════════
+# HANDOFFS (historical session transitions)
+# ══════════════════════════════════════════════════
+
+handoffs:
+
+  - name: "Reviewer Workflow Handoff"
+    path: "IDEAS/handoffs/HANDOFF_REVIEWER_WORKFLOW_06_04_2026.md"
+    importance_now: 1
+    importance_overall: 2
+    summary: "Detailed handoff for reviewer role implementation. All 5 blocks fully implemented since then."
+    status: "completed"
+    value: "Template for writing good handoffs"
+
+  - name: "Session Handoff 04.04"
+    path: "IDEAS/handoffs/SESSION_HANDOFF_04_04_2026.md"
+    importance_now: 1
+    importance_overall: 2
+    summary: "Security sprint 14/14, diff view, mobile responsive. All done except mobile Phase 3. Contains TOTP re-issue incident (user locked out) — still relevant for first-run TOTP design."
+    status: "completed"
+    notable: "TOTP lockout incident — confirm step needed before re-issue"
+
+# ══════════════════════════════════════════════════
+# ROADMAPS
+# ══════════════════════════════════════════════════
+
+roadmaps:
+
+  - name: "Improvement Plan (Tier-based tracker)"
+    path: "IDEAS/roadmaps/IMPROVEMENT_PLAN_IAM_CLIENT_OS.md"
+    importance_now: 4
+    importance_overall: 4
+    summary: "4 tiers of tasks. ~60% done since April 4. Key remaining: MCP Fine-tune (M1-M5), Code Reference System (D3), Marketer role (R2), SSE (P3), SQLite (S4). Needs major update to mark completed items."
+    status: "outdated — many items completed but not marked"
+
+  - name: "iam-client.sh Installer Roadmap"
+    path: "IDEAS/roadmaps/ROADMAPiam-client.sh—УстановщикIAMClientOS.md"
+    importance_now: 1
+    importance_overall: 2
+    summary: "15-phase roadmap for install.sh. Fully implemented (769 lines). Historical — good template for writing executor roadmaps."
+    status: "completed"
+
+# ══════════════════════════════════════════════════
+# MAIN WORKFLOW (strategic documents)
+# ══════════════════════════════════════════════════
+
+main_workflow:
+
+  - name: "Master Plan (Sprint-based)"
+    path: "IDEAS/main_workflow/MASTER_PLAN.md"
+    importance_now: 3
+    importance_overall: 3
+    summary: "7 sprints with copy-paste prompts for Sonnet. Sprint 0 (infra), 2 (Dev Console), 4 (Reviewer) — done. Sprint 1 (MCP Fine-tune), 5 (GTM), 6 (maturity) — still relevant."
+    status: "partially_outdated"
+    overlaps_with: "IDEAS/roadmaps/IMPROVEMENT_PLAN_IAM_CLIENT_OS.md"
+
+  - name: "IAM Client OS Implementation Plan v2"
+    path: "IDEAS/main_workflow/IAM_CLIENT_OS_IMPLEMENTATION_PLAN_v2.md"
+    importance_now: 2
+    importance_overall: 4
+    summary: "Full implementation plan: role model (Operator→Super Admin→Admin→Worker), .iam/ architecture concept, plugin SDK, install flow. Foundation document for the entire product."
+    status: "partially_outdated — role model implemented, .iam/ concept evolved into current architecture"
+
+  - name: "iamrunner.ai Master Document"
+    path: "IDEAS/main_workflow/IAMRUNNER_AI_MASTER_DOC.md"
+    importance_now: 1
+    importance_overall: 4
+    summary: "Desktop client vision: Electron + Ollama + MCP tunnel + RAG + fine-tune. Business model $4-5k package. Product frozen until IAM Client OS launches."
+    status: "frozen — relevant when desktop client work resumes"
+
+# ══════════════════════════════════════════════════
+# SPECS (feature specifications)
+# ══════════════════════════════════════════════════
+
+specs:
+
+  - name: "Architecture Refactoring Plan"
+    path: "IDEAS/specs/ARCHITECTURE_REFACTORING_PLAN.md"
+    importance_now: 1
+    importance_overall: 2
+    summary: "lib/data/ creation plan. 9 steps, all completed. 430 lines of duplicate code removed, 10 modules created."
+    status: "completed"
+
+  - name: "Dev Console Design"
+    path: "IDEAS/specs/DEV_CONSOLE_DESIGN.md"
+    importance_now: 2
+    importance_overall: 4
+    summary: "Full Dev Console spec: cascade visibility, SYSTEM_PATHS, filtering, handlers, UI. 90% implemented. NOT done: Code Reference System, Path Presets UI."
+    status: "mostly_implemented"
+    unrealized:
+      - "Code Reference System (select lines → message admin / copy AI prompt)"
+      - "Path Presets UI (Super Admin configures admin paths via dropdown)"
+
+  - name: "Dev Console Redesign"
+    path: "IDEAS/specs/DEV_CONSOLE_REDESIGN.md"
+    importance_now: 1
+    importance_overall: 2
+    summary: "CodeMirror implementation spec. Fully implemented. Code Reference System described but not built."
+    status: "completed"
+
+  - name: "IAM Client OS MCP Fine-Tune (4-layer system)"
+    path: "IDEAS/specs/IAM_CLIENT_OS_MCP_FINETUNE.md"
+    importance_now: 5
+    importance_overall: 5
+    summary: "THE spec for AI behavior control. 4 layers: Project Instructions → Skills → Project Documents → MCP Tool Injection. Developer Presets (frontend/backend). Wisdom folder. Session management. 11 sections, ~270 lines. Includes honest assessment: tool injection ~80% compliance, wisdom updates sometimes missed."
+    status: "partially_implemented"
+    critical: "This is what we're building NOW — MCP tool injection is the key mechanism"
+
+  - name: "Messaging System V2"
+    path: "IDEAS/specs/MESSAGING_SYSTEM_V2.md"
+    importance_now: 1
+    importance_overall: 2
+    summary: "WhatsApp-style conversations, groups, push notifications. Fully implemented."
+    status: "completed"
+
+  - name: "Permissions System"
+    path: "IDEAS/specs/PERMISSIONS_SYSTEM_SPEC.md"
+    importance_now: 2
+    importance_overall: 4
+    summary: "Capabilities architecture: can()/canFile(), capability-gate, role presets. Implemented via lib/permissions.ts."
+    status: "implemented"
+
+  - name: "Persistent Memory Architecture (DRAFT)"
+    path: "IDEAS/specs/PERSISTENT_MEMORY_ARCHITECTURE.md"
+    importance_now: 4
+    importance_overall: 5
+    summary: "DRAFT written today. Shared vs personal memory, RULES locked, ARCHITECTURE write-once with prompt, shared/ folder, wisdom/, legacy/, worker prefixes, install.sh templates. NOT finalized — brainstorm ongoing."
+    status: "draft"
+
+  - name: "Router Architecture"
+    path: "IDEAS/specs/ROUTER_ARCHITECTURE.md"
+    importance_now: 2
+    importance_overall: 4
+    summary: "4 global routers: Tool Registry, Permissions, Notify, Status. All implemented."
+    status: "implemented"
+
+  - name: "Worker Tools Redesign"
+    path: "IDEAS/specs/WORKER_TOOLS_REDESIGN.md"
+    importance_now: 2
+    importance_overall: 3
+    summary: "MCP tools restructuring + behavioral instructions. Mega-tools refactor done 14.04. Overlaps with MCP_FINETUNE spec."
+    status: "mostly_implemented"

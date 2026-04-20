@@ -1,0 +1,27 @@
+---
+date: "2026-04-19"
+time: "10:28 UTC"
+session: "session-handoff-2026-04-19-10"
+---
+
+# Session State
+
+## Current Focus
+docs/architecture/ cleanup in skeleton — task 4 from HANDOFF_19_04_2026_MORNING.md
+
+## Completed This Session
+  - "Audited Admin Panel structure: app/admin/page.tsx (9 tabs), app/api/admin/lib/shared.ts, TOTP flow endpoints"
+  - "Wrote complete ADMIN_PANEL_INTEGRATION.md (~350 lines, client-facing English): overview, first-run TOTP, tab reference for all 9 tabs, integration diagram showing how Admin Panel connects to MCP/Dashboard/PR/Memory/Push/Build, key files reference, common workflows, security model, troubleshooting"
+  - "Session limit (91/80) blocked write to scripts/ path — draft saved to memory/workers/super-admin/ADMIN_PANEL_INTEGRATION_DRAFT.md instead"
+
+## Next Actions
+  - "STEP 1 — move the draft to its real location: read memory/workers/super-admin/ADMIN_PANEL_INTEGRATION_DRAFT.md, then write its full content to scripts/sync-to-skeleton/overrides/docs/architecture/ADMIN_PANEL_INTEGRATION.md (content is complete and reviewed — just copy verbatim)"
+  - "STEP 2 — rewrite scripts/sync-to-skeleton/overrides/docs/architecture/README.md: remove the table rows linking to api/, data/, features/, ui/ files (they no longer ship). Replace with a minimal TOC pointing at ADMIN_PANEL_INTEGRATION.md. Drop the 'Quick recipe: how to add...' section entirely — that's dev-facing, not client-facing. Keep the 30-second global architecture diagram (it's useful for clients)."
+  - "STEP 3 — update scripts/sync-to-skeleton/MANIFEST.txt: in the '# ── DOCS (translated to English) ─' block, REMOVE these 8 lines: 'OVERRIDE docs/architecture/api/ADMIN_API.md', 'OVERRIDE docs/architecture/api/DASHBOARD_API.md', 'OVERRIDE docs/architecture/api/MCP_API.md', 'OVERRIDE docs/architecture/data/DATA_LAYER.md', 'OVERRIDE docs/architecture/features/MEGA_TOOLS.md', 'OVERRIDE docs/architecture/features/NOTIFICATIONS_ROLES_GOTCHAS.md', 'OVERRIDE docs/architecture/features/PR_TASKS_MCP.md', 'OVERRIDE docs/architecture/ui/UI_MESSAGING_SESSIONS_DEPLOY.md'. KEEP 'OVERRIDE docs/architecture/README.md'. ADD one new line: 'OVERRIDE docs/architecture/ADMIN_PANEL_INTEGRATION.md'"
+  - "STEP 4 — optionally delete the 8 now-orphaned override files under scripts/sync-to-skeleton/overrides/docs/architecture/{api,data,features,ui}/ to keep the overrides tree clean (not strictly required — sync.sh only copies what's in MANIFEST — but cleaner)"
+  - "STEP 5 — delete memory/workers/super-admin/ADMIN_PANEL_INTEGRATION_DRAFT.md (cleanup, draft is now in its real location)"
+  - "STEP 6 — git_snapshot with message 'docs: replace dev-facing docs/architecture/ with client-focused ADMIN_PANEL_INTEGRATION guide'"
+  - "AFTER THAT — resume next-actions list: BUG #1 (CLIENT_DOMAIN schema in scripts/iam-client.sh step 5), ask Ariel what the 'non-critical bug' is, then Stage 3 re-sync + reinstall + Claude.ai connector test"
+
+## Blockers
+  - "Session limit 91/80 triggered hard block on writes to scripts/ path — required me to stash the draft in memory/ and hand off. This is normal MCP injection behavior, not a bug. Next chat starts fresh counter and can proceed without issue."

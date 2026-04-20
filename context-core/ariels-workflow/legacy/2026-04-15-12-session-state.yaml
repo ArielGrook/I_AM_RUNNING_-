@@ -1,0 +1,57 @@
+---
+date: "2026-04-15"
+time: "15:10 UTC+3"
+session: "opus-mastermind-3"
+previous_session: "sonnet-session3-tasks8-10"
+---
+
+# Session State
+
+## Where We Are Right Now
+
+MCP Tool Injection sprint COMPLETE. All 11 tasks + bugfix deployed and verified. System is live and working — every tool call now receives behavioral instructions via `<internal>` blocks.
+
+## What Was Done Today (15.04.2026)
+
+**Sonnet Session 1 (morning):**
+- Task 0: Audit existing route.ts
+- Task 1: Translate all Russian → English
+- Task 2: Timestamp in preamble (Israel UTC+3)
+- Task 3: Session limit → 80, early warn → 50, soft limit → 72
+- Task 4: smartErr + per-tool error recovery + errors.jsonl
+
+**Sonnet Session 2 (midday):**
+- Task 5: Per-tool injection rewrite (all English, `<internal>` tags)
+- Task 6: Preset injection (frontend/backend, path-aware)
+- Task 7: checkBlock — 3 block points (pre-execution hard blocks)
+
+**Sonnet Session 3 (afternoon):**
+- Path fix: memory/SESSION_STATE.yaml → ariel-workflow/session-state.yaml (8 patches)
+- Task 8: session_handoff MCP action
+- Task 9: session-stats.jsonl + compliance counters
+- Task 10: Contextual implementation rules
+
+**Bugfix Session (after Session 3):**
+- Found: smartOk called without toolName for read/list/search/onboard/read_memory
+- Fixed: 11 patches across files-mega, tasks-mega, communication-mega, review-mega
+- Also added toolName to rename/move/copy/delete (file-mutating = needs git_snapshot reminder)
+
+**Verification (Opus dogfood):**
+- read_memory → ✅ SESSION START PROTOCOL + IMPLEMENTATION RULES
+- read_file → ✅ read-before-write reminder
+- list_directory → ✅ same injection
+- search_files → ✅ check call sites reminder
+- Preamble → ✅ [ROLE | SESSION x/80 | timestamp UTC+3 | TASK]
+
+## What Needs to Happen Next
+
+1. 🔴 Update all documentation (roadmap, ariel-workflow docs, memory/ files)
+2. 🟡 Improve injection text based on dogfooding observations
+3. 🟡 First-run TOTP flow (C1)
+4. 🟡 Bootstrap prompts English (C3)
+5. 🟡 install.sh configs (C5)
+6. 🟢 ChatGPT MCP connector test with new injections
+
+## Servers
+- lego-base (185.5.55.111): all deployed, build success
+- GitHub: needs push (multiple commits from today's sessions)

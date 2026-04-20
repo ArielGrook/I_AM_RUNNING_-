@@ -1,0 +1,28 @@
+---
+date: "2026-04-18"
+time: "17:55 UTC"
+session: "session-handoff-2026-04-18-17"
+---
+
+# Session State
+
+## Current Focus
+Stage 2 complete (iam-client.sh rewrite for skeleton-based install, syntax OK, dry-run OK, synced to skeleton). Stage 3 (test install) NOT executed due to session errors — see wisdom below. Dev server is alive and running after recovery.
+
+## Completed This Session
+  - "Stage 1 first skeleton sync run completed — ArielGrook/iam-client-skeleton populated with 173 sanitized files (commit e0f8e9d through 145bc73)"
+  - "middleware.ts removed from manifest (file didn't exist in lego-base root)"
+  - "lego-base dev commits pushed to GitHub origin/main (2ed817b..3b544b5)"
+  - "All docs updated: current-goal.md, next-actions.md, session-state.yaml, memory/NEXT_ACTIONS.md v10, memory/CURRENT_GOAL.md v19, memory/WEEKLY_PROGRESS.md v7 (duplicate fixed)"
+  - "Stage 2 complete: scripts/iam-client.sh rewritten (commit 054c5ae + 3b544b5) — default --github=skeleton, removed step 4b (250 lines), added [N/11] progress indicators, --dry-run flag, explicit git history reset with install commit, fixed missing PORT in .env.local, consolidated 12 steps into 11, fixed cleanup trap warning on --help"
+  - "bash -n validation passed, --help output clean, --dry-run shows correct plan"
+  - "Second sync to skeleton successful: iam-client.sh now in skeleton (commit on skeleton: sync 2026-04-18T09:51Z)"
+  - "dev server recovery after PM2 cwd corruption: ecosystem.config.js restart succeeded, curl localhost:3000 returns HTML, PM2 shows 0 restarts, memory stable at 54MB"
+
+## Next Actions
+  - "CRITICAL FIRST: when starting next session, read ariel-workflow/INSTALL_TEST_INCIDENT_18_04.md for context on what went wrong and why Stage 3 test was aborted"
+  - "Verify dev PM2 process is still healthy: pm2 list should show iam-os online with low restart count"
+  - "ROTATE GITHUB TOKENS — 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 and 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 both leaked in chat"
+  - "Stage 3 test install: create Cloudflare A-record iam-test.lego-base.online → 185.5.55.111 (DNS only), verify with dig, then run installer with --domain=iam-test.lego-base.online --path=/var/www/iam.test --port=4742 — DO NOT touch existing /var/www/iam-os dev setup"
+  - "Stage 3 verification — 11-point checklist: TOTP first-run, MCP token gen, Claude connect, read_memory clean templates, file delete both file+folder, push notifications, deploy button"
+  - "Stage 4 after successful Stage 3: MCP Injection V3 + Persistent Memory (session log jsonl + wisdom index + smartOk v3 + crystallize_wisdom action)"

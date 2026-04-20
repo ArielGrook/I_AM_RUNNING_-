@@ -1,0 +1,28 @@
+---
+date: "2026-04-19"
+time: "10:13 UTC"
+session: "session-handoff-2026-04-19-10"
+---
+
+# Session State
+
+## Current Focus
+Docs cleanup almost done. Next: update scripts/sync-to-skeleton/MANIFEST.txt to reflect new docs/architecture structure (only README.md + ADMIN_PANEL_INTEGRATION.md, remove old api/data/features/ui entries). Then re-sync skeleton, reinstall iam-test, Claude.ai connector end-to-end test.
+
+## Completed This Session
+  - "BUG #1 fixed in scripts/iam-client.sh step 5 — CLIENT_DOMAIN and NEXT_PUBLIC_CLIENT_DOMAIN now written with https:// scheme (commit a06a622)"
+  - "Evolution Continued addendum written for 16-19.04 (points 198-209, period summary, status as of morning of 19.04) — delivered as file to Ariel for paste into local EVOLUTION_CONTINUED_10_04_2026.md"
+  - "ariel-workflow/ reorganized: 15 files moved into handoffs/ (6), specifications/ (2), roadmaps/ (7). Root kept only: roadmap.md, current-goal.md, next-actions.md, weekly-progress.md, session-state.yaml, ai-wisdom.yaml, competitive-advantages.yaml (commit de01b85)"
+  - "docs/architecture/ collapsed to single source of truth: ADMIN_PANEL_INTEGRATION.md written as integrator-facing guide for extensions/ plugin system (based on existing working code: extensions/_template + extensions/project-stats). README rewritten as short index. 8 internal dev doc files deleted from api/ data/ features/ ui/ subdirs — they duplicated memory/ARCHITECTURE.md (commits 67facc2 + b95f5e3)"
+  - "Documentation of the 5-stage roadmap discussed with Ariel: Stage 0-2 done, Stage 3 pending final Claude.ai connector test, Stage 4 is MCP Injection V3 + Persistent Memory"
+
+## Next Actions
+  - "Update scripts/sync-to-skeleton/MANIFEST.txt — remove entries for docs/architecture/api/*, docs/architecture/data/*, docs/architecture/features/*, docs/architecture/ui/*. Ensure docs/architecture/README.md and docs/architecture/ADMIN_PANEL_INTEGRATION.md are in COPY list. This is critical before next skeleton sync — otherwise sync ships empty/stale structure."
+  - "Run scripts/sync-to-skeleton/sync.sh (DRY_RUN first, then real) to push BUG #1 fix + reorganized docs + new ADMIN_PANEL_INTEGRATION.md into ArielGrook/iam-client-skeleton. Fine-grained PAT with Contents R+W, Metadata R-only on skeleton repo needed."
+  - "Reinstall iam-test on lego-base (185.5.55.111): pm2 delete iam.iam-test; rm -rf /var/www/iam.test; rm -rf /root/skeleton; git clone <PAT>@github.com/ArielGrook/iam-client-skeleton /root/skeleton; bash scripts/iam-client.sh --domain=iam-test.lego-base.online --name='IAM Test' --github-token=<PAT> --path=/var/www/iam.test --port=4742"
+  - "Final Claude.ai MCP connector end-to-end test — 11-point checklist items 5-11 from ariel-workflow/handoffs/INSTALL_TEST_INCIDENT_18_04.md: OAuth connect without 500/401, read_memory returns clean templates, add user via Admin Team + login to /dashboard in incognito, push notifications work, Deploy button triggers entry in logs/deploy.jsonl"
+  - "Stage 4 — MCP Injection V3 + Persistent Memory — add new sub-task: 'On session_handoff action, auto-copy current ariel-workflow/session-state.yaml to ariel-workflow/legacy/YYYY-MM-DD-HH-session-state.yaml before overwriting'. This is Ariel's directive from 19.04 — legacy/ should be populated automatically, not manually."
+  - "Dev Console file tabs lost on main-tab switch — open bug from 19.04, deprioritized. Fix options: (1) sessionStorage persist openTabs[], (2) lift state to parent page.tsx, (3) display:none instead of conditional render. Not blocking first client."
+
+## Blockers
+  - "SESSION limit hit at 78/80 — final MANIFEST update deferred to next chat. Exact change needed: grep 'docs/architecture' in scripts/sync-to-skeleton/MANIFEST.txt, remove any entries under api/ data/ features/ ui/, confirm README.md + ADMIN_PANEL_INTEGRATION.md are listed as COPY."

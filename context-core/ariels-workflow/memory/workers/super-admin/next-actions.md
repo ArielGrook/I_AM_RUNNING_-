@@ -1,0 +1,94 @@
+# Next Actions
+
+## TODO
+- [ ] Next session: switch to iamrunner.ai work
+- [ ] Start with B: RAG Nuances 10A-10D (warm-up, 1 session)
+- [ ] Then A: Roadmap 17 RAG Pipeline Unification (2-3 sessions)
+- [ ] Then C: MCP Provider AI-as-a-Service architecture spec review
+- [ ] iam-client-os frozen unless real client surfaces issue
+- [ ] Backlog for iam-client-os documented in NEXT_ACTIONS.md v11
+- [ ] GTM parallel by Ariel: LinkedIn DMs, YouTube channels, cold email, Reddit r/mcp, Facebook Israeli groups
+- [ ] Create demo viewer account (read-only admin) for outreach
+- [ ] STEP 1 — move the draft to its real location: read memory/workers/super-admin/ADMIN_PANEL_INTEGRATION_DRAFT.md, then write its full content to scripts/sync-to-skeleton/overrides/docs/architecture/ADMIN_PANEL_INTEGRATION.md (content is complete and reviewed — just copy verbatim)
+- [ ] STEP 2 — rewrite scripts/sync-to-skeleton/overrides/docs/architecture/README.md: remove the table rows linking to api/, data/, features/, ui/ files (they no longer ship). Replace with a minimal TOC pointing at ADMIN_PANEL_INTEGRATION.md. Drop the 'Quick recipe: how to add...' section entirely — that's dev-facing, not client-facing. Keep the 30-second global architecture diagram (it's useful for clients).
+- [ ] STEP 3 — update scripts/sync-to-skeleton/MANIFEST.txt: in the '# ── DOCS (translated to English) ─' block, REMOVE these 8 lines: 'OVERRIDE docs/architecture/api/ADMIN_API.md', 'OVERRIDE docs/architecture/api/DASHBOARD_API.md', 'OVERRIDE docs/architecture/api/MCP_API.md', 'OVERRIDE docs/architecture/data/DATA_LAYER.md', 'OVERRIDE docs/architecture/features/MEGA_TOOLS.md', 'OVERRIDE docs/architecture/features/NOTIFICATIONS_ROLES_GOTCHAS.md', 'OVERRIDE docs/architecture/features/PR_TASKS_MCP.md', 'OVERRIDE docs/architecture/ui/UI_MESSAGING_SESSIONS_DEPLOY.md'. KEEP 'OVERRIDE docs/architecture/README.md'. ADD one new line: 'OVERRIDE docs/architecture/ADMIN_PANEL_INTEGRATION.md'
+- [ ] STEP 4 — optionally delete the 8 now-orphaned override files under scripts/sync-to-skeleton/overrides/docs/architecture/{api,data,features,ui}/ to keep the overrides tree clean (not strictly required — sync.sh only copies what's in MANIFEST — but cleaner)
+- [ ] STEP 5 — delete memory/workers/super-admin/ADMIN_PANEL_INTEGRATION_DRAFT.md (cleanup, draft is now in its real location)
+- [ ] STEP 6 — git_snapshot with message 'docs: replace dev-facing docs/architecture/ with client-focused ADMIN_PANEL_INTEGRATION guide'
+- [ ] AFTER THAT — resume next-actions list: BUG #1 (CLIENT_DOMAIN schema in scripts/iam-client.sh step 5), ask Ariel what the 'non-critical bug' is, then Stage 3 re-sync + reinstall + Claude.ai connector test
+- [ ] Update scripts/sync-to-skeleton/MANIFEST.txt — remove entries for docs/architecture/api/*, docs/architecture/data/*, docs/architecture/features/*, docs/architecture/ui/*. Ensure docs/architecture/README.md and docs/architecture/ADMIN_PANEL_INTEGRATION.md are in COPY list. This is critical before next skeleton sync — otherwise sync ships empty/stale structure.
+- [ ] Run scripts/sync-to-skeleton/sync.sh (DRY_RUN first, then real) to push BUG #1 fix + reorganized docs + new ADMIN_PANEL_INTEGRATION.md into ArielGrook/iam-client-skeleton. Fine-grained PAT with Contents R+W, Metadata R-only on skeleton repo needed.
+- [ ] Reinstall iam-test on lego-base (185.5.55.111): pm2 delete iam.iam-test; rm -rf /var/www/iam.test; rm -rf /root/skeleton; git clone <PAT>@github.com/ArielGrook/iam-client-skeleton /root/skeleton; bash scripts/iam-client.sh --domain=iam-test.lego-base.online --name='IAM Test' --github-token=<PAT> --path=/var/www/iam.test --port=4742
+- [ ] Final Claude.ai MCP connector end-to-end test — 11-point checklist items 5-11 from ariel-workflow/handoffs/INSTALL_TEST_INCIDENT_18_04.md: OAuth connect without 500/401, read_memory returns clean templates, add user via Admin Team + login to /dashboard in incognito, push notifications work, Deploy button triggers entry in logs/deploy.jsonl
+- [ ] Stage 4 — MCP Injection V3 + Persistent Memory — add new sub-task: 'On session_handoff action, auto-copy current ariel-workflow/session-state.yaml to ariel-workflow/legacy/YYYY-MM-DD-HH-session-state.yaml before overwriting'. This is Ariel's directive from 19.04 — legacy/ should be populated automatically, not manually.
+- [ ] Dev Console file tabs lost on main-tab switch — open bug from 19.04, deprioritized. Fix options: (1) sessionStorage persist openTabs[], (2) lift state to parent page.tsx, (3) display:none instead of conditional render. Not blocking first client.
+- [ ] BUG #1 installer: scripts/iam-client.sh step 5 (.env.local generation) — CLIENT_DOMAIN must be written as https://$DOMAIN not bare host. Check NEXT_PUBLIC_CLIENT_DOMAIN too (may need same fix, may not — check usages in code). Fix in both lego-base source AND skeleton. Re-sync after.
+- [ ] BUG #2 Admin Panel: Settings → Generate Super Admin Token button — investigate what it actually does. Symptom: generated token returns 401 on /api/mcp, meanwhile .env.local MCP_AUTH_TOKEN is the working one. Likely candidates: (a) button generates random string for UI display but never persists to env or TEAM_ROLES.md, (b) button writes to wrong location, (c) button writes correctly but MCP route only checks env not TEAM_ROLES.md. Find the handler in app/admin/ and app/api/admin/panel/ — trace flow end to end. This is a critical UX bug: client will press button, copy token, get 401.
+- [ ] Clean docs/architecture/ from skeleton: Ariel's observation that docs/architecture/data/, /api/, /features/, /ui/ are internal dev notes useless to clients. Update scripts/sync-to-skeleton/MANIFEST.txt to exclude them. Decide what minimal docs/ clients actually need (how to add worker, how to connect Claude via MCP, how to deploy, troubleshooting).
+- [ ] After Bug #1 and #2 fixed: re-run Stage 3 from scratch on fresh subdomain OR re-install iam-test, verify Claude.ai connector actually connects end-to-end (the part we didn't reach today due to 500 and 401).
+- [ ] Remaining checklist items from incident doc: item 7 (create worker, login via /dashboard in incognito), item 10 (push notifications send+receive), item 11 (deploy button via Admin → Logs → deploy.jsonl entry).
+- [ ] CRITICAL FIRST: when starting next session, read ariel-workflow/INSTALL_TEST_INCIDENT_18_04.md for context on what went wrong and why Stage 3 test was aborted
+- [ ] Verify dev PM2 process is still healthy: pm2 list should show iam-os online with low restart count
+- [ ] ROTATE GITHUB TOKENS — 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 and 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 both leaked in chat
+- [ ] Stage 3 test install: create Cloudflare A-record iam-test.lego-base.online → 185.5.55.111 (DNS only), verify with dig, then run installer with --domain=iam-test.lego-base.online --path=/var/www/iam.test --port=4742 — DO NOT touch existing /var/www/iam-os dev setup
+- [ ] Stage 3 verification — 11-point checklist: TOTP first-run, MCP token gen, Claude connect, read_memory clean templates, file delete both file+folder, push notifications, deploy button
+- [ ] Stage 4 after successful Stage 3: MCP Injection V3 + Persistent Memory (session log jsonl + wisdom index + smartOk v3 + crystallize_wisdom action)
+- [ ] Push latest to GitHub: cd /var/www/iam-os && git push origin main
+- [ ] Start GTM: Upwork proposals, Reddit outreach, LinkedIn
+- [ ] First beta client target: $150-300 setup, free usage for feedback
+- [ ] PayPal for first payment (skip Stripe for now)
+- [ ] Consider --no-landing flag for client installs or customize landing per client
+- [ ] MCP injection Session 3: adaptive verbosity, task focus, role-specific text (polish)
+- [ ] ChatGPT MCP connector (30-40 min, on demand)
+- [ ] Video guide for first client (5 min walkthrough)
+- [ ] iamrunning.online landing update with product cards
+
+## Done
+- ✅ Morning: MCP session counter reset bug fixed (commit 250144d)
+- ✅ Morning: Dev Console tab persistence with unsaved-changes warning in Admin and Dashboard (commit 4805376)
+- ✅ Morning: docs/architecture cleanup replaced with client-facing ADMIN_PANEL_INTEGRATION.md (commit 76a8c03)
+- ✅ Morning: OAuth debug logging gated behind OAUTH_DEBUG env flag, security fix (commit 2207e23)
+- ✅ Morning: Stage 3 fresh install on iam-test.lego-base.online successful, 11/11 steps
+- ✅ Morning: 3 skeleton syncs verified
+- ✅ Evening: Super Admin token generate uses ALL_TOOLS from registry (commit 7c9ee18)
+- ✅ Evening: Dashboard Setup tab restored in header, was silently removed (commit 427ca7c)
+- ✅ Evening: 2 more skeleton syncs, 5 total today
+- ✅ Evening: end-to-end verification via MCP connector on iam-test
+- ✅ Evening: rotated compromised MCP super_admin token
+- ✅ Evening: docs updated (CURRENT_GOAL v20, NEXT_ACTIONS v11, WEEKLY_PROGRESS v8)
+- ✅ Evening: handoff document written
+- ✅ Audited Admin Panel structure: app/admin/page.tsx (9 tabs), app/api/admin/lib/shared.ts, TOTP flow endpoints
+- ✅ Wrote complete ADMIN_PANEL_INTEGRATION.md (~350 lines, client-facing English): overview, first-run TOTP, tab reference for all 9 tabs, integration diagram showing how Admin Panel connects to MCP/Dashboard/PR/Memory/Push/Build, key files reference, common workflows, security model, troubleshooting
+- ✅ Session limit (91/80) blocked write to scripts/ path — draft saved to memory/workers/super-admin/ADMIN_PANEL_INTEGRATION_DRAFT.md instead
+- ✅ BUG #1 fixed in scripts/iam-client.sh step 5 — CLIENT_DOMAIN and NEXT_PUBLIC_CLIENT_DOMAIN now written with https:// scheme (commit a06a622)
+- ✅ Evolution Continued addendum written for 16-19.04 (points 198-209, period summary, status as of morning of 19.04) — delivered as file to Ariel for paste into local EVOLUTION_CONTINUED_10_04_2026.md
+- ✅ ariel-workflow/ reorganized: 15 files moved into handoffs/ (6), specifications/ (2), roadmaps/ (7). Root kept only: roadmap.md, current-goal.md, next-actions.md, weekly-progress.md, session-state.yaml, ai-wisdom.yaml, competitive-advantages.yaml (commit de01b85)
+- ✅ docs/architecture/ collapsed to single source of truth: ADMIN_PANEL_INTEGRATION.md written as integrator-facing guide for extensions/ plugin system (based on existing working code: extensions/_template + extensions/project-stats). README rewritten as short index. 8 internal dev doc files deleted from api/ data/ features/ ui/ subdirs — they duplicated memory/ARCHITECTURE.md (commits 67facc2 + b95f5e3)
+- ✅ Documentation of the 5-stage roadmap discussed with Ariel: Stage 0-2 done, Stage 3 pending final Claude.ai connector test, Stage 4 is MCP Injection V3 + Persistent Memory
+- ✅ Stage 3 install on iam-test.lego-base.online (port 4742, PM2 iam.iam-test, TLS issued)
+- ✅ Dev coexistence confirmed: iam-os and iam.iam-test run side-by-side without conflict
+- ✅ Manual smoke tests passed: TOTP first-run, Admin Panel all 8 tabs, Product Tour, Work System, Dev Console file create/delete (regression 17.04 holds)
+- ✅ Hotfix applied on test server: CLIENT_DOMAIN in .env.local now has https:// scheme
+- ✅ OAuth well-known endpoint now returns JSON (no more 500), pending full verify against Claude.ai connector tomorrow
+- ✅ Stage 1 first skeleton sync run completed — ArielGrook/iam-client-skeleton populated with 173 sanitized files (commit e0f8e9d through 145bc73)
+- ✅ middleware.ts removed from manifest (file didn't exist in lego-base root)
+- ✅ lego-base dev commits pushed to GitHub origin/main (2ed817b..3b544b5)
+- ✅ All docs updated: current-goal.md, next-actions.md, session-state.yaml, memory/NEXT_ACTIONS.md v10, memory/CURRENT_GOAL.md v19, memory/WEEKLY_PROGRESS.md v7 (duplicate fixed)
+- ✅ Stage 2 complete: scripts/iam-client.sh rewritten (commit 054c5ae + 3b544b5) — default --github=skeleton, removed step 4b (250 lines), added [N/11] progress indicators, --dry-run flag, explicit git history reset with install commit, fixed missing PORT in .env.local, consolidated 12 steps into 11, fixed cleanup trap warning on --help
+- ✅ bash -n validation passed, --help output clean, --dry-run shows correct plan
+- ✅ Second sync to skeleton successful: iam-client.sh now in skeleton (commit on skeleton: sync 2026-04-18T09:51Z)
+- ✅ dev server recovery after PM2 cwd corruption: ecosystem.config.js restart succeeded, curl localhost:3000 returns HTML, PM2 shows 0 restarts, memory stable at 54MB
+- ✅ MCP Tool Injection v1 — 11 tasks across 3 Sonnet sessions
+- ✅ MCP Injection v2 — 4 bugs fixed + 3 architecture improvements
+- ✅ Bugfix: 11 missing toolName params in mega-tools
+- ✅ Deploy pipeline: changed to validate-only (user deploys via SSH)
+- ✅ Server health: killed iam.demo process, added 1GB swap, build 92s→32s
+- ✅ Landing page: lineHeight 1.0→1.15 fixes clipped descenders
+- ✅ C1: TOTP first-run — 3 endpoints + admin page UI + test page
+- ✅ C3: Bootstrap prompts — English, mega-tool syntax, no Ariel references
+- ✅ C5: install.sh configs — COOKIE_SECURE=true
+- ✅ Memory/Instructions sections added to admin + dashboard Settings tabs
+- ✅ Install.sh: clean memory templates for client install, remove ariel-workflow and IDEAS
+- ✅ Install.sh: removed TOTP_SECRET from .env.local template (fixes first-run)
+- ✅ Demo install tested on demo.iamrunning.online — TOTP first-run works
+- ✅ PM2 lesson: must delete+recreate process to pick up new env vars

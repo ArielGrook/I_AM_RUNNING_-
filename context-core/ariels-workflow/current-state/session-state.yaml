@@ -1,0 +1,69 @@
+---
+last_session_ended: "2026-04-19T23:30:00Z"
+last_model: "claude-opus-4-7"
+mode: "dev-session-close"
+focus: "iam-client-os stabilization complete + iamrunning.ai Phase 17A + 17B complete"
+
+current_status:
+  iam_client_os: "production-ready for first client"
+  iamrunner_ai: "Roadmap 17 — Phases 17A + 17B complete (12 commits on github.com/ArielGrook/iamrunning.ai). Remaining: 17D (Ollama tool polish) → 17C (shadow hints)"
+  skeleton: "fully synced ArielGrook/iam-client-skeleton"
+  iam_test: "live at iam-test.lego-base.online:4742, verified"
+
+session_19_04_stats:
+  iam_client_os_commits_on_dev: 7
+  skeleton_syncs: 5
+  security_fixes: 2
+  ux_fixes: 3
+  stage_3_install: "successful, iam-test online"
+  iamrunning_ai_commits: 12
+  iamrunning_ai_phases_closed: "17A (10/10) + 17B (1/1)"
+  iamrunning_ai_total_hours: "~13h Cursor Composer 2 thinking"
+
+next_focus:
+  morning_20_04: "iam-client-os (Ariel focus)"
+  evening_20_04_or_later: "iamrunning.ai — Phase 17D Ollama tool polish via new Cursor chat"
+
+recent_commits_iam_client_os:
+  - "7c9ee18 fix(team): super_admin token generate uses ALL_TOOLS"
+  - "427ca7c fix(dashboard): restore Setup tab (was removed)"
+  - "2207e23 fix(mcp-oauth): gate debug logging behind OAUTH_DEBUG env flag"
+  - "4805376 feat(dev-console): persist open tabs across tab switches"
+  - "250144d fix(mcp): reset session counter on read_memory/onboard/session_handoff"
+  - "76a8c03 docs(skeleton): replace dev-facing docs with ADMIN_PANEL_INTEGRATION"
+  - "a06a622 fix: BUG 1 CLIENT_DOMAIN scheme (pre-existing)"
+
+recent_commits_iamrunning_ai:
+  - "7d66300 feat(rag): structure, manifest, templates, memory foundation + EN sync (17B)"
+  - "7316add feat(rag): bilingual EN+RU support with auto language detection + translations (17A.9)"
+  - "d7d9db1 feat(rag): 17A.8 nuances — live stats + clear index UI + settings guard"
+  - "9ea82b3 feat(rag): queryChunks filters + update all call sites (17A.7)"
+  - "38f18ee feat(rag): Windows/OneDrive guards in indexer (17A.6)"
+  - "hotfix feat(rag): bge-m3 cold-start timeout — bump to 120s"
+  - "1f9a5ff feat(rag): transactional migration + embedder swap to bge-m3 (17A.5)"
+  - "8e83095 feat(rag): targeted chunk deletion on KB remove (17A.4)"
+  - "8060a4f feat(rag): batched KB adds with debounced reindex (17A.3)"
+  - "e471557 feat(rag): KB as thin layer over rag/ (17A.2)"
+  - "15d3527 feat(rag): scope indexer to {project}/rag/ only (17A.1)"
+  - "7d1599b feat(ollama): expose num_ctx, num_predict, temperature in Settings (17A.0)"
+
+iam_test_server:
+  url: "https://iam-test.lego-base.online"
+  path: "/var/www/iam.test"
+  pm2: "iam.iam-test"
+  port: 4742
+  mcp_token_hash: "sha256:67f9d78c793fcbdfd3b310d0e89e8c83b8f8f7f408ff24de9036b2ed88f50875"
+  ssl: "pending — certbot --nginx -d iam-test.lego-base.online --non-interactive --agree-tos -m admin@iam-test.lego-base.online --redirect"
+
+backlog_iam_client_os:
+  - "team-regenerate-token should refresh tools[], not just token_hash"
+  - "MANIFEST explicit exclude for app/api/admin/totp-test-flow"
+  - "certbot SSL on iam-test"
+  - "end-to-end worker->PR->approve+deploy test (during first client onboarding)"
+
+backlog_iamrunning_ai:
+  - "17D Ollama tool calling polish — resolves Qwen tool-call failure (test 3 from 17A.9 verification)"
+  - "17C Persistent memory via shadow hints (now unblocked: 17B laid manifest + memory/ foundation)"
+  - "Known issue: test 3 verification failed — Qwen said file not found for existing src/main/ai-provider.ts. This is exactly what 17D addresses."
+  - "Roadmap 18 — Fine-tune v1 (after Roadmap 17 closes)"
+---

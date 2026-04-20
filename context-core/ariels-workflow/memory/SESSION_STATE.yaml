@@ -1,0 +1,79 @@
+---
+schema: "session_state_v1"
+last_updated: "2026-04-14T18:00:00Z"
+updated_by: "claude"
+
+current_focus:
+  task: "Тест iam-client.sh на живом сервере + мобильная адаптация"
+  status: "in_progress"
+  next_concrete_action: "Запустить iam-client.sh на 185.5.55.111 рядом с iamrunning.online"
+
+completed_this_session:
+  - id: "mega-tools"
+    title: "6 мега-tools рефакторинг (files, tasks, communication, goals, code_review, devops)"
+    deployed: true
+  - id: "iam-prefix"
+    title: "iam. prefix — admin path /iam.admin, PM2 name, activity instance field"
+    deployed: true
+  - id: "audit-fixes"
+    title: "Аудит: pr-approve-deploy и dev-git-snapshot роутинг починен"
+    deployed: true
+  - id: "security-fix"
+    title: "/api/push/test удалён — был без auth"
+    deployed: true
+  - id: "dead-code"
+    title: "1494 строки мёртвого кода удалены (старые tool files)"
+    deployed: true
+  - id: "docs-update"
+    title: "MCP_API.md + PR_TASKS_MCP.md + README.md + ARCHITECTURE.md обновлены"
+    deployed: true
+  - id: "mega-tools-doc"
+    title: "docs/architecture/features/MEGA_TOOLS.md — новый документ"
+    deployed: true
+  - id: "cleanup"
+    title: "Рабочие файлы перенесены на iamrunning, lego-base очищен"
+    deployed: true
+  - id: "memory-update"
+    title: "Персистентная память обновлена (CURRENT_GOAL, WEEKLY_PROGRESS, NEXT_ACTIONS)"
+    deployed: false
+
+pending:
+  - id: "ideas-cleanup"
+    title: "Перенести 28 файлов из IDEAS/ root + plans/ + roadmaps/ на iamrunning"
+    priority: "high"
+  - id: "iam-client-sh"
+    title: "Написать scripts/iam-client.sh по спеке INSTALL_ONBOARDING_SPEC.md"
+    priority: "critical"
+  - id: "test-install"
+    title: "Тест iam-client.sh на 185.5.55.111 рядом с iamrunning.online"
+    priority: "critical"
+  - id: "mobile-adaptation"
+    title: "Мобильная адаптация DashboardDevConsoleTab"
+    priority: "high"
+  - id: "iamrunning-landing"
+    title: "iamrunning.online — карточки продуктов"
+    priority: "medium"
+  - id: "terms-of-service"
+    title: "Terms of Service страница"
+    priority: "medium"
+  - id: "stripe"
+    title: "Stripe — ждём IBAN"
+    priority: "low"
+    blocker: "external dependency"
+
+key_decisions:
+  - "6 мега-tools вместо 20+ отдельных — архитектурное решение 14.04"
+  - "Tool distribution: Super Admin → Admin → Workers, warnings not blocks"
+  - "Гранулярные права: files.read, devops.deploy вместо плоских tool names"
+  - "iam. prefix на всём нашем на сервере клиента"
+  - "Admin path: /iam.admin вместо /admin (не конфликтует с клиентом)"
+  - "Beta-tester GTM: не продажа а поиск тестировщиков для фидбэка"
+  - "Ценообразование: $350 setup + $50/user + 15% квартально"
+  - "Marketer роль — заморожена"
+  - "iamrunning.ai — заморожен до первого клиента"
+
+warnings:
+  - "IDEAS/ root ещё имеет 28 файлов — нужно перенести на iamrunning"
+  - "iam-client.sh не написан — блокер для первого клиента"
+  - "Мобильная адаптация не сделана"
+  - "SHARED_CONTEXT.md на lego-base может расходиться с копией на iamrunning"

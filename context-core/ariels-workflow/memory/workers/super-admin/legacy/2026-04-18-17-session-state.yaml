@@ -1,0 +1,37 @@
+---
+date: "2026-04-15"
+time: "20:01 UTC"
+session: "session-handoff-2026-04-15-20"
+---
+
+# Session State
+
+## Current Focus
+Install.sh client cleanup + TOTP first-run fix + full day sprint
+
+## Completed This Session
+  - "MCP Tool Injection v1 — 11 tasks across 3 Sonnet sessions"
+  - "MCP Injection v2 — 4 bugs fixed + 3 architecture improvements"
+  - "Bugfix: 11 missing toolName params in mega-tools"
+  - "Deploy pipeline: changed to validate-only (user deploys via SSH)"
+  - "Server health: killed iam.demo process, added 1GB swap, build 92s→32s"
+  - "Landing page: lineHeight 1.0→1.15 fixes clipped descenders"
+  - "C1: TOTP first-run — 3 endpoints + admin page UI + test page"
+  - "C3: Bootstrap prompts — English, mega-tool syntax, no Ariel references"
+  - "C5: install.sh configs — COOKIE_SECURE=true"
+  - "Memory/Instructions sections added to admin + dashboard Settings tabs"
+  - "Install.sh: clean memory templates for client install, remove ariel-workflow and IDEAS"
+  - "Install.sh: removed TOTP_SECRET from .env.local template (fixes first-run)"
+  - "Demo install tested on demo.iamrunning.online — TOTP first-run works"
+  - "PM2 lesson: must delete+recreate process to pick up new env vars"
+
+## Next Actions
+  - "Push latest to GitHub: cd /var/www/iam-os && git push origin main"
+  - "Start GTM: Upwork proposals, Reddit outreach, LinkedIn"
+  - "First beta client target: $150-300 setup, free usage for feedback"
+  - "PayPal for first payment (skip Stripe for now)"
+  - "Consider --no-landing flag for client installs or customize landing per client"
+  - "MCP injection Session 3: adaptive verbosity, task focus, role-specific text (polish)"
+  - "ChatGPT MCP connector (30-40 min, on demand)"
+  - "Video guide for first client (5 min walkthrough)"
+  - "iamrunning.online landing update with product cards"

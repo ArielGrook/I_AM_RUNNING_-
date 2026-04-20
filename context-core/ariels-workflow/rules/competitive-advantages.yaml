@@ -1,0 +1,79 @@
+---
+last_updated: "2026-04-14"
+source: "IDEAS/audits/CLICKUP_COMPETITIVE_ANALYSIS.md"
+---
+
+# Competitive Advantages — I AM RUNNING
+
+our_advantages:
+  - name: "AI-Native (not AI-added)"
+    description: "AI is the primary interface, not a feature bolted on. Worker connects Claude → MCP → works."
+    vs_clickup: "ClickUp added AI in 2023 on top of existing PM. We built system WHERE AI = interface."
+    vs_cursor: "Cursor is a code editor. We're a team workspace."
+    importance: "core differentiator"
+
+  - name: "Private Server (data sovereignty)"
+    description: "Installs on client's VPS. Data never leaves their server."
+    vs_clickup: "ClickUp = cloud, their servers, their data."
+    vs_cursor: "Cursor = cloud AI, code goes to their API."
+    importance: "critical for enterprise/security-conscious clients"
+
+  - name: "Code Workflow Built-In"
+    description: "Pull-pool PR review, approve+deploy, diff view — GitHub-like workflow inside PM."
+    vs_clickup: "ClickUp has no code review. Separate tool needed."
+    vs_cursor: "Cursor has no team workflow. Single-user tool."
+    importance: "key for dev teams"
+
+  - name: "MCP Fine-Tune"
+    description: "Control AI behavior through tool response text. No competitor does this."
+    vs_clickup: "ClickUp Brain is a black box."
+    vs_cursor: "Cursor has rules files but no dynamic behavior control."
+    importance: "unique capability, nobody else has this"
+
+  - name: "Managed Service (not SaaS)"
+    description: "We install, configure, support. Higher touch, higher value."
+    vs_clickup: "$7/user self-service. We're $300/mo managed."
+    vs_cursor: "$20/mo self-service. We're a different category."
+    importance: "pricing power + stickiness"
+
+our_weaknesses:
+  - name: "Scale and maturity"
+    vs: "ClickUp: 7 years, $4B valuation, 800k teams"
+    mitigation: "Don't compete on scale. Niche: AI-native dev teams."
+
+  - name: "Integrations"
+    vs: "ClickUp: 1000+ integrations"
+    mitigation: "MCP is our integration layer. Claude/ChatGPT/Gemini = our integrations."
+
+  - name: "UI polish"
+    vs: "ClickUp: 15+ views, Gantt, Kanban"
+    mitigation: "Our UI is minimal by design. AI is the interface, not the dashboard."
+
+  - name: "No free tier"
+    vs: "ClickUp: free plan with unlimited users"
+    mitigation: "Beta-test approach: free/cheap for early users in exchange for feedback."
+
+  - name: "Test coverage = 0"
+    vs: "Any production SaaS has tests"
+    mitigation: "Must fix before scaling. Not a competitive issue for first clients."
+
+pricing_comparison:
+  - product: "ClickUp"
+    price: "$7-12/user/month"
+    model: "SaaS subscription"
+
+  - product: "Cursor"
+    price: "$20/month"
+    model: "IDE subscription"
+
+  - product: "GitHub Copilot"
+    price: "$10-39/user/month"
+    model: "AI coding assistant"
+
+  - product: "I AM RUNNING (Phase 1)"
+    price: "$150-350 setup + $50/user/month"
+    model: "Managed service + subscription"
+
+  - product: "I AM RUNNING (Phase 2)"
+    price: "$1500-6000 setup + $70-80/user/month"
+    model: "Enterprise managed service"
