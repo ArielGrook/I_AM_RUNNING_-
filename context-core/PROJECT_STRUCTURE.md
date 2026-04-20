@@ -1,5 +1,16 @@
 # PROJECT_STRUCTURE
 
+> ⚠️ **STALE — needs regeneration (noted 20.04.2026)**
+>
+> This file is an auto-generated-ish map of project files with a one-line role description for each. It has not been kept up to date:
+> - Majority of entries are `[EMPTY - to be filled]` placeholders.
+> - Many files listed here have since been refactored, moved, or removed.
+> - Many new files added since last refresh are not listed at all.
+>
+> **TODO:** write a script (`scripts/regen-project-structure.ts`) that walks the project tree, identifies file role by first-line JSDoc comment or exported symbols, and regenerates this file in a single pass. Not a blocker for lego-base → iamrunning migration. Do after Step 6.
+>
+> **For now:** rely on `context-core/MAIN.md` "Key directories" section for navigation, and `list_directory` via MCP for fresh data.
+
 ---
 
 ## .continue/rules/context-core.md

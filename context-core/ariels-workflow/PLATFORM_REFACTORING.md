@@ -196,22 +196,26 @@ Admin страница делается ДО переноса исходного
 
 | Step | Статус | Дата | Заметки |
 |------|--------|------|---------|
-| 0 — Документация решений | ✅ DONE | 2026-04-20 | Этот файл создан |
-| 1 — Перенос docs + актуализация | ⏳ READY | — | Следующий шаг |
+| 0 — Документация решений | ✅ DONE | 2026-04-20 | PLATFORM_REFACTORING.md создан |
+| 1.1 — Аудит структуры iam-client-os | ✅ DONE | 2026-04-20 | прошлая сессия |
+| 1.2 — Перенос docs с lego-base | ✅ DONE | 2026-04-20 | Ariel через GitHub, 13 папок, ~100 файлов в `ariels-workflow/` |
+| 1.3 — Актуализация context-core/ iamrunning | ✅ DONE | 2026-04-20 | PROGRESS v9, MAIN v2, PLATFORM v2, SUCCESS_CHAT_PATTERNS.md, PROJECT_STRUCTURE помечен stale |
+| 1.4 — Legacy cleanup | ⏳ READY | — | Следующий шаг: product-template/ → legacy/, пометить устаревшие INSTALL.md |
 | 2 — Подготовить iam-clients-os/ | ⏳ PENDING | — | — |
 | 3 — Admin page frontend | ⏳ PENDING | — | — |
 | 4 — Перенос source code | ⏳ PENDING | — | — |
 | 5 — Валидация | ⏳ PENDING | — | — |
 | 6 — Decommission lego-base | ⏳ PENDING | — | — |
 
-**Следующее действие:** Step 1.1 — аудит структуры iam-client-os на lego-base (list_directory ключевых папок, прочитать главные файлы архитектуры). Начинать с lego-base MCP connector: `files action=list path="."` на корне + read ключевых файлов (app/, lib/data/, memory/ARCHITECTURE.md).
+**Следующее действие:** Step 1.4 — legacy cleanup. Переместить `product-template/` в `context-core/legacy/`, пометить устаревшие INSTALL.md / Option A документы. После этого Step 2 — создание структуры `iam-clients-os/` с `.gitignore` на `source/`.
 
 **Handoff инструкция для следующей сессии (если эта прервётся):**
-1. Подключись к обоим MCP connectors: `iamrunning` и `lego-base`
+1. Подключись к MCP connector: `iamrunning`
 2. Прочитай этот файл целиком
-3. Посмотри в секцию "Текущий статус" — там указан Step на котором остановились
-4. Читай детали этого Step выше и продолжай
-5. После завершения шага — обнови таблицу статусов в этом файле
+3. Прочитай `context-core/ariels-workflow/bootstrap-prompts/SUCCESS_CHAT_PATTERNS.md` — чтобы понимать как должен быть построен хороший первый промпт (на случай если этот handoff тебе используют)
+4. Посмотри в секцию "Текущий статус" — там указан Step на котором остановились
+5. Читай детали этого Step выше и продолжай
+6. После завершения шага — обнови таблицу статусов в этом файле
 
 ---
 
@@ -221,4 +225,4 @@ Ariel делает полный `git clone` всех репозиториев le
 
 ---
 
-*Последнее обновление: 2026-04-20 18:55 UTC+3 | Step 0 complete, awaiting Ariel's go-ahead for Step 1*
+*Последнее обновление: 2026-04-20 21:10 UTC+3 | Step 1.3 complete, awaiting Ariel's go-ahead for Step 1.4*
