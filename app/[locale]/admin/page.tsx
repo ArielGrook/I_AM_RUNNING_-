@@ -308,6 +308,7 @@ export default function AdminPage() {
             <>
               <Link href={`/${locale}/admin/seo`} style={{ padding: '6px 12px', background: '#f3f4f6', borderRadius: 6, fontSize: 13, textDecoration: 'none', color: '#374151' }}>SEO</Link>
               <Link href={`/${locale}/admin/dev-console`} style={{ padding: '6px 12px', background: '#f3f4f6', borderRadius: 6, fontSize: 13, textDecoration: 'none', color: '#374151' }}>Dev Console</Link>
+              <Link href={`/${locale}/admin/iam-clients-os`} style={{ padding: '6px 12px', background: '#f3f4f6', borderRadius: 6, fontSize: 13, textDecoration: 'none', color: '#374151' }}>IAM Clients OS</Link>
               <button onClick={handleLogout} style={{ padding: '6px 14px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 Logout
               </button>
@@ -324,6 +325,9 @@ export default function AdminPage() {
           </Link>
           <Link href={`/${locale}/admin/dev-console`} style={{ padding: '10px 14px', background: '#f3f4f6', borderRadius: 8, fontSize: 14, textDecoration: 'none', color: '#374151' }} onClick={() => setShowMobileNav(false)}>
             💻 Dev Console
+          </Link>
+          <Link href={`/${locale}/admin/iam-clients-os`} style={{ padding: '10px 14px', background: '#f3f4f6', borderRadius: 8, fontSize: 14, textDecoration: 'none', color: '#374151' }} onClick={() => setShowMobileNav(false)}>
+            🖥️ IAM Clients OS
           </Link>
         </div>
       )}
