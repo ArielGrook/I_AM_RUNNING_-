@@ -84,6 +84,24 @@ First payment: PayPal (skip Stripe for now).
 
 ---
 
+## 🔥 MCP Injection + Tools Refactor — track to schedule (noted 21.04.2026)
+
+**Ariel's observation (21.04 morning):** recurring quality issues with the MCP layer — some tools feel missing when needed, and injection (`smartOk`, `smartErr`, preset, session-state) sometimes lands uneven (not all the right hints at the right time, or hints that don't match what the tool actually did). Current state: injection v2 is deployed and mostly works, but the dogfood experience still has gaps.
+
+**Ariel has ideas for improvements.** Plan: integrate this track somewhere around migration Step 3/4 (after Admin page frontend, ideally after source code is moved — because then the MCP code lives in `iam-clients-os/source/` here on iamrunning, not over on lego-base, so we can iterate freely).
+
+**Concrete symptoms to write up in a spec before touching code:**
+- Which tools felt missing in which situations (collect examples from recent sessions)
+- Where injection fired but didn't match the tool's actual action
+- Where injection was silent but should have warned (e.g., pre-execution blocks missing certain cases)
+- Tools that exist but aren't grouped/exposed logically (review the 6 mega-tools carefully)
+
+**Deliverable before coding:** a spec document in `../specifications/MCP_INJECTION_V3_SPEC.md` covering all observed gaps + Ariel's idea set + proposed fixes. Only then implement via Cursor.
+
+**Do not start this track before Step 4 (source code migration).** Doing it on lego-base that's about to be decommissioned is wasted work.
+
+---
+
 ## Backlog (not blocking any launch)
 
 - ChatGPT MCP connector — test `<internal>` compliance with GPT-4o
