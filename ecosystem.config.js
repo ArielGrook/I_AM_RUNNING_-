@@ -5,8 +5,8 @@ module.exports = {
       script: 'npm',
       args: 'start',
       cwd: '/var/www/i_am_running',
-      instances: 2, // For 2 CPU cores
-      exec_mode: 'cluster',
+      instances: 1, // next start does not support cluster mode — port 3000 conflict
+      exec_mode: 'fork',
       autorestart: true,
       watch: false,
       max_memory_restart: '3G', // 3.8GB RAM available, leave some for system
