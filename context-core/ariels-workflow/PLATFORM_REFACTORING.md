@@ -199,8 +199,8 @@ Admin страница делается ДО переноса исходного
 | 0 — Документация решений | ✅ DONE | 2026-04-20 | PLATFORM_REFACTORING.md создан |
 | 1.1 — Аудит структуры iam-client-os | ✅ DONE | 2026-04-20 | прошлая сессия |
 | 1.2 — Перенос docs с lego-base | ✅ DONE | 2026-04-20 | Ariel через GitHub, 13 папок, ~100 файлов в `ariels-workflow/` |
-| 1.3 — Актуализация context-core/ iamrunning | ✅ DONE | 2026-04-20 | PROGRESS v9, MAIN v2, PLATFORM v2, SUCCESS_CHAT_PATTERNS.md, PROJECT_STRUCTURE помечен stale, + current-state/legacy rotation pattern формализован (README.md в обеих папках, session-state и next-actions ротированы) |
-| 1.4 — Legacy cleanup | ⏳ READY | — | Следующий шаг: product-template/ → legacy/, пометить устаревшие INSTALL.md |
+| 1.3 — Актуализация context-core/ iamrunning | ✅ DONE | 2026-04-20 | PROGRESS v9, MAIN v2, PLATFORM v2, SUCCESS_CHAT_PATTERNS.md, PROJECT_STRUCTURE помечен stale. Дополнительно (late-night): все 13 папок в ariels-workflow/ получили README.md, создан ariels-workflow/README.md (root folder map), папка `legacy/` переименована в `legacy_future_dataset/` с подпапками rotated-state/deprecated-code/deprecated-docs/wisdom/fine-tune-ideas/, создан bootstrap-prompts/SESSION_END_CHECKLIST.md |
+| 1.4 — Legacy cleanup | ⏳ READY | — | Следующий шаг (утро 21.04): переместить `product-template/` → `legacy_future_dataset/deprecated-code/`, stale root-level fix docs (`PRODUCTION_FIX.md`, `HTML_CORRUPTION_*`, `COMPONENT_JSON_*`, etc.) → `legacy_future_dataset/deprecated-docs/` с префиксом `2026-04-21-` |
 | 2 — Подготовить iam-clients-os/ | ⏳ PENDING | — | — |
 | 3 — Admin page frontend | ⏳ PENDING | — | — |
 | 4 — Перенос source code | ⏳ PENDING | — | — |
@@ -211,11 +211,15 @@ Admin страница делается ДО переноса исходного
 
 **Handoff инструкция для следующей сессии (если эта прервётся):**
 1. Подключись к MCP connector: `iamrunning`
-2. Прочитай этот файл целиком
-3. Прочитай `context-core/ariels-workflow/bootstrap-prompts/SUCCESS_CHAT_PATTERNS.md` — чтобы понимать как должен быть построен хороший первый промпт (на случай если этот handoff тебе используют)
-4. Посмотри в секцию "Текущий статус" — там указан Step на котором остановились
-5. Читай детали этого Step выше и продолжай
-6. После завершения шага — обнови таблицу статусов в этом файле
+2. Прочитай `context-core/ariels-workflow/current-state/README.md` — он объясняет структуру и перечисляет что читать дальше
+3. Прочитай `context-core/ariels-workflow/current-state/SHARED_CONTEXT.md` (глобальный роутер между агентами)
+4. Прочитай `context-core/ariels-workflow/current-state/session-state.yaml` — состояние последней сессии
+5. Прочитай `context-core/ariels-workflow/bootstrap-prompts/SUCCESS_CHAT_PATTERNS.md` (если это твой первый чат — чтобы понимать почему промпт был написан именно так)
+6. Прочитай этот файл целиком
+7. Посмотри в секцию "Текущий статус" — там указан Step на котором остановились
+8. Читай детали этого Step выше и продолжай
+9. После завершения шага — обнови таблицу статусов в этом файле
+10. В конце сессии — используй `context-core/ariels-workflow/bootstrap-prompts/SESSION_END_CHECKLIST.md` (Prompt B для полной сессии, Prompt A для короткой) чтобы закрыть документацию
 
 ---
 

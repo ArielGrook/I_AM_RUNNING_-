@@ -137,7 +137,14 @@
   - `legacy/README.md` rewritten (purpose, naming convention)
   - Rotation demonstrated: `session-state.yaml` 19.04 → legacy, new 20.04 written; `next-actions.md` 18.04 → legacy, new 20.04 written; this file expanded 14–20
 
-Commits: `73b0d2a`, `ca0632c`, (session-end snapshot pending)
+**Late-night (extended Step 1.3 scope):**
+- All 13 folders in `ariels-workflow/` got their own README.md (audits, bootstrap-prompts, concepts, current-state, handoffs, iamrunning-ai, master-docs, memory, memory/wisdom, roadmaps, rules — already had one, specifications)
+- `ariels-workflow/README.md` created as the root folder map with one-command entry point
+- `legacy/` renamed to `legacy_future_dataset/` per Ariel's instruction (makes dataset purpose explicit)
+- Subfolder structure inside: `rotated-state/`, `deprecated-code/`, `deprecated-docs/`, `wisdom/` (platform-wide scaffold), `fine-tune-ideas/` (forward-looking training plans)
+- `bootstrap-prompts/SESSION_END_CHECKLIST.md` created — ready-to-paste prompts (A short / B full / C crisis) for ending chats cleanly, plus rationale
+
+Commits: `73b0d2a`, `ca0632c`, `e03a057`, (session-end snapshot pending)
 
 ---
 

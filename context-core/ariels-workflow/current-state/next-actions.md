@@ -1,6 +1,6 @@
 # Next Actions — 20.04.2026
 
-*Previous 18.04 version archived at `../legacy/2026-04-18-next-actions.md`. That was focused on iam-client-os Stage 2 installer cleanup — all done (skeleton live, Stage 3 test install verified on 19.04).*
+*Previous 18.04 version archived at `../legacy_future_dataset/rotated-state/2026-04-18-next-actions.md`. That was focused on iam-client-os Stage 2 installer cleanup — all done (skeleton live, Stage 3 test install verified on 19.04).*
 
 ---
 
@@ -10,15 +10,18 @@ Full plan with live status table: `../PLATFORM_REFACTORING.md`.
 
 ### Current Step: 1.4 — legacy cleanup (READY)
 
+*Extended Step 1.3 work on the late-night 20.04 session: full READMEs for all 13 folders in `ariels-workflow/`, renamed `legacy/` → `legacy_future_dataset/` with subfolder structure (`rotated-state/`, `deprecated-code/`, `deprecated-docs/`, `wisdom/`, `fine-tune-ideas/`), created `bootstrap-prompts/SESSION_END_CHECKLIST.md`. Step 1.4 unchanged — still about cleanup in project root.*
+
 **On iamrunning.online root `/var/www/i_am_running/`:**
 
-1. Move `product-template/` → `context-core/legacy/product-template/` — this was Option A multi-tenant installs, officially deprecated (clients now install on their own VPS via `iam-client.sh`).
-2. Sweep stale root-level fix docs to `context-core/legacy/root-fix-docs/`:
+1. Move `product-template/` → `context-core/ariels-workflow/legacy_future_dataset/deprecated-code/product-template/` — this was Option A multi-tenant installs, officially deprecated. Include a `_NOTE.md` inside explaining when and why it was retired.
+2. Sweep stale root-level fix docs to `context-core/ariels-workflow/legacy_future_dataset/deprecated-docs/`:
    - `PRODUCTION_FIX.md`, `LOCALSTORAGE_QUOTA_FIX.md`
    - `COMPONENT_JSON_COMPLETE_FIX.md`, `COMPONENT_JSON_FIX.md`, `COMPONENT_EXTRACTION_DEBUG.md`
    - `HTML_CORRUPTION_ROOT_CAUSE_FIX.md`, `HTML_EXTRACTION_FIX.md`, `HTML_ATTRIBUTE_CORRUPTION_FIX.md`
    - `CSS_SAVING_FIX.md`
    - `CODEBASE_ANALYSIS_REPORT.md` (stale analysis)
+   - Name them with `2026-04-21-` prefix on archiving (archive date, per `legacy_future_dataset/deprecated-docs/README.md`).
 3. Keep at root (still active):
    - `README.md`
    - `SUPABASE_TABLE_SETUP.md` (setup guide still referenced)
@@ -95,4 +98,4 @@ First payment: PayPal (skip Stripe for now).
 
 ---
 
-*Updated: 20.04.2026 21:30 UTC+3. Previous version (18.04) rotated to legacy.*
+*Updated: 20.04.2026 23:45 UTC+3 (late-session extended Step 1.3 work). Previous version (18.04) rotated to `../legacy_future_dataset/rotated-state/2026-04-18-next-actions.md`.*
