@@ -45,16 +45,6 @@ Thumbs.db
 # IAM Client OS source — cloned separately, has its own .git history (see iam-clients-os/source/README.md)
 iam-clients-os/source/
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+# IAM Client OS admin panel data — per-instance, contains sensitive client info
+# (domains, emails, installer tokens). Must NEVER enter iamrunning.online git history.
+iam-clients-os/data/
