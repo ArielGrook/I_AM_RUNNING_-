@@ -269,5 +269,175 @@ export function createMcpServer(clientSlug?: string): McpServer {
     }
   );
 
+  // ── TOOL 13: iam_clients_list ─────────────────────────────────────────
+  server.tool(
+    'iam_clients_list',
+    'List all IAM Client OS clients (installations) with optional filters. Sensitive fields are returned as masked previews. Use iam_clients_get with reveal_field for plaintext.',
+    {
+      status: z.enum(['lead', 'paid', 'installing', 'installed', 'failed', 'churned']).optional()
+        .describe('Filter by status'),
+      kind: z.enum(['real', 'test']).optional().describe('Filter by kind'),
+      search: z.string().optional().describe('Substring search across name, domain, server IP, tags'),
+    },
+    async ({ status, kind, search }) => {
+      try {
+        const { listClients } = await import('@/lib/admin/iam-clients-os/store');
+        const clients = listClients({ status, kind, search });
+        return ok(JSON.stringify({ count: clients.length, clients }, null, 2));
+      } catch (e) {
+        return err(String(e));
+      }
+    }
+  );
+
+  // ── TOOL 14: iam_clients_get ──────────────────────────────────────────
+  server.tool(
+    'iam_clients_get',
+    'Get a single IAM Client OS client by id or domain. Optionally reveal one sensitive field (sshPassword | sshKey | superAdminToken). Reveal is logged to the audit trail.',
+    {
+      id_or_domain: z.string().describe('Client id (16-char hex) or domain (e.g. "iam-test.lego-base.online")'),
+      reveal_field: z.enum(['sshPassword', 'sshKey', 'superAdminToken']).optional()
+        .describe('If set, return decrypted plaintext for that one field'),
+    },
+    async ({ id_or_domain, reveal_field }) => {
+      try {
+        const store = await import('@/lib/admin/iam-clients-os/store');
+        const client = store.getClientPublic(id_or_domain);
+        if (!client) return err(`Client not found: "${id_or_domain}"`);
+
+        const out: Record<string, unknown> = { client };
+        if (reveal_field) {
+          const r = store.revealField(id_or_domain, reveal_field, 'mcp');
+          if (!r.ok) return err(r.error);
+          out.revealed = { field: r.field, plaintext: r.plaintext };
+        }
+        return ok(JSON.stringify(out, null, 2));
+      } catch (e) {
+        return err(String(e));
+      }
+    }
+  );
+
+  // ── TOOL 15: iam_clients_create ───────────────────────────────────────
+  server.tool(
+    'iam_clients_create',
+    'Create a new IAM Client OS client (installation record). At minimum: name + domain. Sensitive fields (sshPassword, sshKey, superAdminToken) are encrypted at rest.',
+    {
+      name: z.string().describe('Human label, e.g. "Acme Corp"'),
+      domain: z.string().describe('Full domain, e.g. "acme.iamrunning.online"'),
+      kind: z.enum(['real', 'test']).optional().describe('Default: "real"'),
+      status: z.enum(['lead', 'paid', 'installing', 'installed', 'failed', 'churned']).optional()
+        .describe('Default: "lead"'),
+      mode: z.enum(['team', 'solo']).optional().describe('Default: "team"'),
+      port: z.number().optional().describe('Default: 4742'),
+      installPath: z.string().optional().describe('Default: "/var/www/iam"'),
+      productVersion: z.string().optional(),
+      installDate: z.string().optional().describe('YYYY-MM-DD'),
+      serverIp: z.string().optional(),
+      sshUser: z.string().optional(),
+      sshPort: z.number().optional(),
+      sshPassword: z.string().optional().describe('Will be encrypted'),
+      sshKey: z.string().optional().describe('Private key text. Will be encrypted'),
+      superAdminToken: z.string().optional().describe('Will be encrypted'),
+      contacts: z.array(z.object({
+        type: z.enum(['email', 'telegram', 'whatsapp', 'phone', 'other']),
+        value: z.string(),
+      })).optional(),
+      payments: z.array(z.object({
+        amount: z.number(),
+        currency: z.string().optional(),
+        date: z.string().optional(),
+        note: z.string().optional(),
+      })).optional(),
+      notes: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+    },
+    async (input) => {
+      try {
+        const { createClient } = await import('@/lib/admin/iam-clients-os/store');
+        const result = createClient(input, 'mcp');
+        if (!result.ok) return err(result.error);
+        return ok(`Created client ${result.client.id} (${result.client.domain}).\n\n${JSON.stringify(result.client, null, 2)}`);
+      } catch (e) {
+        return err(String(e));
+      }
+    }
+  );
+
+  // ── TOOL 16: iam_clients_update ───────────────────────────────────────
+  server.tool(
+    'iam_clients_update',
+    'Update fields on an existing IAM Client OS client. Pass id_or_domain plus only the fields to change. To clear a sensitive field pass empty string. Other fields stay unchanged.',
+    {
+      id_or_domain: z.string().describe('Client id or domain to update'),
+      name: z.string().optional(),
+      domain: z.string().optional(),
+      kind: z.enum(['real', 'test']).optional(),
+      status: z.enum(['lead', 'paid', 'installing', 'installed', 'failed', 'churned']).optional(),
+      mode: z.enum(['team', 'solo']).optional(),
+      port: z.number().optional(),
+      installPath: z.string().optional(),
+      productVersion: z.string().optional(),
+      installDate: z.string().optional(),
+      serverIp: z.string().optional(),
+      sshUser: z.string().optional(),
+      sshPort: z.number().optional(),
+      sshPassword: z.string().optional().describe('Empty string clears it. Otherwise re-encrypts.'),
+      sshKey: z.string().optional(),
+      superAdminToken: z.string().optional(),
+      contacts: z.array(z.object({
+        type: z.enum(['email', 'telegram', 'whatsapp', 'phone', 'other']),
+        value: z.string(),
+      })).optional().describe('REPLACES the entire contacts array'),
+      payments: z.array(z.object({
+        amount: z.number(),
+        currency: z.string().optional(),
+        date: z.string().optional(),
+        note: z.string().optional(),
+      })).optional().describe('REPLACES the entire payments array'),
+      notes: z.string().optional(),
+      tags: z.array(z.string()).optional().describe('REPLACES the entire tags array'),
+    },
+    async (input) => {
+      try {
+        const { id_or_domain, ...patch } = input;
+        const { updateClient } = await import('@/lib/admin/iam-clients-os/store');
+        const result = updateClient(id_or_domain, patch, 'mcp');
+        if (!result.ok) return err(result.error);
+        return ok(`Updated client ${result.client.id} (${result.client.domain}).\n\n${JSON.stringify(result.client, null, 2)}`);
+      } catch (e) {
+        return err(String(e));
+      }
+    }
+  );
+
+  // ── TOOL 17: iam_clients_delete ───────────────────────────────────────
+  server.tool(
+    'iam_clients_delete',
+    'Delete an IAM Client OS client by id or domain. Requires confirm=true to actually remove. This action is irreversible.',
+    {
+      id_or_domain: z.string().describe('Client id or domain to delete'),
+      confirm: z.boolean().describe('Must be true to actually delete. False = dry-run preview.'),
+    },
+    async ({ id_or_domain, confirm }) => {
+      try {
+        const store = await import('@/lib/admin/iam-clients-os/store');
+        const target = store.getClientPublic(id_or_domain);
+        if (!target) return err(`Client not found: "${id_or_domain}"`);
+
+        if (!confirm) {
+          return ok(`DRY RUN — would delete:\n${JSON.stringify({
+            id: target.id, name: target.name, domain: target.domain, status: target.status,
+          }, null, 2)}\n\nCall again with confirm=true to actually delete.`);
+        }
+        const result = store.deleteClient(id_or_domain, 'mcp');
+        if (!result.ok) return err(result.error);
+        return ok(`Deleted client ${result.id} (${result.domain}).`);
+      } catch (e) {
+        return err(String(e));
+      }
+    }
+  );
+
   return server;
 }
