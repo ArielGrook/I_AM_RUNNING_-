@@ -200,14 +200,16 @@ Admin страница делается ДО переноса исходного
 | 1.1 — Аудит структуры iam-client-os | ✅ DONE | 2026-04-20 | прошлая сессия |
 | 1.2 — Перенос docs с lego-base | ✅ DONE | 2026-04-20 | Ariel через GitHub, 13 папок, ~100 файлов в `ariels-workflow/` |
 | 1.3 — Актуализация context-core/ iamrunning | ✅ DONE | 2026-04-20 | PROGRESS v9, MAIN v2, PLATFORM v2, SUCCESS_CHAT_PATTERNS.md, PROJECT_STRUCTURE помечен stale. Дополнительно (late-night): все 13 папок в ariels-workflow/ получили README.md, создан ariels-workflow/README.md (root folder map), папка `legacy/` переименована в `legacy_future_dataset/` с подпапками rotated-state/deprecated-code/deprecated-docs/wisdom/fine-tune-ideas/, создан bootstrap-prompts/SESSION_END_CHECKLIST.md |
-| 1.4 — Legacy cleanup | ⏳ READY | — | Следующий шаг (утро 21.04): переместить `product-template/` → `legacy_future_dataset/deprecated-code/`, stale root-level fix docs (`PRODUCTION_FIX.md`, `HTML_CORRUPTION_*`, `COMPONENT_JSON_*`, etc.) → `legacy_future_dataset/deprecated-docs/` с префиксом `2026-04-21-` |
-| 2 — Подготовить iam-clients-os/ | ⏳ PENDING | — | — |
-| 3 — Admin page frontend | ⏳ PENDING | — | — |
+| 1.4 — Legacy cleanup | ✅ DONE | 2026-04-21 | `product-template/` → `legacy_future_dataset/deprecated-code/` с `_NOTE.md`; 4 fix doc из корня (`CODEBASE_ANALYSIS_REPORT`, `COMPONENT_EXTRACTION_DEBUG`, `LOCALSTORAGE_QUOTA_FIX`, `PRODUCTION_FIX`) → `legacy_future_dataset/deprecated-docs/` с префиксом `2026-04-21-`; 3 broken-filename файла (76 кб суммарно, артефакты оборванных shell-команд) → `legacy_future_dataset/deprecated-code/broken-filenames/` с sanitized именами + `_NOTE.md`. Остальные из списка (`COMPONENT_JSON_*`, `HTML_*`, `CSS_SAVING_FIX`) уже не существовали — подчищены ранее |
+| 2 — Подготовить iam-clients-os/ | ✅ DONE | 2026-04-21 | Созданы `iam-clients-os/{source,workspace,skeleton-sync}/` + README в каждой подпапке + `iam-clients-os/README.md` как parent-level overview. Добавлено `iam-clients-os/source/` в корневой `.gitignore` (не вся папка — `workspace/` и `skeleton-sync/` надо трекать) |
+| 3 — Admin page frontend | ⏳ READY | — | Следующий шаг: route `app/[locale]/admin/iam-clients-os/page.tsx` + 4 подтаба (Settings, Client Projects, Web Installer, Dev Workspace) + соответствующие API routes. Оценка ~4-6h. Фронтенд делаем ДО переноса source code — табы автономны |
 | 4 — Перенос source code | ⏳ PENDING | — | — |
 | 5 — Валидация | ⏳ PENDING | — | — |
 | 6 — Decommission lego-base | ⏳ PENDING | — | — |
 
-**Следующее действие:** Step 1.4 — legacy cleanup. Переместить `product-template/` в `context-core/legacy/`, пометить устаревшие INSTALL.md / Option A документы. После этого Step 2 — создание структуры `iam-clients-os/` с `.gitignore` на `source/`.
+**Следующее действие:** Step 3 — Admin page frontend. Создать route `app/[locale]/admin/iam-clients-os/page.tsx` + 4 подтаба (Settings, Client Projects, Web Installer, Dev Workspace) + соответствующие API routes. Фронтенд делаем ДО переноса source code потому что все табы работают автономно (JSON/Supabase для данных, config generator автономен, Dev Workspace — file browser на уже перенесённый `workspace/`). Когда source code приедет в Step 4 — UI его просто подхватит.
+
+*Последнее обновление: 2026-04-21 09:30 UTC+3 | Steps 1.4 + 2 complete, Step 3 ready*
 
 **Handoff инструкция для следующей сессии (если эта прервётся):**
 1. Подключись к MCP connector: `iamrunning`
@@ -229,4 +231,6 @@ Ariel делает полный `git clone` всех репозиториев le
 
 ---
 
-*Последнее обновление: 2026-04-20 21:45 UTC+3 | Step 1.3 complete (incl. current-state/legacy rotation pattern), awaiting Ariel's go-ahead for Step 1.4*
+*Последнее обновление: 2026-04-21 09:30 UTC+3 | Steps 1.4 + 2 complete, Step 3 ready*
+
+---

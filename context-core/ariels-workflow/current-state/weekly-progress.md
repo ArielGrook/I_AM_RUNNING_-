@@ -146,6 +146,24 @@
 
 Commits: `73b0d2a`, `ca0632c`, `e03a057`, (session-end snapshot pending)
 
+### 21.04 Tuesday morning — Steps 1.4 + 2 closed, Step 3 ready
+
+**Step 1.4 (root cleanup):**
+- `product-template/` (Option A multi-tenant installer, 10 files, deprecated) → `context-core/ariels-workflow/legacy_future_dataset/deprecated-code/product-template/` with `_NOTE.md` explaining why retired
+- 4 root-level fix docs → `legacy_future_dataset/deprecated-docs/` with `2026-04-21-` prefix: CODEBASE_ANALYSIS_REPORT, COMPONENT_EXTRACTION_DEBUG, LOCALSTORAGE_QUOTA_FIX, PRODUCTION_FIX
+- 3 broken-filename garbage files (~76 kb total, fragments of interrupted shell commands) → `legacy_future_dataset/deprecated-code/broken-filenames/` with sanitized names + `_NOTE.md` documenting their origin
+
+**Step 2 (folder structure for IAM Client OS inside iamrunning.online):**
+- Created `iam-clients-os/{source,workspace,skeleton-sync}/` with READMEs in each
+- Added `iam-clients-os/README.md` as parent-level overview
+- Added `iam-clients-os/source/` to root `.gitignore` (only `source/` ignored; `workspace/` and `skeleton-sync/` tracked)
+
+**Migration state after today's morning block:** Steps 0-2 DONE. Step 3 (Admin page frontend) next, ~4-6h, best split across 2-3 Cursor sessions. After that: Steps 4-6 (source clone, validation, lego-base decommission) within 22-23.04.
+
+**Also noted today:** Ariel's MCP injection + tools refactor observation recorded as a scheduled track in next-actions.md. Do not start before Step 4 (lego-base is being decommissioned — no point touching MCP there). First deliverable: `specifications/MCP_INJECTION_V3_SPEC.md`.
+
+Commits: `70d9961` (yesterday's dangling snapshot), `9f49f17` (MCP track note), `53df896` (Step 1.4 moves), final Step 2 snapshot pending.
+
 ---
 
 ## Stats for the week

@@ -42,6 +42,9 @@ Thumbs.db
 *.tmp
 *.temp
 
+# IAM Client OS source — cloned separately, has its own .git history (see iam-clients-os/source/README.md)
+iam-clients-os/source/
+
 
 
 

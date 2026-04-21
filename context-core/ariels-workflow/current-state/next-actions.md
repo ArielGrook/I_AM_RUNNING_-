@@ -8,24 +8,45 @@
 
 Full plan with live status table: `../PLATFORM_REFACTORING.md`.
 
-### Current Step: 1.4 — legacy cleanup (READY)
+### Current Step: 3 — Admin page frontend (READY)
 
-*Extended Step 1.3 work on the late-night 20.04 session: full READMEs for all 13 folders in `ariels-workflow/`, renamed `legacy/` → `legacy_future_dataset/` with subfolder structure (`rotated-state/`, `deprecated-code/`, `deprecated-docs/`, `wisdom/`, `fine-tune-ideas/`), created `bootstrap-prompts/SESSION_END_CHECKLIST.md`. Step 1.4 unchanged — still about cleanup in project root.*
+Steps 1.4 + 2 completed morning of 21.04. Root is clean (`product-template/` archived, old fix docs archived, broken-filename garbage archived). Folder `iam-clients-os/{source,workspace,skeleton-sync}/` exists with READMEs and proper `.gitignore` on `source/`.
 
-**On iamrunning.online root `/var/www/i_am_running/`:**
+**Step 3 scope (per PLATFORM_REFACTORING.md section 3.3):**
 
-1. Move `product-template/` → `context-core/ariels-workflow/legacy_future_dataset/deprecated-code/product-template/` — this was Option A multi-tenant installs, officially deprecated. Include a `_NOTE.md` inside explaining when and why it was retired.
-2. Sweep stale root-level fix docs to `context-core/ariels-workflow/legacy_future_dataset/deprecated-docs/`:
-   - `PRODUCTION_FIX.md`, `LOCALSTORAGE_QUOTA_FIX.md`
-   - `COMPONENT_JSON_COMPLETE_FIX.md`, `COMPONENT_JSON_FIX.md`, `COMPONENT_EXTRACTION_DEBUG.md`
-   - `HTML_CORRUPTION_ROOT_CAUSE_FIX.md`, `HTML_EXTRACTION_FIX.md`, `HTML_ATTRIBUTE_CORRUPTION_FIX.md`
-   - `CSS_SAVING_FIX.md`
-   - `CODEBASE_ANALYSIS_REPORT.md` (stale analysis)
-   - Name them with `2026-04-21-` prefix on archiving (archive date, per `legacy_future_dataset/deprecated-docs/README.md`).
-3. Keep at root (still active):
-   - `README.md`
-   - `SUPABASE_TABLE_SETUP.md` (setup guide still referenced)
-   - `CREATE_COMPONENTS_TABLE.sql` (SQL still used)
+- New route `app/[locale]/admin/iam-clients-os/page.tsx`
+- Header iamrunning.online admin gets link `IAM Clients OS`
+- 4 subtabs inside the page:
+  - **Settings** — product config form (version, defaults)
+  - **Client Projects** — CRUD table for client installations (admin API + JSON file or Supabase table)
+  - **Web Installer** — generator form for preconfigured install.sh (downloadable .sh or bash command output)
+  - **Dev Workspace** — file browser for `iam-clients-os/workspace/` (can reuse Dev Console components from `app/api/dev-agent/files/`)
+- API routes:
+  - `GET/POST /api/admin/iam-clients-os/clients` — client CRUD
+  - `POST /api/admin/iam-clients-os/generate-installer` — install.sh generation from form data
+  - `GET /api/admin/iam-clients-os/workspace/*` — workspace file reading (may extend existing `/api/dev-agent/files/*`)
+
+**Estimate:** ~4-6h, best done in 2-3 Cursor sessions. First session: Settings tab + page scaffolding (lowest-risk ramp-up). Second: Client Projects + Web Installer. Third: Dev Workspace.
+
+**Sequence rationale:** Frontend before backend (Step 3 before Step 4). All 4 subtabs work autonomously on existing data — no dependency on source code migration. Step 4 happens after Step 3 so that when source arrives, the UI is already built and just needs to know the path.
+
+---
+
+### After Step 3:
+- Step 4 — git clone ArielGrook/iam-client-os into `iam-clients-os/source/` (~1-2h)
+- Step 5 — end-to-end validation (~1-2h)
+- Step 6 — decommission lego-base (~1h, mostly waiting on backup + Time4VPS cancel)
+
+### DONE this morning (21.04):
+
+**Step 1.4 — legacy cleanup** — moved to `legacy_future_dataset/`:
+- `product-template/` (Option A multi-tenant, deprecated) with `_NOTE.md` inside
+- 4 fix docs with `2026-04-21-` prefix
+- 3 broken-filename garbage files with sanitized names + `_NOTE.md`
+
+**Step 2 — folder structure** — created `iam-clients-os/{source,workspace,skeleton-sync}/` with parent + 3 subfolder READMEs, added `iam-clients-os/source/` to root `.gitignore`.
+
+---
 
 ### Next: Step 2 — prepare `iam-clients-os/` folder
 
