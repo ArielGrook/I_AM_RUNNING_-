@@ -102,6 +102,7 @@ First payment: PayPal (skip Stripe for now).
 - Roadmap 18 — Fine-tune v1 (QLoRA on RTX 3050, 300–500 CoT pairs from EVOLUTION files)
 - First paying client onboarding (pilot through the full flow: `iam-client.sh` → admin panel → PR workflow → deploy)
 - `../current-state/roadmap.md` revision — dated 14.04, needs platform-level refresh (not just iam-client-os). Rotate + rewrite.
+- **Bootstrap schema integration into IAM Client OS** — ship `FIRST_PROMPT_SCHEMA.md` + `SUCCESS_CHAT_PATTERNS.md` + `SESSION_END_CHECKLIST.md` into skeleton repo so every client install has them. Full plan in `../specifications/BOOTSTRAP_SCHEMA_INTEGRATION.md`. Ties into MCP Injection V3 track (forced first-call redirect points to schema). Expected ~2-3h. Do after Step 4 — NOT before.
 
 ---
 

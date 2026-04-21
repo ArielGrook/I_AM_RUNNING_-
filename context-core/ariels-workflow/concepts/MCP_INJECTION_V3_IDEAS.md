@@ -48,6 +48,8 @@ The AI then reads the file, gets the context, and resumes. The redirect is idemp
 
 Instead of one file, the redirect can list 2-3 files (README + session-state + current PLATFORM_REFACTORING if active). Server decides based on platform state (active migration = PLATFORM_REFACTORING included; steady-state = just README + session-state).
 
+For **client installations** (not platform-side), the anchor set will include `memory/BOOTSTRAP_SCHEMA.md` — the summary version of FIRST_PROMPT_SCHEMA.md shipped via skeleton. See `../specifications/BOOTSTRAP_SCHEMA_INTEGRATION.md` for the integration plan. This means fresh chats on client installs also start with good prompt-structure awareness, not just platform chats.
+
 ### Variation — warn-vs-force
 
 Two modes:
