@@ -1,12 +1,14 @@
 'use client';
 
+import { RunnerSVG } from './RunnerSVG';
+
 export function LoadingScreen() {
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#ffffff',
+        background: '#FF6B35',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -14,15 +16,20 @@ export function LoadingScreen() {
         zIndex: 99999,
       }}
     >
+      {/* Runner logo mark */}
+      <div style={{ marginBottom: 24 }}>
+        <RunnerSVG size={64} color="#ffffff" />
+      </div>
+
       {/* Logotype */}
       <div
         style={{
-          fontSize: 'clamp(32px, 6vw, 52px)',
+          fontSize: 'clamp(28px, 5vw, 44px)',
           fontWeight: 900,
-          letterSpacing: '0.15em',
-          color: '#FF6B35',
+          letterSpacing: '0.2em',
+          color: '#ffffff',
           fontFamily: 'system-ui, sans-serif',
-          marginBottom: 48,
+          marginBottom: 40,
           userSelect: 'none',
         }}
       >
@@ -34,7 +41,7 @@ export function LoadingScreen() {
         style={{
           width: 200,
           height: 2,
-          background: 'rgba(255,107,53,0.15)',
+          background: 'rgba(255,255,255,0.25)',
           borderRadius: 2,
           overflow: 'hidden',
           position: 'relative',
@@ -47,7 +54,7 @@ export function LoadingScreen() {
             left: 0,
             height: '100%',
             width: '45%',
-            background: '#FF6B35',
+            background: '#ffffff',
             borderRadius: 2,
             animation: 'shimmer 1.4s ease-in-out infinite',
           }}

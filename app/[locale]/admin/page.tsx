@@ -15,6 +15,7 @@ import { generateProjectPreview, getCachedPreview } from '@/lib/utils/preview';
 import { cn } from '@/lib/utils';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import Link from 'next/link';
+import { RunnerSVG } from '@/components/ui/RunnerSVG';
 
 // ── Role config ────────────────────────────────────────────────────────────
 // Each entry: { label, accountType, tier, color, roleNum }
@@ -246,7 +247,10 @@ export default function AdminPage() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f3f4f6', padding: 16 }} dir={isRTL ? 'rtl' : 'ltr'}>
         <div style={{ background: '#fff', padding: 32, borderRadius: 12, boxShadow: '0 4px 24px rgba(0,0,0,0.1)', width: '100%', maxWidth: 360 }}>
-          <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 4, color: '#FF6B35' }}>I AM RUNNING</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <RunnerSVG size={32} color="#FF6B35" />
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#FF6B35' }}>I AM RUNNING</div>
+          </div>
           <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 24 }}>Admin Panel — enter TOTP code</div>
           <input
             type="text" inputMode="numeric" placeholder="000000" maxLength={6}

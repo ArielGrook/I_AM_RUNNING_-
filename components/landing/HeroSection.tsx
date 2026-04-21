@@ -9,6 +9,7 @@ import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { RunnerSVG } from '@/components/ui/RunnerSVG';
 import { useEffect, useMemo, useState } from 'react';
 
 /* ── i18n marquee terms ── */
@@ -73,18 +74,7 @@ const HERO_CONTENT = {
   },
 };
 
-/* ── Running Man SVG ── */
-function RunnerSVG({ size = 24, color = '#FF6B35' }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="38" cy="10" r="6" fill={color}/>
-      <path d="M34 16c-1 2-2 6-3 10l-8 3-5 14h5l4-10 6-2 2 4-2 9 4 8h5l1-10 3-8" stroke={color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      <path d="M37 35l4 7 10 4" stroke={color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      <path d="M31 26l-10 2-4-3" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      <path d="M34 20l8-3 3 2" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-    </svg>
-  );
-}
+/* ── Running Man SVG is now imported from components/ui/RunnerSVG ── */
 
 export function HeroSection() {
   const locale = useLocale();
