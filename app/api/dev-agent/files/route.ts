@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { loadConfig } from '@/lib/dev-agent/config';
+import { resolveRootFromUrl, WorkspaceRootError } from '@/lib/dev-agent/resolveRoot';
 import fs from 'fs';
 import path from 'path';
 
 export const runtime = 'nodejs';
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 const DEVELOPER_USER_ID = process.env.DEVELOPER_USER_ID;
 
 const IGNORE = new Set([
@@ -16,7 +16,7 @@ const IGNORE = new Set([
 
 interface TreeNode {
   name: string;
-  path: string;       // relative to PROJECT_ROOT
+  path: string;       // relative to the resolved workspace root
   type: 'file' | 'dir';
   children?: TreeNode[];
 }
@@ -66,7 +66,7 @@ function buildTree(dirPath: string, relativePath: string, depth: number, maxDept
   return result;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -79,9 +79,31 @@ export async function GET() {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const tree = buildTree(PROJECT_ROOT, '', 0, 5);
-    return NextResponse.json({ tree });
+    // Resolve `?root=` to a workspace boundary. Defaults to PROJECT_ROOT.
+    const resolved = resolveRootFromUrl(request.url);
+
+    // Workspace folder might not exist yet (e.g. iam-clients-os/source/
+    // before migration Step 4). Return an empty tree with a hint instead
+    // of crashing.
+    if (!fs.existsSync(resolved.absolute)) {
+      return NextResponse.json({
+        tree: [],
+        empty: true,
+        rootId: resolved.rootId,
+        reason: `Workspace root "${resolved.rootId || 'project'}" does not exist on disk.`,
+      });
+    }
+
+    const tree = buildTree(resolved.absolute, '', 0, 5);
+    return NextResponse.json({
+      tree,
+      empty: tree.length === 0,
+      rootId: resolved.rootId,
+    });
   } catch (err: unknown) {
+    if (err instanceof WorkspaceRootError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     const error = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error }, { status: 500 });
   }

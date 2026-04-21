@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { loadConfig } from '@/lib/dev-agent/config';
+import { resolveRootFromBody, resolvePathInsideRoot, WorkspaceRootError } from '@/lib/dev-agent/resolveRoot';
 import fs from 'fs';
-import path from 'path';
 
 export const runtime = 'nodejs';
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 const DEVELOPER_USER_ID = process.env.DEVELOPER_USER_ID;
 
-const BLOCKED_PATTERNS = ['.env', '.git/', 'node_modules/', '.next/', 'app/api/dev-agent'];
+const BLOCKED_PATTERNS = ['.env', '.git/', 'node_modules/', '.next/'];
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,25 +30,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing path' }, { status: 400 });
     }
 
-    if (dirPath.startsWith('/') || dirPath.includes('..')) {
-      return NextResponse.json({ error: 'Invalid path' }, { status: 403 });
-    }
-
     for (const pattern of BLOCKED_PATTERNS) {
       if (dirPath.includes(pattern)) {
         return NextResponse.json({ error: `Cannot create directory in ${pattern}` }, { status: 403 });
       }
     }
 
-    const absolute = path.resolve(PROJECT_ROOT, dirPath);
-    if (!absolute.startsWith(path.resolve(PROJECT_ROOT))) {
-      return NextResponse.json({ error: 'Path traversal detected' }, { status: 403 });
-    }
+    const resolved = resolveRootFromBody(body);
+    const absolute = resolvePathInsideRoot(resolved, dirPath);
 
     fs.mkdirSync(absolute, { recursive: true });
 
-    return NextResponse.json({ success: true, path: dirPath });
+    return NextResponse.json({ success: true, path: dirPath, rootId: resolved.rootId });
   } catch (err: unknown) {
+    if (err instanceof WorkspaceRootError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     const error = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error }, { status: 500 });
   }

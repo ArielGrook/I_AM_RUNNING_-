@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { loadConfig } from '@/lib/dev-agent/config';
+import { resolveRootFromBody, resolvePathInsideRoot, WorkspaceRootError } from '@/lib/dev-agent/resolveRoot';
 import fs from 'fs';
-import path from 'path';
 
 export const runtime = 'nodejs';
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 const DEVELOPER_USER_ID = process.env.DEVELOPER_USER_ID;
 
-const BLOCKED_PATTERNS = ['.env', '.git/', 'node_modules/', '.next/', 'app/api/dev-agent'];
+const BLOCKED_PATTERNS = ['.env', '.git/', 'node_modules/', '.next/'];
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -31,20 +30,14 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Missing path' }, { status: 400 });
     }
 
-    if (filePath.startsWith('/') || filePath.includes('..')) {
-      return NextResponse.json({ error: 'Invalid path' }, { status: 403 });
-    }
-
     for (const pattern of BLOCKED_PATTERNS) {
       if (filePath.includes(pattern)) {
         return NextResponse.json({ error: `Cannot delete ${pattern}` }, { status: 403 });
       }
     }
 
-    const absolute = path.resolve(PROJECT_ROOT, filePath);
-    if (!absolute.startsWith(path.resolve(PROJECT_ROOT))) {
-      return NextResponse.json({ error: 'Path traversal detected' }, { status: 403 });
-    }
+    const resolved = resolveRootFromBody(body);
+    const absolute = resolvePathInsideRoot(resolved, filePath);
 
     if (!fs.existsSync(absolute)) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
@@ -62,8 +55,11 @@ export async function DELETE(req: NextRequest) {
       fs.unlinkSync(absolute);
     }
 
-    return NextResponse.json({ success: true, path: filePath });
+    return NextResponse.json({ success: true, path: filePath, rootId: resolved.rootId });
   } catch (err: unknown) {
+    if (err instanceof WorkspaceRootError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     const error = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error }, { status: 500 });
   }

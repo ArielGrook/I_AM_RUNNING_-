@@ -169,6 +169,43 @@ export default function DevConsolePage() {
   const fromParam = searchParams?.get('from') || '';
   const isFromIamClientsOs = fromParam === 'iam-clients-os';
 
+  // Workspace scope — drives `?root=` parameter on all dev-agent file API
+  // calls. Server enforces the boundary via resolveRoot; we just pick.
+  type WorkspaceScope = 'root' | 'iam-clients-os';
+  const [workspaceScope, setWorkspaceScopeRaw] = useState<WorkspaceScope>('root');
+
+  useEffect(() => {
+    const urlRoot = searchParams?.get('root');
+    if (urlRoot === 'iam-clients-os' || urlRoot === 'root') {
+      setWorkspaceScopeRaw(urlRoot as WorkspaceScope);
+      localStorage.setItem('devConsole_workspaceScope', urlRoot);
+      return;
+    }
+    if (isFromIamClientsOs) {
+      setWorkspaceScopeRaw('iam-clients-os');
+      return;
+    }
+    const saved = localStorage.getItem('devConsole_workspaceScope');
+    if (saved === 'iam-clients-os' || saved === 'root') {
+      setWorkspaceScopeRaw(saved);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setWorkspaceScope = (next: WorkspaceScope) => {
+    setWorkspaceScopeRaw(next);
+    localStorage.setItem('devConsole_workspaceScope', next);
+  };
+
+  // Helpers: append scope to URLs / bodies. `root` means default (no param).
+  const withRootQuery = (url: string) =>
+    workspaceScope === 'root'
+      ? url
+      : `${url}${url.includes('?') ? '&' : '?'}root=${encodeURIComponent(workspaceScope)}`;
+
+  const withRootBody = <T extends object>(body: T): T & { root?: string } =>
+    workspaceScope === 'root' ? body : { ...body, root: workspaceScope };
+
   const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
@@ -377,6 +414,16 @@ export default function DevConsolePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasSession]);
 
+  // Reload file tree when workspace scope changes (clear selected file
+  // because its path is relative to the old root).
+  useEffect(() => {
+    if (!hasSession) return;
+    setSelectedFile(null);
+    setFileContent(null);
+    loadFileTree();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceScope]);
+
   // Panel drag — horizontal (left / right)
   useEffect(() => {
     if (!dragging) return;
@@ -437,7 +484,7 @@ export default function DevConsolePage() {
     setIsEditMode(false);
     setIsModified(false);
     setSaveError(null);
-    fetch(`/api/dev-agent/files/read?path=${encodeURIComponent(selectedFile)}`, { signal: controller.signal })
+    fetch(withRootQuery(`/api/dev-agent/files/read?path=${encodeURIComponent(selectedFile)}`), { signal: controller.signal })
       .then(r => r.json())
       .then(data => {
         if (data.error) { setFileError(data.error); return; }
@@ -731,7 +778,7 @@ export default function DevConsolePage() {
       const res = await fetch('/api/dev-agent/files/write', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: selectedFile, content }),
+        body: JSON.stringify(withRootBody({ path: selectedFile, content })),
       });
       const data = await res.json();
       if (data.error) { setSaveError(data.error); return; }
@@ -774,7 +821,7 @@ export default function DevConsolePage() {
       const res = await fetch('/api/dev-agent/files/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: selectedFile }),
+        body: JSON.stringify(withRootBody({ path: selectedFile })),
       });
       const data = await res.json();
       if (data.error) { setSaveError(data.error); return; }
@@ -796,7 +843,7 @@ export default function DevConsolePage() {
       const res = await fetch('/api/dev-agent/files/write', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: p, content: '' }),
+        body: JSON.stringify(withRootBody({ path: p, content: '' })),
       });
       const data = await res.json();
       if (data.error) { setNewFileError(data.error); return; }
@@ -815,7 +862,7 @@ export default function DevConsolePage() {
     if (!pathToReload) return;
 
     try {
-      const res = await fetch(`/api/dev-agent/files/read?path=${encodeURIComponent(pathToReload)}`);
+      const res = await fetch(withRootQuery(`/api/dev-agent/files/read?path=${encodeURIComponent(pathToReload)}`));
       const data = await res.json();
       if (data.content !== undefined) {
         if (editorViewRef.current) {
@@ -941,7 +988,7 @@ export default function DevConsolePage() {
         const res = await fetch('/api/dev-agent/files/write', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: fullPath, content: '' }),
+          body: JSON.stringify(withRootBody({ path: fullPath, content: '' })),
         });
         const data = await res.json();
         if (data.error) { setContextCreateError(data.error); return; }
@@ -957,7 +1004,7 @@ export default function DevConsolePage() {
         const res = await fetch('/api/dev-agent/files/mkdir', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: fullPath }),
+          body: JSON.stringify(withRootBody({ path: fullPath })),
         });
         const data = await res.json();
         if (data.error) { setContextCreateError(data.error); return; }
@@ -984,7 +1031,7 @@ export default function DevConsolePage() {
       const res = await fetch('/api/dev-agent/files/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: deleteFolderPath }),
+        body: JSON.stringify(withRootBody({ path: deleteFolderPath })),
       });
       const data = await res.json();
       if (data.error) { setDeleteFolderError(data.error); return; }
@@ -1003,7 +1050,7 @@ export default function DevConsolePage() {
     setFileTreeLoading(true);
     setFileTreeError(null);
     try {
-      const res = await fetch('/api/dev-agent/files');
+      const res = await fetch(withRootQuery('/api/dev-agent/files'));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setFileTree(data.tree || []);
@@ -1171,6 +1218,25 @@ export default function DevConsolePage() {
             >
               ← IAM Clients OS
             </button>
+          )}
+          {!isMobile && (
+            <div className="flex items-center gap-1.5 ml-1">
+              <span className={`text-[10px] uppercase tracking-wider ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>Workspace</span>
+              <select
+                value={workspaceScope}
+                onChange={e => setWorkspaceScope(e.target.value as WorkspaceScope)}
+                className={`text-xs rounded px-2 py-0.5 border focus:outline-none ${dark ? 'bg-zinc-800 border-zinc-700 text-zinc-200 focus:border-orange-500' : 'bg-white border-zinc-300 text-zinc-700 focus:border-orange-500'}`}
+                title="Switch workspace root. Changes which files are shown and edited."
+              >
+                <option value="root">iamrunning.online (root)</option>
+                <option value="iam-clients-os">iam-clients-os</option>
+              </select>
+              {workspaceScope !== 'root' && (
+                <span className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${dark ? 'bg-orange-500/20 text-orange-300' : 'bg-orange-100 text-orange-700'}`}>
+                  scoped
+                </span>
+              )}
+            </div>
           )}
         </div>
 
@@ -1570,7 +1636,17 @@ export default function DevConsolePage() {
               <div className="flex flex-col">
               {/* File Tree Header */}
               <div className={`flex items-center justify-between px-3 py-2 border-b ${borderCls} flex-shrink-0`}>
-                <span className={`text-xs font-semibold uppercase tracking-wider ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Files</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`text-xs font-semibold uppercase tracking-wider flex-shrink-0 ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>Files</span>
+                  <select
+                    value={workspaceScope}
+                    onChange={e => setWorkspaceScope(e.target.value as WorkspaceScope)}
+                    className={`text-[10px] rounded px-1.5 py-0.5 border focus:outline-none min-w-0 ${dark ? 'bg-zinc-800 border-zinc-700 text-zinc-200' : 'bg-white border-zinc-300 text-zinc-700'}`}
+                  >
+                    <option value="root">root</option>
+                    <option value="iam-clients-os">iam-clients-os</option>
+                  </select>
+                </div>
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => { setShowNewFileInput(p => !p); setNewFilePath(''); setNewFileError(null); }}

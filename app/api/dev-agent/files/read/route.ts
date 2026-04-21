@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { loadConfig } from '@/lib/dev-agent/config';
+import { resolveRootFromUrl, resolvePathInsideRoot, WorkspaceRootError } from '@/lib/dev-agent/resolveRoot';
 import fs from 'fs';
-import path from 'path';
 
 export const runtime = 'nodejs';
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 const DEVELOPER_USER_ID = process.env.DEVELOPER_USER_ID;
 const MAX_FILE_SIZE = 500 * 1024; // 500KB
 
@@ -33,42 +32,28 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const filePath = searchParams.get('path');
 
-    if (!filePath) {
-      return NextResponse.json({ error: 'Missing path parameter' }, { status: 400 });
-    }
+    // Resolve scope first; pathInsideRoot enforces no traversal.
+    const resolved = resolveRootFromUrl(request.url);
+    const absolutePath = resolvePathInsideRoot(resolved, filePath);
 
-    // Reject absolute paths and path traversal attempts
-    if (path.isAbsolute(filePath) || filePath.includes('..')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    // Check against blocked patterns
-    const normalizedPath = filePath.replace(/\\/g, '/');
+    // Pattern blocklist on the relative-to-PROJECT_ROOT path.
+    // (Even when scoped, .env etc. should never be readable.)
+    const normalizedPath = (filePath ?? '').replace(/\\/g, '/');
     for (const pattern of BLOCKED_PATTERNS) {
       if (pattern.test(normalizedPath)) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     }
 
-    // Resolve and verify the path stays within PROJECT_ROOT
-    const absolutePath = path.resolve(PROJECT_ROOT, filePath);
-    const resolvedRoot = path.resolve(PROJECT_ROOT);
-    if (!absolutePath.startsWith(resolvedRoot + path.sep) && absolutePath !== resolvedRoot) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    // Check file exists
     if (!fs.existsSync(absolutePath)) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
-    // Check it's a file (not a directory)
     const stat = fs.statSync(absolutePath);
     if (!stat.isFile()) {
       return NextResponse.json({ error: 'Not a file' }, { status: 400 });
     }
 
-    // Check file size
     if (stat.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: `File too large (${Math.round(stat.size / 1024)}KB). Max 500KB.` },
@@ -79,8 +64,11 @@ export async function GET(request: NextRequest) {
     const content = fs.readFileSync(absolutePath, 'utf-8');
     const lines = content.split('\n').length;
 
-    return NextResponse.json({ content, path: filePath, lines });
+    return NextResponse.json({ content, path: filePath, lines, rootId: resolved.rootId });
   } catch (err: unknown) {
+    if (err instanceof WorkspaceRootError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     const error = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error }, { status: 500 });
   }

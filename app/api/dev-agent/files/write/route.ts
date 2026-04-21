@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { loadConfig } from '@/lib/dev-agent/config';
+import { resolveRootFromBody, resolvePathInsideRoot, WorkspaceRootError } from '@/lib/dev-agent/resolveRoot';
 import fs from 'fs';
 import path from 'path';
 
 export const runtime = 'nodejs';
 
-const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 const DEVELOPER_USER_ID = process.env.DEVELOPER_USER_ID;
 
-const BLOCKED_PATTERNS = ['.env', '.git/', 'node_modules/', '.next/', 'app/api/dev-agent'];
+// Even when scoped, these are never writable.
+const BLOCKED_PATTERNS = ['.env', '.git/', 'node_modules/', '.next/'];
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,22 +32,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing path or content' }, { status: 400 });
     }
 
-    // Security: no absolute paths, no traversal
-    if (filePath.startsWith('/') || filePath.includes('..')) {
-      return NextResponse.json({ error: 'Invalid path' }, { status: 403 });
-    }
-
-    // Block sensitive paths
+    // Sensitive-pattern check still runs first (cheap, catches obvious things).
     for (const pattern of BLOCKED_PATTERNS) {
       if (filePath.includes(pattern)) {
         return NextResponse.json({ error: `Cannot write to ${pattern}` }, { status: 403 });
       }
     }
 
-    const absolute = path.resolve(PROJECT_ROOT, filePath);
-    if (!absolute.startsWith(path.resolve(PROJECT_ROOT))) {
-      return NextResponse.json({ error: 'Path traversal detected' }, { status: 403 });
-    }
+    // Resolve scope from body. resolvePathInsideRoot enforces no-traversal
+    // and that the final path stays within the chosen workspace root.
+    const resolved = resolveRootFromBody(body);
+    const absolute = resolvePathInsideRoot(resolved, filePath);
 
     // Create directory if it doesn't exist
     const dir = path.dirname(absolute);
@@ -61,8 +57,12 @@ export async function POST(req: NextRequest) {
       path: filePath,
       lines: content.split('\n').length,
       size: Buffer.byteLength(content, 'utf-8'),
+      rootId: resolved.rootId,
     });
   } catch (err: unknown) {
+    if (err instanceof WorkspaceRootError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     const error = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error }, { status: 500 });
   }
