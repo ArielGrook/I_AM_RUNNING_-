@@ -9,13 +9,13 @@
  *  - Settings         — product-level config (JSON-backed)
  *  - Client Projects  — CRUD of client installations (placeholder in this iteration)
  *  - Web Installer    — pre-configured install.sh generator (placeholder in this iteration)
- *  - Dev Workspace    — file browser for iam-clients-os/workspace/ (placeholder in this iteration)
+ *  - Dev Workspace    — file browser for iam-clients-os/workspace/ (read-only, functional)
  *
  * Auth: relies on the existing admin session cookie + sessionStorage flag set by
  * /[locale]/admin/page.tsx after TOTP verification. If no session, redirect to admin login.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Settings as SettingsIcon, Users, Download, FolderTree, Loader2 } from 'lucide-react';
@@ -168,7 +168,7 @@ export default function IamClientsOsAdminPage() {
         {activeTab === 'settings'  && <SettingsTab isMobile={isMobile} />}
         {activeTab === 'clients'   && <PlaceholderTab title="Client Projects"  description="CRUD for client installations. Coming in the next iteration." />}
         {activeTab === 'installer' && <PlaceholderTab title="Web Installer"    description="Pre-configured install.sh generator. Coming in the next iteration." />}
-        {activeTab === 'workspace' && <PlaceholderTab title="Dev Workspace"    description="File browser for iam-clients-os/workspace/. Coming in the next iteration." />}
+        {activeTab === 'workspace' && <WorkspaceTab isMobile={isMobile} />}
       </div>
     </div>
   );
@@ -426,6 +426,312 @@ function SettingsTab({ isMobile }: { isMobile: boolean }) {
           ↻ Reload
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── Dev Workspace tab ──────────────────────────────────────────────────────
+// Read-only file browser scoped to iam-clients-os/workspace/.
+// Tree comes from /api/admin/iam-clients-os/workspace (scoped).
+// File content comes from /api/dev-agent/files/read with the prefix
+// `iam-clients-os/workspace/` prepended to the relative path.
+
+interface WsNode {
+  name: string;
+  path: string;      // relative to iam-clients-os/workspace/
+  type: 'file' | 'dir';
+  children?: WsNode[];
+}
+
+function WorkspaceTab({ isMobile }: { isMobile: boolean }) {
+  const [tree, setTree] = useState<WsNode[]>([]);
+  const [empty, setEmpty] = useState(false);
+  const [emptyReason, setEmptyReason] = useState<string | null>(null);
+  const [treeLoading, setTreeLoading] = useState(true);
+  const [treeError, setTreeError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileLines, setFileLines] = useState(0);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  const loadTree = async () => {
+    setTreeLoading(true);
+    setTreeError(null);
+    try {
+      const res = await fetch('/api/admin/iam-clients-os/workspace');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setTree(data.tree || []);
+      setEmpty(!!data.empty);
+      setEmptyReason(data.reason || null);
+    } catch (err) {
+      setTreeError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setTreeLoading(false);
+    }
+  };
+
+  useEffect(() => { loadTree(); }, []);
+
+  // Fetch file contents when selected. Prefix path with iam-clients-os/workspace/
+  // because /api/dev-agent/files/read expects paths relative to PROJECT_ROOT.
+  useEffect(() => {
+    if (!selectedPath) return;
+    const controller = new AbortController();
+    setFileLoading(true);
+    setFileError(null);
+    setFileContent(null);
+    const fullPath = `iam-clients-os/workspace/${selectedPath}`;
+    fetch(`/api/dev-agent/files/read?path=${encodeURIComponent(fullPath)}`, { signal: controller.signal })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { setFileError(data.error); return; }
+        setFileContent(data.content);
+        setFileLines(data.lines);
+      })
+      .catch(e => { if (e.name !== 'AbortError') setFileError(e.message); })
+      .finally(() => setFileLoading(false));
+    return () => controller.abort();
+  }, [selectedPath]);
+
+  const toggleFolder = (folderPath: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(folderPath)) next.delete(folderPath);
+      else next.add(folderPath);
+      return next;
+    });
+  };
+
+  const renderTree = (nodes: WsNode[], depth = 0): ReactNode =>
+    nodes.map(node => {
+      const isExpanded = expanded.has(node.path);
+      const indent = depth * 14;
+      const isActive = selectedPath === node.path;
+
+      if (node.type === 'dir') {
+        return (
+          <div key={node.path}>
+            <button
+              onClick={() => toggleFolder(node.path)}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                padding: `4px 6px 4px ${8 + indent}px`,
+                fontSize: 13,
+                cursor: 'pointer',
+                color: '#374151',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                borderRadius: 4,
+              }}
+              title={node.path}
+            >
+              <span style={{ width: 10, color: '#9ca3af', fontSize: 10 }}>{isExpanded ? '▾' : '▸'}</span>
+              <span>📁</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
+            </button>
+            {isExpanded && node.children && <div>{renderTree(node.children, depth + 1)}</div>}
+          </div>
+        );
+      }
+
+      return (
+        <button
+          key={node.path}
+          onClick={() => setSelectedPath(node.path)}
+          style={{
+            width: '100%',
+            textAlign: 'left',
+            background: isActive ? '#fff4ec' : 'none',
+            border: 'none',
+            padding: `4px 6px 4px ${8 + indent}px`,
+            fontSize: 13,
+            cursor: 'pointer',
+            color: isActive ? '#FF6B35' : '#374151',
+            fontWeight: isActive ? 600 : 400,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            borderRadius: 4,
+          }}
+          title={node.path}
+        >
+          <span style={{ width: 10 }} />
+          <span>📄</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
+        </button>
+      );
+    });
+
+  // ── UI ──
+  const headerBar = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111', margin: 0 }}>Dev Workspace</h2>
+      <span style={{ fontSize: 12, color: '#6b7280' }}>
+        Read-only browser for{' '}
+        <code style={{ fontFamily: 'monospace', fontSize: 11, background: '#f3f4f6', padding: '1px 6px', borderRadius: 3 }}>
+          iam-clients-os/workspace/
+        </code>
+      </span>
+      <button
+        onClick={loadTree}
+        disabled={treeLoading}
+        style={{
+          marginLeft: 'auto',
+          padding: '6px 12px',
+          background: '#f3f4f6',
+          color: '#374151',
+          border: '1px solid #e5e7eb',
+          borderRadius: 6,
+          fontSize: 12,
+          cursor: treeLoading ? 'default' : 'pointer',
+        }}
+        title="Reload tree"
+      >
+        {treeLoading ? '⟳' : '↻'} Refresh
+      </button>
+    </div>
+  );
+
+  if (treeError) {
+    return (
+      <div>
+        {headerBar}
+        <div style={{ padding: 16, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, color: '#dc2626', fontSize: 14 }}>
+          ❌ {treeError}
+          <button onClick={loadTree} style={{ marginLeft: 10, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {headerBar}
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '300px 1fr',
+          gap: 16,
+          alignItems: 'stretch',
+        }}
+      >
+        {/* LEFT: tree */}
+        <div
+          style={{
+            background: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: 10,
+            padding: 8,
+            minHeight: 240,
+            maxHeight: isMobile ? 280 : 560,
+            overflow: 'auto',
+          }}
+        >
+          {treeLoading && tree.length === 0 && (
+            <div style={{ padding: 14, fontSize: 13, color: '#6b7280' }}>
+              <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" /> Loading...
+            </div>
+          )}
+
+          {!treeLoading && empty && (
+            <div style={{ padding: 14, fontSize: 13, color: '#6b7280' }}>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Workspace is empty</div>
+              <div style={{ fontSize: 12 }}>
+                {emptyReason || 'No files in iam-clients-os/workspace/ yet. Content will appear here after migration Step 4.'}
+              </div>
+            </div>
+          )}
+
+          {!treeLoading && !empty && tree.length > 0 && renderTree(tree)}
+        </div>
+
+        {/* RIGHT: viewer */}
+        <div
+          style={{
+            background: '#fff',
+            border: '1px solid #e5e7eb',
+            borderRadius: 10,
+            minHeight: 240,
+            maxHeight: isMobile ? 400 : 560,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          {!selectedPath && (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: 13, padding: 20, textAlign: 'center' }}>
+              {empty
+                ? 'Nothing to view — workspace is empty.'
+                : 'Click a file on the left to preview its contents.'}
+            </div>
+          )}
+
+          {selectedPath && (
+            <>
+              <div
+                style={{
+                  padding: '8px 12px',
+                  borderBottom: '1px solid #e5e7eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 12,
+                  color: '#374151',
+                  background: '#f9fafb',
+                }}
+              >
+                <span style={{ fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  iam-clients-os/workspace/{selectedPath}
+                </span>
+                {!fileLoading && !fileError && fileContent !== null && (
+                  <span style={{ marginLeft: 'auto', color: '#9ca3af', flexShrink: 0 }}>{fileLines}L</span>
+                )}
+              </div>
+
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                {fileLoading && (
+                  <div style={{ padding: 20, fontSize: 13, color: '#6b7280' }}>
+                    <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" /> Loading {selectedPath}...
+                  </div>
+                )}
+                {fileError && (
+                  <div style={{ padding: 14, background: '#fef2f2', color: '#dc2626', fontSize: 13 }}>
+                    ❌ {fileError}
+                  </div>
+                )}
+                {!fileLoading && !fileError && fileContent !== null && (
+                  <pre
+                    style={{
+                      margin: 0,
+                      padding: 14,
+                      fontSize: 12,
+                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                      color: '#111',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {fileContent}
+                  </pre>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 10 }}>
+        Read-only view. Files are editable via the main Dev Console (accessible through the Admin panel header).
+      </p>
     </div>
   );
 }
