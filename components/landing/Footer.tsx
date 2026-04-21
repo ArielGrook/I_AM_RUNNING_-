@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { RunnerSVG } from '@/components/ui/RunnerSVG';
 
 export function Footer() {
   const t = useTranslations('Landing.footer');
@@ -11,11 +12,7 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
-            <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
-              <circle cx="38" cy="10" r="5" fill="#FF6B35"/>
-              <path d="M34 16c-1 2-2 6-3 10l-8 3-5 14h5l4-10 6-2 2 4-2 9 4 8h5l1-10 3-8" stroke="#FF6B35" strokeWidth="3" strokeLinecap="round" fill="none"/>
-              <path d="M37 35l4 7 10 4" stroke="#FF6B35" strokeWidth="3" strokeLinecap="round" fill="none"/>
-            </svg>
+            <RunnerSVG size={22} color="#FF6B35" />
             <div>
               <div className="text-xs font-black tracking-[0.15em] uppercase text-foreground">{t('brand')}</div>
               <div className="text-[10px] text-foreground/35">{t('tagline')}</div>

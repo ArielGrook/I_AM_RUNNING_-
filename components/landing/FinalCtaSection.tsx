@@ -5,19 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useLocale } from 'next-intl';
 import { useAuth } from '@/lib/hooks/useAuth';
-
-/* Runner SVG */
-function RunnerIcon({ size = 40 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="38" cy="10" r="6" fill="#FF6B35"/>
-      <path d="M34 16c-1 2-2 6-3 10l-8 3-5 14h5l4-10 6-2 2 4-2 9 4 8h5l1-10 3-8" stroke="#FF6B35" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      <path d="M37 35l4 7 10 4" stroke="#FF6B35" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      <path d="M31 26l-10 2-4-3" stroke="#FF6B35" strokeWidth="3" strokeLinecap="round" fill="none"/>
-      <path d="M34 20l8-3 3 2" stroke="#FF6B35" strokeWidth="3" strokeLinecap="round" fill="none"/>
-    </svg>
-  );
-}
+import { RunnerSVG } from '@/components/ui/RunnerSVG';
 
 export function FinalCtaSection() {
   const locale = useLocale();
@@ -42,7 +30,7 @@ export function FinalCtaSection() {
           viewport={{ once: true }}
           className="mx-auto mb-6"
         >
-          <RunnerIcon size={56} />
+          <RunnerSVG size={56} color="#FF6B35" />
         </motion.div>
 
         {/* "I AM RUNNING" — huge, fire gradient */}
@@ -83,7 +71,7 @@ export function FinalCtaSection() {
             <div className="absolute inset-0 rounded-full bg-[#FF6B35] animate-ping opacity-[0.08]" />
             <Button asChild size="lg" className="relative rounded-full bg-[#FF6B35] px-14 sm:px-20 py-8 sm:py-10 text-xl sm:text-2xl font-black text-white hover:bg-[#ff7a4b] shadow-[0_8px_50px_rgba(255,107,53,0.3)] transition-all hover:shadow-[0_12px_60px_rgba(255,107,53,0.4)]">
               <Link href={getCtaHref()}>
-                <RunnerIcon size={28} />
+                <RunnerSVG size={28} color="#fff" />
                 <span className="ml-3">I AM RUNNING</span>
               </Link>
             </Button>
