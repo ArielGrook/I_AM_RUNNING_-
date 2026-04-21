@@ -5,7 +5,8 @@ Role-specific onboarding prompts for AI agents, plus meta-guides on how to write
 ## Files
 
 - **`SUCCESS_CHAT_PATTERNS.md`** — Meta-guide on what makes a good first prompt and how to recognize a poisoned chat. **Read this before writing any other prompt in this folder.**
-- **`SESSION_END_CHECKLIST.md`** — Ordered list of documents to update at session end, plus ready-to-paste prompts (short + full) Ariel can drop into any chat to ensure clean handoff.
+- **`FIRST_PROMPT_SCHEMA.md`** — Fill-in template (10 fields) for producing a handoff prompt. Includes meta-instruction so another AI chat can use it as a prompt generator.
+- **`SESSION_END_CHECKLIST.md`** — Ordered list of documents to update at session end, plus ready-to-paste prompts (short + full + crisis) Ariel can drop into any chat to ensure clean handoff.
 - `claude-start.md` — Generic Claude onboarding.
 - `admin.md` — Super Admin role onboarding (full access, TOTP, admin panel ops).
 - `developer.md` — Developer role onboarding (PR workflow, file scope, git discipline).

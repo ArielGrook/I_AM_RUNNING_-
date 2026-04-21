@@ -17,6 +17,8 @@ This document is NOT a bootstrap prompt itself. It's a pattern library — refer
 
 Miss any of the five and the chat will drift. Sometimes slowly, sometimes from the first reply.
 
+**For a fill-in template based on these rules, see `FIRST_PROMPT_SCHEMA.md` in this folder — 10 fields, field-by-field instructions, and a meta-instruction letting another AI chat use the schema as a prompt generator.**
+
 ---
 
 ## Why the first prompt weighs more than all subsequent prompts combined
