@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { EditorView, Decoration, DecorationSet } from '@codemirror/view';
 import { EditorState, Compartment, StateField, StateEffect } from '@codemirror/state';
@@ -160,7 +160,14 @@ function msgId() {
 export default function DevConsolePage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const locale = params?.locale || 'en';
+
+  // When Dev Console is opened from /admin/iam-clients-os (the product admin
+  // page redirects here instead of having its own editor), we show a small
+  // badge + back-button so the user can return with one click.
+  const fromParam = searchParams?.get('from') || '';
+  const isFromIamClientsOs = fromParam === 'iam-clients-os';
 
   const [hasSession, setHasSession] = useState(false);
 
@@ -1156,6 +1163,15 @@ export default function DevConsolePage() {
           </button>
           {!isMobile && <Terminal className="w-4 h-4 text-orange-500" />}
           <h1 className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold`}>Dev Console</h1>
+          {isFromIamClientsOs && (
+            <button
+              onClick={() => router.push(`/${locale}/admin/iam-clients-os`)}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${dark ? 'bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 border border-orange-500/40' : 'bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-300'}`}
+              title="Return to IAM Clients OS admin"
+            >
+              ← IAM Clients OS
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
