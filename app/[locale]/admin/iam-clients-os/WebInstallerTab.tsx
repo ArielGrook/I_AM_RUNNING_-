@@ -61,6 +61,10 @@ interface GenerateResult {
   };
 }
 
+// TODO: move to Settings (operator IP) once we support multi-server deployments.
+// For now this is the single production server IP that all client installs point at.
+const OPERATOR_SERVER_IP = '94.176.238.108';
+
 export function WebInstallerTab({ isMobile }: { isMobile: boolean }) {
   // ── Data sources ──
   const [clients, setClients] = useState<ClientPublic[]>([]);
@@ -252,6 +256,47 @@ export function WebInstallerTab({ isMobile }: { isMobile: boolean }) {
           <input type="text" value={domain} onChange={e => setDomain(e.target.value)}
             placeholder="acme.iamrunning.online"
             style={{ ...inputStyle, fontFamily: 'monospace' }} />
+          {/* ── DNS setup hint (required before install) ── */}
+          <div style={{ marginTop: 6, padding: '8px 10px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 6, fontSize: 11, color: '#0c4a6e', lineHeight: 1.5 }}>
+            <strong>DNS setup required before install:</strong> add an{' '}
+            <code style={{ fontFamily: 'monospace', background: '#e0f2fe', padding: '0 3px', borderRadius: 2 }}>A</code>{' '}
+            record for this domain pointing to{' '}
+            <code style={{ fontFamily: 'monospace', background: '#e0f2fe', padding: '0 3px', borderRadius: 2 }}>{OPERATOR_SERVER_IP}</code>.
+            <details style={{ marginTop: 6 }}>
+              <summary style={{ cursor: 'pointer', fontSize: 11, color: '#0369a1', fontWeight: 600 }}>
+                Step-by-step (Namecheap / Cloudflare)
+              </summary>
+              <div style={{ marginTop: 8, paddingLeft: 4, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div>
+                  <strong>Namecheap:</strong> Domain List → Manage → Advanced DNS → Add New Record.
+                  <ul style={{ margin: '4px 0 0 16px', padding: 0, listStyle: 'disc', fontSize: 11 }}>
+                    <li>Type: <code style={{ fontFamily: 'monospace' }}>A Record</code></li>
+                    <li>Host: <code style={{ fontFamily: 'monospace' }}>&lt;subdomain&gt;</code> (only the part before <code>.iamrunning.online</code>)</li>
+                    <li>Value: <code style={{ fontFamily: 'monospace' }}>{OPERATOR_SERVER_IP}</code></li>
+                    <li>TTL: <code style={{ fontFamily: 'monospace' }}>Automatic</code></li>
+                  </ul>
+                </div>
+                <div>
+                  <strong>Cloudflare:</strong> DNS → Records → Add record.
+                  <ul style={{ margin: '4px 0 0 16px', padding: 0, listStyle: 'disc', fontSize: 11 }}>
+                    <li>Type: <code style={{ fontFamily: 'monospace' }}>A</code></li>
+                    <li>Name: <code style={{ fontFamily: 'monospace' }}>&lt;subdomain&gt;</code></li>
+                    <li>IPv4 address: <code style={{ fontFamily: 'monospace' }}>{OPERATOR_SERVER_IP}</code></li>
+                    <li>Proxy status: <strong style={{ color: '#b45309' }}>DNS only</strong> (grey cloud — orange cloud breaks OAuth callback &amp; certbot).</li>
+                  </ul>
+                </div>
+                <div>
+                  <strong>Verify propagation</strong> before running install:
+                  <div style={{ marginTop: 2, padding: '4px 6px', background: '#0f172a', color: '#e2e8f0', borderRadius: 3, fontFamily: 'monospace', fontSize: 10 }}>
+                    dig +short {domain || '<your-domain>'}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#475569', marginTop: 2 }}>
+                    Should return <code style={{ fontFamily: 'monospace' }}>{OPERATOR_SERVER_IP}</code>. Propagation usually takes 1–5 minutes.
+                  </div>
+                </div>
+              </div>
+            </details>
+          </div>
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={labelStyle}>Client name <span style={{ color: '#dc2626' }}>*</span></label>
@@ -389,10 +434,11 @@ export function WebInstallerTab({ isMobile }: { isMobile: boolean }) {
 
             <div style={{ marginTop: 14, padding: 12, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 6, fontSize: 12, color: '#14532d', lineHeight: 1.5 }}>
               <strong style={{ display: 'block', marginBottom: 4 }}>Next steps:</strong>
-              1. Download the script or copy it.<br />
-              2. Transfer to the client's VPS: <code style={{ fontFamily: 'monospace', background: '#dcfce7', padding: '0 4px', borderRadius: 2 }}>scp {result.filename} root@{result.generated.domain}:~/</code><br />
-              3. Run: <code style={{ fontFamily: 'monospace', background: '#dcfce7', padding: '0 4px', borderRadius: 2 }}>ssh root@{result.generated.domain} "bash ~/{result.filename}"</code><br />
-              4. After successful install, update the client's status to <strong>installed</strong> in Client Projects.
+              1. Confirm DNS: <code style={{ fontFamily: 'monospace', background: '#dcfce7', padding: '0 4px', borderRadius: 2 }}>dig +short {result.generated.domain}</code> returns <code style={{ fontFamily: 'monospace' }}>{OPERATOR_SERVER_IP}</code>.<br />
+              2. Download the script or copy it.<br />
+              3. Transfer to the client's VPS: <code style={{ fontFamily: 'monospace', background: '#dcfce7', padding: '0 4px', borderRadius: 2 }}>scp {result.filename} root@{result.generated.domain}:~/</code><br />
+              4. Run: <code style={{ fontFamily: 'monospace', background: '#dcfce7', padding: '0 4px', borderRadius: 2 }}>ssh root@{result.generated.domain} "bash ~/{result.filename}"</code><br />
+              5. After successful install, update the client's status to <strong>installed</strong> in Client Projects.
             </div>
           </>
         )}
