@@ -17,6 +17,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Settings as SettingsIcon, Users, Download, FolderTree, Loader2 } from 'lucide-react';
 import { ClientProjectsTab } from './ClientProjectsTab';
+import { WebInstallerTab } from './WebInstallerTab';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -138,7 +139,7 @@ export default function IamClientsOsAdminPage() {
       <div style={{ padding: isMobile ? 12 : 24, maxWidth: 1400, margin: '0 auto' }}>
         {activeTab === 'settings'  && <SettingsTab isMobile={isMobile} />}
         {activeTab === 'clients'   && <ClientProjectsTab isMobile={isMobile} />}
-        {activeTab === 'installer' && <PlaceholderTab title="Web Installer" description="Pre-configured install.sh generator. Coming next." />}
+        {activeTab === 'installer' && <WebInstallerTab isMobile={isMobile} />}
       </div>
     </div>
   );

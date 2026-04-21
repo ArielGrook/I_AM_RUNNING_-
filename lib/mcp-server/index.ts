@@ -439,5 +439,120 @@ export function createMcpServer(clientSlug?: string): McpServer {
     }
   );
 
+  // ── TOOL 18: iam_installer_generate ───────────────────────────────────
+  server.tool(
+    'iam_installer_generate',
+    'Generate a personalised bootstrap.sh for a new IAM Client OS install. Takes either id_or_domain (looks up a Client Project) OR raw domain+name. Returns the full script text. Never embeds the GitHub PAT — always relies on prompt-at-runtime or IAM_GITHUB_TOKEN env on the target server.',
+    {
+      id_or_domain: z.string().optional().describe('Existing client to use as template (overrides other fields if not given)'),
+      domain: z.string().optional().describe('Target domain (required if id_or_domain is absent)'),
+      name: z.string().optional().describe('Client display name (required if id_or_domain is absent)'),
+      mode: z.enum(['team', 'solo']).optional(),
+      port: z.number().optional(),
+      installPath: z.string().optional(),
+      adminPath: z.string().optional().describe('URL prefix for admin panel (default /iam.admin)'),
+      skipSecurity: z.boolean().optional(),
+      skipNginx: z.boolean().optional(),
+      noLanding: z.boolean().optional(),
+      dryRun: z.boolean().optional(),
+    },
+    async (input) => {
+      try {
+        const { findClient } = await import('@/lib/admin/iam-clients-os/store');
+
+        let domain = input.domain?.trim();
+        let name = input.name?.trim();
+        let mode: 'team' | 'solo' = input.mode || 'team';
+        let port = input.port;
+        let installPath = input.installPath?.trim();
+
+        if (input.id_or_domain) {
+          const c = findClient(input.id_or_domain);
+          if (!c) return err(`Client not found: ${input.id_or_domain}`);
+          domain = domain || c.domain;
+          name = name || c.name;
+          mode = input.mode ?? c.mode;
+          port = port ?? c.port;
+          installPath = installPath || c.installPath;
+        }
+
+        if (!domain) return err('domain is required (either pass domain directly or id_or_domain of an existing client)');
+        if (!name) return err('name is required (either pass name directly or id_or_domain of an existing client)');
+
+        port = port || 4742;
+        installPath = installPath || '/var/www/iam';
+        const adminPath = input.adminPath || '/iam.admin';
+
+        // Build the same bootstrap as the HTTP endpoint. Keep in sync with
+        // app/api/admin/iam-clients-os/installer/generate/route.ts — the
+        // shared logic is short enough that duplication is cheaper than
+        // extracting it (for now; extract into a helper if the body grows).
+
+        const INSTALLER_URL = 'https://iamrunning.online/installer/iam-client.sh';
+
+        const shellEscape = (v: string) => `'${v.replace(/'/g, "'\\''")}'`;
+
+        const extraFlags: string[] = [];
+        if (input.skipSecurity) extraFlags.push('--skip-security');
+        if (input.skipNginx) extraFlags.push('--skip-nginx');
+        if (input.noLanding) extraFlags.push('--no-landing');
+        if (input.dryRun) extraFlags.push('--dry-run');
+
+        const bootstrap = `#!/bin/bash
+# ═══════════════════════════════════════════════════════════════════════════
+# IAM Client OS bootstrap installer
+#
+# Generated for:   ${name}
+# Target domain:   ${domain}
+# Install mode:    ${mode}
+# Port:            ${port}
+# Install path:    ${installPath}
+# Generated at:    ${new Date().toISOString()}
+# Source:          ${INSTALLER_URL}
+# Generator:       MCP tool (iam_installer_generate)
+# ═══════════════════════════════════════════════════════════════════════════
+set -euo pipefail
+
+TOKEN="\${IAM_GITHUB_TOKEN:-}"
+if [ -z "$TOKEN" ]; then
+  read -r -s -p "GitHub PAT (Contents: Read-only on skeleton repo): " TOKEN
+  echo
+fi
+[ -n "$TOKEN" ] || { echo "GitHub PAT is required."; exit 1; }
+
+TMP="$(mktemp -t iam-client-XXXXXX.sh)"
+trap 'rm -f "$TMP"' EXIT
+
+echo "→ Downloading installer from ${INSTALLER_URL}"
+curl --proto '=https' --tlsv1.2 -fsSL "${INSTALLER_URL}" -o "$TMP"
+
+chmod +x "$TMP"
+
+echo "→ Running installer"
+bash "$TMP" \\
+  --domain=${shellEscape(domain)} \\
+  --name=${shellEscape(name)} \\
+  --github-token="$TOKEN" \\
+  --port=${port} \\
+  --path=${shellEscape(installPath)} \\
+  --admin-path=${shellEscape(adminPath)}${extraFlags.length ? ' \\\n  ' + extraFlags.map(shellEscape).join(' \\\n  ') : ''}
+`;
+
+        return ok(JSON.stringify({
+          filename: `iam-install-${domain.replace(/[^A-Za-z0-9._-]/g, '_')}.sh`,
+          installerUrl: INSTALLER_URL,
+          bootstrap,
+          targetDomain: domain,
+          name,
+          mode,
+          port,
+          installPath,
+        }, null, 2));
+      } catch (e) {
+        return err(String(e));
+      }
+    }
+  );
+
   return server;
 }
