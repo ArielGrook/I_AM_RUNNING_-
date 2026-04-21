@@ -292,6 +292,7 @@ export default function AdminPage() {
         position: 'sticky', top: 0, zIndex: 100,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <RunnerSVG size={isMobile ? 22 : 28} color="#FF6B35" />
           <span style={{ fontSize: isMobile ? 16 : 20, fontWeight: 800, color: '#FF6B35' }}>IAM</span>
           {!isMobile && <span style={{ fontSize: 14, color: '#6b7280' }}>Admin Panel</span>}
           <span style={{ padding: '2px 8px', background: '#fef3c7', color: '#d97706', borderRadius: 4, fontSize: 11, fontWeight: 700 }}>

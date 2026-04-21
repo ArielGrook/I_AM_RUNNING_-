@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Settings as SettingsIcon, Users, Download, FolderTree, Loader2 } from 'lucide-react';
+import { RunnerSVG } from '@/components/ui/RunnerSVG';
 import { ClientProjectsTab } from './ClientProjectsTab';
 import { WebInstallerTab } from './WebInstallerTab';
 
@@ -94,6 +95,7 @@ export default function IamClientsOsAdminPage() {
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
+          <RunnerSVG size={isMobile ? 22 : 28} color="#FF6B35" />
           <span style={{ fontSize: isMobile ? 16 : 20, fontWeight: 800, color: '#FF6B35' }}>IAM</span>
           {!isMobile && <span style={{ fontSize: 14, color: '#6b7280' }}>Clients OS — Admin</span>}
         </div>
