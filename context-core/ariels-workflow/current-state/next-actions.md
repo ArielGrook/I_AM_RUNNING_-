@@ -107,19 +107,23 @@ First payment: PayPal (skip Stripe for now).
 
 ## 🔥 MCP Injection + Tools Refactor — track to schedule (noted 21.04.2026)
 
-**Ariel's observation (21.04 morning):** recurring quality issues with the MCP layer — some tools feel missing when needed, and injection (`smartOk`, `smartErr`, preset, session-state) sometimes lands uneven (not all the right hints at the right time, or hints that don't match what the tool actually did). Current state: injection v2 is deployed and mostly works, but the dogfood experience still has gaps.
+**Ariel's observation (21.04 morning):** recurring quality issues with the MCP layer — some tools feel missing when needed, and injection (`smartOk`, `smartErr`, preset, session-state) sometimes lands uneven (not all the right hints at the right time, or hints that don't match what the tool actually did). Current state: injection v2 is deployed on IAM Client OS and mostly works. **But on `iamrunning.online` MCP connector there is no injection at all** — that's zero behavioral guardrails on every chat started here.
 
-**Ariel has ideas for improvements.** Plan: integrate this track somewhere around migration Step 3/4 (after Admin page frontend, ideally after source code is moved — because then the MCP code lives in `iam-clients-os/source/` here on iamrunning, not over on lego-base, so we can iterate freely).
+**Ariel's idea (21.04 after Steps 1.4+2):** add strict, well-thought injections to `iamrunning` MCP, and critically add a **forced first-call redirect** — independent of what the AI asks for, the very first tool call in a session returns a pointer to `context-core/ariels-workflow/current-state/README.md` (or equivalent) and refuses the original request until docs are read. This sets starting context both at the prompt layer AND at the system layer. Two-layer context = much narrower failure surface.
 
-**Concrete symptoms to write up in a spec before touching code:**
-- Which tools felt missing in which situations (collect examples from recent sessions)
+**Full concept document:** `../concepts/MCP_INJECTION_V3_IDEAS.md` — problem statement, gap list, mechanism, variations, other improvements, sequencing, open questions.
+
+**Sequencing:**
+- Do NOT start before Step 4 of migration (lego-base is being decommissioned)
+- First deliverable: `../specifications/MCP_INJECTION_V3_SPEC.md` — concrete API shapes + failure modes + answers to open questions
+- Implement on `iamrunning` MCP first (delta is biggest — it has nothing), then backport to `iamrunning.ai` MCP
+- Dogfood a week, measure via `session-stats.jsonl`
+
+**Symptoms to collect** (ongoing, write into the concept doc as they come up):
+- Tools that felt missing in specific situations (give examples)
 - Where injection fired but didn't match the tool's actual action
-- Where injection was silent but should have warned (e.g., pre-execution blocks missing certain cases)
-- Tools that exist but aren't grouped/exposed logically (review the 6 mega-tools carefully)
-
-**Deliverable before coding:** a spec document in `../specifications/MCP_INJECTION_V3_SPEC.md` covering all observed gaps + Ariel's idea set + proposed fixes. Only then implement via Cursor.
-
-**Do not start this track before Step 4 (source code migration).** Doing it on lego-base that's about to be decommissioned is wasted work.
+- Where injection was silent but should have warned
+- Tools existing but not grouped/exposed logically
 
 ---
 
