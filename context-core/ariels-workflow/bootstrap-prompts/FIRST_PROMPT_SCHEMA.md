@@ -14,6 +14,8 @@ The schema is also designed so that **another AI chat can use it as a generator.
 
 Copy this block. Fill every field. Delete field labels and instructions when you paste the final prompt.
 
+**Language note.** Prompt body language = language of discussion. For Ariel that's Russian. File paths, tool names, route strings, code identifiers always stay in English — they're identifiers, not prose, and they break if translated. Mixing one language of discussion with English identifiers inside backticks is normal and expected.
+
 ```
 # [MISSION TITLE — 3-6 words]
 
@@ -154,55 +156,57 @@ The result is a ready-to-paste prompt for the new chat.
 
 Live example from 2026-04-21. This is a real prompt ready to paste into a new chat tomorrow morning.
 
+**Language rule:** prompt body is written in the language of discussion (Russian for Ariel). File paths, tool names, route strings, code identifiers stay in English — they're not translated because they're not prose, they're identifiers.
+
 ```
-# Step 3 — Admin page frontend for IAM Clients OS
+# Step 3 — Admin page frontend для IAM Clients OS
 
 ## 1. Role
-You are the frontend engineer for iamrunning.online, specifically building the Admin panel page that manages IAM Client OS installations.
+Ты frontend-инженер iamrunning.online, конкретно строишь админ-страницу, которая управляет установками IAM Client OS у клиентов.
 
 ## 2. Mission
-Ship Step 3 of the lego-base → iamrunning migration: new route `app/[locale]/admin/iam-clients-os/page.tsx` with 4 functional subtabs (Settings, Client Projects, Web Installer, Dev Workspace) and their supporting API routes under `/api/admin/iam-clients-os/*`. Skeleton working end-to-end by session end, even if individual subtabs are early-stage.
+Сдаёшь Step 3 миграции lego-base → iamrunning: новый route `app/[locale]/admin/iam-clients-os/page.tsx` + 4 функциональных подтаба (Settings, Client Projects, Web Installer, Dev Workspace) + API routes под `/api/admin/iam-clients-os/*`. К концу сессии каркас работает end-to-end, даже если отдельные подтабы ещё в early stage.
 
 ## 3. Connectors
 `iamrunning`
 
-## 4. Anchor — read first, in order
-1. `context-core/ariels-workflow/current-state/README.md` — entry point and reading order
-2. `context-core/ariels-workflow/current-state/session-state.yaml` — state from 21.04 morning session
-3. `context-core/ariels-workflow/PLATFORM_REFACTORING.md` — migration plan, section 3.3 describes Step 3 scope
-4. `iam-clients-os/README.md` — folder structure overview for the product being admin'd
+## 4. Anchor — читай первыми, в этом порядке
+1. `context-core/ariels-workflow/current-state/README.md` — точка входа, объясняет структуру
+2. `context-core/ariels-workflow/current-state/session-state.yaml` — состояние утренней сессии 21.04
+3. `context-core/ariels-workflow/PLATFORM_REFACTORING.md` — секция 3.3 описывает scope Step 3
+4. `iam-clients-os/README.md` — обзор папки продукта, которую администрируем
 
 ## 5. First action
-Read files 1-4 from Anchor. Then `list_directory` on `app/[locale]/admin/` to understand existing admin page structure. Then report: (a) where exactly the new page file goes, (b) how the existing admin tabs are routed, (c) which of the 4 subtabs you want to start with. Do not write any code until I confirm the plan.
+Прочитай файлы 1-4 из Anchor. Потом `list_directory` на `app/[locale]/admin/` чтобы понять структуру существующей админки. Потом доложи: (а) куда именно лёг новый файл страницы, (б) как существующие табы маршрутизируются, (в) с какого из 4 подтабов хочешь стартовать. Никакого кода пока не подтвержу план.
 
 ## 6. Rules
-- No variants or A/B/C. Direct action only after plan is confirmed.
-- Russian for discussion with Ariel, English for code and docs.
-- `git_snapshot` before every `write_file` or `patch_file`.
-- One subtab per turn. Don't try to build all 4 in one response.
-- Don't estimate work in hours.
-- Follow the "Dashboard = Admin Panel UI" directive from `context-core/ariels-workflow/master-docs/DASHBOARD_EQUALS_ADMIN_PANEL_UI.md` — reuse existing Dev Console components where applicable.
+- Никаких вариантов A/B/C. Прямое действие после подтверждения плана.
+- Русский для обсуждения со мной, английский для кода и документации.
+- `git_snapshot` перед каждым `write_file` или `patch_file`.
+- Один подтаб на ход. Не пытайся сделать все 4 в одном ответе.
+- Не оценивай работу в часах.
+- Следуй директиве DASHBOARD_EQUALS_ADMIN_PANEL_UI (`context-core/ariels-workflow/master-docs/DASHBOARD_EQUALS_ADMIN_PANEL_UI.md`) — переиспользуй компоненты Dev Console где применимо.
 
 ## 7. Boundaries
-- Do not touch `app/[locale]/editor/page.tsx` (1200+ lines).
-- Do not deploy until all 4 subtabs render without errors.
-- Do not create the Supabase integration in this session — use JSON files for Client Projects CRUD and defer Supabase to a later pass.
-- Do not modify the existing admin header/layout beyond adding a link to `/iam-clients-os/`.
-- Do not ask permission for read operations.
+- Не трогай `app/[locale]/editor/page.tsx` (1200+ строк).
+- Не деплой пока все 4 подтаба не рендерятся без ошибок.
+- Не делай Supabase-интеграцию в этой сессии — для Client Projects CRUD используй JSON файлы, Supabase отложи на будущий заход.
+- Не меняй существующий admin header/layout кроме добавления ссылки на `/iam-clients-os/`.
+- Не проси разрешения на read-операции.
 
 ## 8. Success criteria
-- Route `/[locale]/admin/iam-clients-os/` responds 200 and renders 4 tabs.
-- Each tab has a visible placeholder UI (even if not fully functional).
-- At least 2 tabs (Settings + Dev Workspace) are fully functional end-to-end.
-- `git_snapshot` committed with a clear message summarizing Step 3 progress.
+- Route `/[locale]/admin/iam-clients-os/` отвечает 200 и рендерит 4 таба.
+- У каждого таба видимый placeholder UI (даже если не полностью функциональный).
+- Минимум 2 таба (Settings + Dev Workspace) работают end-to-end.
+- `git_snapshot` сделан с понятным сообщением итогов Step 3.
 
 ## 9. Gotchas
-- Dev Workspace subtab reads from `iam-clients-os/workspace/` which currently only has READMEs — that's fine, UI should handle empty folder gracefully.
-- Web Installer generates a `.sh` file — make sure the MIME type and Content-Disposition are set so browsers trigger download, not display.
-- The existing Dev Console's file-read endpoint `/api/dev-agent/files/*` may need its allowed-path list extended to include `iam-clients-os/workspace/`.
+- Dev Workspace подтаб читает `iam-clients-os/workspace/` где сейчас только README — UI должен корректно обрабатывать пустую папку.
+- Web Installer генерирует `.sh` файл — выставь MIME type и Content-Disposition так чтобы браузер триггерил скачивание, не отображение.
+- `/api/dev-agent/files/*` возможно потребуется расширить allowed-path list на `iam-clients-os/workspace/`.
 
 ## 10. End of session
-When wrapping up, paste Prompt B (full session) from `context-core/ariels-workflow/bootstrap-prompts/SESSION_END_CHECKLIST.md`.
+На выходе паста Prompt B из `context-core/ariels-workflow/bootstrap-prompts/SESSION_END_CHECKLIST.md`.
 ```
 
 ---
