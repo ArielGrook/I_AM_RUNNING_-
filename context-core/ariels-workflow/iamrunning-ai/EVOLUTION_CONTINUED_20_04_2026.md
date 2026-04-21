@@ -163,5 +163,11 @@ Planning на iamrunning.ai будет **вечером 20.04 через нов�
 
 ---
 
+> ⚠️ **UPDATE 21.04.2026 evening:** Phase 17D + Phase 17C executed and shipped. Roadmap 17 is now COMPLETE. See `EVOLUTION_CONTINUED_21_04_2026.md` for tactical recap of both phases, acceptance results, and Roadmap 18 handoff.
+>
+> 3 commits on top of `7d66300`: `2333a9a` (17D initial), `b8063e7` (17D hotfix — wrong tool-call format in spec), `ae49823` (17C). All on `origin/main`.
+
+---
+
 *Author: Ariel + Claude Opus 4.7 (20.04.2026 ~08:10 UTC+3)*
 *Morning documentation sync — preparing for evening continuation via new chat*

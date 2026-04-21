@@ -1,5 +1,10 @@
 # ROADMAP 17 EXTENDED — RAG Pipeline + Persistent Memory + Ollama Tool Calling
 
+> ✅ **CLOSED 21.04.2026 evening.** All phases (17A.0–17A.9, 17B, 17D, 17C) complete.
+> 16 commits on `origin/main`, from `7d1599b` to `ae49823`.
+> See `EVOLUTION_CONTINUED_21_04_2026.md` for close summary, acceptance test results, and Roadmap 18 handoff.
+> This document is preserved as historical record + structural template for future roadmaps.
+
 **Status:** v4 — post-round-2-Cursor-review (19.04.2026)
 **Author:** Ariel + Opus 4.7 + Cursor Ask (2 rounds)
 **Replaces:** iamrunner.ai/roadmaps/ROADMAP_17_RAG_PIPELINE_UNIFICATION.md (original narrow scope)
