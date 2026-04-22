@@ -606,7 +606,7 @@ EOF
 
   local resolved_ip server_ip
   resolved_ip="$(dig +short "$DOMAIN" | head -n 1 || true)"
-  server_ip="$(curl -fsS ifconfig.me || true)"
+  server_ip="$(curl -fsS -4 ifconfig.me || true)"
 
   if [ -n "$resolved_ip" ] && [ -n "$server_ip" ] && [ "$resolved_ip" != "$server_ip" ]; then
     warn "Domain resolves to $resolved_ip, server IP is $server_ip. SSL skipped."
@@ -731,8 +731,7 @@ EOF
     ok "Instance registered with iamrunning.online monitoring."
   fi
 
-  cat <<EOF
-
+  echo -e "
 ${GREEN}═══════════════════════════════════════════════════════${NC}
 ${GREEN}  IAM Client OS installed successfully${NC}
 ${GREEN}═══════════════════════════════════════════════════════${NC}
@@ -750,15 +749,14 @@ ${GREEN}════════════════════════
   1) Open admin panel → complete TOTP first-run setup
   2) Generate MCP token (Admin → Settings → MCP Token)
   3) Connect Claude — Settings → Integrations → Add MCP Server
-  4) First message: "Read memory. I'm setting up a fresh workspace..."
+  4) First message: \"Read memory. I'm setting up a fresh workspace...\"
 
   ${CYAN}Ops cheatsheet:${NC}
   - Check PM2:      pm2 list
   - App logs:       pm2 logs $IAM_PROCESS_NAME
   - Nginx test:     sudo nginx -t
   - Update later:   bash scripts/iam-client.sh --update --path=$INSTALL_PATH
-
-EOF
+"
 }
 
 run_update_mode() {
