@@ -65,9 +65,21 @@ $4.5B market, 97M monthly SDK downloads. Simple MCP servers sell $4-15k (2-4 wee
 4. End-to-end scenario test: worker-creates-task → PR → approve+deploy →
    logs/deploy.jsonl entry. Should be run with first real client.
 
-### 🔄 Focus Switch: iamrunner.ai
-Ariel is moving back to iamrunner.ai Electron client work.
-Platform iam-client-os is stable — do not bikeshed unless client surfaces issue.
+### 🔄 Current focus (updated 23.04 evening): Operator role Phase 1 implementation
+
+Migration to iamrunning.online infrastructure completed 22.04. Test install at `test.lego-base.online` live and verified end-to-end. Operator role end-to-end spec drafted 23.04 (`iam-clients-os/specs/OPERATOR_SPEC.md`) — direct write architecture with staging buffer, accordion+badges visual, MVP/Phase2/Phase3.
+
+Phase 1 = heartbeat upsert + read-only file API + admin proxies + accordion + Server/Status/Access badges + status dot. ~3-4h, one Cursor session. Closes BUG #3 (monitor endpoints missing).
+
+### 🐛 Fixed this session (23.04 evening)
+
+- BUG #2 (curl IPv4): `step_nginx` was using `curl -fsS ifconfig.me` which on dual-stack VPS returns IPv6 → certbot block skipped every install. Fixed: `curl -fsS -4 ifconfig.me`. Both copies of `iam-client.sh`, commit `b7eff62`.
+- BUG #4 (heredoc ANSI): final summary used `cat <<EOF` with `${RED}/${GREEN}` variables (literal `\033` strings, not interpreted). Fixed: replaced with `echo -e`. Same commit.
+- Push to `ArielGrook/I_AM_RUNNING_-` blocked by GitHub Push Protection (5 historical PATs in old commits). Deferred. Fix lives on VPS.
+- Push to `ArielGrook/iam-client-os` source repo pending Ariel manual cd+commit+push.
+
+### 🔄 Earlier focus switch (19.04, partially superseded): iamrunner.ai
+Ariel was moving back to iamrunner.ai. Roadmap 17 work continues in separate Cursor chats but is now parallel rather than primary focus — operator MVP for IAM Client OS reclaimed primary slot 23.04.
 
 ### ✅ GTM Infrastructure Ready
 - Upwork profile finalized (MCP positioning) — account suspended, Appeal pending

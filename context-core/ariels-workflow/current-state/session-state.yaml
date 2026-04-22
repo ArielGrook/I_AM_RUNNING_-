@@ -1,132 +1,152 @@
 ---
-last_session_ended: "2026-04-21T09:30:00Z"
-last_session_started: "2026-04-21T07:30:00Z"
+last_session_ended: "2026-04-23T22:00:00Z"
+last_session_started: "2026-04-23T18:30:00Z"
 last_model: "claude-opus-4-7"
-mode: "platform-migration"
-focus: "Steps 1.4 + 2 complete. Root cleanup + iam-clients-os/ structure ready. Step 3 (Admin page frontend) is next."
-previous_session: "2026-04-20 late-night (Step 1.3 extended — README-ification + legacy_future_dataset rename)"
-previous_session_archived: "legacy_future_dataset/rotated-state/2026-04-20-session-state.yaml (pending — rotate on next session start)"
+mode: "operator-spec + bug fixes"
+focus: "Closed BUG #2 and #4 in iam-client.sh (in both copies, byte-identical). Wrote OPERATOR_SPEC.md v1 in iam-clients-os/specs/ (~360 lines) — direct write architecture with staging buffer on iamrunning side, inline accordion + badge grid visual, MVP/Phase2/Phase3 phasing, per-client GitHub snapshot endpoints. Added two scheduled tracks to next-actions: 'Server-side MCP toolset expansion' and 'No-fall application pattern'."
+previous_session: "2026-04-22 (Install Validation — full install via MCP succeeded, test.lego-base.online live, 4 bugs found)"
+previous_session_archived: "iam-clients-os/workspace/SESSION_REPORT_2026-04-22_INSTALL_VALIDATION.md (canonical record)"
 
 current_status:
-  migration: "Steps 0, 1.1, 1.2, 1.3, 1.4, 2 DONE. Step 3 READY."
-  iam_client_os: "production-ready on lego-base, source migration pending (Step 4)"
-  iamrunner_ai: "Roadmap 17 Phases 17A + 17B complete. 17D next via separate Cursor chat."
-  platform_docs: "All tracking docs current. README in every folder of ariels-workflow/. Rotation pattern formalized and working."
-  root_cleanliness: "CLEAN. product-template + 4 fix docs + 3 broken-filenames all archived to legacy_future_dataset/. Only active files + README/SUPABASE_TABLE_SETUP/CREATE_COMPONENTS_TABLE.sql remain at root."
-  iam_clients_os_folder: "CREATED. Skeleton ready: source/ (git-ignored, empty, awaits Step 4 clone), workspace/ (tracked, placeholder), skeleton-sync/ (tracked, placeholder). All have READMEs."
+  migration: "DONE (closed 22.04). lego-base decommissioned. iam-client-os runs from iamrunning.online infrastructure."
+  iam_client_os: "Production-ready. Test install live at https://test.lego-base.online (PM2 iam.iam-test, port 4742, SSL). 11-point checklist items 1-2 verified, 3-11 deferred."
+  iamrunner_ai: "Untouched this session. Roadmap 17 work continues in separate Cursor chats."
+  installer_bugs:
+    bug_2_curl_ipv4: "FIXED in both copies of iam-client.sh (source + installer). Patches applied, byte-identical (28033 bytes), bash syntax OK. iamrunning local commit b7eff62. Push to ArielGrook/I_AM_RUNNING_- BLOCKED by GitHub Push Protection (5 historical PATs in old commits — pre-existing, not from this session)."
+    bug_4_heredoc_ansi: "FIXED — replaced cat <<EOF with echo -e in step_register_and_summary. Same commit b7eff62."
+    bug_3_monitor_endpoints: "STILL OPEN. Will be closed by operator MVP (Phase 1 implementation, planned next session)."
+    bug_2_4_in_source_repo: "PENDING ARIEL — needs cd into iam-clients-os/source && git add+commit+push to ArielGrook/iam-client-os manually (run_command whitelist blocks cd and git -C)."
+  operator_spec: "DRAFT v1 written, agreed with Ariel in this session. Direct write + staging buffer + accordion+badges + per-client GitHub snapshot. Path: iam-clients-os/specs/OPERATOR_SPEC.md."
+  push_protection_block: "iamrunning.online local repo is now ~40 commits ahead of origin/main and cannot push. Three resolution options laid out (allow URLs / cleanup files / defer). Ariel chose defer. Fix lives on VPS — install route serves installer/iam-client.sh from disk, not git."
 
 this_session_accomplishments:
-  block_1_step_1_4_root_cleanup:
-    - "product-template/ (Option A multi-tenant installer, deprecated) → legacy_future_dataset/deprecated-code/product-template/ with _NOTE.md explaining retirement"
-    - "4 fix docs (CODEBASE_ANALYSIS_REPORT, COMPONENT_EXTRACTION_DEBUG, LOCALSTORAGE_QUOTA_FIX, PRODUCTION_FIX) → legacy_future_dataset/deprecated-docs/ with 2026-04-21- prefix"
-    - "3 broken-filename files (~76kb total, fragments of interrupted shell commands from Feb-Mar) → legacy_future_dataset/deprecated-code/broken-filenames/ with sanitized names + _NOTE.md"
-    - "Verified other items in the target list (COMPONENT_JSON_*, HTML_*, CSS_SAVING_FIX) no longer exist at root — previously cleaned up"
+  block_1_bug_fixes:
+    - "BUG #2 fix (curl -fsS -4 ifconfig.me) applied via patch_file in iam-clients-os/source/scripts/iam-client.sh AND iam-clients-os/installer/iam-client.sh"
+    - "BUG #4 fix (echo -e replacing cat <<EOF for ANSI in install summary) applied in both copies"
+    - "Verified: wc -c shows 28033 bytes both, diff -q IDENTICAL, bash -n SYNTAX_OK"
+    - "Local commit on iamrunning.online: b7eff62"
+    - "Hit GitHub Push Protection on push attempt — 5 PATs in historical commits"
 
-  block_2_step_2_folder_structure:
-    - "Created iam-clients-os/{source,workspace,skeleton-sync}/"
-    - "Wrote iam-clients-os/README.md — parent-level overview of product folder"
-    - "Wrote iam-clients-os/source/README.md — placeholder with Step 4 populate instructions"
-    - "Wrote iam-clients-os/workspace/README.md — placeholder + scope distinction from ariels-workflow/"
-    - "Wrote iam-clients-os/skeleton-sync/README.md — placeholder with sync script description"
-    - "Added 'iam-clients-os/source/' to root .gitignore (only source/ ignored — workspace/ and skeleton-sync/ tracked)"
+  block_2_architecture_decisions:
+    - "Direct write architecture chosen for operator push (over git remote and hybrid). Rationale: simpler mental model matches existing Dev Console, single source of truth on iamrunning side for versioning."
+    - "Staging buffer on iamrunning side — files saved to data/operator/staging/{client_id}/ until 'Push to client' action. Atomic multi-PUT then deploy then auto-rollback on failure."
+    - "Heartbeat = upsert (combines registration + liveness in one endpoint). Activity stays separate."
+    - "Inline accordion expansion + badge grid replacing right-side panel + tabs in Client Projects UI."
+    - "Per-client GitHub snapshot — closes C9 from CURRENT_GOAL (client repo strategy gap)."
 
-  block_3_mcp_injection_note:
-    - "Recorded Ariel's observation about MCP injection+tools gaps as a track to schedule after Step 4"
-    - "Plan: write MCP_INJECTION_V3_SPEC.md in specifications/ before any code changes"
-    - "Explicit rule: do NOT start this track before Step 4 (lego-base is being decommissioned)"
+  block_3_spec_written:
+    - "iam-clients-os/specs/ folder created (new)"
+    - "iam-clients-os/specs/OPERATOR_SPEC.md drafted (~360 lines): mission, architecture diagram, 3 endpoint blocks, staging walkthrough, visual spec, MVP cut, phasing, assumptions, implementation checklist"
+
+  block_4_tracks_added:
+    - "next-actions.md: 'Server-side MCP toolset expansion' track — typed MCP tools to replace generic run_command (git_repo_action, pm2_action, nginx_action, tail_log, iam_install_run, etc.). Sequenced: not before operator role spec done. First deliverable: MCP_SERVER_TOOLSET_V2_SPEC.md."
+    - "next-actions.md: 'No-fall application pattern' track — port lego-base swap+healthcheck pattern to iamrunning.online first, then bake into iam-client.sh step_build/step_pm2 for client installs. First deliverable: NO_FALL_APP_SPEC.md."
+
+  block_5_pending_user_actions:
+    - "Move context-core/ariels-workflow/iamrunning-ai/ → iamrunning-ai/ in project root (Ariel will run git mv manually — symmetry with iam-clients-os/)"
+    - "Push iam-clients-os/source/scripts/iam-client.sh fix to ArielGrook/iam-client-os (Ariel will cd+commit+push manually)"
+    - "Decide on GitHub Push Protection resolution path for iamrunning.online repo (currently deferred)"
 
 this_session_commits:
-  - "70d9961 Step 1.3 extended checkpoint (yesterday's dangling snapshot closed first thing today)"
-  - "9f49f17 Step 1.4 checkpoint: MCP injection+tools track noted in next-actions"
-  - "53df896 Step 1.4 DONE: moved product-template + 4 fix docs + 3 broken-filenames"
-  - "(pending) Step 2 DONE + PLATFORM_REFACTORING + next-actions + weekly-progress + session-state update"
+  - "b7eff62 fix(installer): BUG #2 force IPv4 for server IP detection + BUG #4 echo -e instead of cat heredoc for ANSI in install summary"
+  - "e16b173 docs: add server-side MCP toolset track in next-actions before operator spec"
+  - "47dcd4f spec(operator): draft v1 — heartbeat+register unified, activity separate, client file API, staging buffer with snapshot rollback, inline accordion + badge grid visual, MVP+phase2+phase3 scope"
+  - "22ba9f5 spec(operator): add per-client GitHub snapshot endpoints + clients.json fields + UI badge updates; track(no-fall): add no-fall application pattern as port-from-lego-base track"
+  - "(this session-end snapshot pending)"
 
 next_focus:
-  next_step_3_admin_page_frontend:
-    scope: "New route app/[locale]/admin/iam-clients-os/page.tsx + 4 subtabs (Settings, Client Projects, Web Installer, Dev Workspace) + supporting API routes"
-    estimate: "~4-6h, best done in 2-3 Cursor sessions since most is UI + API wiring"
-    why_now: "All subtabs work autonomously — Settings uses JSON, Client Projects uses JSON/Supabase, Web Installer is pure config generator, Dev Workspace reads already-migrated context-core/ariels-workflow/ files. No dependency on source code migration."
-    rationale_for_sequence: "Frontend before backend (Step 3 before Step 4) because Step 3 can ship a working UI on existing data, and Step 4's success depends on verifying the UI can read the new source/ folder location"
-  after_step_3:
-    - "Step 4 — git clone ArielGrook/iam-client-os into iam-clients-os/source/ (~1-2h)"
-    - "Step 5 — end-to-end validation (~1-2h)"
-    - "Step 6 — decommission lego-base (~1h, mostly waiting on backup + Time4VPS cancel)"
-  mcp_injection_v3_track:
-    - "To schedule after Step 4 (cannot safely change MCP on lego-base while decommissioning it)"
-    - "First deliverable: specifications/MCP_INJECTION_V3_SPEC.md — document the gaps Ariel observed + proposed fixes"
-    - "Only after spec: implement via Cursor"
+  primary_next_session_implementation_phase_1:
+    scope: "Operator MVP (Phase 1 from OPERATOR_SPEC §6): heartbeat upsert endpoint + client-side GET /api/operator/files (list + read) + admin proxy routes + accordion expansion in Client Projects + badges Server/Status/Access + status dot in list view + last_seen relative time"
+    estimate: "one session, ~3-4h"
+    why_now: "Closes BUG #3 (monitor endpoints missing) which is the only blocker for properly seeing instance health. Validates accordion+badge visual before investing in heavier Phase 2 components (Dev Console embed, staging buffer)."
+    sequence: "Best in Cursor (Sonnet) since most is API + UI wiring with the spec already laid out. Spec is detailed enough that Cursor should execute without re-explanation."
+
+  before_phase_1_optional_warm_up:
+    - "Ariel pushes BUG #2/#4 fix to ArielGrook/iam-client-os (manual cd+commit+push)"
+    - "Ariel runs git mv on iamrunning-ai/ folder hoist"
+    - "Walk through 11-point install checklist 3-11 on test.lego-base.online (TOTP first-run, MCP connect from Claude.ai, read_memory, push notif, deploy)"
+
+  after_phase_1:
+    - "Phase 2 — staging + push + Dev Console embed + history/rollback + GitHub snapshot endpoints"
+    - "Phase 3 — SSH terminal, token rotation, freeze/kill, billing, approval flow"
+
+mcp_injection_v3_track:
+  status: "Still scheduled, not started. Spec deliverable: specifications/MCP_INJECTION_V3_SPEC.md."
+  note: "Now competes for priority with Server-side MCP toolset expansion (this session) and No-fall app pattern (this session). Ariel decides ordering."
 
 parallel_tracks:
   iamrunning_ai:
-    - "Phase 17D (Ollama tool-calling polish, ~2-3h) via separate Cursor chat"
-    - "Phase 17C (persistent memory via shadow hints) after 17D"
+    - "Roadmap 17 phases continue in separate Cursor chats"
   gtm:
-    - "LinkedIn DMs to Gilad Shoham + Leon Mulumud"
-    - "YouTube outreach to small AI/automation channels"
-    - "Cold email 10/day via iamrunning.online@gmail.com"
-    - "Reddit warming in r/mcp"
-    - "Monitor Upwork Appeal"
+    - "LinkedIn DMs, YouTube outreach, cold email — Ariel's parallel work"
+  no_fall_app:
+    - "First implementation target: iamrunning.online itself (dogfood)"
+    - "Then bake into iam-client.sh step_build/step_pm2"
+  server_side_mcp_toolset:
+    - "Spec first, then implement. Sequenced after operator role spec is in place."
 
 how_to_start_next_chat:
   first_prompt_template: |
-    Подключись к MCP iamrunning. Прочитай context-core/ariels-workflow/current-state/README.md, потом session-state.yaml. Мы на Step 3 миграции — Admin page frontend для iam-clients-os.
+    Подключись к MCP iamrunning. Прочитай (1) context-core/ariels-workflow/current-state/README.md, (2) current-state/session-state.yaml, (3) iam-clients-os/specs/OPERATOR_SPEC.md.
 
-    Детали: context-core/ariels-workflow/PLATFORM_REFACTORING.md раздел 3.3 + current-state/next-actions.md.
+    Мы на Phase 1 имплементации оператора. Spec написан 23.04, согласован с Ariel.
 
-    Правила: никаких A/B/C вариантов. Русский для обсуждения, английский для кода. git_snapshot перед каждым write_file в app/. Одна подзадача на сообщение (начнём с одного подтаба, не всей страницы сразу).
+    Phase 1 scope (из §6 спеки): heartbeat upsert endpoint + client-side files API (read-only) + admin proxy + accordion visual + badges Server/Status/Access + status dot. Цель — закрыть BUG #3 + проверить что accordion работает.
 
-    Первое действие: прочитай 2 файла выше + проверь текущую структуру app/[locale]/admin/ чтобы понять как устроен существующий admin UI. Потом доложи план Step 3 с учётом того что ты увидишь, и я выберу с какого подтаба начнём.
+    Правила: никаких A/B/C вариантов. Русский для обсуждения, английский для кода. git_snapshot перед каждым write_file. Одна подзадача на сообщение (начнём с heartbeat endpoint, потом UI accordion, потом badges).
+
+    Первое действие: прочитай 3 файла выше. Доложи план Phase 1 с разбивкой на под-сессии (внутри одной чат-сессии). Если есть ambiguity в спеке — спроси один вопрос. Иначе proceed.
 
 blockers_and_risks:
-  - "lego-base Time4VPS billing ~22-23.04 — остаётся 2 дня для Steps 3-6. Реалистично: Step 3 сегодня или завтра, Steps 4-6 — 22.04."
-  - "Claude Max + Cursor subscription time remaining — focus is on making Step 3 specs detailed enough that Cursor can execute without re-explanation"
-  - "MCP injection v3 track not started yet — OK, it's scheduled post-Step 4"
-  - "roadmap.md in current-state/ still dated 14.04, needs platform-level revision (cosmetic, not urgent)"
-  - "PLATFORM_REFACTORING.md имеет дубль timestamp внизу после двух patch в эту сессию — косметика, почистить при следующем touch"
+  - "iamrunning.online local repo cannot push to origin (Push Protection). Fix this within next 1-2 sessions or local will dirft significantly. Three options laid out in this session, Ariel chose defer."
+  - "iam-clients-os/source/ commits to ArielGrook/iam-client-os are blocked from automation (run_command whitelist) — Ariel must do them manually until Server-side MCP toolset expansion lands"
+  - "Phase 1 operator MVP needs HMAC secret to be added to .env.local generation in iam-client.sh — extend step_secrets. Existing test install (test.lego-base.online) won't have this, will need a one-shot operator update or manual .env.local edit to be testable end-to-end."
+  - "next-actions.md is getting long and references migration as 'active focus' which is outdated since 22.04. Should be rotated to legacy + rewritten next session — explicit TODO."
+  - "PLATFORM_REFACTORING.md should be marked closed (or moved to legacy_future_dataset) since migration finished 22.04. Cosmetic, not urgent."
 
 open_questions_for_ariel:
-  - "Step 3: начать с какого подтаба? Предложение: Settings (самый простой, хорошо для ramp-up) → Client Projects (JSON CRUD) → Web Installer (bash template) → Dev Workspace (file browser)"
-  - "Где вести spec Step 3? В specifications/STEP_3_ADMIN_IAM_CLIENTS_OS_SPEC.md или сразу в roadmaps/ROADMAP_STEP_3.md?"
-  - "workspace-README.md в current-state/ — отдельный файл про IAM Client OS Work System, не про current-state pattern. Твой ответ вчера относился к README.md (который я написал и он остаётся). Этот второй файл всё ещё открытый вопрос."
+  - "Operator spec §7 has 4 explicit assumptions — read on PC and confirm/override: (a) HMAC vs plain bearer for monitor endpoints, (b) staging buffer single-user only, (c) full file snapshots over diffs, (d) no pre-push validation step (rely on review + deploy fallback)."
+  - "next-actions.md rotation — do it next session start, or wait for end of week?"
+  - "GitHub Push Protection — eventual resolution path: Allow URLs (5 clicks, fast), cleanup files + amend (clean), or fully rewrite history (heavy)?"
 
 file_paths_changed_this_session:
   created:
-    - "iam-clients-os/ (folder)"
-    - "iam-clients-os/source/ (folder, git-ignored)"
-    - "iam-clients-os/workspace/ (folder)"
-    - "iam-clients-os/skeleton-sync/ (folder)"
-    - "iam-clients-os/README.md"
-    - "iam-clients-os/source/README.md"
-    - "iam-clients-os/workspace/README.md"
-    - "iam-clients-os/skeleton-sync/README.md"
-    - "context-core/ariels-workflow/legacy_future_dataset/deprecated-code/product-template/_NOTE.md"
-    - "context-core/ariels-workflow/legacy_future_dataset/deprecated-code/broken-filenames/_NOTE.md"
-    - "context-core/ariels-workflow/legacy_future_dataset/deprecated-code/broken-filenames/2026-04-21-extract_only_component-specific_CSS_not_entire_page.txt (renamed)"
-    - "context-core/ariels-workflow/legacy_future_dataset/deprecated-code/broken-filenames/2026-04-21-h_-f_origin_main.txt (renamed)"
-    - "context-core/ariels-workflow/legacy_future_dataset/deprecated-code/broken-filenames/2026-04-21-saved_CSS_from_1MB_to_50KB_per_component.txt (renamed)"
-  moved:
-    - "product-template/ → context-core/ariels-workflow/legacy_future_dataset/deprecated-code/product-template/"
-    - "CODEBASE_ANALYSIS_REPORT.md → legacy_future_dataset/deprecated-docs/2026-04-21-CODEBASE_ANALYSIS_REPORT.md"
-    - "COMPONENT_EXTRACTION_DEBUG.md → legacy_future_dataset/deprecated-docs/2026-04-21-COMPONENT_EXTRACTION_DEBUG.md"
-    - "LOCALSTORAGE_QUOTA_FIX.md → legacy_future_dataset/deprecated-docs/2026-04-21-LOCALSTORAGE_QUOTA_FIX.md"
-    - "PRODUCTION_FIX.md → legacy_future_dataset/deprecated-docs/2026-04-21-PRODUCTION_FIX.md"
+    - "iam-clients-os/specs/ (folder)"
+    - "iam-clients-os/specs/OPERATOR_SPEC.md (~360 lines)"
   patched:
-    - ".gitignore (added iam-clients-os/source/ line)"
-    - "context-core/ariels-workflow/PLATFORM_REFACTORING.md (status table + next action + timestamp)"
-    - "context-core/ariels-workflow/current-state/next-actions.md (MCP injection track added)"
+    - "iam-clients-os/source/scripts/iam-client.sh (BUG #2 + #4)"
+    - "iam-clients-os/installer/iam-client.sh (BUG #2 + #4)"
+    - "context-core/ariels-workflow/current-state/next-actions.md (added 2 tracks: Server-side MCP toolset, No-fall app)"
 
 servers:
   iamrunning_online:
     ip: "94.176.238.108"
     path: "/var/www/i_am_running"
     pm2: "i-am-running"
-    status: "ACTIVE — all work in this session happened here"
+    status: "ACTIVE — all session work happened here"
+    note: "Local repo ~40 commits ahead of origin/main, push blocked by GitHub Push Protection (deferred)"
+  test_lego_base_online:
+    ip: "94.176.238.108 (same VPS)"
+    path: "/var/www/iam.test"
+    pm2: "iam.iam-test"
+    port: 4742
+    status: "ACTIVE — first IAM Client OS test install, SSL deployed, admin panel rendering"
+    instance_id: "d2c9660d08522f8c"
   lego_base:
-    ip: "185.5.55.111"
-    status: "SUNSET ~23.04 (not touched this session)"
+    status: "DECOMMISSIONED — closed 22.04"
 
 github_status:
-  iamrunning_online_local_commits:
-    - "70d9961, 9f49f17, 53df896, (pending: Step 2 final snapshot)"
-  note: "LOCAL on iamrunning VPS, not pushed to origin. Ariel manages pushes."
+  iamrunning_online_local_commits_unpushed:
+    - "Pre-existing ~36 commits + this session's b7eff62, e16b173, 47dcd4f, 22ba9f5 = ~40 unpushed"
+  push_protection_block:
+    blocked_repo: "ArielGrook/I_AM_RUNNING_-"
+    blocked_secrets: 5
+    secret_locations:
+      - "iam-clients-os/workspace/INSTALL_VALIDATION_2026-04-22.md (test PAT)"
+      - "context-core/ariels-workflow/handoffs/INSTALL_TEST_INCIDENT_18_04.md (multiple)"
+      - "context-core/ariels-workflow/memory/workers/super-admin/legacy/2026-04-18-20-session-state.yaml"
+      - "context-core/ariels-workflow/memory/workers/super-admin/next-actions.md"
+      - "iam-clients-os/workspace/SESSION_REPORT_2026-04-21_MIGRATION_DAY.md"
+  iam_client_os_source_pending:
+    note: "BUG #2/#4 fix applied in iam-clients-os/source/scripts/iam-client.sh but NOT committed/pushed to ArielGrook/iam-client-os yet — Ariel does manually"
 ---

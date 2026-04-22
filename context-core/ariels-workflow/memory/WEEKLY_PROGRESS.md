@@ -11,6 +11,47 @@ total_actions_completed: 230
 
 # Weekly Progress
 
+## Week of 22-28 April 2026
+
+### 23.04 Thursday evening — Operator role spec + BUG #2/#4 fixed
+
+Long focused session, three commits + spec.
+
+**Bug fixes:**
+- BUG #2 (curl IPv4) in step_nginx — was using `curl -fsS ifconfig.me` which on dual-stack VPS returns IPv6, A-records always IPv4 → certbot block skipped every install. Fix: `curl -fsS -4 ifconfig.me`. Both copies (source + installer), byte-identical (28033 bytes), bash syntax OK. Local commit `b7eff62`.
+- BUG #4 (heredoc ANSI) — `cat <<EOF` doesn't interpret `\033` escapes in `${RED}/${GREEN}/${NC}` variables. Replaced with `echo -e`. Same commit.
+- Push to `ArielGrook/I_AM_RUNNING_-` blocked by GitHub Push Protection (5 historical PATs in old commits). Three resolution options laid out, Ariel chose defer. Fix lives on VPS — install route serves `installer/iam-client.sh` from disk so new installs already use it.
+- Push to `ArielGrook/iam-client-os` (source repo) pending Ariel manual cd+commit+push.
+
+**Architecture decisions:**
+- Direct write architecture chosen for operator push (over git remote / hybrid). Simpler mental model, single source of truth on iamrunning side for versioning.
+- Staging buffer on iamrunning side mandatory — files saved to `data/operator/staging/{client_id}/` until explicit "Push to client". Atomic multi-PUT then deploy then auto-rollback on failure. Client filesystem never touched until explicit push.
+- Heartbeat = upsert (combines registration + liveness). First call creates record, subsequent calls update last_seen + version.
+- Activity stays separate (different cadence + payload).
+- Inline accordion expansion + badge grid in Client Projects UI (replacing right-side panel + tabs).
+- Per-client GitHub snapshot endpoints — closes C9 (client repo strategy gap).
+
+**Operator spec:**
+- `iam-clients-os/specs/OPERATOR_SPEC.md` ~360 lines, draft v1.
+- Sections: mission, architecture diagram, 3 endpoint blocks, staging walkthrough, visual spec, MVP cut, phasing, assumptions, implementation checklist.
+- MVP (Phase 1, ~3-4h): heartbeat upsert + read-only file API + admin proxies + accordion + Server/Status/Access badges + status dot. Closes BUG #3.
+- Phase 2: Activity + PUT + staging + push + Dev Console embed + history/rollback + GitHub snapshot.
+- Phase 3: SSH terminal, token rotation, freeze/kill, billing, approval flow.
+
+**Tracks added to next-actions:**
+- Server-side MCP toolset expansion (typed tools to replace generic run_command — surfaced when whitelist blocked cd / git -C for source/ commits).
+- No-fall application pattern (port lego-base swap+healthcheck pattern, dogfood on iamrunning first then bake into iam-client.sh).
+
+**Pending Ariel manual actions:**
+- cd into source/ and push BUG #2/#4 fix to ArielGrook/iam-client-os
+- git mv iamrunning-ai/ to project root (symmetric with iam-clients-os/)
+- Decide GitHub Push Protection resolution path
+- Read OPERATOR_SPEC.md on PC, confirm/override 4 assumptions in §7
+
+Commits: `b7eff62`, `e16b173`, `47dcd4f`, `22ba9f5`, plus session-end snapshot.
+
+---
+
 ## Week of 15-19 April 2026
 
 ### 19.04 STAGE 3 TEST INSTALL COMPLETE + FULL VERIFICATION

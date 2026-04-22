@@ -1,79 +1,81 @@
 ---
 schema: "session_state_v1"
-last_updated: "2026-04-14T18:00:00Z"
+last_updated: "2026-04-23T22:00:00Z"
 updated_by: "claude"
 
 current_focus:
-  task: "Тест iam-client.sh на живом сервере + мобильная адаптация"
-  status: "in_progress"
-  next_concrete_action: "Запустить iam-client.sh на 185.5.55.111 рядом с iamrunning.online"
+  task: "Operator role spec written, Phase 1 implementation next"
+  status: "spec_drafted"
+  next_concrete_action: "Implement Phase 1 from iam-clients-os/specs/OPERATOR_SPEC.md §6 in a Cursor session: heartbeat upsert endpoint + read-only file API on client + admin proxies + inline accordion + badges Server/Status/Access + status dot"
 
 completed_this_session:
-  - id: "mega-tools"
-    title: "6 мега-tools рефакторинг (files, tasks, communication, goals, code_review, devops)"
-    deployed: true
-  - id: "iam-prefix"
-    title: "iam. prefix — admin path /iam.admin, PM2 name, activity instance field"
-    deployed: true
-  - id: "audit-fixes"
-    title: "Аудит: pr-approve-deploy и dev-git-snapshot роутинг починен"
-    deployed: true
-  - id: "security-fix"
-    title: "/api/push/test удалён — был без auth"
-    deployed: true
-  - id: "dead-code"
-    title: "1494 строки мёртвого кода удалены (старые tool files)"
-    deployed: true
-  - id: "docs-update"
-    title: "MCP_API.md + PR_TASKS_MCP.md + README.md + ARCHITECTURE.md обновлены"
-    deployed: true
-  - id: "mega-tools-doc"
-    title: "docs/architecture/features/MEGA_TOOLS.md — новый документ"
-    deployed: true
-  - id: "cleanup"
-    title: "Рабочие файлы перенесены на iamrunning, lego-base очищен"
-    deployed: true
-  - id: "memory-update"
-    title: "Персистентная память обновлена (CURRENT_GOAL, WEEKLY_PROGRESS, NEXT_ACTIONS)"
+  - id: "bug-2-curl-ipv4"
+    title: "BUG #2 fix in iam-client.sh — curl -fsS ifconfig.me → curl -fsS -4 ifconfig.me in step_nginx (both copies, byte-identical)"
+    deployed: "VPS only — installer/iam-client.sh route serves from disk; push to ArielGrook/I_AM_RUNNING_- blocked, push to ArielGrook/iam-client-os pending Ariel manual"
+  - id: "bug-4-heredoc-ansi"
+    title: "BUG #4 fix — cat <<EOF → echo -e for ANSI in step_register_and_summary (both copies)"
+    deployed: "same as #2"
+  - id: "operator-spec-v1"
+    title: "iam-clients-os/specs/OPERATOR_SPEC.md ~360 lines — direct write + staging buffer + accordion+badges + per-client GitHub snapshot + MVP/Phase2/Phase3"
+    deployed: false
+  - id: "track-server-side-mcp-toolset"
+    title: "next-actions.md track: server-side MCP toolset expansion (replace generic run_command with typed tools)"
+    deployed: false
+  - id: "track-no-fall-app"
+    title: "next-actions.md track: no-fall application pattern (port from lego-base, then bake into iam-client.sh)"
     deployed: false
 
 pending:
-  - id: "ideas-cleanup"
-    title: "Перенести 28 файлов из IDEAS/ root + plans/ + roadmaps/ на iamrunning"
-    priority: "high"
-  - id: "iam-client-sh"
-    title: "Написать scripts/iam-client.sh по спеке INSTALL_ONBOARDING_SPEC.md"
+  - id: "operator-mvp-phase-1"
+    title: "Implement Phase 1 of operator spec — one Cursor session, ~3-4h"
     priority: "critical"
-  - id: "test-install"
-    title: "Тест iam-client.sh на 185.5.55.111 рядом с iamrunning.online"
-    priority: "critical"
-  - id: "mobile-adaptation"
-    title: "Мобильная адаптация DashboardDevConsoleTab"
+    next_action: "heartbeat upsert endpoint first"
+  - id: "ariel-manual-cd-source-push"
+    title: "Push BUG #2/#4 fix from iam-clients-os/source/ to ArielGrook/iam-client-os manually"
     priority: "high"
-  - id: "iamrunning-landing"
-    title: "iamrunning.online — карточки продуктов"
+    blocker: "run_command whitelist blocks cd and git -C"
+  - id: "ariel-manual-iamrunning-ai-hoist"
+    title: "git mv context-core/ariels-workflow/iamrunning-ai → iamrunning-ai (project root)"
     priority: "medium"
-  - id: "terms-of-service"
-    title: "Terms of Service страница"
+    blocker: "same — git mv not in whitelist"
+  - id: "github-push-protection-resolution"
+    title: "Allow / cleanup / defer the 5 historical PATs in iamrunning.online repo history"
+    priority: "high"
+    blocker: "Ariel must choose path"
+  - id: "checklist-3-11"
+    title: "Walk through 11-point install checklist 3-11 on test.lego-base.online (TOTP, MCP connect, read_memory, push notif, deploy)"
     priority: "medium"
-  - id: "stripe"
-    title: "Stripe — ждём IBAN"
+    note: "Could be warm-up before Phase 1 implementation"
+  - id: "next-actions-rotation"
+    title: "Rotate context-core/ariels-workflow/current-state/next-actions.md (still references migration as 'active focus' — outdated)"
     priority: "low"
-    blocker: "external dependency"
+    note: "Cosmetic, do at next session start"
 
-key_decisions:
-  - "6 мега-tools вместо 20+ отдельных — архитектурное решение 14.04"
-  - "Tool distribution: Super Admin → Admin → Workers, warnings not blocks"
-  - "Гранулярные права: files.read, devops.deploy вместо плоских tool names"
-  - "iam. prefix на всём нашем на сервере клиента"
-  - "Admin path: /iam.admin вместо /admin (не конфликтует с клиентом)"
-  - "Beta-tester GTM: не продажа а поиск тестировщиков для фидбэка"
-  - "Ценообразование: $350 setup + $50/user + 15% квартально"
-  - "Marketer роль — заморожена"
-  - "iamrunning.ai — заморожен до первого клиента"
+key_decisions_this_session:
+  - "BUG #2 root cause: dual-stack VPS returns IPv6 from ifconfig.me, A-records always IPv4 → comparison fails → certbot skipped every install. Force IPv4 with -4."
+  - "BUG #4 root cause: cat <<EOF doesn't interpret \\033 escapes in variables. echo -e does. Trivial fix."
+  - "Operator architecture: direct write over git remote / hybrid. Single source of truth on iamrunning side."
+  - "Operator must have staging buffer on iamrunning side (not on client). Files only land on client at explicit Push action."
+  - "Operator UI: inline accordion expansion + badge grid (not side panel + tabs)."
+  - "Per-client GitHub snapshot is separate-but-linked to operator push (auto toggle)."
+  - "Server-side MCP toolset is the right architectural direction (replaces generic run_command). Sequenced after operator spec."
+  - "No-fall app pattern: dogfood on iamrunning.online first, then bake into iam-client.sh for client installs."
 
 warnings:
-  - "IDEAS/ root ещё имеет 28 файлов — нужно перенести на iamrunning"
-  - "iam-client.sh не написан — блокер для первого клиента"
-  - "Мобильная адаптация не сделана"
-  - "SHARED_CONTEXT.md на lego-base может расходиться с копией на iamrunning"
+  - "iamrunning.online local repo ~40 commits ahead of origin/main, push blocked (Push Protection on historical secrets)"
+  - "context-core/ariels-workflow/current-state/next-actions.md is stale (still says migration is active focus — closed 22.04). STALE BANNER added at top of file. Rotation needed."
+  - "PLATFORM_REFACTORING.md still active even though migration done 22.04. Should be marked closed or moved to legacy."
+  - "iamrunner.ai folder not yet hoisted to project root (planned for symmetry with iam-clients-os/)"
+  - "Phase 1 implementation will need .env.local extension on existing test install (test.lego-base.online doesn't have MONITOR_SECRET yet)"
+
+next_session_protocol:
+  first_steps:
+    - "Connect to MCP iamrunning"
+    - "Read context-core/ariels-workflow/current-state/README.md"
+    - "Read current-state/session-state.yaml"
+    - "Read iam-clients-os/specs/OPERATOR_SPEC.md"
+  then:
+    - "Confirm Phase 1 scope from §6, §8 of operator spec"
+    - "Plan sub-sessions inside the chat (e.g. heartbeat → file API → admin proxies → UI accordion → badges → status dot)"
+    - "Begin with heartbeat endpoint (lowest-risk, closes BUG #3 immediately, validates the auth approach)"
+---

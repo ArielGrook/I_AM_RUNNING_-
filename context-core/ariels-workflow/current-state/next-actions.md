@@ -1,5 +1,12 @@
 # Next Actions — 20.04.2026
 
+> **STALE BANNER (added 23.04):** This file's "Active focus: platform migration" section is outdated — migration finished 22.04. The file should be rotated to `legacy_future_dataset/rotated-state/2026-04-20-next-actions.md` and rewritten next session. New tracks added at the bottom (Server-side MCP toolset, No-fall app pattern) are current and stay.
+>
+> **Recently Done (23.04 evening session):**
+> - Closed BUG #2 (curl -4 in step_nginx) and BUG #4 (echo -e for ANSI in install summary) in both copies of iam-client.sh — local commit `b7eff62`, push to GitHub blocked by Push Protection (deferred)
+> - Wrote `iam-clients-os/specs/OPERATOR_SPEC.md` v1 — operator role end-to-end spec (~360 lines): direct write architecture, staging buffer, accordion+badges visual, MVP/Phase2/Phase3, per-client GitHub snapshot
+> - Added 2 scheduled tracks (see bottom of file): Server-side MCP toolset expansion, No-fall application pattern
+
 *Previous 18.04 version archived at `../legacy_future_dataset/rotated-state/2026-04-18-next-actions.md`. That was focused on iam-client-os Stage 2 installer cleanup — all done (skeleton live, Stage 3 test install verified on 19.04).*
 
 ---

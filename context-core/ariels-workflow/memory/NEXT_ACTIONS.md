@@ -5,93 +5,92 @@ updated_by: "claude"
 schema: "next_actions_v1"
 ---
 
-# Next Actions (updated 19.04.2026 evening)
+# Next Actions (updated 23.04.2026 evening)
 
-## Status: Platform stable, switching to iamrunner.ai
+## Status: Operator role spec drafted, Phase 1 implementation next
 
-IAM Client OS is production-ready. Stage 1 (skeleton), Stage 2 (installer),
-Stage 3 (test install) all complete as of today. No known blockers for
-onboarding the first real beta client.
+IAM Client OS migrated to iamrunning.online infrastructure (22.04). Test install live at `test.lego-base.online` — full install via MCP succeeded, SSL deployed, admin panel rendering. 11-point checklist items 1-2 verified, 3-11 deferred (browser+TOTP needed).
 
-Ariel is refocusing on iamrunner.ai Electron client (local AI, RAG, MCP).
+**Operator role end-to-end spec written 23.04** — `iam-clients-os/specs/OPERATOR_SPEC.md` (~360 lines, draft v1). Direct write architecture, staging buffer on iamrunning side, accordion+badges visual, MVP/Phase2/Phase3 phasing. Closes the gap around "we can install clients but can't see/operate them remotely".
 
-## iam-client-os — FROZEN unless client surfaces issue
+## Primary track — Operator Phase 1 implementation (next session)
 
-If a real client reports a bug: top priority. Otherwise, leave it alone.
+Scope from `OPERATOR_SPEC.md` §6 + checklist §8:
+- POST /api/monitor/heartbeat (upsert) on iamrunning side — closes BUG #3
+- Extend iam-client.sh step_secrets to generate MONITOR_SECRET in .env.local
+- Extend iam-client.sh step_crons to include HMAC sig in heartbeat POST
+- GET /api/operator/files (list) + GET /api/operator/files/read on client side
+- Admin proxy routes for files list+read on iamrunning side
+- Replace right-side panel with inline accordion in Client Projects tab
+- Badge component (reusable) + grid layout
+- Badges Server / Status / Access wired to live data
+- Status dot column in list + last_seen relative time
+- "+ Add client" button redesign (centered)
 
-### Backlog (work only when touching nearby code)
-1. `team-regenerate-token` auto-refresh tools[] for super_admin (ALL_TOOLS)
-   and for others (ROLE_TOOL_PRESETS[role]). Location:
-   app/api/admin/lib/post-handlers.ts
-2. MANIFEST.txt explicit exclude for app/api/admin/totp-test-flow —
-   stops leak-detector warning on every sync. Safety net already works.
-3. SSL for iam-test: certbot --nginx -d iam-test.lego-base.online
-   --non-interactive --agree-tos -m admin@iam-test.lego-base.online --redirect
-4. End-to-end scenario test (worker → PR → approve+deploy) — run during
-   first real client onboarding, not before.
+~3-4h, one Cursor session. Spec is detailed enough that Cursor should execute without re-explanation.
 
-## iamrunner.ai — NEW FOCUS (starting next session)
+## Bug fixes this session (23.04)
 
-### Three candidate starting points (Ariel picks)
+- BUG #2 (curl IPv4) — fixed in both copies of iam-client.sh, byte-identical, commit `b7eff62`
+- BUG #4 (heredoc ANSI) — same commit
+- Push to ArielGrook/I_AM_RUNNING_- blocked by Push Protection (deferred per Ariel)
+- Push to ArielGrook/iam-client-os pending Ariel manual
 
-**A) Roadmap 17 — RAG Pipeline Unification** (biggest value, 2-3 sessions)
-   - Spec written in iamrunner.ai/docs/roadmap/17_RAG_UNIFICATION.md
-   - Indexer walks rag/ folder only
-   - KB stores files in {project}/rag/
-   - Auto-reindex after KB changes
-   - Central to selling locally-run AI — needs to work well
+## Pending Ariel manual actions
 
-**B) RAG Nuances 10A-10D** (small warm-up, 1 session)
-   - Path collisions from base64url.slice(0, 32) — theoretical risk
-   - Missing IPC handler for rag:clear-index (clearIndex has no bridge)
-   - AiChat ragChunks no live refresh — subscribe to onRagProgress
-   - vector-store metadata.text truncated at 2000 chars — acceptable
-     if chunks are ~500-1000, keep in mind
+1. `cd /var/www/i_am_running/iam-clients-os/source && git add scripts/iam-client.sh && git commit -m "..." && git push origin main` to ship BUG #2/#4 to skeleton-source repo
+2. `git mv context-core/ariels-workflow/iamrunning-ai iamrunning-ai` to hoist iamrunner.ai folder to project root
+3. Decide GitHub Push Protection resolution (Allow URLs / cleanup files / defer)
+4. Read OPERATOR_SPEC.md on PC, confirm/override 4 assumptions in §7
 
-**C) MCP Provider / AI-as-a-Service architecture spec** (strategic)
-   - Move MCP Provider from Electron to VPS (Hetzner GEX44 with RTX 4000 Ada)
-   - Pay-per-use pricing model with metered overage tier
-   - Needs design discussion before implementation
-   - Long-term play, not immediate revenue
+## Parallel tracks (sequenced, not started)
 
-### Recommended order
-B (warm-up, clear small bugs) → A (core refactor, big impact) → C (strategic)
+- **Server-side MCP toolset expansion** — typed tools (git_repo_action, pm2_action, nginx_action, tail_log, iam_install_run, etc.) replacing generic run_command. Logged in `context-core/ariels-workflow/current-state/next-actions.md`. Sequenced after operator spec done — design together. First deliverable: `MCP_SERVER_TOOLSET_V2_SPEC.md`.
+- **No-fall application pattern** — port lego-base swap+healthcheck pattern (.next-staging build target, atomic swap, healthcheck rollback, build error banner in admin UI). Implementation order: iamrunning.online first (dogfood), then bake into iam-client.sh. First deliverable: `NO_FALL_APP_SPEC.md`. Direct enabler for operator Phase 2 push flow ("deploy fallback").
+- **MCP Injection V3** — still scheduled, not started. First deliverable: `MCP_INJECTION_V3_SPEC.md`.
+
+## iamrunner.ai — parallel Cursor sessions
+
+Roadmap 17 Phases 17C/17D continue in separate Cursor chats. Not in this Claude web chat scope.
 
 ## GTM — parallel, Ariel's work
 
-### This week (19-25.04)
-- LinkedIn DMs to Gilad Shoham + Leon Mulumud (Hebrew templates ready)
-- YouTube: find 10 small AI/automation/MCP channels (500-10k subs), DM
-- Cold email: 10/day via iamrunning.online@gmail.com
-- Facebook: join Israeli tech groups
-- Reddit: warm account with comments, post in r/mcp
-- Create demo viewer account (read-only admin) for cold outreach demos
+This week:
+- LinkedIn DMs to Gilad Shoham + Leon Mulumud
+- YouTube outreach (10 small AI/automation channels)
+- Cold email 10/day
+- Reddit warm + post in r/mcp
+- Demo viewer account on test.lego-base.online (read-only admin) for cold outreach demos
 
-### Blockers
-- Upwork Appeal still pending for suspended original account
-- Demo viewer account — create now that iam-test is verified working
+Blockers: Upwork Appeal still pending. Demo viewer not created yet.
 
 ## Next Session Protocol
 
-### If focus is iamrunner.ai (default)
-1. Connect to iamrunner.ai MCP connector (if exists) or work via files
-2. Read iamrunner.ai memory/SHARED_CONTEXT.md
-3. Read docs/roadmap/17_RAG_UNIFICATION.md if starting A
-4. Pick B/A/C from above, confirm with Ariel, begin
+Default — operator Phase 1:
 
-### If iam-client-os issue reported by client
-1. Read this file + CURRENT_GOAL.md
-2. Reproduce the bug on iam-test or dev (lego-base)
-3. Fix on dev, sync skeleton, rebuild iam-test to verify
-4. Release to affected client
+1. Connect to MCP iamrunning
+2. Read context-core/ariels-workflow/current-state/README.md + session-state.yaml
+3. Read iam-clients-os/specs/OPERATOR_SPEC.md
+4. Plan sub-sessions inside the chat (heartbeat → file API → admin proxies → UI accordion → badges → status dot)
+5. Begin with heartbeat endpoint
 
-## Key Decisions Already Made
+If iam-client-os issue reported by client: top priority, drop everything.
 
-- Skeleton: ArielGrook/iam-client-skeleton, synced 4x today
+## Key Decisions Already Made (this session and prior)
+
+This session (23.04):
+- Direct write over git remote for operator push
+- Staging buffer on iamrunning side (not on client)
+- Heartbeat = upsert (combines registration+liveness)
+- Inline accordion + badge grid for Client Projects UI
+- Per-client GitHub snapshot (closes C9)
+- HMAC for monitor endpoints (assumption — Ariel to confirm)
+
+Prior:
+- Skeleton: ArielGrook/iam-client-skeleton
 - iamrunner.ai hosting: Hetzner GEX44 for production MCP Provider
-- Model: Qwen2.5-Coder:14b (sequential serving, 5-10 clients)
-- Payment: PayPal primary (no IBAN needed for Stripe)
-- Pricing: Pay-per-use with included tier + metered overage
-- Success metric: 100+ tool calls/day per engaged client
+- Model: Qwen2.5-Coder:14b
+- Payment: PayPal primary
+- Pricing: Beta $300-500 setup, after beta $1500-3000+
 
-*Updated: 19.04.2026 17:40 UTC+3*
+*Updated: 23.04.2026 22:00 UTC+3*

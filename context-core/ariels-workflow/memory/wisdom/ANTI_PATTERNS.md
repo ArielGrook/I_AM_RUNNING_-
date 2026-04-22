@@ -38,6 +38,70 @@
 
 ---
 
+## Shell / Install scripts (added 23.04.2026)
+
+**`curl ifconfig.me` returns IPv6 on dual-stack VPS:**
+Произошло: `step_nginx` в iam-client.sh сравнивал domain A-record IP с `server_ip="$(curl -fsS ifconfig.me)"`. На VPS с включенным IPv6 `ifconfig.me` возвращает IPv6, но A-records всегда IPv4. Сравнение всегда false → certbot block пропускался каждую установку → SSL приходилось ставить руками после.
+Не делай: `curl ifconfig.me` для server IP detection без явного протокол флага.
+Делай: `curl -4 ifconfig.me` (или `-6` если действительно нужен IPv6). Default to IPv4 unless explicitly working with v6.
+
+**`cat <<EOF` doesn't interpret `\033` ANSI escape sequences in variables:**
+Произошло: final install summary в `step_register_and_summary` использовал `cat <<EOF\n${GREEN}═══${NC}\nEOF`. `RED='\033[0;31m'` хранит литеральные 6+ символов (`\`, `0`, `3`, `3`, `[`, ...), не actual escape character. `cat` выплёвывает строку как есть → пользователь видит `\033[0;32m═══` вместо зелёной полосы.
+Не делай: `cat <<EOF` для текста с цветными переменными в bash.
+Делай: `echo -e "..."` (интерпретирует `\033`) или `printf '%b'` (то же). Альтернатива: переменные с `
+
+**`string[] | null` не assignable to `string[]`:**
+Произошло: loadCustomHiddenPaths() возвращал null в некоторых ветках.
+Не делай: return _customHidden (если тип `string[] | null`)
+Делай: return _customHidden ?? []
+
+**tsx файлы в pull-pool/:**
+Произошло: .tsx файлы в pull-pool/ компилируются Next.js → TypeScript ошибки.
+Не делай: называть pull-pool файлы .tsx
+Делай: .ts или .txt для предложенного кода
+
+---
+
+## UI / Dark Mode
+
+**onMouseEnter/Leave не реагируют на тему:**
+Произошло: hover эффекты используют хардкодные '#f5f5f5' в темной теме.
+Не делай: e.currentTarget.style.background = '#f5f5f5'
+Делай: e.currentTarget.style.background = isDark ? '#1a1a1a' : '#f5f5f5'
+
+**ProfileEditor получает isDark:**
+Произошло: ProfileEditor поддерживал isDark, но prop не передавался из Settings.
+Не делай: забывать передавать isDark в дочерние компоненты
+Делай: проверяй цепочку props при добавлении dark mode
+...'` quoting (`RED=
+
+**`string[] | null` не assignable to `string[]`:**
+Произошло: loadCustomHiddenPaths() возвращал null в некоторых ветках.
+Не делай: return _customHidden (если тип `string[] | null`)
+Делай: return _customHidden ?? []
+
+**tsx файлы в pull-pool/:**
+Произошло: .tsx файлы в pull-pool/ компилируются Next.js → TypeScript ошибки.
+Не делай: называть pull-pool файлы .tsx
+Делай: .ts или .txt для предложенного кода
+
+---
+
+## UI / Dark Mode
+
+**onMouseEnter/Leave не реагируют на тему:**
+Произошло: hover эффекты используют хардкодные '#f5f5f5' в темной теме.
+Не делай: e.currentTarget.style.background = '#f5f5f5'
+Делай: e.currentTarget.style.background = isDark ? '#1a1a1a' : '#f5f5f5'
+
+**ProfileEditor получает isDark:**
+Произошло: ProfileEditor поддерживал isDark, но prop не передавался из Settings.
+Не делай: забывать передавать isDark в дочерние компоненты
+Делай: проверяй цепочку props при добавлении dark mode
+\033[0;31m'`) — тогда они хранят настоящий escape character и `cat` работает.
+
+---
+
 ## TypeScript
 
 **`string[] | null` не assignable to `string[]`:**

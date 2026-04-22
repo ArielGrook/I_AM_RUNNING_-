@@ -164,6 +164,44 @@ Commits: `73b0d2a`, `ca0632c`, `e03a057`, (session-end snapshot pending)
 
 Commits: `70d9961` (yesterday's dangling snapshot), `9f49f17` (MCP track note), `53df896` (Step 1.4 moves), final Step 2 snapshot pending.
 
+### 23.04 Thursday evening — Operator spec + BUG #2/#4 fixed (this session)
+
+**Bug fixes (early in session):**
+- BUG #2 (curl IPv4): `curl -fsS ifconfig.me` → `curl -fsS -4 ifconfig.me` in `step_nginx`. Without `-4`, dual-stack VPS returns IPv6 → A-record IP comparison fails → certbot block skipped → manual SSL needed every install.
+- BUG #4 (heredoc ANSI): `cat <<EOF` doesn't interpret `\033` escapes in `${RED}/${GREEN}/${NC}` variables → final install summary printed literal escape codes instead of colored box. Replaced with `echo -e`.
+- Both fixes applied to both copies (`iam-clients-os/source/scripts/iam-client.sh` AND `iam-clients-os/installer/iam-client.sh`), verified byte-identical (28033 bytes), bash syntax OK.
+- Local commit `b7eff62`. **Push to GitHub blocked** by Push Protection (5 historical PATs in old commits — pre-existing, not from this session). Resolution deferred. Fix lives on VPS — install route serves `installer/iam-client.sh` from disk so it works for new installs immediately.
+
+**Architecture discussion (mid-session):**
+- Discussed server-side MCP toolset architecture. `run_command` whitelist hit limits (no `cd`, no `git -C`) when trying to commit in `iam-clients-os/source/` (separate git tree). Anti-pattern recognized. Solution: typed MCP tools per domain (git_repo_action, pm2_action, nginx_action, tail_log, iam_install_run, etc.) instead of generic shell escape hatch.
+- Tracked as scheduled work in `next-actions.md`.
+
+**Operator role spec written:**
+- Drafted `iam-clients-os/specs/OPERATOR_SPEC.md` v1 (~360 lines).
+- Key decisions:
+  - Heartbeat = upsert (combines registration + liveness in one endpoint, instead of two)
+  - Activity stays separate from heartbeat (different cadence + payload)
+  - Direct write architecture for push update (over git remote / hybrid) — simpler mental model, single source of truth on iamrunning side
+  - **Staging buffer on iamrunning side** — files saved to `data/operator/staging/{client_id}/` until "Push to client" action. Atomic multi-PUT then deploy then auto-rollback on failure. Client filesystem is never touched until explicit push.
+  - Inline accordion expansion (replacing right-side panel) + badge grid (replacing tabs) in Client Projects UI
+  - Per-client GitHub snapshot endpoints — closes C9 (client repo strategy gap from CURRENT_GOAL)
+- MVP cut: heartbeat upsert + read-only file API + accordion + badges Server/Status/Access + status dot. ~3-4h, one Cursor session. Closes BUG #3 (monitor endpoints missing).
+- Phase 2: staging + push + Dev Console embed + history/rollback + GitHub snapshot
+- Phase 3: SSH terminal, token rotation, freeze/kill, billing, approval flow
+
+**No-fall app pattern track added:**
+- Port lego-base swap+healthcheck pattern to iamrunning.online first (dogfood), then bake into `iam-client.sh` step_build/step_pm2.
+- `.next-staging/` build target, atomic swap on success, pm2 reload (zero-downtime), healthcheck rollback on fail, build errors visible in admin UI banner with link to Dev Console.
+- Direct enabler for operator Phase 2 push flow — "deploy fallback" mentioned in spec = this pattern.
+- Tracked in `next-actions.md`.
+
+**Pending Ariel manual actions:**
+- Push BUG #2/#4 fix from `iam-clients-os/source/` to `ArielGrook/iam-client-os` (cd+commit+push — whitelist blocks automation)
+- `git mv context-core/ariels-workflow/iamrunning-ai iamrunning-ai` (hoist folder to root, symmetry with `iam-clients-os/`)
+- Decide GitHub Push Protection resolution path (currently deferred)
+
+**Commits this session:** `b7eff62`, `e16b173`, `47dcd4f`, `22ba9f5`, plus session-end snapshot.
+
 ---
 
 ## Stats for the week
