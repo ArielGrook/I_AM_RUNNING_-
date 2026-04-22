@@ -128,6 +128,36 @@ First payment: PayPal (skip Stripe for now).
 
 ---
 
+## 🔧 Server-side MCP toolset expansion — track to schedule (noted 23.04.2026)
+
+**Trigger (23.04 session):** During BUG #2/#4 fix on `iam-client.sh` we hit `run_command` whitelist limits — `cd`, `git -C <subpath>`, sub-repo operations all rejected. Result: a 1-line installer fix turned into a partial outcome — patched on disk + iamrunning local repo, but the `iam-clients-os/source/` repo (separate `ArielGrook/iam-client-os` git tree) had to be pushed by Ariel manually because no MCP tool could `cd` into it. The shell-whitelist abstraction is leaking.
+
+**Underlying gap:** `run_command` is a generic shell escape hatch. Whenever an action is non-trivial (multi-step, sub-path, structured output, push-protection resolve) it falls outside the whitelist or requires brittle one-liners with `&&`. We end up either (a) hand-crafting bash that hits whitelist edges or (b) handing operations off to Ariel manually. Both are anti-patterns.
+
+**Direction:** Replace generic `run_command` use cases with typed server-side MCP tools that natively perform the operation on the iamrunning.online server. Each tool knows its domain — no shell escape, no quoting issues, structured params + structured response.
+
+**Concrete tool candidates surfaced this session:**
+
+- `git_repo_action` — params: `subpath` (e.g. `iam-clients-os/source`), `action` (`status` | `commit` | `push` | `log` | `diff`), optional `message`/`files`/`count`. Works with any git tree under the iamrunning.online project root, not just root.
+- `git_push_with_allow` — push that handles GitHub Push Protection automatically: detects blocked secrets in response, optionally hits `allow-secret` URLs (when token is approved-stale like our test PATs), or returns a structured list of blocked commits + paths for human review.
+- `pm2_action` — params: `action` (`list` | `logs` | `restart` | `start` | `delete` | `describe`), `process_name`, `lines` (for logs). Replaces 6+ different `run_command` invocations.
+- `nginx_action` — `test` | `reload` | `list_sites` | `read_site_config <domain>`.
+- `tail_log` — params: `path`, `lines`, `since_offset` (for incremental polling). Native, no `node -e` wrapper.
+- `iam_install_run` — automation ask from 22.04 session report. Wraps `iam_installer_generate` + spawn detached install + tail logs to completion + return `{success, instanceId, logTail}`. Replaces the base64+node-e+polling dance.
+- `cert_action` — `issue <domain>` | `renew` | `list`. Wraps certbot.
+
+**Sequencing:**
+- Do NOT start before operator role spec is written (operator endpoints will need similar tools — heartbeat read, activity read, push update — better to design them together).
+- First deliverable: `../specifications/MCP_SERVER_TOOLSET_V2_SPEC.md` — for each candidate tool: name, params schema, response shape, replaces-what-current-pattern. Then prioritize by how many `run_command` calls each one collapses.
+- Lower priority than: BUG #3/operator role, `iam_install_run` (which is on this list anyway and high priority).
+
+**Connection to other tracks:**
+- Overlaps with `iam_install_run` (the tool was already in the 22.04 session ask)
+- Overlaps with operator role (operator endpoints need server-side tools to read heartbeat/activity logs, push updates to clients — same architectural pattern)
+- Independent of MCP Injection V3 track (that's about behavioral guardrails on existing tools; this is about adding new typed tools)
+
+---
+
 ## Backlog (not blocking any launch)
 
 - ChatGPT MCP connector — test `<internal>` compliance with GPT-4o
