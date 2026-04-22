@@ -158,6 +158,42 @@ First payment: PayPal (skip Stripe for now).
 
 ---
 
+## 🛡️ No-fall application pattern — track to schedule (noted 23.04.2026)
+
+**Origin:** mentioned by Ariel at end of operator-spec session as off-topic but important. Pattern existed on lego-base, was useful in practice, want to port to iamrunning.online and adopt as the deploy primitive for IAM Client OS too (where it becomes the rollback safety net for operator pushes).
+
+**Problem:** current `npm run build` + `pm2 restart` cycle has a window where a broken build takes the app down. On iamrunning.online specifically there's no protection — any deploy with a syntax error means the site is unreachable until either a manual rollback or a fixed redeploy. On IAM Client OS clients the operator push spec (Phase 2) leans on "deploy fallback" as a safety net but doesn't define how — that's exactly this pattern.
+
+**Pattern (as it ran on lego-base):**
+
+1. Build target = `.next-staging/` (not `.next/`)
+2. `.next/` keeps the last *successful* build, untouched until swap
+3. After build success: atomic directory swap — `.next/` ← `.next-staging/`, old `.next/` archived
+4. Soft restart via `pm2 reload` (zero-downtime, not `pm2 restart`)
+5. Post-restart healthcheck — if 200 within timeout, deploy is committed; if not, rollback (swap back) + alert
+6. On build failure: `.next/` is never touched. App keeps serving the old build. Build error logged to `logs/build-errors.jsonl` and surfaced as a banner in admin UI.
+7. From that banner: open Dev Console (in the same still-running app), edit the file, hit Build again. App stays up the whole time.
+
+**Why it matters:**
+- Removes "deploy = scary" energy. Iteration on prod becomes safe.
+- Direct enabler for operator push flow on IAM Client OS — without this pattern on the client side, a bad push from iamrunning takes the client down even if our own staging review caught most issues. With it, a push that builds-fail just sits in logs visible to both sides, no client-facing impact.
+- Prerequisite for any meaningful "edit production live" UX — which is what Dev Console-on-iamrunning becomes once the operator spec ships Phase 2.
+
+**Sequencing:**
+- First implementation target: **iamrunning.online itself**. We dogfood it on the platform we touch most (this repo). Builds confidence in the swap+healthcheck mechanic before we ship it into client installs.
+- After it's proven on iamrunning: bake into `iam-client.sh` (modify `step_build` + `step_pm2`) so every new client install gets it from day one. Existing installs migrate via operator update.
+- Operator spec Phase 2 (push flow) explicitly assumes this pattern is in place on the client side — the "deploy fallback" §3.2 / §4 mentions = this.
+- Can run in parallel with operator MVP (Phase 1) — different surface area, no merge conflicts expected. Realistically would happen in a separate Cursor session.
+
+**First deliverable:** `context-core/specs/NO_FALL_APP_SPEC.md` — extract the lego-base implementation (swap script, build target config, healthcheck timeout values, banner UI), adapt to current Next.js 15 build pipeline (.next layout may have changed), specify pm2 ecosystem.config.js modifications.
+
+**Open questions for spec:**
+- pm2 reload vs restart — does Next.js standalone mode tolerate reload cleanly? Need to check.
+- Build artifacts other than `.next/` — `node_modules/`, `package-lock.json`, generated caches — what's safe to swap atomically vs needs to be coherent with `.next/`?
+- Migration path for existing clients (Phase 2+ rollout)
+
+---
+
 ## Backlog (not blocking any launch)
 
 - ChatGPT MCP connector — test `<internal>` compliance with GPT-4o

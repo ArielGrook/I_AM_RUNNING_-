@@ -160,6 +160,27 @@ These wrap the client-side API + add staging logic. No client ever calls these �
 - `GET  /api/admin/operator/history?client_id=X&limit=50` → returns recent push events with snap_id, timestamp, message, files affected.
 - `POST /api/admin/operator/rollback` — body: `{client_id, snap_id}`. Treats snapshot as new staging → push (which itself takes a fresh "before-rollback" snapshot, so rollback is itself rollbackable).
 
+#### GitHub snapshot (per-client backup to client's own GitHub repo):
+
+Each client install has an associated GitHub repo (separate from our dev repo, separate from the skeleton). Operator can push the current state of the client install to that repo as a git commit. Closes the backup-outside-our-infra gap and gives the client a visible audit trail in a system they own.
+
+- `POST /api/admin/operator/github/snapshot` — body: `{client_id, message?: "post-update v2026-04-23-001", auto?: false}`. Triggers a snapshot from iamrunning, which calls the client-side endpoint below. Returns `{commit_hash, repo_url}` on success.
+
+Client-side counterpart:
+- `POST /api/operator/github/snapshot` — body: `{message}`. Does `git add -A` + `git commit -m "$message"` + `git push origin main` against the configured client GitHub remote. Returns commit hash + repo URL.
+
+Auto-snapshot toggle (per-client setting): if enabled, the `POST /api/admin/operator/push` flow automatically calls github/snapshot on success. Default = off (manual control), togglable per client.
+
+**Pre-requisites stored in clients.json (per client):**
+- `github_repo` — e.g. `AcmeCorp/iam-acme` (the *client's* repo, not ours)
+- `github_pat` — encrypted, must have `Contents: Read+Write` on `github_repo`
+- `github_branch` — default `main`
+- `auto_snapshot_after_push` — boolean, default false
+
+**Client-side requirement:** `git remote origin` in the install dir must point to the client's GitHub repo. Set during install (extend `iam-client.sh` to accept `--client-github-repo` and rewrite remote after fresh git init), or settable later via Access badge in the operator UI.
+
+This intentionally ties operator push and GitHub snapshot together as separate-but-linked actions: you can push without snapshotting (fast iteration), snapshot without pushing (manual checkpoint of current state), or chain them (with auto toggle on). Closes C9 from `context-core/ariels-workflow/current-state/current-goal.md`.
+
 ### 3.4 Storage layout (iamrunning side)
 
 ```
@@ -249,9 +270,9 @@ No tabs. Inside the expanded card is a grid of **badges** (chip-style components
 |---|---|
 | `Server` | Shows install path, port, version, install date, server IP, mode, kind. Read-only. Compact key-value layout. |
 | `Status` | Shows uptime, last heartbeat (relative time + tooltip with absolute), online/offline indicator, response time. Refresh button. |
-| `Access` | Shows masked credentials: MCP URL, MCP token (reveal button), Operator token (reveal), GitHub repo, GitHub PAT (reveal). Each line has copy button. (Rotate buttons later — Phase 3.) |
+| `Access` | Shows masked credentials: MCP URL, MCP token (reveal button), Operator token (reveal), GitHub repo (client's own — editable), GitHub PAT (reveal, editable, scope checked: must be Read+Write Contents on that repo), GitHub branch (editable, default main). Each line has copy button. (Rotate buttons later — Phase 3.) |
 | `Files` | Opens **embedded Dev Console** in card. File tree on left, CodeMirror on right. Live-fetched from client. Edits go to staging (see §4). |
-| `Updates` | Shows current staging (N files, last modified) + push button + history list. From here you Push, Discard, view diffs, rollback. |
+| `Updates` | Shows current staging (N files, last modified) + push button + history list. From here you Push, Discard, view diffs, rollback. Also: **`Snapshot to GitHub`** button (manual one-shot push of current state to client's own GitHub repo). Toggle `Auto-snapshot after push` lives here. |
 | `Activity` | Recent events from client, scrollable. Filter by event type. Polls every 30s while badge is expanded. |
 | `Logs` | PM2 / nginx / install log viewer. Tail with live update. |
 | `Billing` | Placeholder for now (Stripe/PayPal integration not done). Shows setup_amount, monthly, last_payment from client record. |
@@ -359,8 +380,12 @@ Tracked here so the dev session has a definitive checklist. Status updated inlin
 - [ ] Staging save/list/diff/discard endpoints
 - [ ] Push endpoint with snapshot + atomic multi-PUT + deploy + auto-rollback
 - [ ] History endpoint + rollback endpoint
+- [ ] GitHub snapshot endpoint (admin proxy + client-side `git push origin main`)
+- [ ] `iam-client.sh` `--client-github-repo` flag — accepts client's own GitHub repo, rewrites `git remote origin` after fresh git init in `step_clone`
+- [ ] clients.json schema: `github_repo`, `github_pat` (encrypted), `github_branch`, `auto_snapshot_after_push`
 - [ ] Visual: Dev Console embed in Files badge
-- [ ] Visual: Updates badge (staging summary + push + history)
+- [ ] Visual: Updates badge (staging summary + push + history + Snapshot-to-GitHub button + Auto-snapshot toggle)
+- [ ] Visual: Access badge editable fields for GitHub repo / PAT / branch
 - [ ] Visual: Activity badge with polling
 - [ ] Visual: Logs badge with tail
 
