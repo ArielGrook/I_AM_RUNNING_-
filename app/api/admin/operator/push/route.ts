@@ -36,8 +36,8 @@ import {
 
 export const runtime = 'nodejs';
 
-const UPSTREAM_TIMEOUT_MS = 20_000;
-const DEPLOY_TIMEOUT_MS = 180_000;
+const UPSTREAM_TIMEOUT_MS = 60_000; // was 20s — bumped because same-host loop through nginx/TLS can cold-start slow on first fetch of a session
+const DEPLOY_TIMEOUT_MS = 420_000; // 7 minutes — npm install + build + pm2 restart + healthcheck can take long on cold caches
 
 function resolveOperatorUrl(client: { domain: string; operatorUrl?: string }): string {
   if (client.operatorUrl && client.operatorUrl.startsWith('http')) return client.operatorUrl;
@@ -90,7 +90,7 @@ async function upstreamPUT(operatorUrl: string, token: string, path: string, con
 }
 
 async function upstreamDeploy(operatorUrl: string, token: string):
-  Promise<{ ok: boolean; httpCode: number; message: string; buildOutputTail?: string }> {
+  Promise<{ ok: boolean; httpCode: number; message: string; buildOutputTail?: string; locked?: boolean; restartScheduled?: boolean }> {
   const url = `${operatorUrl}/deploy`;
   try {
     const res = await fetch(url, {
@@ -101,17 +101,51 @@ async function upstreamDeploy(operatorUrl: string, token: string):
       signal: AbortSignal.timeout(DEPLOY_TIMEOUT_MS),
     });
     const data = await res.json().catch(() => null) as {
-      success?: boolean; httpCode?: number; message?: string; buildOutputTail?: string; error?: string;
+      success?: boolean; httpCode?: number; message?: string; buildOutputTail?: string; error?: string; locked?: boolean; restartScheduled?: boolean;
     } | null;
     return {
       ok: !!data?.success,
       httpCode: data?.httpCode || res.status,
       message: data?.message || data?.error || `HTTP ${res.status}`,
       buildOutputTail: data?.buildOutputTail,
+      locked: data?.locked || res.status === 423,
+      restartScheduled: data?.restartScheduled,
     };
   } catch (err) {
     return { ok: false, httpCode: 0, message: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/**
+ * Poll client's root URL until it returns 2xx/3xx, or maxMs elapses.
+ * Returns the final HTTP code (0 = never responded).
+ *
+ * Required because client's deploy endpoint no longer does healthcheck itself
+ * (it returns BEFORE pm2 restart, since the restart would kill the endpoint
+ * mid-response). The caller (this function) is responsible for verifying the
+ * deploy succeeded by polling the client externally.
+ */
+async function waitForHealthy(domain: string, maxMs: number = 45_000): Promise<number> {
+  const deadline = Date.now() + maxMs;
+  let lastCode = 0;
+  // Give pm2 restart time to kick in (client's spawn has `sleep 2` before restart)
+  await new Promise(r => setTimeout(r, 3000));
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(`https://${domain}/`, {
+        method: 'HEAD',
+        cache: 'no-store',
+        signal: AbortSignal.timeout(5_000),
+        redirect: 'manual',
+      });
+      lastCode = res.status;
+      if (res.status >= 200 && res.status < 400) return res.status;
+    } catch {
+      // Client not up yet, keep polling
+    }
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  return lastCode;
 }
 
 async function upstreamNotify(operatorUrl: string, token: string, payload: { type: string; title: string; message: string; data?: unknown }): Promise<void> {
@@ -239,11 +273,12 @@ export async function POST(request: NextRequest) {
   if (!deploy.ok) {
     const rollbackErrors = await rollbackToSnapshot(operatorUrl, token, client.id, snapId, pushedPaths);
     const redeploy = await upstreamDeploy(operatorUrl, token);
+    const redeployHealth = redeploy.ok ? await waitForHealthy(client.domain) : 0;
     appendHistory(client.id, {
       ts: new Date().toISOString(), type: 'push', snap_id: snapId,
       message: body.message, files: pushedPaths,
       deploy_ok: false, deploy_http: deploy.httpCode,
-      note: `Deploy failed (${deploy.message}) · rollback ${rollbackErrors.length ? 'with errors: ' + rollbackErrors.join('; ') : 'applied'} · redeploy httpCode=${redeploy.httpCode}`,
+      note: `Deploy failed (${deploy.message}) · rollback ${rollbackErrors.length ? 'with errors: ' + rollbackErrors.join('; ') : 'applied'} · redeploy scheduled=${!!redeploy.restartScheduled} health=${redeployHealth}`,
     });
     return NextResponse.json({
       success: false,
@@ -253,7 +288,36 @@ export async function POST(request: NextRequest) {
       build_output_tail: deploy.buildOutputTail,
       rollback_applied: true,
       rollback_errors: rollbackErrors,
-      redeploy_http: redeploy.httpCode,
+      redeploy_http: redeployHealth,
+    }, { status: 502 });
+  }
+
+  // Client's deploy endpoint no longer blocks on pm2 restart + healthcheck
+  // (it returns success BEFORE the detached restart fires, to avoid the
+  // endpoint killing itself). So we must poll the client externally to
+  // verify it actually came back up.
+  const healthCode = await waitForHealthy(client.domain);
+  if (healthCode < 200 || healthCode >= 400) {
+    // Build ok but client never came back healthy — treat as failed deploy,
+    // do rollback to be safe.
+    const rollbackErrors = await rollbackToSnapshot(operatorUrl, token, client.id, snapId, pushedPaths);
+    const redeploy = await upstreamDeploy(operatorUrl, token);
+    const redeployHealth = redeploy.ok ? await waitForHealthy(client.domain) : 0;
+    appendHistory(client.id, {
+      ts: new Date().toISOString(), type: 'push', snap_id: snapId,
+      message: body.message, files: pushedPaths,
+      deploy_ok: false, deploy_http: healthCode,
+      note: `Build ok but post-restart health check failed (got ${healthCode}) · rollback ${rollbackErrors.length ? 'with errors: ' + rollbackErrors.join('; ') : 'applied'} · redeploy scheduled=${!!redeploy.restartScheduled} health=${redeployHealth}`,
+    });
+    return NextResponse.json({
+      success: false,
+      error: `Build succeeded but client didn't return healthy after restart (${healthCode})`,
+      snap_id: snapId,
+      deploy_http: healthCode,
+      build_output_tail: deploy.buildOutputTail,
+      rollback_applied: true,
+      rollback_errors: rollbackErrors,
+      redeploy_http: redeployHealth,
     }, { status: 502 });
   }
 
@@ -264,7 +328,7 @@ export async function POST(request: NextRequest) {
   appendHistory(client.id, {
     ts: new Date().toISOString(), type: 'push', snap_id: snapId,
     message: body.message, files: pushedPaths,
-    deploy_ok: true, deploy_http: deploy.httpCode,
+    deploy_ok: true, deploy_http: healthCode,
   });
 
   // Notify client admin UI (best effort, non-blocking-on-error)
@@ -280,7 +344,7 @@ export async function POST(request: NextRequest) {
     snap_id: snapId,
     files_pushed: pushedPaths,
     count: pushedPaths.length,
-    deploy_http: deploy.httpCode,
+    deploy_http: healthCode,
     deploy_message: deploy.message,
     staging_cleared: clearResult.ok ? (clearResult as { removed_count: number }).removed_count : 0,
   });

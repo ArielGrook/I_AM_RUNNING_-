@@ -22,8 +22,8 @@ import {
 
 export const runtime = 'nodejs';
 
-const UPSTREAM_TIMEOUT_MS = 20_000;
-const DEPLOY_TIMEOUT_MS = 180_000;
+const UPSTREAM_TIMEOUT_MS = 60_000;
+const DEPLOY_TIMEOUT_MS = 420_000;
 
 function resolveOperatorUrl(client: { domain: string; operatorUrl?: string }): string {
   if (client.operatorUrl && client.operatorUrl.startsWith('http')) return client.operatorUrl;

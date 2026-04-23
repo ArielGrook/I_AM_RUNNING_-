@@ -575,6 +575,15 @@ server {
   listen 80;
   server_name $DOMAIN;
 
+  # Long-running operator endpoints (deploy can take 60-120s due to npm install + next build).
+  # Without these overrides nginx defaults to 60s proxy_read_timeout which cuts mid-deploy.
+  proxy_read_timeout 600s;
+  proxy_send_timeout 600s;
+  proxy_connect_timeout 60s;
+
+  # Large request bodies — operator file PUT can carry base64-encoded binary files.
+  client_max_body_size 20m;
+
   location / {
     proxy_pass http://127.0.0.1:$PORT;
     proxy_http_version 1.1;
@@ -755,17 +764,20 @@ if [ -f "$INSTALL_PATH/package.json" ]; then
 fi
 
 # Uptime of PM2 process for this install, in seconds.
-# pm2 describe returns JSON; we parse pm2_env.axm_monitor or pm2_env.pm_uptime.
+# Uses `pm2 jlist` (always JSON), filters by process name, computes delta
+# from pm2_env.pm_uptime (ms since process start).
 UPTIME_SEC=0
 if command -v pm2 >/dev/null 2>&1 && [ -n "${IAM_PROCESS_NAME:-}" ]; then
-  UPTIME_SEC="$(pm2 describe "$IAM_PROCESS_NAME" 2>/dev/null | node -e "
+  UPTIME_SEC="$(pm2 jlist 2>/dev/null | node -e "
     let data = '';
     process.stdin.on('data', c => data += c);
     process.stdin.on('end', () => {
-      const m = data.match(/\"pm_uptime\"\s*:\s*(\d+)/);
-      if (!m) { console.log(0); return; }
-      const uptimeStart = parseInt(m[1], 10);
-      console.log(Math.max(0, Math.floor((Date.now() - uptimeStart) / 1000)));
+      try {
+        const procs = JSON.parse(data);
+        const proc = procs.find(p => p && p.name === process.env.IAM_PROCESS_NAME);
+        if (!proc || !proc.pm2_env || !proc.pm2_env.pm_uptime) { console.log(0); return; }
+        console.log(Math.max(0, Math.floor((Date.now() - proc.pm2_env.pm_uptime) / 1000)));
+      } catch(_) { console.log(0); }
     });
   " 2>/dev/null || echo "0")"
 fi
@@ -820,7 +832,9 @@ CURSOR_FILE="$INSTALL_PATH/logs/.activity-cursor"
 
 # Read env vars we need
 while IFS='=' read -r key value; do
-  case "$key" in ''|\#*) continue ;; esac
+  case "$key" in
+    ''|\#*) continue ;;
+  esac
   value="${value%\"}"; value="${value#\"}"
   export "$key=$value"
 done < "$ENV_FILE"
@@ -841,13 +855,10 @@ fi
 
 CURRENT_SIZE="$(wc -c < "$LOG_FILE" 2>/dev/null || echo 0)"
 if [ "$LAST_OFFSET" -gt "$CURRENT_SIZE" ]; then
-  # Log was rotated/truncated — start from beginning
   LAST_OFFSET=0
 fi
 
-# Bytes to read
 if [ "$LAST_OFFSET" -ge "$CURRENT_SIZE" ]; then
-  # Nothing new
   exit 0
 fi
 
@@ -857,208 +868,36 @@ if [ "$NEW_BYTES" -gt 204800 ]; then
   NEW_BYTES=204800
 fi
 
-# tail with byte offset using dd
 NEW_CONTENT="$(dd if="$LOG_FILE" bs=1 skip="$LAST_OFFSET" count="$NEW_BYTES" 2>/dev/null || echo "")"
 [ -n "$NEW_CONTENT" ] || exit 0
 
-# Build events array — each line of activity.jsonl is one event.
-# Drop last partial line (in case we caught a mid-write).
-EVENTS_JSON="$(echo "$NEW_CONTENT" | sed '$ {/^[^{]/d}' | grep -v '^
+# Build events JSON array. Each line of activity.jsonl is already one JSON
+# object. We keep only lines that look like complete JSON objects (start
+# with { and end with }) — this also naturally drops blank lines and the
+# half-written last line if we caught mid-write.
+EVENTS_JSON="$(echo "$NEW_CONTENT" | node -e "
+  let data = '';
+  process.stdin.on('data', c => data += c);
+  process.stdin.on('end', () => {
+    const lines = data.split('\n').filter(l => {
+      const t = l.trim();
+      return t.startsWith('{') && t.endsWith('}');
+    });
+    if (lines.length === 0) { console.log('[]'); return; }
+    // Validate each is parseable; skip lines that aren't
+    const valid = [];
+    for (const l of lines) {
+      try { JSON.parse(l); valid.push(l); } catch(_) {}
+    }
+    console.log('[' + valid.join(',') + ']');
+  });
+" 2>/dev/null || echo "[]")"
 
-step_crons() {
-  step "9" "Install crons (heartbeat + activity + backup)"
-  write_heartbeat_script
-  write_activity_script
-  install_crons
-  ok "Crons installed."
-}
-
-step_project_symlink() {
-  step "10" "Project symlink (optional)"
-  if [ -z "$PROJECT_PATH" ] && [ -t 0 ]; then
-    read -r -p "Client project path (empty to skip): " PROJECT_PATH
-  fi
-
-  if [ -n "$PROJECT_PATH" ] && [ -d "$PROJECT_PATH" ]; then
-    ln -sfn "$PROJECT_PATH" "$INSTALL_PATH/project"
-    ok "Project linked: $PROJECT_PATH -> $INSTALL_PATH/project"
-  else
-    warn "Project link skipped."
-  fi
-}
-
-step_register_and_summary() {
-  step "11" "Register instance + summary"
-
-  local payload
-  payload=$(cat <<EOF
-{"instance_id":"$INSTANCE_ID","domain":"$DOMAIN","client_name":"$CLIENT_NAME","operator_url":"$OPERATOR_URL","installed_at":"$STARTED_AT"}
-EOF
-)
-
-  if ! curl -fsS -m 15 -X POST "https://iamrunning.online/api/monitor/register" -H "Content-Type: application/json" -d "$payload" >/dev/null 2>&1; then
-    warn "Register endpoint unavailable, skipping."
-  else
-    ok "Instance registered with iamrunning.online monitoring."
-  fi
-
-  echo -e "
-${GREEN}═══════════════════════════════════════════════════════${NC}
-${GREEN}  IAM Client OS installed successfully${NC}
-${GREEN}═══════════════════════════════════════════════════════${NC}
-
-  URL:           https://$DOMAIN
-  Admin panel:   https://$DOMAIN$ADMIN_PATH
-  MCP endpoint:  https://$DOMAIN/api/mcp
-  Operator API:  https://$DOMAIN/api/operator
-  Port:          $PORT
-  PM2 process:   $IAM_PROCESS_NAME
-  Install path:  $INSTALL_PATH
-  Instance ID:   $INSTANCE_ID
-
-  ${CYAN}Next steps:${NC}
-  1) Open admin panel → complete TOTP first-run setup
-  2) Generate MCP token (Admin → Settings → MCP Token)
-  3) Connect Claude — Settings → Integrations → Add MCP Server
-  4) First message: \"Read memory. I'm setting up a fresh workspace...\"
-
-  ${CYAN}Ops cheatsheet:${NC}
-  - Check PM2:      pm2 list
-  - App logs:       pm2 logs $IAM_PROCESS_NAME
-  - Nginx test:     sudo nginx -t
-  - Update later:   bash scripts/iam-client.sh --update --path=$INSTALL_PATH
-"
-}
-
-run_update_mode() {
-  step "1" "Update mode (--update)"
-
-  [ -d "$INSTALL_PATH/.git" ] || fail "Install path is not a git repository: $INSTALL_PATH"
-  [ -f "$INSTALL_PATH/.env.local" ] || fail ".env.local not found in $INSTALL_PATH"
-
-  setup_log_file
-
-  local old_version new_version old_major new_major old_commit has_stash
-  old_commit="$(cd "$INSTALL_PATH" && git rev-parse HEAD)"
-  old_version="$(cd "$INSTALL_PATH" && node -e "console.log(require('./package.json').version)")"
-  has_stash=false
-
-  if [ -x "$INSTALL_PATH/scripts/iam-backup.sh" ]; then
-    "$INSTALL_PATH/scripts/iam-backup.sh" "$INSTALL_PATH"
-  else
-    warn "Backup script missing, skipping backup."
-  fi
-
-  if [ -n "$(cd "$INSTALL_PATH" && git status --porcelain)" ]; then
-    (cd "$INSTALL_PATH" && git stash push -u -m "iam-client-auto-update-$(date +%s)")
-    has_stash=true
-  fi
-
-  (
-    cd "$INSTALL_PATH"
-    git pull --ff-only
-    npm install
-    rm -rf .next
-    npm run build
-  )
-
-  IAM_PROCESS_NAME="$(cd "$INSTALL_PATH" && awk -F= '/^IAM_PROCESS_NAME=/{print $2}' .env.local | tr -d '\r')"
-  IAM_PROCESS_NAME="${IAM_PROCESS_NAME:-iam-os}"
-  PORT="$(cd "$INSTALL_PATH" && awk -F= '/^PORT=/{print $2}' .env.local | tr -d '\r')"
-  PORT="${PORT:-4741}"
-
-  pm2 restart "$IAM_PROCESS_NAME" || fail "PM2 restart failed for $IAM_PROCESS_NAME"
-
-  sleep 5
-  local code
-  code="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/" || true)"
-  if [ "$code" != "200" ] && [ "$code" != "307" ] && [ "$code" != "308" ]; then
-    warn "Healthcheck failed after update. Rolling back."
-    (
-      cd "$INSTALL_PATH"
-      git reset --hard "$old_commit"
-      rm -rf .next
-      npm run build
-    )
-    pm2 restart "$IAM_PROCESS_NAME" || true
-    fail "Update failed and rollback was applied."
-  fi
-
-  new_version="$(cd "$INSTALL_PATH" && node -e "console.log(require('./package.json').version)")"
-  old_major="${old_version%%.*}"
-  new_major="${new_version%%.*}"
-  if [ "$new_major" != "$old_major" ]; then
-    warn "Major version changed ($old_version -> $new_version). Check data migrations."
-  fi
-
-  if [ "$has_stash" = true ]; then
-    (cd "$INSTALL_PATH" && git stash pop >/dev/null 2>&1) || true
-  fi
-
-  log_json "success" "Update completed: $old_version -> $new_version"
-  INSTALL_COMPLETE=true
-  ok "Update successful: $old_version -> $new_version"
-}
-
-main_install() {
-  if [ -z "$DOMAIN" ]; then
-    ask_interactive
-  fi
-
-  [ -n "$DOMAIN" ] || fail "--domain is required."
-  [ -n "$CLIENT_NAME" ] || fail "--name is required."
-  [ -n "$GITHUB_REPO" ] || fail "--github is required."
-  validate_domain "$DOMAIN" || fail "Invalid domain: $DOMAIN"
-  validate_repo "$GITHUB_REPO" || fail "Invalid github repo: $GITHUB_REPO"
-  is_port_busy "$PORT" && fail "Port $PORT is already in use."
-
-  if [ "$DRY_RUN" = true ]; then
-    print_dry_run_plan
-    INSTALL_COMPLETE=true
-    return 0
-  fi
-
-  step_resource_check
-  step_dependencies
-  step_security
-  step_clone
-  step_secrets
-  step_nginx
-  step_build
-  step_pm2
-  step_crons
-  step_project_symlink
-  step_register_and_summary
-
-  INSTALL_COMPLETE=true
-  log_json "success" "Install completed for $DOMAIN"
-  ok "Install complete."
-}
-
-main() {
-  parse_args "$@"
-  if [ "$UPDATE_MODE" = true ]; then
-    run_update_mode
-  else
-    main_install
-  fi
-}
-
-main "$@"
- | awk '
-  BEGIN { printf "[" }
-  NR>1 { printf "," }
-  { printf "%s", $0 }
-  END   { printf "]" }
-')"
-
-# Sanity: EVENTS_JSON should at least be "[]" or "[...]"
 [ -z "$EVENTS_JSON" ] && EVENTS_JSON="[]"
 [ "$EVENTS_JSON" = "[]" ] && exit 0
 
 BODY="{\"instance_id\":\"$INSTANCE_ID\",\"domain\":\"$DOMAIN_BARE\",\"events\":$EVENTS_JSON}"
 
-# POST
 HTTP_CODE="$(curl -s -o /dev/null -w "%{http_code}" -m 15 \
   -X POST "https://iamrunning.online/api/monitor/activity" \
   -H "Authorization: Bearer $OPERATOR_TOKEN" \
@@ -1253,5 +1092,3 @@ main() {
     main_install
   fi
 }
-
-main "$@"
