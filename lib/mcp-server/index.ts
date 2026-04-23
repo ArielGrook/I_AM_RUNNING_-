@@ -456,6 +456,8 @@ export function createMcpServer(clientSlug?: string): McpServer {
       skipNginx: z.boolean().optional(),
       noLanding: z.boolean().optional(),
       dryRun: z.boolean().optional(),
+      projectPath: z.string().optional().describe('Integration mode: path to the customer\'s existing app on their VPS. Becomes PROJECT_ROOT for MCP/deploy.'),
+      clientAppPm2Name: z.string().optional().describe('Integration mode: customer\'s existing pm2 process name that deploy endpoint should restart.'),
     },
     async (input) => {
       try {
@@ -494,10 +496,14 @@ export function createMcpServer(clientSlug?: string): McpServer {
         const shellEscape = (v: string) => `'${v.replace(/'/g, "'\\''")}'`;
 
         const extraFlags: string[] = [];
+        // Mode is always explicit for web/MCP-generated installs (default team)
+        extraFlags.push(`--mode=${mode}`);
         if (input.skipSecurity) extraFlags.push('--skip-security');
         if (input.skipNginx) extraFlags.push('--skip-nginx');
         if (input.noLanding) extraFlags.push('--no-landing');
         if (input.dryRun) extraFlags.push('--dry-run');
+        if (input.projectPath) extraFlags.push(`--project-path=${input.projectPath}`);
+        if (input.clientAppPm2Name) extraFlags.push(`--client-app-pm2-name=${input.clientAppPm2Name}`);
 
         const bootstrap = `#!/bin/bash
 # ═══════════════════════════════════════════════════════════════════════════

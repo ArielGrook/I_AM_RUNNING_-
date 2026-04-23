@@ -47,8 +47,9 @@ interface GenerateInput {
   skipSecurity?: boolean;
   skipNginx?: boolean;
   noLanding?: boolean;
-  projectPath?: string;
-  dryRun?: boolean;               // adds --dry-run to the generated command
+  projectPath?: string;            // Integration mode: path to customer's app (becomes PROJECT_ROOT)
+  clientAppPm2Name?: string;       // Integration mode: customer's existing pm2 process name
+  dryRun?: boolean;                // adds --dry-run to the generated command
 }
 
 function shellEscape(value: string): string {
@@ -112,11 +113,15 @@ export async function POST(request: NextRequest) {
 
     // Optional flags assembled into bash args
     const extraFlags: string[] = [];
+    // Mode: always pass explicitly. Default is 'team' for web-generated
+    // installs since web version should never default to solo.
+    extraFlags.push(`--mode=${mode}`);
     if (body.skipSecurity) extraFlags.push('--skip-security');
     if (body.skipNginx) extraFlags.push('--skip-nginx');
     if (body.noLanding) extraFlags.push('--no-landing');
     if (body.dryRun) extraFlags.push('--dry-run');
     if (body.projectPath) extraFlags.push(`--project-path=${body.projectPath}`);
+    if (body.clientAppPm2Name) extraFlags.push(`--client-app-pm2-name=${body.clientAppPm2Name}`);
 
     // Build the bootstrap script.
     //
