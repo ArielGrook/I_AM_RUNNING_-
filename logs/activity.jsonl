@@ -1,3 +1,4 @@
 {"ts":"2026-04-23T18:38:09.327Z","user":"unknown","role":"none","action":"auth_failed","endpoint":"/api/mcp","reason":"invalid_token","ip":"94.176.238.108","instance":"iam.iam-admin-self-test"}
 {"ts":"2026-04-23T18:54:42.050Z","user":"unknown","role":"none","action":"auth_failed","endpoint":"/api/mcp","reason":"invalid_token","ip":"94.176.238.108","instance":"iam.iam-admin-self-test"}
 {"ts":"2026-04-23T18:56:39.889Z","user":"unknown","role":"none","action":"auth_failed","endpoint":"/api/mcp","reason":"invalid_token","ip":"94.176.238.108","instance":"iam.iam-admin-self-test"}
+{"ts":"2026-04-23T19:51:44.575Z","user":"Super Admin","source":"totp-first-verify","action":"totp-first-setup-success","detail":"ip:46.117.134.35"}
