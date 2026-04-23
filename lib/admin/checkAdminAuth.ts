@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 const ADMIN_TOKEN_COOKIE = 'admin_token';
-const ADMIN_TOKEN_MAX_AGE = 60 * 60 * 8; // 8 hours
+const ADMIN_TOKEN_MAX_AGE = 60 * 60 * 24; // 24 hours — operator doesn't want to re-enter TOTP on every browser session
 
 /** Returns the expected token value from env */
 function getExpectedToken(): string | undefined {
