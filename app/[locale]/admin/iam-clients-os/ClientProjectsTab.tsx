@@ -1003,6 +1003,55 @@ function FilesBadge({ client: c, onStagingChanged }: { client: ClientPublic; onS
   const [draftContent, setDraftContent] = useState('');
   const [savingStaged, setSavingStaged] = useState(false);
 
+  // Create new file / folder state
+  const [creating, setCreating] = useState<{ kind: 'file' | 'folder'; path: string; content: string } | null>(null);
+  const [creatingSaving, setCreatingSaving] = useState(false);
+  const [creatingError, setCreatingError] = useState<string | null>(null);
+
+  const openNewFileModal = () => {
+    const base = cwd === '.' ? '' : `${cwd}/`;
+    setCreating({ kind: 'file', path: base, content: '' });
+    setCreatingError(null);
+  };
+  const openNewFolderModal = () => {
+    const base = cwd === '.' ? '' : `${cwd}/`;
+    setCreating({ kind: 'folder', path: base, content: '' });
+    setCreatingError(null);
+  };
+
+  const saveNewToStaging = async () => {
+    if (!creating) return;
+    const trimmedPath = creating.path.trim().replace(/^\/+/, '').replace(/\/+$/, '');
+    if (!trimmedPath) {
+      setCreatingError('Path is required');
+      return;
+    }
+    // For folders: stage a .gitkeep sentinel so the directory materializes on the client
+    const stagingPath = creating.kind === 'folder' ? `${trimmedPath}/.gitkeep` : trimmedPath;
+    const stagingContent = creating.kind === 'folder' ? '' : creating.content;
+    setCreatingSaving(true); setCreatingError(null);
+    try {
+      const res = await fetch('/api/admin/operator/staging/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: c.id,
+          path: stagingPath,
+          content: stagingContent,
+          encoding: 'text',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setCreating(null);
+      onStagingChanged();
+    } catch (err) {
+      setCreatingError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCreatingSaving(false);
+    }
+  };
+
   const listPath = useCallback(async (path: string) => {
     setLoading(true); setError(null);
     try {
@@ -1078,6 +1127,12 @@ function FilesBadge({ client: c, onStagingChanged }: { client: ClientPublic; onS
           </div>
         </div>
         {latency !== null && <span style={{ fontSize: 10, color: '#6b7280' }}>upstream {latency}ms</span>}
+        <button onClick={openNewFileModal} style={{ padding: '4px 10px', background: '#fff', color: '#FF6B35', border: '1px solid #FF6B35', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          + File
+        </button>
+        <button onClick={openNewFolderModal} style={{ padding: '4px 10px', background: '#fff', color: '#FF6B35', border: '1px solid #FF6B35', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          + Folder
+        </button>
         <button onClick={() => listPath(cwd)} disabled={loading} style={{ padding: '4px 10px', background: '#fff', color: '#1f2937', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
           <RefreshCw className="w-3.5 h-3.5" /> Refresh
         </button>
@@ -1195,6 +1250,73 @@ function FilesBadge({ client: c, onStagingChanged }: { client: ClientPublic; onS
                 spellCheck={false}
               />
             )}
+          </div>
+        </div>
+      )}
+      {/* Create new file / folder modal */}
+      {creating && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => !creatingSaving && setCreating(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 10, padding: 16, maxWidth: 720, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                  {creating.kind === 'folder' ? 'New folder' : 'New file'}
+                  <span style={{ fontSize: 10, marginLeft: 8, padding: '1px 6px', background: '#fef3c7', color: '#92400e', borderRadius: 3, fontWeight: 700 }}>STAGES</span>
+                </div>
+                <div style={{ fontSize: 11, color: '#4b5563' }}>
+                  Relative to <span style={{ fontFamily: 'monospace' }}>{c.installPath}/</span>
+                  {creating.kind === 'folder' ? ' · creates .gitkeep inside' : ' · queued in Updates badge until push'}
+                </div>
+              </div>
+              <button onClick={() => !creatingSaving && setCreating(null)} disabled={creatingSaving} style={{ padding: 6, background: 'transparent', border: 'none', cursor: creatingSaving ? 'not-allowed' : 'pointer', color: '#4b5563' }}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <label style={{ fontSize: 11, color: '#4b5563', marginBottom: 4, fontWeight: 600 }}>
+              {creating.kind === 'folder' ? 'Folder path' : 'File path'}
+            </label>
+            <input
+              value={creating.path}
+              onChange={e => setCreating({ ...creating, path: e.target.value })}
+              placeholder={creating.kind === 'folder' ? 'scripts/helpers' : 'app/components/MyThing.tsx'}
+              disabled={creatingSaving}
+              autoFocus
+              spellCheck={false}
+              style={{ padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, fontFamily: 'monospace', marginBottom: 12, outline: 'none' }}
+            />
+
+            {creating.kind === 'file' && (
+              <>
+                <label style={{ fontSize: 11, color: '#4b5563', marginBottom: 4, fontWeight: 600 }}>
+                  Initial content (can be empty)
+                </label>
+                <textarea
+                  value={creating.content}
+                  onChange={e => setCreating({ ...creating, content: e.target.value })}
+                  disabled={creatingSaving}
+                  spellCheck={false}
+                  style={{
+                    flex: 1, resize: 'vertical', background: '#1f2937', color: '#f9fafb',
+                    padding: 12, borderRadius: 6, fontFamily: 'monospace', fontSize: 12,
+                    border: '1px solid #374151', outline: 'none', minHeight: 200, marginBottom: 12,
+                  }}
+                />
+              </>
+            )}
+
+            {creatingError && (
+              <div style={{ padding: 10, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>
+                {creatingError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+              <button onClick={() => setCreating(null)} disabled={creatingSaving} style={{ padding: '6px 12px', background: '#fff', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 12, cursor: creatingSaving ? 'not-allowed' : 'pointer' }}>Cancel</button>
+              <button onClick={saveNewToStaging} disabled={creatingSaving || !creating.path.trim()} style={{ padding: '6px 12px', background: (creatingSaving || !creating.path.trim()) ? '#fdb89a' : '#FF6B35', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: (creatingSaving || !creating.path.trim()) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Save className="w-3.5 h-3.5" /> {creatingSaving ? 'Saving...' : 'Save to staging'}
+              </button>
+            </div>
           </div>
         </div>
       )}
