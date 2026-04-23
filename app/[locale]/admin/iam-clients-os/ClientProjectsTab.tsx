@@ -21,7 +21,8 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Loader2, Plus, X, Search, Eye, EyeOff, Copy, Trash2, Save, AlertCircle,
   Server as ServerIcon, Activity, Lock, FolderTree, DollarSign, StickyNote,
-  AlertTriangle, RefreshCw, Circle, ChevronDown, Edit3,
+  AlertTriangle, RefreshCw, ChevronDown, Edit3,
+  Upload, History as HistoryIcon, Github, Undo2, CheckCircle2, XCircle, Clock,
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -58,6 +59,10 @@ interface ClientPublic {
   lastSeen?: string;
   lastSeenUptime?: number;
   heartbeatStatus?: HeartbeatStatus;
+  githubRepo?: string;
+  githubPat: MaskedSecret;
+  githubBranch?: string;
+  autoSnapshotAfterPush?: boolean;
   contacts: ClientContact[];
   payments: ClientPayment[];
   notes: string;
@@ -66,7 +71,7 @@ interface ClientPublic {
   updatedAt: string;
 }
 
-type BadgeKey = 'server' | 'status' | 'access' | 'files' | 'notes' | 'billing' | 'danger';
+type BadgeKey = 'server' | 'status' | 'access' | 'files' | 'updates' | 'activity' | 'notes' | 'billing' | 'danger';
 
 const STATUS_LABELS: Record<ClientStatus, string> = {
   lead: 'Lead', paid: 'Paid', installing: 'Installing',
@@ -124,6 +129,10 @@ interface FormState {
   sshPassword: string;
   sshKey: string;
   superAdminToken: string;
+  githubRepo: string;
+  githubPat: string;
+  githubBranch: string;
+  autoSnapshotAfterPush: boolean;
   contacts: ClientContact[];
   payments: ClientPayment[];
   notes: string;
@@ -137,6 +146,7 @@ function emptyForm(): FormState {
     productVersion: '', installDate: '',
     serverIp: '', sshUser: '', sshPort: '22',
     sshPassword: '', sshKey: '', superAdminToken: '',
+    githubRepo: '', githubPat: '', githubBranch: 'main', autoSnapshotAfterPush: false,
     contacts: [], payments: [], notes: '', tags: '',
   };
 }
@@ -149,6 +159,9 @@ function clientToForm(c: ClientPublic): FormState {
     serverIp: c.serverIp || '', sshUser: c.sshUser || '',
     sshPort: c.sshPort ? String(c.sshPort) : '22',
     sshPassword: '', sshKey: '', superAdminToken: '',
+    githubRepo: c.githubRepo || '', githubPat: '',
+    githubBranch: c.githubBranch || 'main',
+    autoSnapshotAfterPush: !!c.autoSnapshotAfterPush,
     contacts: c.contacts || [], payments: c.payments || [],
     notes: c.notes || '', tags: (c.tags || []).join(', '),
   };
@@ -317,6 +330,9 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
       serverIp: form.serverIp.trim() || undefined,
       sshUser: form.sshUser.trim() || undefined,
       sshPort: form.sshPort ? (parseInt(form.sshPort, 10) || undefined) : undefined,
+      githubRepo: form.githubRepo.trim() || undefined,
+      githubBranch: form.githubBranch.trim() || 'main',
+      autoSnapshotAfterPush: form.autoSnapshotAfterPush,
       contacts: form.contacts.filter(c => c.value.trim()),
       payments: form.payments.filter(p => p.amount > 0),
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
@@ -325,6 +341,7 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
     if (isCreate || form.sshPassword) payload.sshPassword = form.sshPassword;
     if (isCreate || form.sshKey) payload.sshKey = form.sshKey;
     if (isCreate || form.superAdminToken) payload.superAdminToken = form.superAdminToken;
+    if (isCreate || form.githubPat) payload.githubPat = form.githubPat;
     return payload;
   };
 
@@ -500,6 +517,7 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
               revealedForClient={revealed[c.id] || {}}
               revealLoadingKey={revealLoading}
               onReveal={field => reveal(c.id, field)}
+              onClientsRefresh={() => load({ silent: true })}
             />
           ))}
         </div>
@@ -549,11 +567,12 @@ function ClientCard(props: {
   revealedForClient: Record<string, string>;
   revealLoadingKey: string | null;
   onReveal: (field: string) => void;
+  onClientsRefresh: () => void;
 }) {
   const {
     client: c, isMobile, expanded, expandedBadge, onToggleExpand, onSetBadge,
     editing, form, setForm, saving, onStartEdit, onCancelEdit, onSave, onDelete,
-    cardError, revealedForClient, revealLoadingKey, onReveal,
+    cardError, revealedForClient, revealLoadingKey, onReveal, onClientsRefresh,
   } = props;
 
   const health = computeHealth(c);
@@ -639,6 +658,8 @@ function ClientCard(props: {
             <Badge icon={<Activity className="w-3.5 h-3.5" />} label="Status" active={expandedBadge === 'status'} onClick={() => onSetBadge(expandedBadge === 'status' ? null : 'status')} healthColor={healthInfo.color} />
             <Badge icon={<Lock className="w-3.5 h-3.5" />} label="Access" active={expandedBadge === 'access'} onClick={() => onSetBadge(expandedBadge === 'access' ? null : 'access')} />
             <Badge icon={<FolderTree className="w-3.5 h-3.5" />} label="Files" active={expandedBadge === 'files'} onClick={() => onSetBadge(expandedBadge === 'files' ? null : 'files')} disabled={!c.operatorToken.hasValue} disabledHint={!c.operatorToken.hasValue ? 'Waiting for first heartbeat' : undefined} />
+            <Badge icon={<Upload className="w-3.5 h-3.5" />} label="Updates" active={expandedBadge === 'updates'} onClick={() => onSetBadge(expandedBadge === 'updates' ? null : 'updates')} disabled={!c.operatorToken.hasValue} disabledHint={!c.operatorToken.hasValue ? 'Waiting for first heartbeat' : undefined} />
+            <Badge icon={<Activity className="w-3.5 h-3.5" />} label="Activity" active={expandedBadge === 'activity'} onClick={() => onSetBadge(expandedBadge === 'activity' ? null : 'activity')} />
             <Badge icon={<StickyNote className="w-3.5 h-3.5" />} label="Notes" active={expandedBadge === 'notes'} onClick={() => onSetBadge(expandedBadge === 'notes' ? null : 'notes')} />
             <Badge icon={<DollarSign className="w-3.5 h-3.5" />} label="Billing" active={expandedBadge === 'billing'} onClick={() => onSetBadge(expandedBadge === 'billing' ? null : 'billing')} />
             <Badge icon={<AlertTriangle className="w-3.5 h-3.5" />} label="Danger" active={expandedBadge === 'danger'} onClick={() => onSetBadge(expandedBadge === 'danger' ? null : 'danger')} variant="danger" />
@@ -646,14 +667,14 @@ function ClientCard(props: {
             {!editing && (
               <button
                 onClick={onStartEdit}
-                style={{ padding: '4px 10px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 999, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                style={{ padding: '4px 10px', background: '#fff', color: '#1f2937', border: '1px solid #e5e7eb', borderRadius: 999, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
               >
                 <Edit3 className="w-3.5 h-3.5" /> Edit
               </button>
             )}
             {editing && (
               <>
-                <button onClick={onCancelEdit} disabled={saving} style={{ padding: '4px 10px', background: '#fff', color: '#6b7280', border: '1px solid #e5e7eb', borderRadius: 999, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={onCancelEdit} disabled={saving} style={{ padding: '4px 10px', background: '#fff', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 999, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
                 <button onClick={onSave} disabled={saving} style={{ padding: '4px 12px', background: saving ? '#fdb89a' : '#FF6B35', color: '#fff', border: 'none', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: saving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Save className="w-3.5 h-3.5" />
                   {saving ? 'Saving...' : 'Save'}
@@ -668,7 +689,9 @@ function ClientCard(props: {
               {expandedBadge === 'server' && <ServerBadge client={c} editing={editing} form={form} setForm={setForm} />}
               {expandedBadge === 'status' && <StatusDetailBadge client={c} health={health} />}
               {expandedBadge === 'access' && <AccessBadge client={c} editing={editing} form={form} setForm={setForm} revealed={revealedForClient} revealLoadingKey={revealLoadingKey} onReveal={onReveal} />}
-              {expandedBadge === 'files' && <FilesBadge client={c} />}
+              {expandedBadge === 'files' && <FilesBadge client={c} onStagingChanged={onClientsRefresh} />}
+              {expandedBadge === 'updates' && <UpdatesBadge client={c} onRefresh={onClientsRefresh} />}
+              {expandedBadge === 'activity' && <ActivityBadge client={c} />}
               {expandedBadge === 'notes' && <NotesBadge client={c} editing={editing} form={form} setForm={setForm} />}
               {expandedBadge === 'billing' && <BillingBadge client={c} editing={editing} form={form} setForm={setForm} />}
               {expandedBadge === 'danger' && <DangerBadge client={c} onDelete={onDelete} />}
@@ -865,6 +888,24 @@ function AccessBadge({ client: c, editing, form, setForm, revealed, revealLoadin
         <SecretInput label="SSH Password" value={form.sshPassword} onChange={v => setForm({ ...form, sshPassword: v })} masked={c.sshPassword} />
         <SecretInput label="SSH Private Key" value={form.sshKey} onChange={v => setForm({ ...form, sshKey: v })} masked={c.sshKey} multiline />
         <SecretInput label="Super Admin Token" value={form.superAdminToken} onChange={v => setForm({ ...form, superAdminToken: v })} masked={c.superAdminToken} />
+
+        <div style={{ margin: '14px 0 6px 0', borderTop: '1px solid #f3f4f6', paddingTop: 12 }}>
+          <h4 style={{ fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px 0' }}>GitHub snapshot backup</h4>
+          <Row>
+            <Field label="Repo (owner/repo)">
+              <input type="text" value={form.githubRepo} onChange={e => setForm({ ...form, githubRepo: e.target.value })} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="ArielGrook/iam-acme-backup" />
+            </Field>
+            <Field label="Branch">
+              <input type="text" value={form.githubBranch} onChange={e => setForm({ ...form, githubBranch: e.target.value })} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="main" />
+            </Field>
+          </Row>
+          <SecretInput label="GitHub PAT (fine-grained, Contents: R/W)" value={form.githubPat} onChange={v => setForm({ ...form, githubPat: v })} masked={c.githubPat} />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#1f2937', marginTop: 8, cursor: 'pointer' }}>
+            <input type="checkbox" checked={form.autoSnapshotAfterPush} onChange={e => setForm({ ...form, autoSnapshotAfterPush: e.target.checked })} />
+            Auto-snapshot to GitHub after every successful push
+          </label>
+        </div>
+
         <p style={{ fontSize: 11, color: '#6b7280', marginTop: 10 }}>
           <strong>Operator Token</strong> is managed automatically — rotated via heartbeat (coming Phase 3).
         </p>
@@ -914,6 +955,15 @@ function AccessBadge({ client: c, editing, form, setForm, revealed, revealLoadin
         loading={revealLoadingKey === `${c.id}/sshKey`}
         multiline
       />
+      <SecretReveal
+        label="GitHub PAT"
+        fieldKey="githubPat"
+        masked={c.githubPat}
+        revealed={revealed.githubPat}
+        onReveal={() => onReveal('githubPat')}
+        loading={revealLoadingKey === `${c.id}/githubPat`}
+        helpText={c.githubRepo ? `Target: ${c.githubRepo} (branch: ${c.githubBranch || 'main'})` : 'No repo configured.'}
+      />
 
       <div style={{ margin: '12px 0', borderTop: '1px solid #f3f4f6' }} />
 
@@ -939,7 +989,7 @@ function AccessBadge({ client: c, editing, form, setForm, revealed, revealLoadin
 
 interface FileEntry { name: string; type: 'file' | 'dir'; size?: number; mtime: string }
 
-function FilesBadge({ client: c }: { client: ClientPublic }) {
+function FilesBadge({ client: c, onStagingChanged }: { client: ClientPublic; onStagingChanged: () => void }) {
   const [cwd, setCwd] = useState('.');
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -949,6 +999,9 @@ function FilesBadge({ client: c }: { client: ClientPublic }) {
   const [openFile, setOpenFile] = useState<{ path: string; content: string; encoding: string; size: number; mtime: string } | null>(null);
   const [fileLoading, setFileLoading] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [draftContent, setDraftContent] = useState('');
+  const [savingStaged, setSavingStaged] = useState(false);
 
   const listPath = useCallback(async (path: string) => {
     setLoading(true); setError(null);
@@ -979,28 +1032,53 @@ function FilesBadge({ client: c }: { client: ClientPublic }) {
 
   const openFileAt = async (name: string) => {
     const path = cwd === '.' ? name : `${cwd}/${name}`;
-    setFileLoading(true); setFileError(null);
+    setFileLoading(true); setFileError(null); setEditMode(false);
     try {
       const res = await fetch(`/api/admin/operator/files/read?client_id=${encodeURIComponent(c.id)}&path=${encodeURIComponent(path)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setOpenFile({ path: data.path, content: data.content || '', encoding: data.encoding, size: data.size, mtime: data.mtime });
+      setDraftContent(data.content || '');
     } catch (err) {
       setFileError(err instanceof Error ? err.message : String(err));
     } finally { setFileLoading(false); }
+  };
+
+  const saveDraftToStaging = async () => {
+    if (!openFile) return;
+    setSavingStaged(true); setFileError(null);
+    try {
+      const res = await fetch('/api/admin/operator/staging/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: c.id,
+          path: openFile.path,
+          content: draftContent,
+          encoding: openFile.encoding === 'base64' ? 'base64' : 'text',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setEditMode(false);
+      setOpenFile(null);
+      onStagingChanged();
+    } catch (err) {
+      setFileError(err instanceof Error ? err.message : String(err));
+    } finally { setSavingStaged(false); }
   };
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 11, color: '#6b7280' }}>Client file system · read-only (Phase 1)</div>
-          <div style={{ fontFamily: 'monospace', fontSize: 13, color: '#111' }}>
-            {c.installPath}/<span style={{ color: '#6b7280' }}>{cwd === '.' ? '' : cwd + '/'}</span>
+          <div style={{ fontSize: 11, color: '#4b5563' }}>Client file system · read + stage (edits queue in Updates badge)</div>
+          <div style={{ fontFamily: 'monospace', fontSize: 13, color: '#0f172a' }}>
+            {c.installPath}/<span style={{ color: '#4b5563' }}>{cwd === '.' ? '' : cwd + '/'}</span>
           </div>
         </div>
-        {latency !== null && <span style={{ fontSize: 10, color: '#9ca3af' }}>upstream {latency}ms</span>}
-        <button onClick={() => listPath(cwd)} disabled={loading} style={{ padding: '4px 10px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+        {latency !== null && <span style={{ fontSize: 10, color: '#6b7280' }}>upstream {latency}ms</span>}
+        <button onClick={() => listPath(cwd)} disabled={loading} style={{ padding: '4px 10px', background: '#fff', color: '#1f2937', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
           <RefreshCw className="w-3.5 h-3.5" /> Refresh
         </button>
       </div>
@@ -1012,7 +1090,7 @@ function FilesBadge({ client: c }: { client: ClientPublic }) {
       )}
 
       {loading && !entries.length && (
-        <div style={{ textAlign: 'center', padding: 20, color: '#6b7280' }}>
+        <div style={{ textAlign: 'center', padding: 20, color: '#4b5563' }}>
           <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" /> Loading...
         </div>
       )}
@@ -1020,7 +1098,7 @@ function FilesBadge({ client: c }: { client: ClientPublic }) {
       {!loading && !error && (
         <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden', maxHeight: 400, overflowY: 'auto', background: '#fff' }}>
           {cwd !== '.' && (
-            <button onClick={goUp} style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid #f3f4f6', textAlign: 'left', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', color: '#6b7280' }}>
+            <button onClick={goUp} style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid #f3f4f6', textAlign: 'left', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', color: '#4b5563' }}>
               .. (up)
             </button>
           )}
@@ -1036,53 +1114,67 @@ function FilesBadge({ client: c }: { client: ClientPublic }) {
               onMouseOver={e2 => { e2.currentTarget.style.background = '#f9fafb'; }}
               onMouseOut={e2 => { e2.currentTarget.style.background = 'transparent'; }}
             >
-              <span style={{ color: e.type === 'dir' ? '#FF6B35' : '#374151', fontWeight: e.type === 'dir' ? 700 : 400 }}>
+              <span style={{ color: e.type === 'dir' ? '#FF6B35' : '#1f2937', fontWeight: e.type === 'dir' ? 700 : 400 }}>
                 {e.type === 'dir' ? '▸' : ' '} {e.name}{e.type === 'dir' ? '/' : ''}
               </span>
               <span style={{ flex: 1 }} />
-              {e.size !== undefined && <span style={{ color: '#9ca3af', fontSize: 11 }}>{formatBytes(e.size)}</span>}
-              <span style={{ color: '#9ca3af', fontSize: 11 }}>{relTime(e.mtime)}</span>
+              {e.size !== undefined && <span style={{ color: '#6b7280', fontSize: 11 }}>{formatBytes(e.size)}</span>}
+              <span style={{ color: '#6b7280', fontSize: 11 }}>{relTime(e.mtime)}</span>
             </button>
           ))}
-          {entries.length === 0 && <div style={{ padding: 20, textAlign: 'center', fontSize: 12, color: '#9ca3af' }}>Empty directory</div>}
+          {entries.length === 0 && <div style={{ padding: 20, textAlign: 'center', fontSize: 12, color: '#6b7280' }}>Empty directory</div>}
         </div>
       )}
 
-      {/* File viewer modal */}
+      {/* File viewer / editor modal */}
       {(openFile || fileLoading || fileError) && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 250, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => { setOpenFile(null); setFileError(null); }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 10, padding: 16, maxWidth: 900, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 250, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => { setOpenFile(null); setFileError(null); setEditMode(false); }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 10, padding: 16, maxWidth: 960, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#111', fontFamily: 'monospace' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>
                   {openFile?.path || 'Loading...'}
+                  {editMode && <span style={{ fontSize: 10, marginLeft: 8, padding: '1px 6px', background: '#fef3c7', color: '#92400e', borderRadius: 3, fontWeight: 700 }}>EDITING</span>}
                 </div>
                 {openFile && (
-                  <div style={{ fontSize: 11, color: '#6b7280' }}>
+                  <div style={{ fontSize: 11, color: '#4b5563' }}>
                     {openFile.encoding} · {formatBytes(openFile.size)} · mtime {new Date(openFile.mtime).toLocaleString()}
                   </div>
                 )}
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                {openFile && (
-                  <button onClick={() => navigator.clipboard.writeText(openFile.content)} style={{ padding: '6px 10px', background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                {openFile && !editMode && openFile.encoding === 'text' && (
+                  <button onClick={() => setEditMode(true)} style={{ padding: '6px 12px', background: '#FF6B35', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Edit3 className="w-3.5 h-3.5" /> Edit
+                  </button>
+                )}
+                {openFile && editMode && (
+                  <>
+                    <button onClick={() => { setEditMode(false); setDraftContent(openFile.content); }} disabled={savingStaged} style={{ padding: '6px 10px', background: '#fff', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+                    <button onClick={saveDraftToStaging} disabled={savingStaged || draftContent === openFile.content} style={{ padding: '6px 12px', background: draftContent === openFile.content ? '#fdb89a' : '#FF6B35', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: draftContent === openFile.content ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Save className="w-3.5 h-3.5" /> {savingStaged ? 'Saving...' : 'Save to staging'}
+                    </button>
+                  </>
+                )}
+                {openFile && !editMode && (
+                  <button onClick={() => navigator.clipboard.writeText(openFile.content)} style={{ padding: '6px 10px', background: '#f3f4f6', color: '#1f2937', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Copy className="w-3.5 h-3.5" /> Copy
                   </button>
                 )}
-                <button onClick={() => { setOpenFile(null); setFileError(null); }} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b7280' }}>
+                <button onClick={() => { setOpenFile(null); setFileError(null); setEditMode(false); }} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: '#4b5563' }}>
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
             {fileLoading && (
-              <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
+              <div style={{ textAlign: 'center', padding: 40, color: '#4b5563' }}>
                 <Loader2 className="w-5 h-5 animate-spin inline-block mr-2" /> Loading file...
               </div>
             )}
             {fileError && (
-              <div style={{ padding: 12, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{fileError}</div>
+              <div style={{ padding: 12, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 13, marginBottom: 10 }}>{fileError}</div>
             )}
-            {openFile && (
+            {openFile && !editMode && (
               <pre style={{
                 flex: 1, overflow: 'auto', background: '#1f2937', color: '#f9fafb',
                 padding: 12, borderRadius: 6, fontFamily: 'monospace', fontSize: 12,
@@ -1091,7 +1183,375 @@ function FilesBadge({ client: c }: { client: ClientPublic }) {
                 {openFile.encoding === 'base64' ? '[binary content — base64, ' + openFile.content.length + ' chars]\n' + openFile.content.slice(0, 4000) : openFile.content}
               </pre>
             )}
+            {openFile && editMode && (
+              <textarea
+                value={draftContent}
+                onChange={e => setDraftContent(e.target.value)}
+                style={{
+                  flex: 1, resize: 'none', background: '#1f2937', color: '#f9fafb',
+                  padding: 12, borderRadius: 6, fontFamily: 'monospace', fontSize: 12,
+                  border: '1px solid #374151', outline: 'none', minHeight: 300,
+                }}
+                spellCheck={false}
+              />
+            )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Updates badge (staging + push + history + github) ─────────────────────
+
+interface StagedFileUI { path: string; size: number; savedAt: string; encoding: 'text' | 'base64' }
+interface HistoryEntryUI {
+  ts: string; type: 'push' | 'rollback' | 'snapshot';
+  snap_id?: string; message?: string; files?: string[];
+  deploy_ok?: boolean; deploy_http?: number; note?: string;
+}
+
+function UpdatesBadge({ client: c, onRefresh }: { client: ClientPublic; onRefresh: () => void }) {
+  const [stagedFiles, setStagedFiles] = useState<StagedFileUI[]>([]);
+  const [history, setHistory] = useState<HistoryEntryUI[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pushMessage, setPushMessage] = useState('');
+  const [pushing, setPushing] = useState(false);
+  const [pushResult, setPushResult] = useState<string | null>(null);
+  const [rollingBack, setRollingBack] = useState<string | null>(null);
+  const [snapshotting, setSnapshotting] = useState(false);
+  const [snapshotResult, setSnapshotResult] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const [sRes, hRes] = await Promise.all([
+        fetch(`/api/admin/operator/staging/list?client_id=${encodeURIComponent(c.id)}`),
+        fetch(`/api/admin/operator/history?client_id=${encodeURIComponent(c.id)}&limit=30`),
+      ]);
+      const sData = await sRes.json();
+      const hData = await hRes.json();
+      if (!sRes.ok) throw new Error(sData.error || `staging HTTP ${sRes.status}`);
+      if (!hRes.ok) throw new Error(hData.error || `history HTTP ${hRes.status}`);
+      setStagedFiles(sData.files || []);
+      setHistory(hData.entries || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally { setLoading(false); }
+  }, [c.id]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const discardOne = async (path: string) => {
+    try {
+      const res = await fetch(`/api/admin/operator/staging/list?client_id=${encodeURIComponent(c.id)}&path=${encodeURIComponent(path)}`, { method: 'DELETE' });
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error); }
+      await loadData();
+    } catch (err) { setError(err instanceof Error ? err.message : String(err)); }
+  };
+
+  const discardAll = async () => {
+    if (!confirm('Discard all staged files?')) return;
+    try {
+      const res = await fetch(`/api/admin/operator/staging/list?client_id=${encodeURIComponent(c.id)}`, { method: 'DELETE' });
+      if (!res.ok) { const data = await res.json(); throw new Error(data.error); }
+      await loadData();
+    } catch (err) { setError(err instanceof Error ? err.message : String(err)); }
+  };
+
+  const doPush = async () => {
+    setPushing(true); setPushResult(null); setError(null);
+    try {
+      const res = await fetch('/api/admin/operator/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: c.id, message: pushMessage || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) setPushResult(`❌ ${data.error || `HTTP ${res.status}`}${data.rollback_applied ? ' (rollback applied)' : ''}`);
+      else {
+        setPushResult(`✓ Pushed ${data.count} file(s) · deploy HTTP ${data.deploy_http}`);
+        setPushMessage('');
+      }
+      await loadData();
+      onRefresh();
+    } catch (err) {
+      setPushResult(`❌ ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setPushing(false); }
+  };
+
+  const doRollback = async (snapId: string) => {
+    if (!confirm(`Rollback to snapshot ${snapId}?\n\nThis will restore files from that snapshot and redeploy.`)) return;
+    setRollingBack(snapId); setError(null);
+    try {
+      const res = await fetch('/api/admin/operator/rollback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: c.id, snap_id: snapId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      await loadData();
+      onRefresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally { setRollingBack(null); }
+  };
+
+  const doGitHubSnapshot = async () => {
+    setSnapshotting(true); setSnapshotResult(null); setError(null);
+    try {
+      const res = await fetch('/api/admin/operator/github/snapshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: c.id, message: `Operator snapshot ${new Date().toISOString()}` }),
+      });
+      const data = await res.json();
+      if (!res.ok) setSnapshotResult(`❌ ${data.error || `HTTP ${res.status}`}`);
+      else setSnapshotResult(`✓ Pushed to ${data.repo_url}${data.had_changes ? '' : ' (no changes)'} @ ${(data.commit_hash || '').slice(0, 7)}`);
+    } catch (err) {
+      setSnapshotResult(`❌ ${err instanceof Error ? err.message : String(err)}`);
+    } finally { setSnapshotting(false); }
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <h4 style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+            Staging · <span style={{ color: '#4b5563', fontWeight: 500 }}>{stagedFiles.length} file(s) ready to push</span>
+          </h4>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={loadData} disabled={loading} style={{ padding: '4px 10px', background: '#fff', color: '#1f2937', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <RefreshCw className="w-3 h-3" /> Refresh
+            </button>
+            {stagedFiles.length > 0 && (
+              <button onClick={discardAll} style={{ padding: '4px 10px', background: '#fff', color: '#991b1b', border: '1px solid #fca5a5', borderRadius: 6, fontSize: 11, cursor: 'pointer' }}>
+                Discard all
+              </button>
+            )}
+          </div>
+        </div>
+
+        {error && (
+          <div style={{ padding: 10, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{error}</div>
+        )}
+
+        {loading && <div style={{ padding: 10, color: '#4b5563', fontSize: 12 }}><Loader2 className="w-4 h-4 animate-spin inline-block mr-2" /> Loading...</div>}
+
+        {!loading && stagedFiles.length === 0 && (
+          <div style={{ padding: 14, background: '#f9fafb', borderRadius: 6, fontSize: 12, color: '#4b5563' }}>
+            No staged files. Edit a file in the <strong>Files</strong> badge and click &quot;Save to staging&quot; to queue changes.
+          </div>
+        )}
+
+        {!loading && stagedFiles.length > 0 && (
+          <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden', background: '#fff', marginBottom: 10 }}>
+            {stagedFiles.map(f => (
+              <div key={f.path} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderBottom: '1px solid #f3f4f6', fontSize: 12 }}>
+                <span style={{ fontFamily: 'monospace', flex: 1, color: '#1f2937', wordBreak: 'break-all' }}>{f.path}</span>
+                <span style={{ fontSize: 11, color: '#6b7280' }}>{formatBytes(f.size)}</span>
+                <span style={{ fontSize: 11, color: '#6b7280' }}>{relTime(f.savedAt)}</span>
+                <button onClick={() => discardOne(f.path)} style={{ padding: 4, background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 4, cursor: 'pointer', color: '#9ca3af' }} title="Discard">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {stagedFiles.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="text" value={pushMessage} onChange={e => setPushMessage(e.target.value)}
+              placeholder="Push message (optional)"
+              style={{ flex: 1, minWidth: 200, padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, color: '#1f2937', background: '#fff' }}
+            />
+            <button onClick={doPush} disabled={pushing} style={{ padding: '8px 16px', background: pushing ? '#fdb89a' : '#FF6B35', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: pushing ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Upload className="w-4 h-4" />
+              {pushing ? 'Pushing...' : `Push ${stagedFiles.length} file(s) to client`}
+            </button>
+          </div>
+        )}
+
+        {pushResult && (
+          <div style={{ marginTop: 8, padding: '8px 12px', background: pushResult.startsWith('✓') ? '#f0fdf4' : '#fef2f2', color: pushResult.startsWith('✓') ? '#065f46' : '#991b1b', borderRadius: 6, fontSize: 12, border: `1px solid ${pushResult.startsWith('✓') ? '#86efac' : '#fca5a5'}` }}>
+            {pushResult}
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <h4 style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Github className="w-3.5 h-3.5" /> GitHub backup
+          </h4>
+          <button
+            onClick={doGitHubSnapshot}
+            disabled={snapshotting || !c.githubRepo || !c.githubPat.hasValue}
+            title={!c.githubRepo || !c.githubPat.hasValue ? 'Configure githubRepo + githubPat in Access badge first' : ''}
+            style={{ padding: '6px 12px', background: snapshotting ? '#fdb89a' : (!c.githubRepo || !c.githubPat.hasValue ? '#e5e7eb' : '#1f2937'), color: !c.githubRepo || !c.githubPat.hasValue ? '#9ca3af' : '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: (snapshotting || !c.githubRepo || !c.githubPat.hasValue) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            <Github className="w-3.5 h-3.5" />
+            {snapshotting ? 'Snapshotting...' : 'Push snapshot now'}
+          </button>
+        </div>
+        <div style={{ fontSize: 11, color: '#4b5563' }}>
+          {c.githubRepo ? (
+            <>Target: <code style={{ fontFamily: 'monospace', color: '#1f2937' }}>{c.githubRepo}</code> (branch: <code style={{ fontFamily: 'monospace', color: '#1f2937' }}>{c.githubBranch || 'main'}</code>){c.autoSnapshotAfterPush && ' · auto-snapshot after push: ON'}</>
+          ) : (
+            <>Configure <strong>githubRepo</strong> + <strong>githubPat</strong> in the Access badge to enable backups.</>
+          )}
+        </div>
+        {snapshotResult && (
+          <div style={{ marginTop: 8, padding: '8px 12px', background: snapshotResult.startsWith('✓') ? '#f0fdf4' : '#fef2f2', color: snapshotResult.startsWith('✓') ? '#065f46' : '#991b1b', borderRadius: 6, fontSize: 12, border: `1px solid ${snapshotResult.startsWith('✓') ? '#86efac' : '#fca5a5'}` }}>
+            {snapshotResult}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h4 style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <HistoryIcon className="w-3.5 h-3.5" /> Push history
+        </h4>
+        {history.length === 0 && (
+          <p style={{ fontSize: 12, color: '#6b7280', fontStyle: 'italic' }}>No pushes yet.</p>
+        )}
+        {history.length > 0 && (
+          <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden', background: '#fff', maxHeight: 340, overflowY: 'auto' }}>
+            {history.map((h, i) => {
+              const icon = h.type === 'rollback'
+                ? <Undo2 className="w-3.5 h-3.5" style={{ color: '#b45309' }} />
+                : h.deploy_ok
+                  ? <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#059669' }} />
+                  : <XCircle className="w-3.5 h-3.5" style={{ color: '#dc2626' }} />;
+              return (
+                <div key={i} style={{ padding: '8px 12px', borderBottom: '1px solid #f3f4f6', fontSize: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
+                    {icon}
+                    <span style={{ fontWeight: 700, color: '#0f172a', textTransform: 'capitalize' }}>{h.type}</span>
+                    <span style={{ color: '#4b5563' }}>{relTime(h.ts)}</span>
+                    {h.snap_id && <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#6b7280' }}>· snap {h.snap_id.slice(0, 12)}</span>}
+                    <span style={{ flex: 1 }} />
+                    {h.type === 'push' && h.snap_id && h.deploy_ok && (
+                      <button
+                        onClick={() => doRollback(h.snap_id!)}
+                        disabled={rollingBack === h.snap_id}
+                        style={{ padding: '2px 8px', background: 'transparent', color: '#b45309', border: '1px solid #fcd34d', borderRadius: 4, fontSize: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
+                      >
+                        <Undo2 className="w-3 h-3" /> {rollingBack === h.snap_id ? 'Rolling...' : 'Rollback to this'}
+                      </button>
+                    )}
+                  </div>
+                  {h.message && <div style={{ color: '#1f2937', marginBottom: 2 }}>{h.message}</div>}
+                  {h.files && h.files.length > 0 && (
+                    <div style={{ fontSize: 10, color: '#4b5563', fontFamily: 'monospace', marginTop: 2 }}>
+                      {h.files.slice(0, 4).join(', ')}{h.files.length > 4 ? ` · +${h.files.length - 4} more` : ''}
+                    </div>
+                  )}
+                  {h.note && <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>{h.note}</div>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Activity badge ─────────────────────────────────────────────────────────
+
+interface ActivityEventUI {
+  ts?: string; user?: string; role?: string; action?: string; detail?: string;
+  [k: string]: unknown;
+}
+
+function ActivityBadge({ client: c }: { client: ClientPublic }) {
+  const [events, setEvents] = useState<ActivityEventUI[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>('');
+
+  const load = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch(`/api/admin/operator/activity?client_id=${encodeURIComponent(c.id)}&limit=200`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setEvents(data.events || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally { setLoading(false); }
+  }, [c.id]);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const filtered = useMemo(() => {
+    const f = filter.trim().toLowerCase();
+    if (!f) return events;
+    return events.filter(e => {
+      const hay = `${e.action || ''} ${e.user || ''} ${e.role || ''} ${e.detail || ''}`.toLowerCase();
+      return hay.includes(f);
+    });
+  }, [events, filter]);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>Activity log</div>
+          <div style={{ fontSize: 11, color: '#4b5563' }}>Posted by the client every 5 min · last {events.length} events</div>
+        </div>
+        <input
+          type="text" value={filter} onChange={e => setFilter(e.target.value)}
+          placeholder="Filter by action, user..."
+          style={{ padding: '4px 10px', border: '1px solid #e5e7eb', borderRadius: 999, fontSize: 12, color: '#1f2937', background: '#fff', minWidth: 160 }}
+        />
+        <button onClick={load} disabled={loading} style={{ padding: '4px 10px', background: '#fff', color: '#1f2937', border: '1px solid #e5e7eb', borderRadius: 999, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+        </button>
+      </div>
+
+      {error && (
+        <div style={{ padding: 10, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>
+      )}
+
+      {loading && events.length === 0 && (
+        <div style={{ textAlign: 'center', padding: 20, color: '#4b5563' }}>
+          <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" /> Loading...
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && !error && (
+        <div style={{ padding: 14, background: '#f9fafb', borderRadius: 6, fontSize: 12, color: '#4b5563' }}>
+          {events.length === 0 ? 'No activity yet. Events appear once the client starts reporting.' : `No events match "${filter}".`}
+        </div>
+      )}
+
+      {filtered.length > 0 && (
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden', background: '#fff', maxHeight: 420, overflowY: 'auto' }}>
+          {filtered.map((e, i) => (
+            <div key={i} style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6', fontSize: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock className="w-3 h-3" style={{ color: '#9ca3af' }} />
+                <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#6b7280', minWidth: 90 }}>
+                  {e.ts ? new Date(e.ts as string).toLocaleTimeString() : '—'}
+                </span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{e.action || '(no action)'}</span>
+                {e.user && <span style={{ color: '#4b5563' }}>· {e.user as string}</span>}
+                {e.role && (
+                  <span style={{ fontSize: 10, padding: '1px 6px', background: '#eff6ff', color: '#1e40af', borderRadius: 3, fontWeight: 700 }}>{e.role as string}</span>
+                )}
+              </div>
+              {e.detail && <div style={{ fontSize: 11, color: '#1f2937', marginTop: 2, marginLeft: 26, wordBreak: 'break-word' }}>{e.detail as string}</div>}
+            </div>
+          ))}
         </div>
       )}
     </div>
