@@ -681,8 +681,12 @@ step_pm2() {
 install_crons() {
   local heartbeat activity backup existing
 
-  heartbeat="*/5 * * * * curl -fsS -X POST https://iamrunning.online/api/monitor/heartbeat -H 'Content-Type: application/json' -d '{\"instance_id\":\"$INSTANCE_ID\",\"domain\":\"$DOMAIN\",\"status\":\"ok\"}' >/dev/null 2>&1 # iam.client heartbeat"
-  activity="*/5 * * * * curl -fsS -X POST https://iamrunning.online/api/monitor/activity -H 'Content-Type: application/json' -d '{\"instance_id\":\"$INSTANCE_ID\",\"domain\":\"$DOMAIN\"}' >/dev/null 2>&1 # iam.client activity"
+  # Heartbeat / activity both use an external helper script — the cron line
+  # stays short (no inline JSON building, no quoting hell). Helpers live in
+  # the install tree so they have access to .env.local for OPERATOR_TOKEN
+  # and other identity fields.
+  heartbeat="*/5 * * * * $INSTALL_PATH/scripts/iam-heartbeat.sh >/dev/null 2>&1 # iam.client heartbeat"
+  activity="*/5 * * * * $INSTALL_PATH/scripts/iam-activity.sh >/dev/null 2>&1 # iam.client activity"
   backup="0 3 * * * $INSTALL_PATH/scripts/iam-backup.sh \"$INSTALL_PATH\" >/dev/null 2>&1 # iam.client backup"
 
   existing="$(crontab -l 2>/dev/null | sed '/# iam.client/d' || true)"
@@ -696,8 +700,122 @@ install_crons() {
   CRON_INSTALLED=true
 }
 
+# ── Heartbeat helper script generation ─────────────────────────────────────
+#
+# Writes scripts/iam-heartbeat.sh into the install tree. This runs on every
+# cron tick (*/5 * * * *) and:
+#   1) sources identity from $INSTALL_PATH/.env.local (OPERATOR_TOKEN,
+#      INSTANCE_ID, CLIENT_DOMAIN, OPERATOR_URL, NEXT_PUBLIC_CLIENT_NAME)
+#   2) reads local uptime from systemd and pm2 describe
+#   3) POSTs to https://iamrunning.online/api/monitor/heartbeat with
+#      Authorization: Bearer <OPERATOR_TOKEN> and a JSON body
+#   4) on first run, includes operator_token in body too (server uses it
+#      to register the client on first contact)
+#
+# The script is idempotent, safe to run manually for debugging, and
+# intentionally silent on success (cron discards stdout).
+
+write_heartbeat_script() {
+  mkdir -p "$INSTALL_PATH/scripts"
+  cat > "$INSTALL_PATH/scripts/iam-heartbeat.sh" <<'HEARTBEAT_EOF'
+#!/bin/bash
+# Sends heartbeat to iamrunning.online. Runs from cron every 5 minutes.
+# Also safe to run manually for debugging: bash scripts/iam-heartbeat.sh
+set -euo pipefail
+
+INSTALL_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="$INSTALL_PATH/.env.local"
+
+[ -f "$ENV_FILE" ] || { echo "heartbeat: no .env.local" >&2; exit 1; }
+
+# Read key=value lines, skipping comments/empty. Export them locally.
+while IFS='=' read -r key value; do
+  case "$key" in
+    ''|\#*) continue ;;
+  esac
+  # Strip surrounding quotes if any
+  value="${value%\"}"; value="${value#\"}"
+  export "$key=$value"
+done < "$ENV_FILE"
+
+[ -n "${OPERATOR_TOKEN:-}" ] || { echo "heartbeat: OPERATOR_TOKEN missing" >&2; exit 1; }
+[ -n "${INSTANCE_ID:-}" ] || { echo "heartbeat: INSTANCE_ID missing" >&2; exit 1; }
+[ -n "${CLIENT_DOMAIN:-}" ] || { echo "heartbeat: CLIENT_DOMAIN missing" >&2; exit 1; }
+
+# Strip scheme from CLIENT_DOMAIN for the body.domain field
+DOMAIN_BARE="${CLIENT_DOMAIN#https://}"; DOMAIN_BARE="${DOMAIN_BARE#http://}"; DOMAIN_BARE="${DOMAIN_BARE%/}"
+
+CLIENT_NAME="${NEXT_PUBLIC_CLIENT_NAME:-$DOMAIN_BARE}"
+OPERATOR_URL_VAL="${OPERATOR_URL:-https://$DOMAIN_BARE/api/operator}"
+
+# Current version from package.json — fallback to empty if unreadable
+VERSION=""
+if [ -f "$INSTALL_PATH/package.json" ]; then
+  VERSION="$(node -e "try { console.log(require('$INSTALL_PATH/package.json').version || '') } catch(_) { console.log('') }" 2>/dev/null || echo "")"
+fi
+
+# Uptime of PM2 process for this install, in seconds.
+# pm2 describe returns JSON; we parse pm2_env.axm_monitor or pm2_env.pm_uptime.
+UPTIME_SEC=0
+if command -v pm2 >/dev/null 2>&1 && [ -n "${IAM_PROCESS_NAME:-}" ]; then
+  UPTIME_SEC="$(pm2 describe "$IAM_PROCESS_NAME" 2>/dev/null | node -e "
+    let data = '';
+    process.stdin.on('data', c => data += c);
+    process.stdin.on('end', () => {
+      const m = data.match(/\"pm_uptime\"\s*:\s*(\d+)/);
+      if (!m) { console.log(0); return; }
+      const uptimeStart = parseInt(m[1], 10);
+      console.log(Math.max(0, Math.floor((Date.now() - uptimeStart) / 1000)));
+    });
+  " 2>/dev/null || echo "0")"
+fi
+
+# Status: degraded if http://127.0.0.1:$PORT returns non-2xx/3xx. Default ok.
+STATUS="ok"
+if [ -n "${PORT:-}" ]; then
+  HTTP_CODE="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/" 2>/dev/null || echo "000")"
+  case "$HTTP_CODE" in
+    2*|3*) STATUS="ok" ;;
+    *)     STATUS="degraded" ;;
+  esac
+fi
+
+# Build JSON body. We always include operator_token — on first heartbeat the
+# server uses it to create the record; on subsequent calls the server ignores
+# the body field (auth comes from the bearer header).
+BODY=$(cat <<BODY_EOF
+{"instance_id":"$INSTANCE_ID","domain":"$DOMAIN_BARE","client_name":"$CLIENT_NAME","operator_url":"$OPERATOR_URL_VAL","operator_token":"$OPERATOR_TOKEN","version":"$VERSION","uptime_sec":$UPTIME_SEC,"status":"$STATUS"}
+BODY_EOF
+)
+
+curl -fsS -m 15 \
+  -X POST "https://iamrunning.online/api/monitor/heartbeat" \
+  -H "Authorization: Bearer $OPERATOR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "$BODY" >/dev/null 2>&1 || exit 0
+
+exit 0
+HEARTBEAT_EOF
+  chmod 755 "$INSTALL_PATH/scripts/iam-heartbeat.sh"
+}
+
+# Activity helper — stub for now (Phase 2). Still written so the cron line
+# doesn't fail with "file not found". It silently exits 0.
+write_activity_script() {
+  mkdir -p "$INSTALL_PATH/scripts"
+  cat > "$INSTALL_PATH/scripts/iam-activity.sh" <<'ACTIVITY_EOF'
+#!/bin/bash
+# Activity push to iamrunning.online. Phase 2 — stub until /api/monitor/activity exists.
+# Safe to leave in cron; currently does nothing and exits 0.
+exit 0
+ACTIVITY_EOF
+  chmod 755 "$INSTALL_PATH/scripts/iam-activity.sh"
+}
+
 step_crons() {
   step "9" "Install crons (heartbeat + activity + backup)"
+  write_heartbeat_script
+  write_activity_script
   install_crons
   ok "Crons installed."
 }
