@@ -4,6 +4,7 @@ import { executeTool } from '@/lib/dev-agent/tool-executor';
 import { execSync, spawnSync, spawn } from 'child_process';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
+import { registerServerSideAccess } from '@/lib/mcp-server/server-access-tool';
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || '/var/www/i_am_running';
 
@@ -553,6 +554,10 @@ bash "$TMP" \\
       }
     }
   );
+
+  // ── TOOL 19: server_side_access ───────────────────────────────────────
+  // Mega-tool — full server-side access, action-based. See server-access-tool.ts.
+  registerServerSideAccess(server);
 
   return server;
 }
