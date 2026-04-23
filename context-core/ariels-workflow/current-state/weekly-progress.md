@@ -202,6 +202,55 @@ Commits: `70d9961` (yesterday's dangling snapshot), `9f49f17` (MCP track note), 
 
 **Commits this session:** `b7eff62`, `e16b173`, `47dcd4f`, `22ba9f5`, plus session-end snapshot.
 
+### 23.04 Thursday night — Operator Phase 2 E2E live test at test.lego-base.online (this session, Opus 4.7 web)
+
+**Context:** Continuation after morning evening. Phase 1+2 code complete and deployed, now open live E2E testing on a fresh install to verify everything works together.
+
+**Test install created:**
+- `test.lego-base.online` (DNS already pointing to `94.176.238.108`, same VPS as iamrunning)
+- Client id `a11879b3bcf8e768`, port 4742, pm2 `iam.iam-test-phase-2`, install `/var/www/iam.test`
+- Install id `be7138a2d9b8f1da`, operatorToken registered via first heartbeat
+- All 11 installer steps passed on second attempt (first hit old `iam.test.lego-base.online` nginx config leftover — cleaned manually)
+
+**7 bugs discovered during live testing, 6 fixed in-session:**
+
+1. **notify endpoint TypeScript error** — custom kwargs (`notificationType`, `title`, `message`, `data`) not in `ActivityEntry` type. Fix: pack into `detail: JSON.stringify(...)`. Commit `26309ac`.
+
+2. **Deploy endpoint pruned devDependencies** when client had `NODE_ENV=production` in `.env.local`. Client's first post-install push failed with "Module not found `@/lib/data`" and `@/` aliases broken. Fix: `npm install --include=dev --no-audit --no-fund` with `env: { NPM_CONFIG_PRODUCTION: 'false' }`. Commit `8cada4c`.
+
+3. **iamrunning DEPLOY_TIMEOUT_MS 180s too tight** — npm install + next build + pm2 restart + healthcheck can take longer on cold caches. Fix: raised to 420s (7 min) in both push and rollback routes.
+
+4. **Concurrent deploys** — iamrunning timed out, fired rollback while original deploy still running → double build → client crashed. Fix: added file-based mutex at `logs/.deploy.lock` in client deploy route (15 min stale detection, returns 423 Locked).
+
+5. **Deploy endpoint killed itself mid-`execSync` of `pm2 restart`** (endpoint runs inside the very pm2 process it restarts → SIGTERM before response returns). Fix: refactored to detached `spawn(sh -c 'sleep 2; pm2 restart X', { detached: true, stdio: 'ignore' }).unref()` AFTER returning 200 response. iamrunning side now polls `waitForHealthy()` externally to verify client recovered. Endpoint no longer healthchecks itself.
+
+6. **nginx `proxy_read_timeout` 60s default** cut deploy HTTPS connections at exactly 60s despite client still processing. Fix: baked `proxy_read_timeout 600s` + `proxy_send_timeout 600s` + `proxy_connect_timeout 60s` + `client_max_body_size 20m` into installer nginx template. Applied manually to current test client.
+
+7. **Heartbeat uptime always 0 in UI** — `pm2 describe` returns text table, regex for `pm_uptime` never matched. Fix: switched to `pm2 jlist` (always JSON) + Node.js filter by `process.env.IAM_PROCESS_NAME`.
+
+**Bonus 8th bug: `iam-activity.sh` syntax error at line 127** causing silent cron failure for hours. Root cause: unclosed single-quote in `grep -v '^` inside heredoc. Bash parsed the file at runtime and ate hundreds of lines as one multi-line string. Activity badge stayed empty despite events being logged. Fix: rewrote `write_activity_script` in installer to use Node.js one-liner for JSON validation (no bash quoting). Also removed duplicate function block from accumulated partial patches.
+
+**Plus 9th — `UPSTREAM_TIMEOUT_MS 20s` too tight** for snapshot fetches through same-host HTTPS loop. Fix: raised to 60s.
+
+**Phase 2 declared 75% passed.** Works: install, heartbeat, files navigation/read/write/staging, atomic push with snapshot + deploy + notify, deploy mutex, post-restart waitForHealthy, activity delivery, GitHub snapshot on dedicated backup repo.
+
+**Two defects remain open (next session):**
+- **Rollback from history UI** — self-HTTP-loop in `rollback/route.ts` (calls push endpoint via `fetch()`) with no timeout → UI gets empty body → JSON parse crash → no history entry → files never roll back. Needs refactor to inline push logic.
+- **Failure test at pm2 config level** — Ariel broke `ecosystem.config.js` expecting pm2 restart to fail. Instead pm2 used save-state from `~/.pm2/dump.pm2` and ignored broken config. Latent bug: cold-start would kill the process. Fix options: validate config pre-save in installer, or blacklist pm2 config from Files UI edits.
+
+**Session outcome note:** Ariel physically exhausted from 5h of manual bash copy-paste (whitelisted `run_command` MCP tool rejected most commands). Explicit demand for next session: ship mega MCP tool `server_side_access` with action-based API (bash_exec, files, pm2, git, nginx, systemd, cert). Prompt ready in `handoffs/HANDOFF_23_04_2026_NIGHT.md`.
+
+**Commits from this session:**
+- `26309ac` — notify TypeScript fix (pushed)
+- `8cada4c` — devDeps + mutex + heartbeat jlist (pushed)
+- Pending: deploy detached restart, activity script rewrite, nginx proxy timeouts, duplicate block removal (in source repo, not yet committed)
+
+**State at end:**
+- pm2 `iam.iam-test-phase-2`: online, healthy, uptime growing
+- pm2 `i-am-running`: online, rebuilt 3× this session, rebuilt with waitForHealthy on final
+- `test.lego-base.online`: 200 OK, README.md contains Ariel's "# попытка теста" marker (rollback UI failed to clean up)
+- `ecosystem.config.js` on test client is broken — do NOT cold-restart pm2 there without fixing first
+
 ---
 
 ## Stats for the week

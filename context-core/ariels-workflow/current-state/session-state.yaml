@@ -1,78 +1,104 @@
 ---
-last_session_ended: "2026-04-24T00:00:00Z"
-last_session_started: "2026-04-23T07:30:00Z"
+last_session_ended: "2026-04-23T14:00:00Z"
+last_session_started: "2026-04-23T08:30:00Z"
 last_model: "claude-opus-4-7"
-mode: "finalization-day — operator Phase 1 + MCP injection port"
-focus: "23.04 morning: BUG #2/#4 pushed to ArielGrook/iam-client-os (commit 2345e95). OPERATOR_SPEC.md §7 resolved all 4 assumptions (operator_token bearer, single-user staging, full snapshots, sandbox validation feasibility-gated). §3.6 added: sandbox validation audited at 1h50m — under 2h budget, ships Phase 2. MCP injection audit done: iamrunning has ZERO injection (18 bare tools), port v2 from iam-client-os = 5-7h work, not a launch-blocker (Ariel-QoL). next-actions.md fully rewritten for today's two tracks."
-previous_session: "2026-04-22 (Install Validation — full install via MCP succeeded, test.lego-base.online live, 4 bugs found)"
-previous_session_archived: "iam-clients-os/workspace/SESSION_REPORT_2026-04-22_INSTALL_VALIDATION.md (canonical record)"
+mode: "Phase 2 E2E live testing on test.lego-base.online"
+focus: "23.04 night: Ariel ran end-to-end test of operator Phase 2 on live test install at test.lego-base.online. 7 real bugs surfaced during testing, 6 fixed in-session (devDeps prune, detached pm2 restart, file mutex, nginx timeouts, activity script syntax error, heartbeat uptime parsing, upstream timeout). 2 defects remain open: rollback endpoint self-HTTP-loop bug, failure-test at pm2 config level. Phase 2 declared 75% passed — push/deploy/snapshot/activity/github backup all work; rollback from history UI broken. Ariel exhausted from bash copy-paste, next session must deliver server_side_access mega MCP tool."
+previous_session: "2026-04-23 morning (operator spec + bug #2/#4 fixes + Phase 1 complete)"
+previous_session_archived: "context-core/ariels-workflow/handoffs/HANDOFF_23_04_2026_EVENING.md"
 
 current_status:
   migration: "DONE (closed 22.04). lego-base decommissioned. iam-client-os runs from iamrunning.online infrastructure."
-  iam_client_os: "Production-ready. Test install live at https://test.lego-base.online (PM2 iam.iam-test, port 4742, SSL). 11-point checklist items 1-2 verified, 3-11 deferred."
-  iamrunner_ai: "Untouched this session. Roadmap 17 work continues in separate Cursor chats."
-  installer_bugs:
-    bug_2_curl_ipv4: "FIXED in both copies of iam-client.sh (source + installer). Patches applied, byte-identical (28033 bytes), bash syntax OK. iamrunning local commit b7eff62. Push to ArielGrook/I_AM_RUNNING_- BLOCKED by GitHub Push Protection (5 historical PATs in old commits — pre-existing, not from this session)."
-    bug_4_heredoc_ansi: "FIXED — replaced cat <<EOF with echo -e in step_register_and_summary. Same commit b7eff62."
-    bug_3_monitor_endpoints: "STILL OPEN. Will be closed by operator MVP (Phase 1 implementation, planned next session)."
-    bug_2_4_in_source_repo: "PENDING ARIEL — needs cd into iam-clients-os/source && git add+commit+push to ArielGrook/iam-client-os manually (run_command whitelist blocks cd and git -C)."
-  operator_spec: "DRAFT v1 written, agreed with Ariel in this session. Direct write + staging buffer + accordion+badges + per-client GitHub snapshot. Path: iam-clients-os/specs/OPERATOR_SPEC.md."
-  push_protection_block: "iamrunning.online local repo is now ~40 commits ahead of origin/main and cannot push. Three resolution options laid out (allow URLs / cleanup files / defer). Ariel chose defer. Fix lives on VPS — install route serves installer/iam-client.sh from disk, not git."
+  iam_client_os: "Phase 1+2 operator role code complete and deployed. Production-ready for operator push/deploy/snapshot/activity flow. Live test install at https://test.lego-base.online running pm2 iam.iam-test-phase-2, port 4742."
+  iamrunner_ai: "Untouched this session. Roadmap 17 continues separately."
+  operator_phase_2:
+    works:
+      - "Atomic push: snapshot → PUT → deploy → notify → history"
+      - "Detached pm2 restart (endpoint returns 200 first, then spawn detached restart)"
+      - "File-based deploy mutex at logs/.deploy.lock (423 Locked on concurrent)"
+      - "Post-deploy waitForHealthy poll from iamrunning (3s delay, 2s interval, 45s max)"
+      - "Build output tail (40 lines) surfaced on deploy failure"
+      - "Activity cron delivery to iamrunning /api/monitor/activity"
+      - "Files badge: navigate, read, edit, Save to staging"
+      - "GitHub snapshot to dedicated backup repo (iam-test-backup verified working)"
+      - "Deploy endpoint forces devDeps install even with NODE_ENV=production"
+      - "nginx proxy_read_timeout 600s baked into installer"
+    broken_known:
+      - "Rollback from history UI — self-HTTP-loop in /api/admin/operator/rollback/route.ts calls /api/admin/operator/push internal fetch with no timeout, ends without JSON body, UI crashes with 'Unexpected end of JSON input'. No history entry written. Files NOT actually rolled back."
+      - "pm2 config failure test scenario — pm2 uses save-state from ~/.pm2/dump.pm2, silently ignoring broken ecosystem.config.js. Latent bug: if cold-start from config happens, process dies."
+    not_tested:
+      - "Failure test with Next.js-compiled file (e.g. app/page.tsx with TS type error) — should trigger deploy fail + rollback + redeploy to healthy state"
 
 this_session_accomplishments:
-  block_1_bug_fixes:
-    - "BUG #2 fix (curl -fsS -4 ifconfig.me) applied via patch_file in iam-clients-os/source/scripts/iam-client.sh AND iam-clients-os/installer/iam-client.sh"
-    - "BUG #4 fix (echo -e replacing cat <<EOF for ANSI in install summary) applied in both copies"
-    - "Verified: wc -c shows 28033 bytes both, diff -q IDENTICAL, bash -n SYNTAX_OK"
-    - "Local commit on iamrunning.online: b7eff62"
-    - "Hit GitHub Push Protection on push attempt — 5 PATs in historical commits"
-
-  block_2_architecture_decisions:
-    - "Direct write architecture chosen for operator push (over git remote and hybrid). Rationale: simpler mental model matches existing Dev Console, single source of truth on iamrunning side for versioning."
-    - "Staging buffer on iamrunning side — files saved to data/operator/staging/{client_id}/ until 'Push to client' action. Atomic multi-PUT then deploy then auto-rollback on failure."
-    - "Heartbeat = upsert (combines registration + liveness in one endpoint). Activity stays separate."
-    - "Inline accordion expansion + badge grid replacing right-side panel + tabs in Client Projects UI."
-    - "Per-client GitHub snapshot — closes C9 from CURRENT_GOAL (client repo strategy gap)."
-
-  block_3_spec_written:
-    - "iam-clients-os/specs/ folder created (new)"
-    - "iam-clients-os/specs/OPERATOR_SPEC.md drafted (~360 lines): mission, architecture diagram, 3 endpoint blocks, staging walkthrough, visual spec, MVP cut, phasing, assumptions, implementation checklist"
-
-  block_4_tracks_added:
-    - "next-actions.md: 'Server-side MCP toolset expansion' track — typed MCP tools to replace generic run_command (git_repo_action, pm2_action, nginx_action, tail_log, iam_install_run, etc.). Sequenced: not before operator role spec done. First deliverable: MCP_SERVER_TOOLSET_V2_SPEC.md."
-    - "next-actions.md: 'No-fall application pattern' track — port lego-base swap+healthcheck pattern to iamrunning.online first, then bake into iam-client.sh step_build/step_pm2 for client installs. First deliverable: NO_FALL_APP_SPEC.md."
-
-  block_5_pending_user_actions:
-    - "Move context-core/ariels-workflow/iamrunning-ai/ → iamrunning-ai/ in project root (Ariel will run git mv manually — symmetry with iam-clients-os/)"
-    - "Push iam-clients-os/source/scripts/iam-client.sh fix to ArielGrook/iam-client-os (Ariel will cd+commit+push manually)"
-    - "Decide on GitHub Push Protection resolution path for iamrunning.online repo (currently deferred)"
+  bugs_fixed:
+    - "notify endpoint TypeScript error (custom kwargs not in ActivityEntry type) — packed into detail: JSON.stringify"
+    - "Deploy endpoint pruned devDependencies when NODE_ENV=production — added --include=dev + NPM_CONFIG_PRODUCTION=false"
+    - "iamrunning DEPLOY_TIMEOUT_MS 180s too tight for build+restart cycle — raised to 420s"
+    - "iamrunning UPSTREAM_TIMEOUT_MS 20s too tight for snapshot fetches through same-host HTTPS loop — raised to 60s"
+    - "Deploy endpoint killed itself mid-execSync of pm2 restart (running inside same pm2 process) — refactored to detached spawn with unref, returns 200 before restart fires"
+    - "No concurrency protection when iamrunning timed out and fired rollback while original deploy still running — added file-based mutex at logs/.deploy.lock, 15min stale detection"
+    - "iamrunning push endpoint had no way to verify client healthy after detached restart — added waitForHealthy() polling root URL with 3s delay + 2s interval + 45s max"
+    - "nginx proxy_read_timeout default 60s cut deploy connections at ~60s through same-host HTTPS — wrote 600s into installer nginx template"
+    - "Heartbeat uptime always 0 in UI — pm2 describe returns text not JSON, regex never matched. Switched to pm2 jlist + node JSON parse filtered by IAM_PROCESS_NAME"
+    - "iam-activity.sh syntax error at line 127 causing silent cron failure for hours — write_activity_script in installer had unclosed single-quote in grep pattern inside heredoc. Rewrote EVENTS_JSON builder to use node one-liner, no bash quoting"
+    - "Duplicate function block in iam-client.sh from accumulated partial patches — head -n 1094 truncation applied"
+  architecture_decisions_taken:
+    - "Operator deploy endpoint no longer performs its own healthcheck — caller (iamrunning push) must poll externally. This decouples build success from service recovery."
+    - "Mutex is file-based not memory-based — must survive pm2 restarts. Lock file at logs/.deploy.lock."
+    - "iamrunning.online is both development VPS AND hosts test.lego-base.online — single-server setup accepted for speed of testing, at cost of shared-fate risk."
+    - "nginx proxy_read_timeout 600s baked into installer — every new client install has this, not a post-install manual step."
+    - "Rollback endpoint HTTP-loop bug NOT fixed this session — deferred to next (with MCP tools available for easier refactor)."
 
 this_session_commits:
-  - "b7eff62 fix(installer): BUG #2 force IPv4 for server IP detection + BUG #4 echo -e instead of cat heredoc for ANSI in install summary"
-  - "e16b173 docs: add server-side MCP toolset track in next-actions before operator spec"
-  - "47dcd4f spec(operator): draft v1 — heartbeat+register unified, activity separate, client file API, staging buffer with snapshot rollback, inline accordion + badge grid visual, MVP+phase2+phase3 scope"
-  - "22ba9f5 spec(operator): add per-client GitHub snapshot endpoints + clients.json fields + UI badge updates; track(no-fall): add no-fall application pattern as port-from-lego-base track"
-  - "(this session-end snapshot pending)"
+  source_repo_committed_pushed:
+    - "26309ac — fix(operator notify): pack custom fields into detail JSON"
+    - "8cada4c — fix(operator): deploy endpoint installs devDeps, file-based mutex, build output tail, heartbeat uses pm2 jlist"
+  source_repo_uncommitted_pending_ariel:
+    - "app/api/operator/deploy/route.ts — detached pm2 restart refactor"
+    - "scripts/iam-client.sh — activity script rewrite + nginx proxy timeouts + duplicate function block removed"
+    - "installer/iam-client.sh — mirror of scripts/"
+  iamrunning_local_pending_commit:
+    - "app/api/admin/operator/push/route.ts — waitForHealthy + 60s upstream + 420s deploy + restart-scheduled detection"
+    - "app/api/admin/operator/rollback/route.ts — 60s upstream + 420s deploy"
+  skeleton_syncs_completed: 3
+  pat_leaks_to_rotate:
+    - "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 — skeleton clone read PAT"
+    - "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 — iam-test-backup PAT (visible in client encrypted storage)"
 
 next_focus:
-  primary_next_session_implementation_phase_1:
-    scope: "Operator MVP (Phase 1 from OPERATOR_SPEC §6): heartbeat upsert endpoint + client-side GET /api/operator/files (list + read) + admin proxy routes + accordion expansion in Client Projects + badges Server/Status/Access + status dot in list view + last_seen relative time"
-    estimate: "one session, ~3-4h"
-    why_now: "Closes BUG #3 (monitor endpoints missing) which is the only blocker for properly seeing instance health. Validates accordion+badge visual before investing in heavier Phase 2 components (Dev Console embed, staging buffer)."
-    sequence: "Best in Cursor (Sonnet) since most is API + UI wiring with the spec already laid out. Spec is detailed enough that Cursor should execute without re-explanation."
+  primary_next_session:
+    scope: "server_side_access mega MCP tool on iamrunning"
+    why: "Ariel was frustrated at 5h of manual bash copy-paste and explicitly demanded this as next session's mission. Whitelisted run_command is the bottleneck. With server_side_access, Claude executes server commands directly — unblocks everything downstream."
+    actions_in_scope:
+      - "bash_exec — arbitrary command with timeout, truncated output"
+      - "files — read/write/patch/delete/list/rename/copy/stat"
+      - "pm2 — list/logs/restart/start/delete/jlist"
+      - "git — status/log/diff/snapshot/add/commit/push/pull"
+      - "nginx — test/reload/list_sites/read_site/write_site"
+      - "systemd — status/restart/start/stop (optional)"
+      - "cert — list/renew/issue (optional)"
+    file_target: "app/api/mcp/lib/server-access-tool.ts (or similar — to be decided reading existing patterns)"
+    success_criteria:
+      - "Tool created, registered, deployed"
+      - "bash_exec verified working from fresh Claude chat after Ariel reconnects iamrunning connector"
+      - "5+ sub-actions live"
+    estimate_budget: "one session, no hours"
+    prompt_ready: "See HANDOFF_23_04_2026_NIGHT.md at end — first prompt for new chat is fully specified"
 
-  before_phase_1_optional_warm_up:
-    - "Ariel pushes BUG #2/#4 fix to ArielGrook/iam-client-os (manual cd+commit+push)"
-    - "Ariel runs git mv on iamrunning-ai/ folder hoist"
-    - "Walk through 11-point install checklist 3-11 on test.lego-base.online (TOTP first-run, MCP connect from Claude.ai, read_memory, push notif, deploy)"
+  after_server_access_tool_lands:
+    - "Fix rollback endpoint (inline push flow, no self-HTTP-loop) — using new server_side_access for refactor"
+    - "Properly execute failure test with app/page.tsx broken TS — verify rollback chain works end-to-end"
+    - "Rotate 2 leaked PATs"
+    - "Decide: GitHub Push Protection resolution for iamrunning.online repo (still deferred)"
 
-  after_phase_1:
-    - "Phase 2 — staging + push + Dev Console embed + history/rollback + GitHub snapshot endpoints"
-    - "Phase 3 — SSH terminal, token rotation, freeze/kill, billing, approval flow"
+  medium_term_after_phase_2_closed:
+    - "MCP Injection v3 for iamrunning server (spec + implementation)"
+    - "Backport MCP injection to iam-client-os side (currently has v2)"
+    - "Phase 3 operator: SSH terminal, token rotation, freeze/kill, billing, approval flow"
 
 mcp_injection_v3_track:
-  status: "Still scheduled, not started. Spec deliverable: specifications/MCP_INJECTION_V3_SPEC.md."
-  note: "Now competes for priority with Server-side MCP toolset expansion (this session) and No-fall app pattern (this session). Ariel decides ordering."
+  status: "Deferred. Currently blocked by Phase 2 completion + server_side_access tool landing."
+  deliverable_planned: "specifications/MCP_INJECTION_V3_SPEC.md"
 
 parallel_tracks:
   iamrunning_ai:
@@ -80,73 +106,69 @@ parallel_tracks:
   gtm:
     - "LinkedIn DMs, YouTube outreach, cold email — Ariel's parallel work"
   no_fall_app:
-    - "First implementation target: iamrunning.online itself (dogfood)"
-    - "Then bake into iam-client.sh step_build/step_pm2"
-  server_side_mcp_toolset:
-    - "Spec first, then implement. Sequenced after operator role spec is in place."
+    - "Not started yet. First implementation target: iamrunning.online itself."
 
 how_to_start_next_chat:
-  first_prompt_template: |
-    Подключись к MCP iamrunning. Прочитай (1) context-core/ariels-workflow/current-state/README.md, (2) current-state/session-state.yaml, (3) iam-clients-os/specs/OPERATOR_SPEC.md.
-
-    Мы на Phase 1 имплементации оператора. Spec написан 23.04, согласован с Ariel.
-
-    Phase 1 scope (из §6 спеки): heartbeat upsert endpoint + client-side files API (read-only) + admin proxy + accordion visual + badges Server/Status/Access + status dot. Цель — закрыть BUG #3 + проверить что accordion работает.
-
-    Правила: никаких A/B/C вариантов. Русский для обсуждения, английский для кода. git_snapshot перед каждым write_file. Одна подзадача на сообщение (начнём с heartbeat endpoint, потом UI accordion, потом badges).
-
-    Первое действие: прочитай 3 файла выше. Доложи план Phase 1 с разбивкой на под-сессии (внутри одной чат-сессии). Если есть ambiguity в спеке — спроси один вопрос. Иначе proceed.
+  first_prompt_location: "context-core/ariels-workflow/handoffs/HANDOFF_23_04_2026_NIGHT.md"
+  instructions_for_ariel: |
+    1. Open new Opus 4.7 chat with iamrunning connector attached.
+    2. Paste the prompt block from the final section of HANDOFF_23_04_2026_NIGHT.md (starts with '# Mega MCP Tool — server_side_access для iamrunning').
+    3. Prompt is fully structured per FIRST_PROMPT_SCHEMA.md — 10 fields filled. Just paste and the chat will ask clarifying questions or dive in.
 
 blockers_and_risks:
-  - "iamrunning.online local repo cannot push to origin (Push Protection). Fix this within next 1-2 sessions or local will dirft significantly. Three options laid out in this session, Ariel chose defer."
-  - "iam-clients-os/source/ commits to ArielGrook/iam-client-os are blocked from automation (run_command whitelist) — Ariel must do them manually until Server-side MCP toolset expansion lands"
-  - "Phase 1 operator MVP needs HMAC secret to be added to .env.local generation in iam-client.sh — extend step_secrets. Existing test install (test.lego-base.online) won't have this, will need a one-shot operator update or manual .env.local edit to be testable end-to-end."
-  - "next-actions.md is getting long and references migration as 'active focus' which is outdated since 22.04. Should be rotated to legacy + rewritten next session — explicit TODO."
-  - "PLATFORM_REFACTORING.md should be marked closed (or moved to legacy_future_dataset) since migration finished 22.04. Cosmetic, not urgent."
+  - "iamrunning.online local repo still cannot push to origin (Push Protection from prior session). Fix this within next 1-2 sessions or local will drift significantly."
+  - "iam-clients-os/source/ has 3 uncommitted files from this session. Ariel MUST commit + push + skeleton sync before closing chat — spelled out at end of HANDOFF_23_04_2026_NIGHT.md."
+  - "test.lego-base.online client has broken ecosystem.config.js (Ariel's failure test). pm2 running from save-state. Do NOT cold-restart pm2 without fixing this first."
+  - "Two leaked PATs in session chat history need rotation: skeleton clone PAT + iam-test-backup PAT."
 
 open_questions_for_ariel:
-  - "Operator spec §7 has 4 explicit assumptions — read on PC and confirm/override: (a) HMAC vs plain bearer for monitor endpoints, (b) staging buffer single-user only, (c) full file snapshots over diffs, (d) no pre-push validation step (rely on review + deploy fallback)."
-  - "next-actions.md rotation — do it next session start, or wait for end of week?"
-  - "GitHub Push Protection — eventual resolution path: Allow URLs (5 clicks, fast), cleanup files + amend (clean), or fully rewrite history (heavy)?"
+  - "After server_side_access tool ships — remove old whitelisted run_command or keep as fallback?"
+  - "Should server_side_access.bash_exec have ANY safety rails (no rm -rf / for instance) or is full trust OK given it's owner-only connector?"
+  - "PAT rotation approach — generate fresh via GitHub UI, update clients.json + skeleton install template?"
 
 file_paths_changed_this_session:
   created:
-    - "iam-clients-os/specs/ (folder)"
-    - "iam-clients-os/specs/OPERATOR_SPEC.md (~360 lines)"
+    - "context-core/ariels-workflow/handoffs/HANDOFF_23_04_2026_NIGHT.md"
   patched:
-    - "iam-clients-os/source/scripts/iam-client.sh (BUG #2 + #4)"
-    - "iam-clients-os/installer/iam-client.sh (BUG #2 + #4)"
-    - "context-core/ariels-workflow/current-state/next-actions.md (added 2 tracks: Server-side MCP toolset, No-fall app)"
+    - "iam-clients-os/source/scripts/iam-client.sh (activity script rewrite + nginx timeouts + duplicate block removed)"
+    - "iam-clients-os/installer/iam-client.sh (mirror)"
+    - "iam-clients-os/source/app/api/operator/notify/route.ts (TypeScript fix, committed 26309ac)"
+    - "iam-clients-os/source/app/api/operator/deploy/route.ts (devDeps + mutex + detached restart + build tail)"
+    - "app/api/admin/operator/push/route.ts (iamrunning — waitForHealthy + timeouts + restart-scheduled handling)"
+    - "app/api/admin/operator/rollback/route.ts (iamrunning — timeouts)"
 
 servers:
   iamrunning_online:
     ip: "94.176.238.108"
     path: "/var/www/i_am_running"
     pm2: "i-am-running"
-    status: "ACTIVE — all session work happened here"
-    note: "Local repo ~40 commits ahead of origin/main, push blocked by GitHub Push Protection (deferred)"
+    status: "ACTIVE — rebuilt 3x this session, currently on latest"
+    notes:
+      - "Local repo ~40+ commits ahead of origin/main, push blocked by GitHub Push Protection (deferred)"
+      - "Nginx config for iamrunning itself does NOT have proxy_read_timeout bump — only client configs get that from installer. Not an issue yet because iamrunning doesn't have 60+s endpoints. Something to watch."
   test_lego_base_online:
     ip: "94.176.238.108 (same VPS)"
     path: "/var/www/iam.test"
-    pm2: "iam.iam-test"
+    pm2: "iam.iam-test-phase-2"
     port: 4742
-    status: "ACTIVE — first IAM Client OS test install, SSL deployed, admin panel rendering"
-    instance_id: "d2c9660d08522f8c"
+    client_id: "a11879b3bcf8e768"
+    instance_id: "be7138a2d9b8f1da"
+    operator_token: "6ea0218e627aebd1705c92779cffaab5fe986cb5bcd6973c4477cac16686bd6c"
+    status: "ACTIVE — all Phase 2 E2E work happened here. pm2 online, HTTPS 200."
+    known_quirks:
+      - "ecosystem.config.js has broken first line from Ariel's failure test. pm2 running from save-state. Cold restart will fail — fix before reboot."
+      - "README.md has Ariel's '# попытка теста' marker — never rolled back because rollback UI failed mid-flow."
   lego_base:
     status: "DECOMMISSIONED — closed 22.04"
 
 github_status:
-  iamrunning_online_local_commits_unpushed:
-    - "Pre-existing ~36 commits + this session's b7eff62, e16b173, 47dcd4f, 22ba9f5 = ~40 unpushed"
-  push_protection_block:
-    blocked_repo: "ArielGrook/I_AM_RUNNING_-"
-    blocked_secrets: 5
-    secret_locations:
-      - "iam-clients-os/workspace/INSTALL_VALIDATION_2026-04-22.md (test PAT)"
-      - "context-core/ariels-workflow/handoffs/INSTALL_TEST_INCIDENT_18_04.md (multiple)"
-      - "context-core/ariels-workflow/memory/workers/super-admin/legacy/2026-04-18-20-session-state.yaml"
-      - "context-core/ariels-workflow/memory/workers/super-admin/next-actions.md"
-      - "iam-clients-os/workspace/SESSION_REPORT_2026-04-21_MIGRATION_DAY.md"
-  iam_client_os_source_pending:
-    note: "BUG #2/#4 fix applied in iam-clients-os/source/scripts/iam-client.sh but NOT committed/pushed to ArielGrook/iam-client-os yet — Ariel does manually"
+  iam_client_os_source_commits_pushed_today:
+    - "26309ac — notify TypeScript fix"
+    - "8cada4c — deploy devDeps + mutex + heartbeat jlist"
+  iam_client_os_source_pending_local_commit:
+    - "detached pm2 restart in deploy/route.ts"
+    - "activity script syntax + nginx proxy timeouts in iam-client.sh"
+  skeleton_syncs: "3 sync.sh runs this session, all successful"
+  iamrunning_online_local_unpushed: "~40+ commits, push protection still blocks"
+  iam_test_backup_repo: "ArielGrook/iam-test-backup — verified working as GitHub backup target, one commit landed successfully from live test"
 ---
