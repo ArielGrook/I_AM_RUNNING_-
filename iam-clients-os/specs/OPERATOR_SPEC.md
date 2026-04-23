@@ -53,10 +53,16 @@ Three sides communicate:
         instance_id + signed payload)
 ```
 
-Auth model is asymmetric:
+Auth model is asymmetric but **uses the same token in both directions**:
 
-- **Client → iamrunning** (heartbeat, activity): instance_id is the identifier; payload includes a HMAC computed over `(instance_id, ts, body)` with a per-instance shared secret given at install time. iamrunning rate-limits per instance_id.
-- **iamrunning → client** (operator endpoints): bearer `OPERATOR_TOKEN` (already generated at install — see `iam-client.sh` `step_secrets`). iamrunning stores the token encrypted in the clients table. Client validates bearer on every operator request.
+- **Client → iamrunning** (heartbeat, activity): `Authorization: Bearer <OPERATOR_TOKEN>` on every request. iamrunning looks up the client by matching `operator_token` in `clients.json`. The token also acts as the permission grant — "this client is authorized to report heartbeat and activity about itself". No separate monitor secret.
+- **iamrunning → client** (operator endpoints): same `OPERATOR_TOKEN`, bearer auth. Client validates against the token in its own `.env.local`.
+
+**Why not a separate MONITOR_SECRET:** an extra secret doubles rotation cost (you have to regenerate TWO secrets on both sides in lockstep) and adds storage surface. Using `OPERATOR_TOKEN` bidirectionally means one secret = one rotation procedure = simpler contract.
+
+**Trade-off accepted:** no replay protection (no HMAC-over-timestamp). If a heartbeat is intercepted with a valid bearer, it can be replayed to create a false "alive" signal for a dead instance. This is acceptable for beta — heartbeat carries no money/secrets, and replay only provides false positives, not false negatives (a dead instance stays detected via missing heartbeats over time). HMAC can be added as an additive future change without breaking compat (server accepts both formats, new clients opt in).
+
+iamrunning rate-limits per `operator_token` match (e.g. max 20 heartbeats/min per client).
 
 ---
 
@@ -68,6 +74,8 @@ Auth model is asymmetric:
 
 Combines registration and liveness in one upsert. First call creates the client record (or attaches to an existing one created via Web Installer). Subsequent calls update `last_seen` and `version`.
 
+**Auth:** `Authorization: Bearer <OPERATOR_TOKEN>`. The token must match an existing client record's `operator_token` field. On first call (record doesn't exist yet), the token becomes the record's operator_token — this is the registration step. Subsequent heartbeats must match the stored token.
+
 **Request:**
 ```json
 {
@@ -77,11 +85,11 @@ Combines registration and liveness in one upsert. First call creates the client 
   "operator_url": "https://...",          // only used on first call
   "version": "1.0.0",
   "uptime_sec": 8472,
-  "status": "ok",                         // ok | degraded | starting
-  "ts": "2026-04-23T12:34:56Z",
-  "sig": "hmac-sha256(secret, ts+body)"
+  "status": "ok"                          // ok | degraded | starting
 }
 ```
+
+No signature, no timestamp — bearer auth is sufficient per §2.
 
 **Response:** `{ ok: true, client_id, server_ts }`
 
@@ -100,10 +108,11 @@ Activity delta from client — separate from heartbeat because (a) heartbeat mus
     { "ts": "...", "type": "pr_created", "actor": "worker_id", "data": {...} },
     { "ts": "...", "type": "deploy_completed", "data": { "version": "1.0.1" } },
     { "ts": "...", "type": "task_assigned", ... }
-  ],
-  "sig": "..."
+  ]
 }
 ```
+
+Auth: same bearer token pattern as heartbeat (`Authorization: Bearer <OPERATOR_TOKEN>`).
 
 Event types reuse the existing 45 types from Activity Log v2 in IAM Client OS. iamrunning does not interpret bodies — just stores them under the client record.
 
@@ -201,7 +210,39 @@ data/
 
 For first iteration this is JSON files on disk. Migrate to SQLite or Supabase when needed (see Backlog).
 
-### 3.5 Permissions / security
+### 3.6 Sandbox validation (Phase 2, feasibility-gated)
+
+**Idea (Ariel, 23.04 morning):** before pushing staged changes to client production, iamrunning prepares the update on a **client-side sandbox** instead. The sandbox is a copy of the client's install in a separate path/port (e.g. `/var/www/iam.client-sandbox/` + port+1). Push the staging bundle to sandbox first → trigger its build → if build passes, roll forward to production. If build fails, only sandbox is affected, production untouched.
+
+**Why this is attractive:** catches broken builds before they reach production deploy step. Complements no-fall app pattern (no-fall keeps old build alive on failure *during* deploy; sandbox validates *before* deploy is even triggered).
+
+**Why it's feasibility-gated:** implementing this means the installer must set up a parallel sandbox install — second clone, second port, second nginx config, second pm2 process, second `.env.local` (or synced from prod). Sandbox must stay in sync with prod between pushes (or be reset each time). That's non-trivial infrastructure.
+
+**Decision rule:** if full implementation (installer extension + operator sandbox-push endpoint + admin-side orchestration) takes ≤ 2 hours of focused work, ship it in Phase 2. Otherwise defer to Phase 3+ and rely on the two existing safety nets (diff review + no-fall deploy fallback).
+
+**Audit required before committing:** §3.6-audit below.
+
+**Feasibility audit (performed 23.04 morning, by Claude):**
+
+Components needed for a minimum working sandbox:
+
+| Component | Complexity | Notes |
+|---|---|---|
+| Installer extension — create `/var/www/iam.client-sandbox/` parallel to prod at install time | ~30min | Just another `clone + npm install + pm2 start` block in `iam-client.sh`. Same ecosystem.config.js pattern, different process name (`iam.{name}-sandbox`), port = prod_port + 1. Can run on same nginx (subdomain like `sandbox.{domain}`) or skip nginx (localhost-only). |
+| Sandbox sync script — reset sandbox to match prod before each push-to-sandbox | ~15min | `rm -rf sandbox/src && cp -r prod/src sandbox/src`, or preferably git-based: sandbox is cloned from prod on each cycle. Simpler to just `rsync --delete` prod → sandbox. |
+| New client-side endpoint `/api/operator/push-to-sandbox` | ~20min | Receives files, writes to sandbox path, triggers `npm run build` in sandbox, returns `{ok, build_log}`. |
+| New client-side endpoint `/api/operator/promote-sandbox` | ~15min | Copies sandbox/.next → prod/.next (atomic directory swap), restarts prod pm2. Only called after sandbox build succeeds. |
+| Admin-side orchestration — change push flow to: push-to-sandbox → check build → promote | ~30min | Modify `POST /api/admin/operator/push` to run both steps. Error path: sandbox build failed → abort, show build_log to Ariel, don't touch prod. |
+
+**Estimated total: 1h50m.** Under the 2h budget. **Verdict: ship in Phase 2.** Added to Phase 2 checklist §8 accordingly.
+
+**Caveats surfaced by audit:**
+- Sandbox path needs extra disk (2× install size — ~500MB-1GB per client). Accept.
+- Sandbox must never heartbeat/activity as its own instance (would look like a ghost client in admin UI). Installer must skip sandbox from heartbeat crons. Add `IAM_SANDBOX=true` env → installer skips cron setup for sandbox.
+- If prod has runtime state (open DB connections, in-memory caches, WebSocket clients), sandbox won't have it — build-time validation is OK because we only care "does it compile", but runtime validation would need more thought. Out of scope: we're validating build, not runtime.
+- Node modules — sandbox needs its own `node_modules/`. Either install separately on each sync (slow, 20-30s) or share via symlink (risky if package.json diverges). Recommend: rsync both `src` and `package*.json`, then `npm install` on sandbox if lockfile changed. Detection: compare lockfile checksums.
+
+### 3.7 Permissions / security
 
 `OPERATOR_TOKEN` gives iamrunning **full read+write** access to the client install dir. This is intentional but serious:
 
@@ -332,20 +373,23 @@ Phasing rationale: MVP closes the most acute pain (BUG #3 — instances are invi
 
 ---
 
-## 7. Open questions / assumptions
+## 7. Resolved decisions (23.04 morning, session 2)
 
-**Assumptions taken (pending Ariel confirmation if wrong):**
+All four assumptions from Draft v1 were reviewed with Ariel on 23.04 morning and resolved:
 
-1. **HMAC for monitor endpoints** — using a per-instance shared secret generated at install (added to `.env.local` as `MONITOR_SECRET`, mirrored in iamrunning clients table). Alternative is plain bearer token; HMAC adds replay protection but more code. Default = HMAC.
-2. **Staging buffer per-client, single-user** — only Ariel will operate for now. Multi-user staging (separate buffer per admin user) deferred until there's a second operator.
-3. **Snapshots full files, not diffs** — text files are tiny relative to disk; full snapshots simplify rollback (no patch reconstruction). Revisit if a client repo has large binary blobs (unlikely for IAM Client OS).
-4. **No pre-push validation step** — was considered, dropped. Validation (typecheck, lint, build dry-run) on iamrunning side would need a full clone of client environment to be meaningful. Rely on (a) Ariel reviewing the diff manually before push, and (b) deploy fallback (no-downtime if build fails) as the safety nets.
+1. **Auth: single `OPERATOR_TOKEN`, no separate MONITOR_SECRET.** Bearer used bidirectionally (client → iamrunning for heartbeat/activity, iamrunning → client for operator endpoints). One rotation procedure, no extra secret to lose. Replay protection deferred — can be added additively (HMAC layer) if a real threat materializes. See §2.
 
-**Unanswered, want Ariel's call before Phase 2 starts:**
+2. **Staging buffer single-user.** Only Ariel operates. Second browser tab on same client = read-only + banner. Multi-operator deferred until a second operator actually exists.
 
-- File tree limits — should iamrunning ever load a full tree of `node_modules/`? Default = excluded from listing (configurable per-client allowlist of paths to walk).
-- Diff format — line-level (LCS, like existing Diff View in IAM Client OS) or word-level? Default = line-level, reuse existing.
-- Push history retention — keep all snapshots forever? Default = last 50 per client, then trim oldest. Configurable per client.
+3. **Full file snapshots, not diffs.** "Кто вообще снэпшотит дифы" — Ariel. Text files tiny, disk cheap, rollback is simple file copy. Revisit if a client ever commits a large binary blob.
+
+4. **No pre-push validation (Phase 1/2).** BUT — see §3.6 for a **Phase 2 feasibility-gated sandbox validation idea**. If the sandbox idea can be built in ~1-2 hours of work, we do it; otherwise skipped. Safety nets remain: diff review + no-fall app pattern (deploy fallback keeps old build serving on build failure).
+
+## 7b. Still open (decide before Phase 2)
+
+- **File tree limits** — should iamrunning ever load a full tree of `node_modules/`? Default = excluded from listing (configurable per-client allowlist of paths to walk).
+- **Diff format** — line-level (LCS, like existing Diff View in IAM Client OS) or word-level? Default = line-level, reuse existing.
+- **Push history retention** — keep all snapshots forever? Default = last 50 per client, then trim oldest. Configurable per client.
 
 ---
 
@@ -355,36 +399,37 @@ Tracked here so the dev session has a definitive checklist. Status updated inlin
 
 ### MVP (Phase 1)
 
-- [ ] Create `data/clients.json` schema additions: `last_seen`, `version`, `uptime`, `status`, `monitor_secret`
-- [ ] Migrate existing `clients.json` records (add fields with null defaults)
-- [ ] `POST /api/monitor/heartbeat` route (`app/api/monitor/heartbeat/route.ts`) — upsert, HMAC verify, rate limit
-- [ ] Client-side: extend `iam-client.sh` `step_secrets` to generate `MONITOR_SECRET` + write to `.env.local`
-- [ ] Client-side: extend cron in `step_crons` to include HMAC sig in heartbeat POST
-- [ ] Client-side: `GET /api/operator/files` route (listing, path whitelist, `.env*` block)
+- [ ] Extend `lib/admin/iam-clients-os/store.ts` schema: add `instanceId`, `operatorToken` (encrypted), `operatorUrl`, `lastSeen`, `lastSeenUptime`, `heartbeatStatus`, `version`
+- [ ] Add `operatorToken` to `ENCRYPTED_FIELDS` + `REVEALABLE_FIELDS`
+- [ ] Add `upsertByHeartbeat()` helper in store.ts (find-by-instance-id-or-domain, create if missing, update liveness fields)
+- [ ] Add `findClientByOperatorToken()` helper (linear scan — OK for <100 clients, revisit later)
+- [ ] `POST /api/monitor/heartbeat` route (`app/api/monitor/heartbeat/route.ts`) — bearer auth, upsert, rate-limit per token (in-memory counter, 20/min)
+- [ ] Client-side: extend `iam-client.sh` `step_crons` — add `Authorization: Bearer $OPERATOR_TOKEN` header to heartbeat curl, and include `version`, `uptime_sec`, `status`, `operator_url` in body
+- [ ] Client-side: `GET /api/operator/files` route (listing, path whitelist, `.env*` block, audit log append)
 - [ ] Client-side: `GET /api/operator/files/read` route
-- [ ] iamrunning admin proxy routes for files list + read (`app/api/admin/operator/files/...`)
-- [ ] Visual: refactor `Client Projects` tab — remove right side panel, implement inline accordion
+- [ ] iamrunning admin proxy routes for files list + read (`app/api/admin/operator/files/...`) — admin auth + lookup operator_token + fetch with bearer
+- [ ] Visual: refactor `Client Projects` tab — remove right-side panel, implement inline accordion
 - [ ] Visual: badge component (reusable) + grid layout inside expanded card
 - [ ] Visual: badges Server / Status / Access wired to existing data + new heartbeat fields
 - [ ] Visual: status dot column in list + last_seen relative time
 - [ ] Visual: top bar `+ Add client` redesign (centered, larger)
-- [ ] Smoke test: install fresh client → heartbeat appears in list within 5 min → expanded card shows live status
+- [ ] Smoke test: existing test.lego-base.online install → wait for next cron heartbeat (max 5min) → verify record in clients.json has lastSeen + operatorToken populated
 
 ### Phase 2 (separate session)
 
-- [ ] Activity ingestion endpoint
-- [ ] Client-side activity cron payload format alignment
-- [ ] PUT /api/operator/files + path whitelist
-- [ ] Notify endpoint
-- [ ] Deploy endpoint with rollback fallback
-- [ ] Staging save/list/diff/discard endpoints
+- [ ] Activity ingestion endpoint + client-side activity cron payload format
+- [ ] `PUT /api/operator/files` + path whitelist
+- [ ] `POST /api/operator/notify` endpoint + client-side badge surface
+- [ ] `POST /api/operator/deploy` endpoint + no-fall app pattern integration (see no-fall spec)
+- [ ] Staging save/list/diff/discard endpoints on iamrunning side
 - [ ] Push endpoint with snapshot + atomic multi-PUT + deploy + auto-rollback
 - [ ] History endpoint + rollback endpoint
 - [ ] GitHub snapshot endpoint (admin proxy + client-side `git push origin main`)
-- [ ] `iam-client.sh` `--client-github-repo` flag — accepts client's own GitHub repo, rewrites `git remote origin` after fresh git init in `step_clone`
+- [ ] `iam-client.sh` `--client-github-repo` flag
 - [ ] clients.json schema: `github_repo`, `github_pat` (encrypted), `github_branch`, `auto_snapshot_after_push`
+- [ ] **Sandbox validation (§3.6)** — installer extension (parallel sandbox clone) + `/api/operator/push-to-sandbox` + `/api/operator/promote-sandbox` + admin-side orchestration. Budget: 2h. If it blows budget, revert to deploy-fallback-only flow.
 - [ ] Visual: Dev Console embed in Files badge
-- [ ] Visual: Updates badge (staging summary + push + history + Snapshot-to-GitHub button + Auto-snapshot toggle)
+- [ ] Visual: Updates badge (staging + push + history + Snapshot-to-GitHub + Auto-snapshot toggle + sandbox build status)
 - [ ] Visual: Access badge editable fields for GitHub repo / PAT / branch
 - [ ] Visual: Activity badge with polling
 - [ ] Visual: Logs badge with tail

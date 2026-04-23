@@ -1,9 +1,9 @@
 ---
-last_session_ended: "2026-04-23T22:00:00Z"
-last_session_started: "2026-04-23T18:30:00Z"
+last_session_ended: "2026-04-24T00:00:00Z"
+last_session_started: "2026-04-23T07:30:00Z"
 last_model: "claude-opus-4-7"
-mode: "operator-spec + bug fixes"
-focus: "Closed BUG #2 and #4 in iam-client.sh (in both copies, byte-identical). Wrote OPERATOR_SPEC.md v1 in iam-clients-os/specs/ (~360 lines) — direct write architecture with staging buffer on iamrunning side, inline accordion + badge grid visual, MVP/Phase2/Phase3 phasing, per-client GitHub snapshot endpoints. Added two scheduled tracks to next-actions: 'Server-side MCP toolset expansion' and 'No-fall application pattern'."
+mode: "finalization-day — operator Phase 1 + MCP injection port"
+focus: "23.04 morning: BUG #2/#4 pushed to ArielGrook/iam-client-os (commit 2345e95). OPERATOR_SPEC.md §7 resolved all 4 assumptions (operator_token bearer, single-user staging, full snapshots, sandbox validation feasibility-gated). §3.6 added: sandbox validation audited at 1h50m — under 2h budget, ships Phase 2. MCP injection audit done: iamrunning has ZERO injection (18 bare tools), port v2 from iam-client-os = 5-7h work, not a launch-blocker (Ariel-QoL). next-actions.md fully rewritten for today's two tracks."
 previous_session: "2026-04-22 (Install Validation — full install via MCP succeeded, test.lego-base.online live, 4 bugs found)"
 previous_session_archived: "iam-clients-os/workspace/SESSION_REPORT_2026-04-22_INSTALL_VALIDATION.md (canonical record)"
 
