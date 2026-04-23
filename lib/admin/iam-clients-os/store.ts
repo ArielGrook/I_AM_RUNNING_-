@@ -65,6 +65,15 @@ export interface ClientRecord {
   lastSeen?: string;             // ISO timestamp of most recent heartbeat
   lastSeenUptime?: number;       // uptime_sec from most recent heartbeat
   heartbeatStatus?: 'ok' | 'degraded' | 'starting';
+  // ── GitHub snapshot config (Phase 2) ─────────────────────────────────────
+  // Client's own GitHub repo used for operator-driven backups. When set,
+  // the admin can push a full snapshot of the client install state up to
+  // this repo (via client's /api/operator/github/snapshot). PAT is encrypted
+  // at rest and decrypted only for the duration of the snapshot request.
+  githubRepo?: string;           // "owner/repo"
+  githubPat?: string;            // encrypted at rest
+  githubBranch?: string;         // default 'main'
+  autoSnapshotAfterPush?: boolean;
   contacts: ClientContact[];
   payments: ClientPayment[];
   notes: string;
@@ -101,6 +110,10 @@ export interface ClientPublic {
   lastSeen?: string;
   lastSeenUptime?: number;
   heartbeatStatus?: 'ok' | 'degraded' | 'starting';
+  githubRepo?: string;
+  githubPat: MaskedSecret;
+  githubBranch?: string;
+  autoSnapshotAfterPush?: boolean;
   contacts: ClientContact[];
   payments: ClientPayment[];
   notes: string;
@@ -112,8 +125,8 @@ export interface ClientPublic {
 export const VALID_STATUSES: ClientStatus[] = ['lead', 'paid', 'installing', 'installed', 'failed', 'churned'];
 export const VALID_KINDS: ClientKind[] = ['real', 'test'];
 export const VALID_CONTACT_TYPES: ContactType[] = ['email', 'telegram', 'whatsapp', 'phone', 'other'];
-export const REVEALABLE_FIELDS = new Set(['sshPassword', 'sshKey', 'superAdminToken', 'operatorToken']);
-export const ENCRYPTED_FIELDS: (keyof ClientRecord)[] = ['sshPassword', 'sshKey', 'superAdminToken', 'operatorToken'];
+export const REVEALABLE_FIELDS = new Set(['sshPassword', 'sshKey', 'superAdminToken', 'operatorToken', 'githubPat']);
+export const ENCRYPTED_FIELDS: (keyof ClientRecord)[] = ['sshPassword', 'sshKey', 'superAdminToken', 'operatorToken', 'githubPat'];
 
 // ── File I/O ───────────────────────────────────────────────────────────────
 
@@ -170,6 +183,10 @@ export function publicView(c: ClientRecord): ClientPublic {
     lastSeen: c.lastSeen,
     lastSeenUptime: c.lastSeenUptime,
     heartbeatStatus: c.heartbeatStatus,
+    githubRepo: c.githubRepo,
+    githubPat: masked.githubPat,
+    githubBranch: c.githubBranch,
+    autoSnapshotAfterPush: c.autoSnapshotAfterPush,
     contacts: c.contacts || [], payments: c.payments || [],
     notes: c.notes || '', tags: c.tags || [],
     createdAt: c.createdAt, updatedAt: c.updatedAt,
@@ -224,6 +241,9 @@ export function sanitizePayload(input: unknown): Partial<ClientRecord> {
   if (typeof i.operatorToken === 'string') {
     out.operatorToken = i.operatorToken ? encryptString(i.operatorToken) : '';
   }
+  if (typeof i.githubPat === 'string') {
+    out.githubPat = i.githubPat ? encryptString(i.githubPat) : '';
+  }
 
   // Operator plain-text fields (not encrypted — these are identifiers / metrics)
   if (typeof i.instanceId === 'string') out.instanceId = i.instanceId.trim();
@@ -235,6 +255,9 @@ export function sanitizePayload(input: unknown): Partial<ClientRecord> {
   if (i.heartbeatStatus === 'ok' || i.heartbeatStatus === 'degraded' || i.heartbeatStatus === 'starting') {
     out.heartbeatStatus = i.heartbeatStatus;
   }
+  if (typeof i.githubRepo === 'string') out.githubRepo = i.githubRepo.trim();
+  if (typeof i.githubBranch === 'string') out.githubBranch = i.githubBranch.trim();
+  if (typeof i.autoSnapshotAfterPush === 'boolean') out.autoSnapshotAfterPush = i.autoSnapshotAfterPush;
 
   if (Array.isArray(i.contacts)) {
     out.contacts = (i.contacts as unknown[])

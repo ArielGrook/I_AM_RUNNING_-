@@ -799,14 +799,277 @@ HEARTBEAT_EOF
   chmod 755 "$INSTALL_PATH/scripts/iam-heartbeat.sh"
 }
 
-# Activity helper — stub for now (Phase 2). Still written so the cron line
-# doesn't fail with "file not found". It silently exits 0.
+# Activity helper — reads recent activity events from logs/activity.jsonl
+# and POSTs them to iamrunning /api/monitor/activity with Bearer auth.
+# Uses a cursor file to avoid duplicate uploads.
 write_activity_script() {
   mkdir -p "$INSTALL_PATH/scripts"
   cat > "$INSTALL_PATH/scripts/iam-activity.sh" <<'ACTIVITY_EOF'
 #!/bin/bash
-# Activity push to iamrunning.online. Phase 2 — stub until /api/monitor/activity exists.
-# Safe to leave in cron; currently does nothing and exits 0.
+# Activity push to iamrunning.online /api/monitor/activity.
+# Runs from cron every 5 minutes, safe to run manually for debugging.
+set -euo pipefail
+
+INSTALL_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="$INSTALL_PATH/.env.local"
+LOG_FILE="$INSTALL_PATH/logs/activity.jsonl"
+CURSOR_FILE="$INSTALL_PATH/logs/.activity-cursor"
+
+[ -f "$ENV_FILE" ] || exit 0
+[ -f "$LOG_FILE" ] || exit 0
+
+# Read env vars we need
+while IFS='=' read -r key value; do
+  case "$key" in ''|\#*) continue ;; esac
+  value="${value%\"}"; value="${value#\"}"
+  export "$key=$value"
+done < "$ENV_FILE"
+
+[ -n "${OPERATOR_TOKEN:-}" ] || exit 0
+[ -n "${INSTANCE_ID:-}" ] || exit 0
+[ -n "${CLIENT_DOMAIN:-}" ] || exit 0
+
+DOMAIN_BARE="${CLIENT_DOMAIN#https://}"; DOMAIN_BARE="${DOMAIN_BARE#http://}"; DOMAIN_BARE="${DOMAIN_BARE%/}"
+
+# Previous cursor (byte offset into activity.jsonl). If file was truncated,
+# cursor > size means we reset to end.
+LAST_OFFSET=0
+if [ -f "$CURSOR_FILE" ]; then
+  LAST_OFFSET="$(cat "$CURSOR_FILE" 2>/dev/null || echo 0)"
+  [[ "$LAST_OFFSET" =~ ^[0-9]+$ ]] || LAST_OFFSET=0
+fi
+
+CURRENT_SIZE="$(wc -c < "$LOG_FILE" 2>/dev/null || echo 0)"
+if [ "$LAST_OFFSET" -gt "$CURRENT_SIZE" ]; then
+  # Log was rotated/truncated — start from beginning
+  LAST_OFFSET=0
+fi
+
+# Bytes to read
+if [ "$LAST_OFFSET" -ge "$CURRENT_SIZE" ]; then
+  # Nothing new
+  exit 0
+fi
+
+# Read new bytes, cap at 200KB to protect from giant backlogs
+NEW_BYTES=$((CURRENT_SIZE - LAST_OFFSET))
+if [ "$NEW_BYTES" -gt 204800 ]; then
+  NEW_BYTES=204800
+fi
+
+# tail with byte offset using dd
+NEW_CONTENT="$(dd if="$LOG_FILE" bs=1 skip="$LAST_OFFSET" count="$NEW_BYTES" 2>/dev/null || echo "")"
+[ -n "$NEW_CONTENT" ] || exit 0
+
+# Build events array — each line of activity.jsonl is one event.
+# Drop last partial line (in case we caught a mid-write).
+EVENTS_JSON="$(echo "$NEW_CONTENT" | sed '$ {/^[^{]/d}' | grep -v '^
+
+step_crons() {
+  step "9" "Install crons (heartbeat + activity + backup)"
+  write_heartbeat_script
+  write_activity_script
+  install_crons
+  ok "Crons installed."
+}
+
+step_project_symlink() {
+  step "10" "Project symlink (optional)"
+  if [ -z "$PROJECT_PATH" ] && [ -t 0 ]; then
+    read -r -p "Client project path (empty to skip): " PROJECT_PATH
+  fi
+
+  if [ -n "$PROJECT_PATH" ] && [ -d "$PROJECT_PATH" ]; then
+    ln -sfn "$PROJECT_PATH" "$INSTALL_PATH/project"
+    ok "Project linked: $PROJECT_PATH -> $INSTALL_PATH/project"
+  else
+    warn "Project link skipped."
+  fi
+}
+
+step_register_and_summary() {
+  step "11" "Register instance + summary"
+
+  local payload
+  payload=$(cat <<EOF
+{"instance_id":"$INSTANCE_ID","domain":"$DOMAIN","client_name":"$CLIENT_NAME","operator_url":"$OPERATOR_URL","installed_at":"$STARTED_AT"}
+EOF
+)
+
+  if ! curl -fsS -m 15 -X POST "https://iamrunning.online/api/monitor/register" -H "Content-Type: application/json" -d "$payload" >/dev/null 2>&1; then
+    warn "Register endpoint unavailable, skipping."
+  else
+    ok "Instance registered with iamrunning.online monitoring."
+  fi
+
+  echo -e "
+${GREEN}═══════════════════════════════════════════════════════${NC}
+${GREEN}  IAM Client OS installed successfully${NC}
+${GREEN}═══════════════════════════════════════════════════════${NC}
+
+  URL:           https://$DOMAIN
+  Admin panel:   https://$DOMAIN$ADMIN_PATH
+  MCP endpoint:  https://$DOMAIN/api/mcp
+  Operator API:  https://$DOMAIN/api/operator
+  Port:          $PORT
+  PM2 process:   $IAM_PROCESS_NAME
+  Install path:  $INSTALL_PATH
+  Instance ID:   $INSTANCE_ID
+
+  ${CYAN}Next steps:${NC}
+  1) Open admin panel → complete TOTP first-run setup
+  2) Generate MCP token (Admin → Settings → MCP Token)
+  3) Connect Claude — Settings → Integrations → Add MCP Server
+  4) First message: \"Read memory. I'm setting up a fresh workspace...\"
+
+  ${CYAN}Ops cheatsheet:${NC}
+  - Check PM2:      pm2 list
+  - App logs:       pm2 logs $IAM_PROCESS_NAME
+  - Nginx test:     sudo nginx -t
+  - Update later:   bash scripts/iam-client.sh --update --path=$INSTALL_PATH
+"
+}
+
+run_update_mode() {
+  step "1" "Update mode (--update)"
+
+  [ -d "$INSTALL_PATH/.git" ] || fail "Install path is not a git repository: $INSTALL_PATH"
+  [ -f "$INSTALL_PATH/.env.local" ] || fail ".env.local not found in $INSTALL_PATH"
+
+  setup_log_file
+
+  local old_version new_version old_major new_major old_commit has_stash
+  old_commit="$(cd "$INSTALL_PATH" && git rev-parse HEAD)"
+  old_version="$(cd "$INSTALL_PATH" && node -e "console.log(require('./package.json').version)")"
+  has_stash=false
+
+  if [ -x "$INSTALL_PATH/scripts/iam-backup.sh" ]; then
+    "$INSTALL_PATH/scripts/iam-backup.sh" "$INSTALL_PATH"
+  else
+    warn "Backup script missing, skipping backup."
+  fi
+
+  if [ -n "$(cd "$INSTALL_PATH" && git status --porcelain)" ]; then
+    (cd "$INSTALL_PATH" && git stash push -u -m "iam-client-auto-update-$(date +%s)")
+    has_stash=true
+  fi
+
+  (
+    cd "$INSTALL_PATH"
+    git pull --ff-only
+    npm install
+    rm -rf .next
+    npm run build
+  )
+
+  IAM_PROCESS_NAME="$(cd "$INSTALL_PATH" && awk -F= '/^IAM_PROCESS_NAME=/{print $2}' .env.local | tr -d '\r')"
+  IAM_PROCESS_NAME="${IAM_PROCESS_NAME:-iam-os}"
+  PORT="$(cd "$INSTALL_PATH" && awk -F= '/^PORT=/{print $2}' .env.local | tr -d '\r')"
+  PORT="${PORT:-4741}"
+
+  pm2 restart "$IAM_PROCESS_NAME" || fail "PM2 restart failed for $IAM_PROCESS_NAME"
+
+  sleep 5
+  local code
+  code="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$PORT/" || true)"
+  if [ "$code" != "200" ] && [ "$code" != "307" ] && [ "$code" != "308" ]; then
+    warn "Healthcheck failed after update. Rolling back."
+    (
+      cd "$INSTALL_PATH"
+      git reset --hard "$old_commit"
+      rm -rf .next
+      npm run build
+    )
+    pm2 restart "$IAM_PROCESS_NAME" || true
+    fail "Update failed and rollback was applied."
+  fi
+
+  new_version="$(cd "$INSTALL_PATH" && node -e "console.log(require('./package.json').version)")"
+  old_major="${old_version%%.*}"
+  new_major="${new_version%%.*}"
+  if [ "$new_major" != "$old_major" ]; then
+    warn "Major version changed ($old_version -> $new_version). Check data migrations."
+  fi
+
+  if [ "$has_stash" = true ]; then
+    (cd "$INSTALL_PATH" && git stash pop >/dev/null 2>&1) || true
+  fi
+
+  log_json "success" "Update completed: $old_version -> $new_version"
+  INSTALL_COMPLETE=true
+  ok "Update successful: $old_version -> $new_version"
+}
+
+main_install() {
+  if [ -z "$DOMAIN" ]; then
+    ask_interactive
+  fi
+
+  [ -n "$DOMAIN" ] || fail "--domain is required."
+  [ -n "$CLIENT_NAME" ] || fail "--name is required."
+  [ -n "$GITHUB_REPO" ] || fail "--github is required."
+  validate_domain "$DOMAIN" || fail "Invalid domain: $DOMAIN"
+  validate_repo "$GITHUB_REPO" || fail "Invalid github repo: $GITHUB_REPO"
+  is_port_busy "$PORT" && fail "Port $PORT is already in use."
+
+  if [ "$DRY_RUN" = true ]; then
+    print_dry_run_plan
+    INSTALL_COMPLETE=true
+    return 0
+  fi
+
+  step_resource_check
+  step_dependencies
+  step_security
+  step_clone
+  step_secrets
+  step_nginx
+  step_build
+  step_pm2
+  step_crons
+  step_project_symlink
+  step_register_and_summary
+
+  INSTALL_COMPLETE=true
+  log_json "success" "Install completed for $DOMAIN"
+  ok "Install complete."
+}
+
+main() {
+  parse_args "$@"
+  if [ "$UPDATE_MODE" = true ]; then
+    run_update_mode
+  else
+    main_install
+  fi
+}
+
+main "$@"
+ | awk '
+  BEGIN { printf "[" }
+  NR>1 { printf "," }
+  { printf "%s", $0 }
+  END   { printf "]" }
+')"
+
+# Sanity: EVENTS_JSON should at least be "[]" or "[...]"
+[ -z "$EVENTS_JSON" ] && EVENTS_JSON="[]"
+[ "$EVENTS_JSON" = "[]" ] && exit 0
+
+BODY="{\"instance_id\":\"$INSTANCE_ID\",\"domain\":\"$DOMAIN_BARE\",\"events\":$EVENTS_JSON}"
+
+# POST
+HTTP_CODE="$(curl -s -o /dev/null -w "%{http_code}" -m 15 \
+  -X POST "https://iamrunning.online/api/monitor/activity" \
+  -H "Authorization: Bearer $OPERATOR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "$BODY" || echo 000)"
+
+# Only advance cursor on success
+case "$HTTP_CODE" in
+  2*) echo "$((LAST_OFFSET + NEW_BYTES))" > "$CURSOR_FILE" ;;
+esac
+
 exit 0
 ACTIVITY_EOF
   chmod 755 "$INSTALL_PATH/scripts/iam-activity.sh"
