@@ -1,24 +1,35 @@
 'use client';
 
 /**
- * Client Projects tab — CRUD for IAM Client OS installations.
+ * Client Projects tab — IAM Client OS installation management.
  *
- * Architecture:
- *  - Table (left) with filters (status, kind, search by name/domain)
- *  - Detail drawer (right, slides in) for view + edit
- *  - "+ New" button → empty drawer in create mode
- *  - Sensitive fields (sshPassword, sshKey, superAdminToken) shown masked;
- *    explicit "Reveal" button decrypts via /api/admin/iam-clients-os/clients/[id]?reveal=field
+ * UI architecture (v2, operator-integrated, 23.04.2026):
+ *  - Stacked cards, one per client. Collapsed row shows status dot, name,
+ *    domain, version, last seen, kind tag.
+ *  - Click a card → expands inline (accordion). Other cards stay in list.
+ *  - Expanded card has a badge grid. Each badge represents a category:
+ *      Server | Status | Access | Files | Billing | Notes | Danger
+ *    Tap a badge → expands inline within the card, details/actions below.
+ *  - Only one card open at a time; only one badge open at a time inside.
+ *  - Top bar: centered "+ Add client" pill, filter chips, search.
+ *
+ * Superseded the earlier table + right-side drawer layout. See spec at
+ * iam-clients-os/specs/OPERATOR_SPEC.md §5.
  */
 
-import { useEffect, useState, useMemo } from 'react';
-import { Loader2, Plus, X, Search, Eye, EyeOff, Copy, Trash2, Save, Edit3, AlertCircle } from 'lucide-react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import {
+  Loader2, Plus, X, Search, Eye, EyeOff, Copy, Trash2, Save, AlertCircle,
+  Server as ServerIcon, Activity, Lock, FolderTree, DollarSign, StickyNote,
+  AlertTriangle, RefreshCw, Circle, ChevronDown, Edit3,
+} from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 type ClientStatus = 'lead' | 'paid' | 'installing' | 'installed' | 'failed' | 'churned';
 type ClientKind = 'real' | 'test';
 type ContactType = 'email' | 'telegram' | 'whatsapp' | 'phone' | 'other';
+type HeartbeatStatus = 'ok' | 'degraded' | 'starting';
 
 interface ClientContact { type: ContactType; value: string }
 interface ClientPayment { amount: number; currency: string; date: string; note?: string }
@@ -41,6 +52,12 @@ interface ClientPublic {
   sshPassword: MaskedSecret;
   sshKey: MaskedSecret;
   superAdminToken: MaskedSecret;
+  instanceId?: string;
+  operatorToken: MaskedSecret;
+  operatorUrl?: string;
+  lastSeen?: string;
+  lastSeenUptime?: number;
+  heartbeatStatus?: HeartbeatStatus;
   contacts: ClientContact[];
   payments: ClientPayment[];
   notes: string;
@@ -49,31 +66,7 @@ interface ClientPublic {
   updatedAt: string;
 }
 
-// Form state used for both create and edit. Sensitive fields are blank
-// strings unless the user actively types something — empty string in PATCH
-// means "clear this field", undefined means "leave alone". We always send
-// what's in state, so we send '' to clear or the new value to set.
-interface FormState {
-  name: string;
-  domain: string;
-  kind: ClientKind;
-  status: ClientStatus;
-  mode: 'team' | 'solo';
-  port: string;
-  installPath: string;
-  productVersion: string;
-  installDate: string;
-  serverIp: string;
-  sshUser: string;
-  sshPort: string;
-  sshPassword: string;          // empty means "no change" in edit mode (we send only if changed)
-  sshKey: string;
-  superAdminToken: string;
-  contacts: ClientContact[];
-  payments: ClientPayment[];
-  notes: string;
-  tags: string;                 // comma-separated input
-}
+type BadgeKey = 'server' | 'status' | 'access' | 'files' | 'notes' | 'billing' | 'danger';
 
 const STATUS_LABELS: Record<ClientStatus, string> = {
   lead: 'Lead', paid: 'Paid', installing: 'Installing',
@@ -91,6 +84,51 @@ const STATUS_COLORS: Record<ClientStatus, { bg: string; fg: string; border: stri
 
 const ALL_STATUSES: ClientStatus[] = ['lead', 'paid', 'installing', 'installed', 'failed', 'churned'];
 const ALL_KINDS: ClientKind[] = ['real', 'test'];
+
+// ── Health dot — derived from lastSeen + heartbeatStatus ───────────────────
+
+type HealthLevel = 'never' | 'stale' | 'warning' | 'ok' | 'degraded';
+
+function computeHealth(c: ClientPublic): HealthLevel {
+  if (!c.lastSeen) return 'never';
+  const ageSec = (Date.now() - new Date(c.lastSeen).getTime()) / 1000;
+  if (ageSec > 3600) return 'stale';
+  if (ageSec > 600) return 'warning';
+  if (c.heartbeatStatus === 'degraded') return 'degraded';
+  return 'ok';
+}
+
+const HEALTH_COLORS: Record<HealthLevel, { color: string; label: string }> = {
+  never:    { color: '#9ca3af', label: 'Never seen' },
+  stale:    { color: '#ef4444', label: 'Stale (>1h)' },
+  warning:  { color: '#f59e0b', label: 'Warning (>10m)' },
+  ok:       { color: '#10b981', label: 'Online' },
+  degraded: { color: '#f59e0b', label: 'Degraded' },
+};
+
+// ── Form state for edit/create ─────────────────────────────────────────────
+
+interface FormState {
+  name: string;
+  domain: string;
+  kind: ClientKind;
+  status: ClientStatus;
+  mode: 'team' | 'solo';
+  port: string;
+  installPath: string;
+  productVersion: string;
+  installDate: string;
+  serverIp: string;
+  sshUser: string;
+  sshPort: string;
+  sshPassword: string;
+  sshKey: string;
+  superAdminToken: string;
+  contacts: ClientContact[];
+  payments: ClientPayment[];
+  notes: string;
+  tags: string;
+}
 
 function emptyForm(): FormState {
   return {
@@ -110,14 +148,13 @@ function clientToForm(c: ClientPublic): FormState {
     productVersion: c.productVersion || '', installDate: c.installDate || '',
     serverIp: c.serverIp || '', sshUser: c.sshUser || '',
     sshPort: c.sshPort ? String(c.sshPort) : '22',
-    sshPassword: '',  // never prefill — user must Reveal first then explicitly edit
-    sshKey: '', superAdminToken: '',
+    sshPassword: '', sshKey: '', superAdminToken: '',
     contacts: c.contacts || [], payments: c.payments || [],
     notes: c.notes || '', tags: (c.tags || []).join(', '),
   };
 }
 
-// ── Component ──────────────────────────────────────────────────────────────
+// ── Main component ─────────────────────────────────────────────────────────
 
 export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
   const [clients, setClients] = useState<ClientPublic[]>([]);
@@ -129,35 +166,50 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
   const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
   const [kindFilter, setKindFilter] = useState<ClientKind | 'all'>('all');
 
-  // Drawer state
-  const [drawerMode, setDrawerMode] = useState<'closed' | 'view' | 'edit' | 'create'>('closed');
-  const [drawerClient, setDrawerClient] = useState<ClientPublic | null>(null);
+  // Accordion state — only one card expanded at a time. Create mode uses
+  // a special key `__create__`.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedBadge, setExpandedBadge] = useState<BadgeKey | null>(null);
+
+  // Edit state — which client is in edit mode (only one at a time)
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
-  const [drawerError, setDrawerError] = useState<string | null>(null);
+  const [cardError, setCardError] = useState<string | null>(null);
 
-  // Reveal state for sensitive fields in view mode
-  const [revealed, setRevealed] = useState<Record<string, string>>({});
+  // Reveal cache for sensitive fields per-client per-field
+  const [revealed, setRevealed] = useState<Record<string, Record<string, string>>>({});
   const [revealLoading, setRevealLoading] = useState<string | null>(null);
 
   // Delete confirmation
   const [confirmDelete, setConfirmDelete] = useState<ClientPublic | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // ── Data load ──
-  const load = async () => {
-    setLoading(true); setError(null);
+  // Periodic refresh while at least one card is expanded (brings in fresh
+  // lastSeen / heartbeatStatus). 30s seems right — heartbeat is every 5min.
+  useEffect(() => {
+    if (!expandedId) return;
+    const id = setInterval(() => { load({ silent: true }); }, 30_000);
+    return () => clearInterval(id);
+     
+  }, [expandedId]);
+
+  const load = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/admin/iam-clients-os/clients');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setClients(data.clients || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally { setLoading(false); }
-  };
+      if (!opts?.silent) setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      if (!opts?.silent) setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   // ── Filtered list ──
   const filtered = useMemo(() => {
@@ -173,61 +225,85 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
     });
   }, [clients, search, statusFilter, kindFilter]);
 
-  // ── Drawer actions ──
+  // ── Expand / collapse ──
+
+  const toggleExpand = (id: string) => {
+    if (expandedId === id) {
+      // collapse
+      setExpandedId(null);
+      setExpandedBadge(null);
+      setEditingId(null);
+      setCardError(null);
+    } else {
+      const c = clients.find(x => x.id === id);
+      if (c) {
+        setExpandedId(id);
+        setExpandedBadge('server'); // sensible default
+        setEditingId(null);
+        setForm(clientToForm(c));
+        setCardError(null);
+      }
+    }
+  };
 
   const openCreate = () => {
-    setDrawerClient(null);
+    setExpandedId('__create__');
+    setExpandedBadge(null);
+    setEditingId('__create__');
     setForm(emptyForm());
-    setRevealed({});
-    setDrawerError(null);
-    setDrawerMode('create');
+    setCardError(null);
   };
 
-  const openView = (c: ClientPublic) => {
-    setDrawerClient(c);
+  const startEdit = (c: ClientPublic) => {
+    setEditingId(c.id);
     setForm(clientToForm(c));
-    setRevealed({});
-    setDrawerError(null);
-    setDrawerMode('view');
+    setCardError(null);
   };
 
-  const openEdit = (c: ClientPublic) => {
-    setDrawerClient(c);
-    setForm(clientToForm(c));
-    setRevealed({});
-    setDrawerError(null);
-    setDrawerMode('edit');
+  const cancelEdit = () => {
+    if (editingId === '__create__') {
+      setExpandedId(null);
+      setExpandedBadge(null);
+    }
+    setEditingId(null);
+    setCardError(null);
   };
 
-  const closeDrawer = () => {
-    setDrawerMode('closed');
-    setDrawerClient(null);
-    setRevealed({});
-  };
+  // ── Reveal sensitive field ──
 
-  const reveal = async (field: 'sshPassword' | 'sshKey' | 'superAdminToken') => {
-    if (!drawerClient) return;
-    if (revealed[field] !== undefined) {
-      // Toggle hide
-      setRevealed(prev => { const n = { ...prev }; delete n[field]; return n; });
+  const reveal = async (clientId: string, field: string) => {
+    const cached = revealed[clientId]?.[field];
+    if (cached !== undefined) {
+      setRevealed(prev => {
+        const next = { ...prev };
+        const clientFields = { ...(next[clientId] || {}) };
+        delete clientFields[field];
+        if (Object.keys(clientFields).length === 0) delete next[clientId];
+        else next[clientId] = clientFields;
+        return next;
+      });
       return;
     }
-    setRevealLoading(field);
+    const key = `${clientId}/${field}`;
+    setRevealLoading(key);
     try {
-      const res = await fetch(`/api/admin/iam-clients-os/clients/${drawerClient.id}?reveal=${field}`);
+      const res = await fetch(`/api/admin/iam-clients-os/clients/${clientId}?reveal=${field}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      setRevealed(prev => ({ ...prev, [field]: data.plaintext || '' }));
+      setRevealed(prev => ({
+        ...prev,
+        [clientId]: { ...(prev[clientId] || {}), [field]: data.plaintext || '' },
+      }));
     } catch (err) {
-      setDrawerError(err instanceof Error ? err.message : String(err));
+      setCardError(err instanceof Error ? err.message : String(err));
     } finally {
       setRevealLoading(null);
     }
   };
 
+  // ── Save (create + edit) ──
+
   const buildPayload = (isCreate: boolean) => {
-    // For edit: only include encrypted fields if user actively typed something.
-    // For create: always include (they default to '').
     const payload: Record<string, unknown> = {
       name: form.name.trim(),
       domain: form.domain.trim().toLowerCase(),
@@ -246,7 +322,6 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
       notes: form.notes,
     };
-    // Sensitive fields: only send if create OR user typed something
     if (isCreate || form.sshPassword) payload.sshPassword = form.sshPassword;
     if (isCreate || form.sshKey) payload.sshKey = form.sshKey;
     if (isCreate || form.superAdminToken) payload.superAdminToken = form.superAdminToken;
@@ -255,35 +330,34 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
 
   const save = async () => {
     if (!form.name.trim() || !form.domain.trim()) {
-      setDrawerError('Name and domain are required');
+      setCardError('Name and domain are required');
       return;
     }
-    setSaving(true); setDrawerError(null);
+    setSaving(true); setCardError(null);
     try {
-      const isCreate = drawerMode === 'create';
+      const isCreate = editingId === '__create__';
       const url = isCreate
         ? '/api/admin/iam-clients-os/clients'
-        : `/api/admin/iam-clients-os/clients/${drawerClient!.id}`;
+        : `/api/admin/iam-clients-os/clients/${editingId}`;
       const method = isCreate ? 'POST' : 'PATCH';
-      const payload = buildPayload(isCreate);
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(buildPayload(isCreate)),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      await load();
-      // Switch to view mode for the new/updated client
       const newClient = data.client as ClientPublic;
-      setDrawerClient(newClient);
-      setForm(clientToForm(newClient));
-      setRevealed({});
-      setDrawerMode('view');
+      await load();
+      setEditingId(null);
+      setExpandedId(newClient.id);
+      setExpandedBadge('server');
     } catch (err) {
-      setDrawerError(err instanceof Error ? err.message : String(err));
+      setCardError(err instanceof Error ? err.message : String(err));
     } finally { setSaving(false); }
   };
+
+  // ── Delete ──
 
   const doDelete = async () => {
     if (!confirmDelete) return;
@@ -292,70 +366,77 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
       const res = await fetch(`/api/admin/iam-clients-os/clients/${confirmDelete.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      if (expandedId === confirmDelete.id) {
+        setExpandedId(null); setExpandedBadge(null); setEditingId(null);
+      }
       setConfirmDelete(null);
-      if (drawerClient?.id === confirmDelete.id) closeDrawer();
       await load();
     } catch (err) {
-      setDrawerError(err instanceof Error ? err.message : String(err));
+      setCardError(err instanceof Error ? err.message : String(err));
     } finally { setDeleting(false); }
   };
 
-  // ── UI primitives ──
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 6,
-    fontSize: 13, outline: 'none', boxSizing: 'border-box', background: '#fff',
-  };
-  const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: 11, fontWeight: 700, color: '#6b7280',
-    textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4,
-  };
-
-  const isEditable = drawerMode === 'edit' || drawerMode === 'create';
-
   // ── Render ──
   return (
-    <div style={{ position: 'relative' }}>
+    <div>
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-        <div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111', margin: 0 }}>
-            Client Projects {!loading && <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>· {filtered.length}{filtered.length !== clients.length ? ` of ${clients.length}` : ''}</span>}
-          </h2>
-          <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0 0' }}>
-            CRUD for IAM Client OS installations. Stored in <code style={{ fontFamily: 'monospace', background: '#f3f4f6', padding: '1px 5px', borderRadius: 3 }}>iam-clients-os/data/clients.json</code> (git-ignored).
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={load} disabled={loading} style={{ padding: '8px 14px', background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, cursor: 'pointer' }}>↻ Refresh</button>
-          <button onClick={openCreate} style={{ padding: '8px 14px', background: '#FF6B35', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Plus className="w-4 h-4" /> New Client
-          </button>
-        </div>
+      <div style={{ textAlign: 'center', marginBottom: 18 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: '0 0 4px 0' }}>
+          Client Projects
+          {!loading && (
+            <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500, marginLeft: 8 }}>
+              · {filtered.length}{filtered.length !== clients.length ? ` of ${clients.length}` : ''}
+            </span>
+          )}
+        </h2>
+        <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 14px 0' }}>
+          IAM Client OS installations. Click a card to expand. Heartbeat via <code style={{ fontFamily: 'monospace', background: '#f3f4f6', padding: '1px 5px', borderRadius: 3 }}>/api/monitor/heartbeat</code>.
+        </p>
+        <button
+          onClick={openCreate}
+          style={{
+            padding: '10px 22px',
+            background: '#FF6B35', color: '#fff', border: 'none',
+            borderRadius: 999, fontSize: 14, fontWeight: 700, cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            boxShadow: '0 2px 8px rgba(255,107,53,0.25)',
+            transition: 'all 0.15s',
+          }}
+          onMouseOver={e => { e.currentTarget.style.background = '#ff7a4b'; }}
+          onMouseOut={e => { e.currentTarget.style.background = '#FF6B35'; }}
+        >
+          <Plus className="w-4 h-4" /> Add Client
+        </button>
       </div>
 
       {/* ── Filters ── */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 400 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 360 }}>
           <Search className="w-4 h-4" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
           <input
             type="text" placeholder="Search name, domain, IP, tags..."
             value={search} onChange={e => setSearch(e.target.value)}
-            style={{ ...inputStyle, paddingLeft: 32 }}
+            style={{ width: '100%', padding: '8px 10px 8px 32px', border: '1px solid #e5e7eb', borderRadius: 999, fontSize: 13, outline: 'none', background: '#fff' }}
           />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as ClientStatus | 'all')} style={{ ...inputStyle, width: 'auto', minWidth: 120 }}>
-          <option value="all">All statuses</option>
-          {ALL_STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-        </select>
-        <select value={kindFilter} onChange={e => setKindFilter(e.target.value as ClientKind | 'all')} style={{ ...inputStyle, width: 'auto', minWidth: 100 }}>
-          <option value="all">All kinds</option>
-          <option value="real">Real</option>
-          <option value="test">Test</option>
-        </select>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <FilterChip label="All" active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} />
+          {ALL_STATUSES.map(s => (
+            <FilterChip key={s} label={STATUS_LABELS[s]} active={statusFilter === s} onClick={() => setStatusFilter(s)} color={STATUS_COLORS[s].fg} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <FilterChip label="All kinds" active={kindFilter === 'all'} onClick={() => setKindFilter('all')} />
+          {ALL_KINDS.map(k => (
+            <FilterChip key={k} label={k} active={kindFilter === k} onClick={() => setKindFilter(k)} />
+          ))}
+        </div>
+        <button onClick={() => load()} disabled={loading} style={{ padding: '6px 10px', background: 'transparent', color: '#6b7280', border: '1px solid #e5e7eb', borderRadius: 999, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+        </button>
       </div>
 
-      {/* ── List ── */}
+      {/* ── States ── */}
       {loading && (
         <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
           <Loader2 className="w-5 h-5 animate-spin inline-block mr-2" /> Loading clients...
@@ -365,16 +446,16 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
       {error && !loading && (
         <div style={{ padding: 16, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, color: '#dc2626', fontSize: 14 }}>
           ❌ {error}
-          <button onClick={load} style={{ marginLeft: 10, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Retry</button>
+          <button onClick={() => load()} style={{ marginLeft: 10, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Retry</button>
         </div>
       )}
 
-      {!loading && !error && filtered.length === 0 && (
+      {!loading && !error && filtered.length === 0 && expandedId !== '__create__' && (
         <div style={{ textAlign: 'center', padding: 40, background: '#fff', borderRadius: 10, border: '1px dashed #e5e7eb', color: '#6b7280' }}>
           {clients.length === 0 ? (
             <>
               <p style={{ fontSize: 14, marginBottom: 6 }}>No clients yet.</p>
-              <p style={{ fontSize: 12 }}>Click <strong>+ New Client</strong> to add your first installation.</p>
+              <p style={{ fontSize: 12 }}>Click <strong>Add Client</strong> above to add your first installation.</p>
             </>
           ) : (
             <p style={{ fontSize: 13 }}>No clients match the current filters.</p>
@@ -382,360 +463,49 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
         </div>
       )}
 
+      {/* ── Create card (appears at top when +Add is pressed) ── */}
+      {expandedId === '__create__' && (
+        <CreateCard
+          isMobile={isMobile}
+          form={form}
+          setForm={setForm}
+          saving={saving}
+          onSave={save}
+          onCancel={cancelEdit}
+          cardError={cardError}
+        />
+      )}
+
+      {/* ── Client cards (accordion) ── */}
       {!loading && !error && filtered.length > 0 && (
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-              <tr>
-                <th style={thStyle(isMobile)}>Client</th>
-                {!isMobile && <th style={thStyle(isMobile)}>Domain</th>}
-                <th style={thStyle(isMobile)}>Status</th>
-                {!isMobile && <th style={thStyle(isMobile)}>Mode</th>}
-                {!isMobile && <th style={thStyle(isMobile)}>Updated</th>}
-                <th style={{ ...thStyle(isMobile), width: 1 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }} onClick={() => openView(c)}>
-                  <td style={tdStyle(isMobile)}>
-                    <div style={{ fontWeight: 600, color: '#111' }}>
-                      {c.name}
-                      {c.kind === 'test' && <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 5px', background: '#fef3c7', color: '#92400e', borderRadius: 3, fontWeight: 700 }}>TEST</span>}
-                    </div>
-                    {isMobile && <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'monospace', marginTop: 2 }}>{c.domain}</div>}
-                  </td>
-                  {!isMobile && <td style={{ ...tdStyle(isMobile), fontFamily: 'monospace', fontSize: 12, color: '#374151' }}>{c.domain}</td>}
-                  <td style={tdStyle(isMobile)}>
-                    <StatusBadge status={c.status} />
-                  </td>
-                  {!isMobile && <td style={{ ...tdStyle(isMobile), fontSize: 12, color: '#6b7280' }}>{c.mode}</td>}
-                  {!isMobile && <td style={{ ...tdStyle(isMobile), fontSize: 11, color: '#9ca3af' }}>{relTime(c.updatedAt)}</td>}
-                  <td style={{ ...tdStyle(isMobile), textAlign: 'right' }}>
-                    <button
-                      onClick={e => { e.stopPropagation(); setConfirmDelete(c); }}
-                      style={{ padding: 4, background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
-                      title="Delete client"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {filtered.map(c => (
+            <ClientCard
+              key={c.id}
+              client={c}
+              isMobile={isMobile}
+              expanded={expandedId === c.id}
+              expandedBadge={expandedBadge}
+              onToggleExpand={() => toggleExpand(c.id)}
+              onSetBadge={setExpandedBadge}
+              editing={editingId === c.id}
+              form={form}
+              setForm={setForm}
+              saving={saving}
+              onStartEdit={() => startEdit(c)}
+              onCancelEdit={cancelEdit}
+              onSave={save}
+              onDelete={() => setConfirmDelete(c)}
+              cardError={expandedId === c.id ? cardError : null}
+              revealedForClient={revealed[c.id] || {}}
+              revealLoadingKey={revealLoading}
+              onReveal={field => reveal(c.id, field)}
+            />
+          ))}
         </div>
       )}
 
-      {/* ── Drawer ── */}
-      {drawerMode !== 'closed' && (
-        <>
-          <div
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200 }}
-            onClick={closeDrawer}
-          />
-          <div
-            style={{
-              position: 'fixed', top: 0, right: 0, bottom: 0,
-              width: isMobile ? '100%' : 540,
-              maxWidth: '100vw',
-              background: '#fff', zIndex: 201,
-              boxShadow: '-8px 0 24px rgba(0,0,0,0.1)',
-              display: 'flex', flexDirection: 'column',
-            }}
-          >
-            {/* Drawer header */}
-            <div style={{ padding: 16, borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111', margin: 0 }}>
-                  {drawerMode === 'create' ? 'New Client' : drawerClient?.name || 'Client'}
-                </h3>
-                {drawerMode !== 'create' && drawerClient && (
-                  <p style={{ fontSize: 11, color: '#6b7280', fontFamily: 'monospace', margin: '2px 0 0 0' }}>{drawerClient.domain}</p>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                {drawerMode === 'view' && drawerClient && (
-                  <button
-                    onClick={() => openEdit(drawerClient)}
-                    style={{ padding: '6px 10px', background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-                  >
-                    <Edit3 className="w-3.5 h-3.5" /> Edit
-                  </button>
-                )}
-                <button onClick={closeDrawer} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b7280' }}>
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Drawer body */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-              {drawerError && (
-                <div style={{ marginBottom: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 12, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ marginTop: 1 }} />
-                  <span>{drawerError}</span>
-                </div>
-              )}
-
-              {/* Basic */}
-              <Section title="Basics">
-                <Row>
-                  <FieldGroup label="Name" required>
-                    <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} disabled={!isEditable} style={inputStyle} placeholder="Acme Corp" />
-                  </FieldGroup>
-                  <FieldGroup label="Kind">
-                    <select value={form.kind} onChange={e => setForm({ ...form, kind: e.target.value as ClientKind })} disabled={!isEditable} style={inputStyle}>
-                      {ALL_KINDS.map(k => <option key={k} value={k}>{k}</option>)}
-                    </select>
-                  </FieldGroup>
-                </Row>
-                <Row>
-                  <FieldGroup label="Domain" required>
-                    <input type="text" value={form.domain} onChange={e => setForm({ ...form, domain: e.target.value })} disabled={!isEditable} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="acme.iamrunning.online" />
-                  </FieldGroup>
-                  <FieldGroup label="Status">
-                    <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as ClientStatus })} disabled={!isEditable} style={inputStyle}>
-                      {ALL_STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-                    </select>
-                  </FieldGroup>
-                </Row>
-                <Row>
-                  <FieldGroup label="Mode">
-                    <select value={form.mode} onChange={e => setForm({ ...form, mode: e.target.value as 'team' | 'solo' })} disabled={!isEditable} style={inputStyle}>
-                      <option value="team">Team</option>
-                      <option value="solo">Solo</option>
-                    </select>
-                  </FieldGroup>
-                  <FieldGroup label="Port">
-                    <input type="text" value={form.port} onChange={e => setForm({ ...form, port: e.target.value })} disabled={!isEditable} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="4742" />
-                  </FieldGroup>
-                </Row>
-                <Row>
-                  <FieldGroup label="Install Path">
-                    <input type="text" value={form.installPath} onChange={e => setForm({ ...form, installPath: e.target.value })} disabled={!isEditable} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="/var/www/iam" />
-                  </FieldGroup>
-                  <FieldGroup label="Product Version">
-                    <input type="text" value={form.productVersion} onChange={e => setForm({ ...form, productVersion: e.target.value })} disabled={!isEditable} style={inputStyle} placeholder="1.0.0-beta" />
-                  </FieldGroup>
-                </Row>
-                <Row>
-                  <FieldGroup label="Install Date">
-                    <input type="date" value={form.installDate} onChange={e => setForm({ ...form, installDate: e.target.value })} disabled={!isEditable} style={inputStyle} />
-                  </FieldGroup>
-                  <FieldGroup label="Tags (comma-separated)">
-                    <input type="text" value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} disabled={!isEditable} style={inputStyle} placeholder="vip, ru-speaking" />
-                  </FieldGroup>
-                </Row>
-              </Section>
-
-              {/* Server access */}
-              <Section title="Server Access">
-                <Row>
-                  <FieldGroup label="Server IP">
-                    <input type="text" value={form.serverIp} onChange={e => setForm({ ...form, serverIp: e.target.value })} disabled={!isEditable} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="185.5.55.111" />
-                  </FieldGroup>
-                  <FieldGroup label="SSH User">
-                    <input type="text" value={form.sshUser} onChange={e => setForm({ ...form, sshUser: e.target.value })} disabled={!isEditable} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="root" />
-                  </FieldGroup>
-                </Row>
-                <Row>
-                  <FieldGroup label="SSH Port">
-                    <input type="text" value={form.sshPort} onChange={e => setForm({ ...form, sshPort: e.target.value })} disabled={!isEditable} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="22" />
-                  </FieldGroup>
-                  <div style={{ flex: 1 }} />
-                </Row>
-                <SecretField
-                  label="SSH Password"
-                  fieldKey="sshPassword"
-                  isEditable={isEditable}
-                  isCreate={drawerMode === 'create'}
-                  formValue={form.sshPassword}
-                  onChange={v => setForm({ ...form, sshPassword: v })}
-                  masked={drawerClient?.sshPassword}
-                  revealedValue={revealed.sshPassword}
-                  onReveal={() => reveal('sshPassword')}
-                  revealLoading={revealLoading === 'sshPassword'}
-                />
-                <SecretField
-                  label="SSH Private Key"
-                  fieldKey="sshKey"
-                  isEditable={isEditable}
-                  isCreate={drawerMode === 'create'}
-                  formValue={form.sshKey}
-                  onChange={v => setForm({ ...form, sshKey: v })}
-                  masked={drawerClient?.sshKey}
-                  revealedValue={revealed.sshKey}
-                  onReveal={() => reveal('sshKey')}
-                  revealLoading={revealLoading === 'sshKey'}
-                  multiline
-                />
-                <SecretField
-                  label="Super Admin Token"
-                  fieldKey="superAdminToken"
-                  isEditable={isEditable}
-                  isCreate={drawerMode === 'create'}
-                  formValue={form.superAdminToken}
-                  onChange={v => setForm({ ...form, superAdminToken: v })}
-                  masked={drawerClient?.superAdminToken}
-                  revealedValue={revealed.superAdminToken}
-                  onReveal={() => reveal('superAdminToken')}
-                  revealLoading={revealLoading === 'superAdminToken'}
-                />
-              </Section>
-
-              {/* Contacts */}
-              <Section title="Contacts">
-                {form.contacts.map((c, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                    <select
-                      value={c.type}
-                      onChange={e => {
-                        const next = [...form.contacts]; next[i] = { ...c, type: e.target.value as ContactType };
-                        setForm({ ...form, contacts: next });
-                      }}
-                      disabled={!isEditable} style={{ ...inputStyle, width: 'auto', minWidth: 110 }}>
-                      <option value="email">Email</option>
-                      <option value="telegram">Telegram</option>
-                      <option value="whatsapp">WhatsApp</option>
-                      <option value="phone">Phone</option>
-                      <option value="other">Other</option>
-                    </select>
-                    <input
-                      type="text" value={c.value}
-                      onChange={e => {
-                        const next = [...form.contacts]; next[i] = { ...c, value: e.target.value };
-                        setForm({ ...form, contacts: next });
-                      }}
-                      disabled={!isEditable} style={inputStyle} placeholder="value"
-                    />
-                    {isEditable && (
-                      <button
-                        onClick={() => setForm({ ...form, contacts: form.contacts.filter((_, idx) => idx !== i) })}
-                        style={{ padding: '4px 8px', background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', color: '#9ca3af' }}
-                        title="Remove">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {isEditable && (
-                  <button
-                    onClick={() => setForm({ ...form, contacts: [...form.contacts, { type: 'email', value: '' }] })}
-                    style={{ marginTop: 4, padding: '6px 10px', background: '#f9fafb', color: '#374151', border: '1px dashed #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Plus className="w-3.5 h-3.5" /> Add contact
-                  </button>
-                )}
-                {!isEditable && form.contacts.length === 0 && <p style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic' }}>No contacts.</p>}
-              </Section>
-
-              {/* Payments */}
-              <Section title="Payments">
-                {form.payments.map((p, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center' }}>
-                    <input
-                      type="number" value={p.amount}
-                      onChange={e => {
-                        const next = [...form.payments];
-                        next[i] = { ...p, amount: parseFloat(e.target.value) || 0 };
-                        setForm({ ...form, payments: next });
-                      }}
-                      disabled={!isEditable} style={{ ...inputStyle, width: 100 }} placeholder="0"
-                    />
-                    <input
-                      type="text" value={p.currency}
-                      onChange={e => {
-                        const next = [...form.payments];
-                        next[i] = { ...p, currency: e.target.value.toUpperCase() };
-                        setForm({ ...form, payments: next });
-                      }}
-                      disabled={!isEditable} style={{ ...inputStyle, width: 70 }} placeholder="USD"
-                    />
-                    <input
-                      type="date" value={p.date}
-                      onChange={e => {
-                        const next = [...form.payments];
-                        next[i] = { ...p, date: e.target.value };
-                        setForm({ ...form, payments: next });
-                      }}
-                      disabled={!isEditable} style={{ ...inputStyle, width: 140 }}
-                    />
-                    <input
-                      type="text" value={p.note || ''}
-                      onChange={e => {
-                        const next = [...form.payments];
-                        next[i] = { ...p, note: e.target.value };
-                        setForm({ ...form, payments: next });
-                      }}
-                      disabled={!isEditable} style={inputStyle} placeholder="note"
-                    />
-                    {isEditable && (
-                      <button
-                        onClick={() => setForm({ ...form, payments: form.payments.filter((_, idx) => idx !== i) })}
-                        style={{ padding: '4px 8px', background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', color: '#9ca3af' }}
-                        title="Remove">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {isEditable && (
-                  <button
-                    onClick={() => setForm({ ...form, payments: [...form.payments, { amount: 0, currency: 'USD', date: new Date().toISOString().slice(0, 10) }] })}
-                    style={{ marginTop: 4, padding: '6px 10px', background: '#f9fafb', color: '#374151', border: '1px dashed #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Plus className="w-3.5 h-3.5" /> Add payment
-                  </button>
-                )}
-                {!isEditable && form.payments.length === 0 && <p style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic' }}>No payments.</p>}
-              </Section>
-
-              {/* Notes */}
-              <Section title="Notes">
-                <textarea
-                  value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
-                  disabled={!isEditable} rows={5}
-                  style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }}
-                  placeholder="Anything to remember about this client..."
-                />
-              </Section>
-
-              {drawerMode === 'view' && drawerClient && (
-                <Section title="Metadata">
-                  <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0' }}>
-                    Created: {new Date(drawerClient.createdAt).toLocaleString()}
-                  </p>
-                  <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0' }}>
-                    Updated: {new Date(drawerClient.updatedAt).toLocaleString()}
-                  </p>
-                  <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0', fontFamily: 'monospace' }}>ID: {drawerClient.id}</p>
-                </Section>
-              )}
-            </div>
-
-            {/* Drawer footer */}
-            {isEditable && (
-              <div style={{ padding: 12, borderTop: '1px solid #e5e7eb', display: 'flex', gap: 8, justifyContent: 'flex-end', background: '#f9fafb' }}>
-                <button
-                  onClick={drawerMode === 'create' ? closeDrawer : () => drawerClient && openView(drawerClient)}
-                  disabled={saving}
-                  style={{ padding: '8px 14px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, cursor: 'pointer' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={save} disabled={saving}
-                  style={{ padding: '8px 16px', background: saving ? '#fdb89a' : '#FF6B35', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  <Save className="w-4 h-4" />
-                  {saving ? 'Saving...' : drawerMode === 'create' ? 'Create' : 'Save Changes'}
-                </button>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* ── Delete confirm ── */}
+      {/* ── Delete confirm modal ── */}
       {confirmDelete && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => !deleting && setConfirmDelete(null)}>
           <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 10, padding: 20, maxWidth: 400, width: '100%' }}>
@@ -758,13 +528,754 @@ export function ClientProjectsTab({ isMobile }: { isMobile: boolean }) {
   );
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────
+// ── ClientCard ─────────────────────────────────────────────────────────────
+
+function ClientCard(props: {
+  client: ClientPublic;
+  isMobile: boolean;
+  expanded: boolean;
+  expandedBadge: BadgeKey | null;
+  onToggleExpand: () => void;
+  onSetBadge: (b: BadgeKey | null) => void;
+  editing: boolean;
+  form: FormState;
+  setForm: (f: FormState) => void;
+  saving: boolean;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  onSave: () => void;
+  onDelete: () => void;
+  cardError: string | null;
+  revealedForClient: Record<string, string>;
+  revealLoadingKey: string | null;
+  onReveal: (field: string) => void;
+}) {
+  const {
+    client: c, isMobile, expanded, expandedBadge, onToggleExpand, onSetBadge,
+    editing, form, setForm, saving, onStartEdit, onCancelEdit, onSave, onDelete,
+    cardError, revealedForClient, revealLoadingKey, onReveal,
+  } = props;
+
+  const health = computeHealth(c);
+  const healthInfo = HEALTH_COLORS[health];
+
+  return (
+    <div style={{
+      background: '#fff',
+      border: expanded ? '1px solid #fdba9c' : '1px solid #e5e7eb',
+      borderLeft: expanded ? '3px solid #FF6B35' : '1px solid #e5e7eb',
+      borderRadius: 10,
+      boxShadow: expanded ? '0 4px 16px rgba(255,107,53,0.08)' : '0 1px 2px rgba(0,0,0,0.02)',
+      overflow: 'hidden',
+      transition: 'border 0.15s, box-shadow 0.15s',
+    }}>
+      {/* Collapsed row — always visible */}
+      <button
+        onClick={onToggleExpand}
+        style={{
+          width: '100%',
+          padding: isMobile ? '10px 12px' : '12px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? 8 : 12,
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        {/* Health dot */}
+        <HealthDot level={health} />
+
+        {/* Name + domain */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, color: '#111', fontSize: 14 }}>{c.name}</span>
+            {c.kind === 'test' && (
+              <span style={{ fontSize: 10, padding: '1px 6px', background: '#fef3c7', color: '#92400e', borderRadius: 3, fontWeight: 700 }}>TEST</span>
+            )}
+            <StatusBadge status={c.status} />
+          </div>
+          <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'monospace', marginTop: 2 }}>
+            {c.domain}
+            {c.productVersion && <span style={{ marginLeft: 8, color: '#9ca3af' }}>v{c.productVersion}</span>}
+          </div>
+        </div>
+
+        {/* Last seen + chevron */}
+        {!isMobile && (
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 11, color: '#6b7280' }}>
+              {c.lastSeen ? relTime(c.lastSeen) : healthInfo.label}
+            </div>
+            {c.lastSeenUptime !== undefined && c.lastSeenUptime > 0 && (
+              <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>up {formatUptime(c.lastSeenUptime)}</div>
+            )}
+          </div>
+        )}
+        <ChevronDown
+          className="w-4 h-4"
+          style={{
+            color: '#9ca3af',
+            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.15s',
+          }}
+        />
+      </button>
+
+      {/* Expanded content */}
+      {expanded && (
+        <div style={{ borderTop: '1px solid #f3f4f6', padding: isMobile ? 12 : 16, background: '#fafafa' }}>
+          {cardError && (
+            <div style={{ marginBottom: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 12, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+              <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ marginTop: 1 }} />
+              <span>{cardError}</span>
+            </div>
+          )}
+
+          {/* Badge grid */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            <Badge icon={<ServerIcon className="w-3.5 h-3.5" />} label="Server" active={expandedBadge === 'server'} onClick={() => onSetBadge(expandedBadge === 'server' ? null : 'server')} />
+            <Badge icon={<Activity className="w-3.5 h-3.5" />} label="Status" active={expandedBadge === 'status'} onClick={() => onSetBadge(expandedBadge === 'status' ? null : 'status')} healthColor={healthInfo.color} />
+            <Badge icon={<Lock className="w-3.5 h-3.5" />} label="Access" active={expandedBadge === 'access'} onClick={() => onSetBadge(expandedBadge === 'access' ? null : 'access')} />
+            <Badge icon={<FolderTree className="w-3.5 h-3.5" />} label="Files" active={expandedBadge === 'files'} onClick={() => onSetBadge(expandedBadge === 'files' ? null : 'files')} disabled={!c.operatorToken.hasValue} disabledHint={!c.operatorToken.hasValue ? 'Waiting for first heartbeat' : undefined} />
+            <Badge icon={<StickyNote className="w-3.5 h-3.5" />} label="Notes" active={expandedBadge === 'notes'} onClick={() => onSetBadge(expandedBadge === 'notes' ? null : 'notes')} />
+            <Badge icon={<DollarSign className="w-3.5 h-3.5" />} label="Billing" active={expandedBadge === 'billing'} onClick={() => onSetBadge(expandedBadge === 'billing' ? null : 'billing')} />
+            <Badge icon={<AlertTriangle className="w-3.5 h-3.5" />} label="Danger" active={expandedBadge === 'danger'} onClick={() => onSetBadge(expandedBadge === 'danger' ? null : 'danger')} variant="danger" />
+            <div style={{ flex: 1 }} />
+            {!editing && (
+              <button
+                onClick={onStartEdit}
+                style={{ padding: '4px 10px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 999, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Edit3 className="w-3.5 h-3.5" /> Edit
+              </button>
+            )}
+            {editing && (
+              <>
+                <button onClick={onCancelEdit} disabled={saving} style={{ padding: '4px 10px', background: '#fff', color: '#6b7280', border: '1px solid #e5e7eb', borderRadius: 999, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={onSave} disabled={saving} style={{ padding: '4px 12px', background: saving ? '#fdb89a' : '#FF6B35', color: '#fff', border: 'none', borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: saving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Save className="w-3.5 h-3.5" />
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Badge content */}
+          {expandedBadge && (
+            <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 14 }}>
+              {expandedBadge === 'server' && <ServerBadge client={c} editing={editing} form={form} setForm={setForm} />}
+              {expandedBadge === 'status' && <StatusDetailBadge client={c} health={health} />}
+              {expandedBadge === 'access' && <AccessBadge client={c} editing={editing} form={form} setForm={setForm} revealed={revealedForClient} revealLoadingKey={revealLoadingKey} onReveal={onReveal} />}
+              {expandedBadge === 'files' && <FilesBadge client={c} />}
+              {expandedBadge === 'notes' && <NotesBadge client={c} editing={editing} form={form} setForm={setForm} />}
+              {expandedBadge === 'billing' && <BillingBadge client={c} editing={editing} form={form} setForm={setForm} />}
+              {expandedBadge === 'danger' && <DangerBadge client={c} onDelete={onDelete} />}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── CreateCard ─────────────────────────────────────────────────────────────
+
+function CreateCard(props: {
+  isMobile: boolean;
+  form: FormState;
+  setForm: (f: FormState) => void;
+  saving: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+  cardError: string | null;
+}) {
+  const { form, setForm, saving, onSave, onCancel, cardError } = props;
+
+  return (
+    <div style={{
+      marginBottom: 12,
+      background: '#fff',
+      border: '2px solid #FF6B35',
+      borderRadius: 10,
+      boxShadow: '0 4px 16px rgba(255,107,53,0.1)',
+      padding: 16,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: '#FF6B35', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Plus className="w-4 h-4" /> New Client
+        </h3>
+        <button onClick={onCancel} disabled={saving} style={{ padding: 4, background: 'transparent', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {cardError && (
+        <div style={{ marginBottom: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 12, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+          <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ marginTop: 1 }} /> <span>{cardError}</span>
+        </div>
+      )}
+
+      <ServerEditFields form={form} setForm={setForm} />
+
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+        <button onClick={onCancel} disabled={saving} style={{ padding: '8px 14px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
+        <button onClick={onSave} disabled={saving} style={{ padding: '8px 16px', background: saving ? '#fdb89a' : '#FF6B35', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Save className="w-4 h-4" /> {saving ? 'Creating...' : 'Create'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Server badge ───────────────────────────────────────────────────────────
+
+function ServerBadge({ client: c, editing, form, setForm }: { client: ClientPublic; editing: boolean; form: FormState; setForm: (f: FormState) => void }) {
+  if (editing) return <ServerEditFields form={form} setForm={setForm} />;
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+      <KV label="Name" value={c.name} />
+      <KV label="Domain" value={c.domain} mono />
+      <KV label="Install Path" value={c.installPath || '—'} mono />
+      <KV label="Port" value={String(c.port)} mono />
+      <KV label="Product Version" value={c.productVersion || '—'} />
+      <KV label="Install Date" value={c.installDate || '—'} />
+      <KV label="Mode" value={c.mode} />
+      <KV label="Kind" value={c.kind} />
+      <KV label="Instance ID" value={c.instanceId || '(waiting)'} mono />
+      <KV label="Server IP" value={c.serverIp || '—'} mono />
+      <KV label="Operator URL" value={c.operatorUrl || '—'} mono small />
+      <KV label="Tags" value={(c.tags || []).join(', ') || '—'} />
+      <KV label="Created" value={new Date(c.createdAt).toLocaleString()} small />
+      <KV label="Updated" value={new Date(c.updatedAt).toLocaleString()} small />
+    </div>
+  );
+}
+
+function ServerEditFields({ form, setForm }: { form: FormState; setForm: (f: FormState) => void }) {
+  return (
+    <div>
+      <Row>
+        <Field label="Name" required>
+          <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="Acme Corp" />
+        </Field>
+        <Field label="Kind">
+          <select value={form.kind} onChange={e => setForm({ ...form, kind: e.target.value as ClientKind })} style={inputStyle}>
+            {ALL_KINDS.map(k => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </Field>
+      </Row>
+      <Row>
+        <Field label="Domain" required>
+          <input type="text" value={form.domain} onChange={e => setForm({ ...form, domain: e.target.value })} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="acme.iamrunning.online" />
+        </Field>
+        <Field label="Status">
+          <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as ClientStatus })} style={inputStyle}>
+            {ALL_STATUSES.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+          </select>
+        </Field>
+      </Row>
+      <Row>
+        <Field label="Mode">
+          <select value={form.mode} onChange={e => setForm({ ...form, mode: e.target.value as 'team' | 'solo' })} style={inputStyle}>
+            <option value="team">Team</option>
+            <option value="solo">Solo</option>
+          </select>
+        </Field>
+        <Field label="Port">
+          <input type="text" value={form.port} onChange={e => setForm({ ...form, port: e.target.value })} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="4742" />
+        </Field>
+      </Row>
+      <Row>
+        <Field label="Install Path">
+          <input type="text" value={form.installPath} onChange={e => setForm({ ...form, installPath: e.target.value })} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="/var/www/iam" />
+        </Field>
+        <Field label="Product Version">
+          <input type="text" value={form.productVersion} onChange={e => setForm({ ...form, productVersion: e.target.value })} style={inputStyle} placeholder="1.0.0-beta" />
+        </Field>
+      </Row>
+      <Row>
+        <Field label="Install Date">
+          <input type="date" value={form.installDate} onChange={e => setForm({ ...form, installDate: e.target.value })} style={inputStyle} />
+        </Field>
+        <Field label="Server IP">
+          <input type="text" value={form.serverIp} onChange={e => setForm({ ...form, serverIp: e.target.value })} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="185.5.55.111" />
+        </Field>
+      </Row>
+      <Row>
+        <Field label="Tags (comma-separated)">
+          <input type="text" value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} style={inputStyle} placeholder="vip, ru-speaking" />
+        </Field>
+      </Row>
+    </div>
+  );
+}
+
+// ── Status badge content ───────────────────────────────────────────────────
+
+function StatusDetailBadge({ client: c, health }: { client: ClientPublic; health: HealthLevel }) {
+  const hi = HEALTH_COLORS[health];
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <div style={{ width: 12, height: 12, borderRadius: '50%', background: hi.color, boxShadow: `0 0 0 3px ${hi.color}22` }} />
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>{hi.label}</div>
+          <div style={{ fontSize: 11, color: '#6b7280' }}>{c.heartbeatStatus ? `Heartbeat reports: ${c.heartbeatStatus}` : 'No heartbeat yet'}</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+        <KV label="Last Heartbeat" value={c.lastSeen ? `${relTime(c.lastSeen)} (${new Date(c.lastSeen).toLocaleString()})` : 'Never'} small />
+        <KV label="Uptime" value={c.lastSeenUptime !== undefined ? formatUptime(c.lastSeenUptime) : '—'} mono />
+        <KV label="Heartbeat Status" value={c.heartbeatStatus || '—'} />
+        <KV label="Install Status" value={STATUS_LABELS[c.status]} />
+      </div>
+
+      <div style={{ marginTop: 14, padding: 10, background: '#f9fafb', borderRadius: 6, fontSize: 11, color: '#6b7280' }}>
+        Heartbeat is sent every 5 min from cron on the client via <code style={{ fontFamily: 'monospace' }}>scripts/iam-heartbeat.sh</code>.
+        Warning threshold: 10 min. Stale threshold: 60 min.
+      </div>
+    </div>
+  );
+}
+
+// ── Access badge ───────────────────────────────────────────────────────────
+
+function AccessBadge({ client: c, editing, form, setForm, revealed, revealLoadingKey, onReveal }: {
+  client: ClientPublic; editing: boolean;
+  form: FormState; setForm: (f: FormState) => void;
+  revealed: Record<string, string>;
+  revealLoadingKey: string | null;
+  onReveal: (field: string) => void;
+}) {
+  if (editing) {
+    return (
+      <div>
+        <Row>
+          <Field label="SSH User">
+            <input type="text" value={form.sshUser} onChange={e => setForm({ ...form, sshUser: e.target.value })} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="root" />
+          </Field>
+          <Field label="SSH Port">
+            <input type="text" value={form.sshPort} onChange={e => setForm({ ...form, sshPort: e.target.value })} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder="22" />
+          </Field>
+        </Row>
+        <SecretInput label="SSH Password" value={form.sshPassword} onChange={v => setForm({ ...form, sshPassword: v })} masked={c.sshPassword} />
+        <SecretInput label="SSH Private Key" value={form.sshKey} onChange={v => setForm({ ...form, sshKey: v })} masked={c.sshKey} multiline />
+        <SecretInput label="Super Admin Token" value={form.superAdminToken} onChange={v => setForm({ ...form, superAdminToken: v })} masked={c.superAdminToken} />
+        <p style={{ fontSize: 11, color: '#6b7280', marginTop: 10 }}>
+          <strong>Operator Token</strong> is managed automatically — rotated via heartbeat (coming Phase 3).
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <SecretRow label="MCP Endpoint" value={`https://${c.domain}/api/mcp`} mono />
+      <SecretRow label="Operator URL" value={c.operatorUrl || `https://${c.domain}/api/operator`} mono />
+      <SecretRow label="Admin Panel" value={`https://${c.domain}/iam.admin`} mono />
+
+      <div style={{ margin: '12px 0', borderTop: '1px solid #f3f4f6' }} />
+
+      <SecretReveal
+        label="Operator Token"
+        fieldKey="operatorToken"
+        masked={c.operatorToken}
+        revealed={revealed.operatorToken}
+        onReveal={() => onReveal('operatorToken')}
+        loading={revealLoadingKey === `${c.id}/operatorToken`}
+        helpText="Shared secret sent by this client on every heartbeat. Changes require reinstall."
+      />
+      <SecretReveal
+        label="Super Admin Token"
+        fieldKey="superAdminToken"
+        masked={c.superAdminToken}
+        revealed={revealed.superAdminToken}
+        onReveal={() => onReveal('superAdminToken')}
+        loading={revealLoadingKey === `${c.id}/superAdminToken`}
+      />
+      <SecretReveal
+        label="SSH Password"
+        fieldKey="sshPassword"
+        masked={c.sshPassword}
+        revealed={revealed.sshPassword}
+        onReveal={() => onReveal('sshPassword')}
+        loading={revealLoadingKey === `${c.id}/sshPassword`}
+      />
+      <SecretReveal
+        label="SSH Private Key"
+        fieldKey="sshKey"
+        masked={c.sshKey}
+        revealed={revealed.sshKey}
+        onReveal={() => onReveal('sshKey')}
+        loading={revealLoadingKey === `${c.id}/sshKey`}
+        multiline
+      />
+
+      <div style={{ margin: '12px 0', borderTop: '1px solid #f3f4f6' }} />
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>SSH</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
+        <KV label="User" value={c.sshUser || '—'} mono />
+        <KV label="Port" value={c.sshPort ? String(c.sshPort) : '—'} mono />
+        <KV label="Host" value={c.serverIp || c.domain} mono />
+      </div>
+      {c.serverIp && c.sshUser && (
+        <div style={{ marginTop: 10, padding: 10, background: '#1f2937', color: '#f9fafb', borderRadius: 6, fontFamily: 'monospace', fontSize: 11, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ flex: 1 }}>ssh {c.sshUser}@{c.serverIp}{c.sshPort && c.sshPort !== 22 ? ` -p ${c.sshPort}` : ''}</span>
+          <button onClick={() => navigator.clipboard.writeText(`ssh ${c.sshUser}@${c.serverIp}${c.sshPort && c.sshPort !== 22 ? ` -p ${c.sshPort}` : ''}`)} style={{ padding: 4, background: 'transparent', border: '1px solid #374151', borderRadius: 4, cursor: 'pointer', color: '#9ca3af' }} title="Copy">
+            <Copy className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Files badge — embedded file browser ────────────────────────────────────
+
+interface FileEntry { name: string; type: 'file' | 'dir'; size?: number; mtime: string }
+
+function FilesBadge({ client: c }: { client: ClientPublic }) {
+  const [cwd, setCwd] = useState('.');
+  const [entries, setEntries] = useState<FileEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [latency, setLatency] = useState<number | null>(null);
+
+  const [openFile, setOpenFile] = useState<{ path: string; content: string; encoding: string; size: number; mtime: string } | null>(null);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  const listPath = useCallback(async (path: string) => {
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch(`/api/admin/operator/files?client_id=${encodeURIComponent(c.id)}&path=${encodeURIComponent(path)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setEntries(data.entries || []);
+      setCwd(data.path || path);
+      setLatency(typeof data.proxy_latency_ms === 'number' ? data.proxy_latency_ms : null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally { setLoading(false); }
+  }, [c.id]);
+
+  useEffect(() => { listPath('.'); }, [listPath]);
+
+  const enterDir = (name: string) => {
+    const next = cwd === '.' ? name : `${cwd}/${name}`;
+    listPath(next);
+  };
+
+  const goUp = () => {
+    if (cwd === '.' || !cwd.includes('/')) { listPath('.'); return; }
+    const next = cwd.split('/').slice(0, -1).join('/') || '.';
+    listPath(next);
+  };
+
+  const openFileAt = async (name: string) => {
+    const path = cwd === '.' ? name : `${cwd}/${name}`;
+    setFileLoading(true); setFileError(null);
+    try {
+      const res = await fetch(`/api/admin/operator/files/read?client_id=${encodeURIComponent(c.id)}&path=${encodeURIComponent(path)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setOpenFile({ path: data.path, content: data.content || '', encoding: data.encoding, size: data.size, mtime: data.mtime });
+    } catch (err) {
+      setFileError(err instanceof Error ? err.message : String(err));
+    } finally { setFileLoading(false); }
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 11, color: '#6b7280' }}>Client file system · read-only (Phase 1)</div>
+          <div style={{ fontFamily: 'monospace', fontSize: 13, color: '#111' }}>
+            {c.installPath}/<span style={{ color: '#6b7280' }}>{cwd === '.' ? '' : cwd + '/'}</span>
+          </div>
+        </div>
+        {latency !== null && <span style={{ fontSize: 10, color: '#9ca3af' }}>upstream {latency}ms</span>}
+        <button onClick={() => listPath(cwd)} disabled={loading} style={{ padding: '4px 10px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+        </button>
+      </div>
+
+      {error && (
+        <div style={{ padding: 10, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>
+          {error}
+        </div>
+      )}
+
+      {loading && !entries.length && (
+        <div style={{ textAlign: 'center', padding: 20, color: '#6b7280' }}>
+          <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" /> Loading...
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, overflow: 'hidden', maxHeight: 400, overflowY: 'auto', background: '#fff' }}>
+          {cwd !== '.' && (
+            <button onClick={goUp} style={{ width: '100%', padding: '8px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid #f3f4f6', textAlign: 'left', fontSize: 12, cursor: 'pointer', fontFamily: 'monospace', color: '#6b7280' }}>
+              .. (up)
+            </button>
+          )}
+          {entries.map(e => (
+            <button
+              key={e.name}
+              onClick={() => e.type === 'dir' ? enterDir(e.name) : openFileAt(e.name)}
+              style={{
+                width: '100%', padding: '8px 12px', background: 'transparent', border: 'none',
+                borderBottom: '1px solid #f3f4f6', textAlign: 'left', fontSize: 12, cursor: 'pointer',
+                fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: 8,
+              }}
+              onMouseOver={e2 => { e2.currentTarget.style.background = '#f9fafb'; }}
+              onMouseOut={e2 => { e2.currentTarget.style.background = 'transparent'; }}
+            >
+              <span style={{ color: e.type === 'dir' ? '#FF6B35' : '#374151', fontWeight: e.type === 'dir' ? 700 : 400 }}>
+                {e.type === 'dir' ? '▸' : ' '} {e.name}{e.type === 'dir' ? '/' : ''}
+              </span>
+              <span style={{ flex: 1 }} />
+              {e.size !== undefined && <span style={{ color: '#9ca3af', fontSize: 11 }}>{formatBytes(e.size)}</span>}
+              <span style={{ color: '#9ca3af', fontSize: 11 }}>{relTime(e.mtime)}</span>
+            </button>
+          ))}
+          {entries.length === 0 && <div style={{ padding: 20, textAlign: 'center', fontSize: 12, color: '#9ca3af' }}>Empty directory</div>}
+        </div>
+      )}
+
+      {/* File viewer modal */}
+      {(openFile || fileLoading || fileError) && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 250, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => { setOpenFile(null); setFileError(null); }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 10, padding: 16, maxWidth: 900, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#111', fontFamily: 'monospace' }}>
+                  {openFile?.path || 'Loading...'}
+                </div>
+                {openFile && (
+                  <div style={{ fontSize: 11, color: '#6b7280' }}>
+                    {openFile.encoding} · {formatBytes(openFile.size)} · mtime {new Date(openFile.mtime).toLocaleString()}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {openFile && (
+                  <button onClick={() => navigator.clipboard.writeText(openFile.content)} style={{ padding: '6px 10px', background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Copy className="w-3.5 h-3.5" /> Copy
+                  </button>
+                )}
+                <button onClick={() => { setOpenFile(null); setFileError(null); }} style={{ padding: 6, background: 'transparent', border: 'none', cursor: 'pointer', color: '#6b7280' }}>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            {fileLoading && (
+              <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
+                <Loader2 className="w-5 h-5 animate-spin inline-block mr-2" /> Loading file...
+              </div>
+            )}
+            {fileError && (
+              <div style={{ padding: 12, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{fileError}</div>
+            )}
+            {openFile && (
+              <pre style={{
+                flex: 1, overflow: 'auto', background: '#1f2937', color: '#f9fafb',
+                padding: 12, borderRadius: 6, fontFamily: 'monospace', fontSize: 12,
+                whiteSpace: 'pre', margin: 0,
+              }}>
+                {openFile.encoding === 'base64' ? '[binary content — base64, ' + openFile.content.length + ' chars]\n' + openFile.content.slice(0, 4000) : openFile.content}
+              </pre>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Notes / Billing / Danger ───────────────────────────────────────────────
+
+function NotesBadge({ client: c, editing, form, setForm }: { client: ClientPublic; editing: boolean; form: FormState; setForm: (f: FormState) => void }) {
+  if (editing) {
+    return (
+      <div>
+        <Field label="Notes">
+          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={6} style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }} placeholder="Anything to remember about this client..." />
+        </Field>
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Contacts</div>
+          {form.contacts.map((contact, i) => (
+            <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+              <select value={contact.type} onChange={e => { const next = [...form.contacts]; next[i] = { ...contact, type: e.target.value as ContactType }; setForm({ ...form, contacts: next }); }} style={{ ...inputStyle, width: 'auto', minWidth: 110 }}>
+                <option value="email">Email</option><option value="telegram">Telegram</option><option value="whatsapp">WhatsApp</option><option value="phone">Phone</option><option value="other">Other</option>
+              </select>
+              <input type="text" value={contact.value} onChange={e => { const next = [...form.contacts]; next[i] = { ...contact, value: e.target.value }; setForm({ ...form, contacts: next }); }} style={inputStyle} placeholder="value" />
+              <button onClick={() => setForm({ ...form, contacts: form.contacts.filter((_, idx) => idx !== i) })} style={{ padding: '4px 8px', background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', color: '#9ca3af' }} title="Remove">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+          <button onClick={() => setForm({ ...form, contacts: [...form.contacts, { type: 'email', value: '' }] })} style={{ padding: '6px 10px', background: '#f9fafb', color: '#374151', border: '1px dashed #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Plus className="w-3.5 h-3.5" /> Add contact
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {c.notes ? (
+        <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, color: '#374151', margin: 0, background: '#fafafa', padding: 10, borderRadius: 6 }}>{c.notes}</pre>
+      ) : (
+        <p style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic' }}>No notes.</p>
+      )}
+      <div style={{ marginTop: 14 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Contacts</div>
+        {c.contacts.length === 0 && <p style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic' }}>No contacts.</p>}
+        {c.contacts.map((contact, i) => (
+          <div key={i} style={{ fontSize: 12, marginBottom: 3 }}>
+            <span style={{ color: '#9ca3af', marginRight: 6 }}>{contact.type}:</span>
+            <span style={{ fontFamily: 'monospace', color: '#374151' }}>{contact.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BillingBadge({ client: c, editing, form, setForm }: { client: ClientPublic; editing: boolean; form: FormState; setForm: (f: FormState) => void }) {
+  if (editing) {
+    return (
+      <div>
+        {form.payments.map((p, i) => (
+          <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input type="number" value={p.amount} onChange={e => { const next = [...form.payments]; next[i] = { ...p, amount: parseFloat(e.target.value) || 0 }; setForm({ ...form, payments: next }); }} style={{ ...inputStyle, width: 100 }} placeholder="0" />
+            <input type="text" value={p.currency} onChange={e => { const next = [...form.payments]; next[i] = { ...p, currency: e.target.value.toUpperCase() }; setForm({ ...form, payments: next }); }} style={{ ...inputStyle, width: 70 }} placeholder="USD" />
+            <input type="date" value={p.date} onChange={e => { const next = [...form.payments]; next[i] = { ...p, date: e.target.value }; setForm({ ...form, payments: next }); }} style={{ ...inputStyle, width: 140 }} />
+            <input type="text" value={p.note || ''} onChange={e => { const next = [...form.payments]; next[i] = { ...p, note: e.target.value }; setForm({ ...form, payments: next }); }} style={{ ...inputStyle, flex: 1, minWidth: 140 }} placeholder="note" />
+            <button onClick={() => setForm({ ...form, payments: form.payments.filter((_, idx) => idx !== i) })} style={{ padding: '4px 8px', background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', color: '#9ca3af' }} title="Remove"><X className="w-3.5 h-3.5" /></button>
+          </div>
+        ))}
+        <button onClick={() => setForm({ ...form, payments: [...form.payments, { amount: 0, currency: 'USD', date: new Date().toISOString().slice(0, 10) }] })} style={{ marginTop: 4, padding: '6px 10px', background: '#f9fafb', color: '#374151', border: '1px dashed #e5e7eb', borderRadius: 6, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Plus className="w-3.5 h-3.5" /> Add payment
+        </button>
+      </div>
+    );
+  }
+
+  if (c.payments.length === 0) {
+    return <p style={{ fontSize: 13, color: '#9ca3af', fontStyle: 'italic' }}>No payments recorded yet.</p>;
+  }
+
+  const total = c.payments.reduce((acc, p) => acc + p.amount, 0);
+  const primaryCurrency = c.payments[0]?.currency || 'USD';
+
+  return (
+    <div>
+      <div style={{ marginBottom: 14, padding: 10, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 6 }}>
+        <div style={{ fontSize: 11, color: '#065f46', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total received</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#065f46', fontFamily: 'monospace' }}>
+          {primaryCurrency} {total.toFixed(2)}
+        </div>
+      </div>
+      <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+            <th style={{ padding: '6px 8px', textAlign: 'left', color: '#6b7280', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
+            <th style={{ padding: '6px 8px', textAlign: 'right', color: '#6b7280', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount</th>
+            <th style={{ padding: '6px 8px', textAlign: 'left', color: '#6b7280', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {c.payments.map((p, i) => (
+            <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+              <td style={{ padding: '6px 8px', fontFamily: 'monospace', fontSize: 11, color: '#374151' }}>{p.date}</td>
+              <td style={{ padding: '6px 8px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: '#111' }}>{p.currency} {p.amount.toFixed(2)}</td>
+              <td style={{ padding: '6px 8px', color: '#6b7280' }}>{p.note || ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function DangerBadge({ client: c, onDelete }: { client: ClientPublic; onDelete: () => void }) {
+  return (
+    <div>
+      <div style={{ padding: 14, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6 }}>
+        <h4 style={{ fontSize: 13, fontWeight: 700, color: '#991b1b', margin: '0 0 6px 0' }}>Delete client</h4>
+        <p style={{ fontSize: 12, color: '#7f1d1d', marginTop: 0 }}>
+          Permanently removes <strong>{c.name}</strong> from the registry. Does not touch the actual install on the client server.
+        </p>
+        <button
+          onClick={onDelete}
+          style={{ padding: '6px 12px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+        >
+          <Trash2 className="w-3.5 h-3.5" /> Delete client
+        </button>
+      </div>
+      <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 10 }}>
+        Coming in Phase 2: freeze client (block operator pushes), force reinstall.
+      </p>
+    </div>
+  );
+}
+
+// ── UI primitives ──────────────────────────────────────────────────────────
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 6,
+  fontSize: 13, outline: 'none', boxSizing: 'border-box', background: '#fff',
+};
+
+function Badge({
+  icon, label, active, onClick, variant, disabled, disabledHint, healthColor,
+}: {
+  icon: React.ReactNode; label: string; active: boolean; onClick: () => void;
+  variant?: 'danger'; disabled?: boolean; disabledHint?: string; healthColor?: string;
+}) {
+  const bg = active
+    ? (variant === 'danger' ? '#fee2e2' : '#FF6B35')
+    : disabled ? '#f3f4f6' : '#fff';
+  const fg = active
+    ? (variant === 'danger' ? '#991b1b' : '#fff')
+    : disabled ? '#9ca3af' : (variant === 'danger' ? '#dc2626' : '#374151');
+  const border = active
+    ? (variant === 'danger' ? '#fca5a5' : '#FF6B35')
+    : (variant === 'danger' ? '#fecaca' : '#e5e7eb');
+  return (
+    <button
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      title={disabledHint}
+      style={{
+        padding: '5px 12px', background: bg, color: fg,
+        border: `1px solid ${border}`, borderRadius: 999,
+        fontSize: 12, fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        opacity: disabled ? 0.6 : 1,
+        transition: 'all 0.1s',
+      }}
+    >
+      {icon}
+      {label}
+      {healthColor && !active && <span style={{ width: 6, height: 6, borderRadius: '50%', background: healthColor, marginLeft: 2 }} />}
+    </button>
+  );
+}
 
 function StatusBadge({ status }: { status: ClientStatus }) {
   const c = STATUS_COLORS[status];
   return (
     <span style={{
-      display: 'inline-block', padding: '2px 8px', fontSize: 11, fontWeight: 700,
+      display: 'inline-block', padding: '2px 8px', fontSize: 10, fontWeight: 700,
       background: c.bg, color: c.fg, border: `1px solid ${c.border}`, borderRadius: 999,
       whiteSpace: 'nowrap',
     }}>
@@ -773,22 +1284,56 @@ function StatusBadge({ status }: { status: ClientStatus }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function HealthDot({ level }: { level: HealthLevel }) {
+  const info = HEALTH_COLORS[level];
   return (
-    <div style={{ marginBottom: 18 }}>
-      <h4 style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px 0' }}>{title}</h4>
-      {children}
+    <div title={info.label} style={{
+      width: 10, height: 10, borderRadius: '50%',
+      background: info.color,
+      flexShrink: 0,
+      boxShadow: `0 0 0 3px ${info.color}22`,
+    }} />
+  );
+}
+
+function FilterChip({ label, active, onClick, color }: { label: string; active: boolean; onClick: () => void; color?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '4px 10px',
+        background: active ? (color || '#111') : '#fff',
+        color: active ? '#fff' : (color || '#6b7280'),
+        border: `1px solid ${active ? (color || '#111') : '#e5e7eb'}`,
+        borderRadius: 999,
+        fontSize: 11, fontWeight: 600, cursor: 'pointer',
+        textTransform: 'capitalize',
+      }}
+    >{label}</button>
+  );
+}
+
+function KV({ label, value, mono, small }: { label: string; value: string; mono?: boolean; small?: boolean }) {
+  return (
+    <div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{label}</div>
+      <div style={{
+        fontSize: small ? 11 : 13,
+        color: '#111',
+        fontFamily: mono ? 'monospace' : 'inherit',
+        wordBreak: 'break-word',
+      }}>{value}</div>
     </div>
   );
 }
 
 function Row({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>{children}</div>;
+  return <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>{children}</div>;
 }
 
-function FieldGroup({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div style={{ flex: 1, minWidth: 0 }}>
+    <div style={{ flex: 1, minWidth: 160 }}>
       <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
         {label}{required && <span style={{ color: '#dc2626', marginLeft: 2 }}>*</span>}
       </label>
@@ -797,115 +1342,85 @@ function FieldGroup({ label, required, children }: { label: string; required?: b
   );
 }
 
-function SecretField({
-  label, fieldKey, isEditable, isCreate, formValue, onChange,
-  masked, revealedValue, onReveal, revealLoading, multiline,
+function SecretRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+      <div style={{ fontSize: 11, color: '#6b7280', minWidth: 110 }}>{label}</div>
+      <code style={{ flex: 1, fontSize: 12, fontFamily: mono ? 'monospace' : 'inherit', color: '#374151', background: '#f9fafb', padding: '4px 8px', borderRadius: 4, wordBreak: 'break-all' }}>{value}</code>
+      <button onClick={() => navigator.clipboard.writeText(value)} style={{ padding: 4, background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 4, cursor: 'pointer', color: '#6b7280' }} title="Copy">
+        <Copy className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
+function SecretReveal({
+  label, fieldKey, masked, revealed, onReveal, loading, helpText, multiline,
 }: {
   label: string;
   fieldKey: string;
-  isEditable: boolean;
-  isCreate: boolean;
-  formValue: string;
-  onChange: (v: string) => void;
-  masked?: MaskedSecret;
-  revealedValue?: string;
+  masked: MaskedSecret;
+  revealed: string | undefined;
   onReveal: () => void;
-  revealLoading: boolean;
+  loading: boolean;
+  helpText?: string;
   multiline?: boolean;
 }) {
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: 6,
-    fontSize: 13, outline: 'none', boxSizing: 'border-box', background: '#fff',
-    fontFamily: 'monospace',
-  };
-
-  const isRevealed = revealedValue !== undefined;
-  const hasStored = masked?.hasValue;
+  const isRevealed = revealed !== undefined;
+  if (!masked.hasValue) {
+    return (
+      <div style={{ marginBottom: 10, padding: 8, background: '#f9fafb', borderRadius: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, minWidth: 120 }}>{label}</div>
+          <span style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic' }}>Not set</span>
+        </div>
+        {helpText && <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 4 }}>{helpText}</div>}
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
-        {hasStored && !isCreate && (
-          <button
-            onClick={onReveal}
-            disabled={revealLoading}
-            style={{ padding: '2px 8px', background: 'transparent', color: '#FF6B35', border: '1px solid #fdba9c', borderRadius: 4, fontSize: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-            {isRevealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-            {revealLoading ? '...' : isRevealed ? 'Hide' : 'Reveal'}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, minWidth: 120 }}>{label}</div>
+        <code style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', color: isRevealed ? '#111' : '#6b7280', background: isRevealed ? '#fef3c7' : '#f9fafb', padding: '4px 8px', borderRadius: 4, wordBreak: 'break-all' }}>
+          {isRevealed ? (multiline ? revealed.slice(0, 80) + (revealed!.length > 80 ? '...' : '') : revealed) : masked.preview}
+        </code>
+        <button onClick={onReveal} disabled={loading} style={{ padding: '3px 8px', background: isRevealed ? '#fef3c7' : 'transparent', color: '#FF6B35', border: '1px solid #fdba9c', borderRadius: 4, fontSize: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
+          {isRevealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          {loading ? '...' : isRevealed ? 'Hide' : 'Reveal'}
+        </button>
+        {isRevealed && (
+          <button onClick={() => navigator.clipboard.writeText(revealed!)} style={{ padding: 4, background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 4, cursor: 'pointer', color: '#6b7280' }} title="Copy">
+            <Copy className="w-3 h-3" />
           </button>
         )}
       </div>
-
-      {/* View mode: show masked or revealed */}
-      {!isEditable && (
-        <div>
-          {!hasStored && <p style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic' }}>Not set</p>}
-          {hasStored && !isRevealed && (
-            <p style={{ fontSize: 13, color: '#374151', fontFamily: 'monospace', background: '#f9fafb', padding: '6px 10px', borderRadius: 4 }}>{masked?.preview}</p>
-          )}
-          {hasStored && isRevealed && (
-            <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
-              {multiline ? (
-                <pre style={{ flex: 1, background: '#f9fafb', padding: '6px 10px', borderRadius: 4, fontSize: 11, fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 200, overflow: 'auto', margin: 0 }}>{revealedValue}</pre>
-              ) : (
-                <p style={{ flex: 1, fontSize: 13, color: '#111', fontFamily: 'monospace', background: '#fef3c7', padding: '6px 10px', borderRadius: 4, margin: 0, wordBreak: 'break-all' }}>{revealedValue}</p>
-              )}
-              <button
-                onClick={() => navigator.clipboard.writeText(revealedValue || '')}
-                style={{ padding: 6, background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 4, cursor: 'pointer', color: '#6b7280' }}
-                title="Copy to clipboard">
-                <Copy className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
+      {isRevealed && multiline && revealed!.length > 80 && (
+        <pre style={{ fontSize: 11, fontFamily: 'monospace', background: '#1f2937', color: '#f9fafb', padding: 10, borderRadius: 6, overflow: 'auto', maxHeight: 200, margin: '4px 0 0 0', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{revealed}</pre>
       )}
+      {helpText && <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{helpText}</div>}
+    </div>
+  );
+}
 
-      {/* Edit mode: text input. Empty input = no change in edit mode (won't be sent). */}
-      {isEditable && (
-        <>
-          {multiline ? (
-            <textarea
-              value={formValue}
-              onChange={e => onChange(e.target.value)}
-              rows={4}
-              style={{ ...inputStyle, resize: 'vertical' }}
-              placeholder={hasStored && !isCreate ? '(leave blank to keep current value, type to replace)' : ''}
-            />
-          ) : (
-            <input
-              type="password"
-              value={formValue}
-              onChange={e => onChange(e.target.value)}
-              style={inputStyle}
-              placeholder={hasStored && !isCreate ? '(leave blank to keep current)' : ''}
-            />
-          )}
-          {hasStored && !isCreate && formValue === '' && (
-            <p style={{ fontSize: 10, color: '#9ca3af', marginTop: 3, marginBottom: 0 }}>
-              Currently: <code style={{ fontFamily: 'monospace' }}>{masked?.preview}</code> · Leave blank to keep, type new value to replace
-            </p>
-          )}
-        </>
+function SecretInput({ label, value, onChange, masked, multiline }: { label: string; value: string; onChange: (v: string) => void; masked: MaskedSecret; multiline?: boolean }) {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{label}</label>
+      {multiline ? (
+        <textarea value={value} onChange={e => onChange(e.target.value)} rows={4} style={{ ...inputStyle, fontFamily: 'monospace', resize: 'vertical' }} placeholder={masked.hasValue ? '(leave blank to keep current)' : ''} />
+      ) : (
+        <input type="password" value={value} onChange={e => onChange(e.target.value)} style={{ ...inputStyle, fontFamily: 'monospace' }} placeholder={masked.hasValue ? '(leave blank to keep current)' : ''} />
+      )}
+      {masked.hasValue && value === '' && (
+        <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 3 }}>Currently: <code style={{ fontFamily: 'monospace' }}>{masked.preview}</code></div>
       )}
     </div>
   );
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-
-function thStyle(isMobile: boolean): React.CSSProperties {
-  return {
-    textAlign: 'left', padding: isMobile ? '10px 10px' : '10px 14px',
-    fontSize: 11, fontWeight: 700, color: '#6b7280',
-    textTransform: 'uppercase', letterSpacing: '0.05em',
-  };
-}
-
-function tdStyle(isMobile: boolean): React.CSSProperties {
-  return { padding: isMobile ? '10px 10px' : '12px 14px', verticalAlign: 'middle' };
-}
 
 function relTime(iso: string): string {
   const then = new Date(iso).getTime();
@@ -916,4 +1431,18 @@ function relTime(iso: string): string {
   if (sec < 86400) return `${Math.round(sec / 3600)}h ago`;
   if (sec < 86400 * 7) return `${Math.round(sec / 86400)}d ago`;
   return new Date(iso).toLocaleDateString();
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+function formatUptime(sec: number): string {
+  if (sec < 60) return `${sec}s`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
+  return `${Math.floor(sec / 86400)}d ${Math.floor((sec % 86400) / 3600)}h`;
 }
