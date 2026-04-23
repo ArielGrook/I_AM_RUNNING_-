@@ -87,6 +87,10 @@ export function WebInstallerTab({ isMobile }: { isMobile: boolean }) {
   const [noLanding, setNoLanding] = useState(false);
   const [dryRun, setDryRun] = useState(false);
 
+  // ── Integration mode (optional) ──
+  const [projectPath, setProjectPath] = useState('');
+  const [clientAppPm2Name, setClientAppPm2Name] = useState('');
+
   // ── Generated result ──
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -145,6 +149,8 @@ export function WebInstallerTab({ isMobile }: { isMobile: boolean }) {
         adminPath: adminPath.trim(),
         skipSecurity, skipNginx, noLanding, dryRun,
       };
+      if (projectPath.trim()) payload.projectPath = projectPath.trim();
+      if (clientAppPm2Name.trim()) payload.clientAppPm2Name = clientAppPm2Name.trim();
       if (embedToken && githubToken.trim()) {
         payload.githubToken = githubToken.trim();
       }
@@ -357,6 +363,45 @@ export function WebInstallerTab({ isMobile }: { isMobile: boolean }) {
               label="Disable landing page" hint="--no-landing (home redirects to /dashboard)" />
             <Check3 checked={dryRun} onChange={setDryRun}
               label="Dry-run only" hint="--dry-run (no side effects, prints plan)" />
+          </div>
+        </details>
+
+        {/* ── Integration Mode (optional) ── */}
+        <details style={{ marginBottom: 14 }}>
+          <summary style={{ fontSize: 12, fontWeight: 700, color: '#6b7280', cursor: 'pointer', padding: '4px 0' }}>
+            Integration mode (optional — installs next to an existing site)
+          </summary>
+          <div style={{ marginTop: 10, padding: 12, background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 6 }}>
+            <p style={{ fontSize: 11, color: '#0c4a6e', margin: '0 0 10px 0', lineHeight: 1.5 }}>
+              When set, IAM Client OS installs <strong>alongside</strong> the customer&apos;s existing app on the same server.
+              MCP file/git/deploy tools operate on the customer&apos;s project (not our own install). Leave empty for standalone installs.
+            </p>
+            <div style={{ marginBottom: 10 }}>
+              <label style={labelStyle}>Customer project path (becomes PROJECT_ROOT)</label>
+              <input
+                type="text"
+                value={projectPath}
+                onChange={e => setProjectPath(e.target.value)}
+                placeholder="/var/www/customer-site"
+                style={{ ...inputStyle, fontFamily: 'monospace' }}
+              />
+              <p style={{ fontSize: 10, color: '#0369a1', margin: '4px 0 0 0' }}>
+                Absolute path on the customer&apos;s server where their existing app lives.
+              </p>
+            </div>
+            <div>
+              <label style={labelStyle}>Customer pm2 process name</label>
+              <input
+                type="text"
+                value={clientAppPm2Name}
+                onChange={e => setClientAppPm2Name(e.target.value)}
+                placeholder="customer-app"
+                style={{ ...inputStyle, fontFamily: 'monospace' }}
+              />
+              <p style={{ fontSize: 10, color: '#0369a1', margin: '4px 0 0 0' }}>
+                The pm2 process name of the customer&apos;s existing app — <code style={{ fontFamily: 'monospace' }}>/api/operator/deploy</code> will rebuild &amp; restart THIS process, not ours.
+              </p>
+            </div>
           </div>
         </details>
 
