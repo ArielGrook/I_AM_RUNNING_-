@@ -51,6 +51,20 @@ export interface ClientRecord {
   sshPassword?: string;          // encrypted at rest
   sshKey?: string;               // encrypted at rest
   superAdminToken?: string;      // encrypted at rest
+  // ── Operator fields (added 24.04 — Phase 1) ──────────────────────────────
+  // These are populated by monitor/heartbeat ingestion on the client's first
+  // call, then continuously updated on every heartbeat. operatorToken is the
+  // shared secret — it's generated in iam-client.sh step_secrets and the
+  // client sends it as `Authorization: Bearer <token>`. We match that token
+  // against this field to authorize heartbeat / activity / operator-proxy
+  // calls without needing a separate MONITOR_SECRET. One credential per
+  // client, naturally rotatable via the Access badge UI.
+  instanceId?: string;           // hex, generated client-side at install
+  operatorToken?: string;        // encrypted at rest — shared secret with client
+  operatorUrl?: string;          // e.g. https://domain/api/operator
+  lastSeen?: string;             // ISO timestamp of most recent heartbeat
+  lastSeenUptime?: number;       // uptime_sec from most recent heartbeat
+  heartbeatStatus?: 'ok' | 'degraded' | 'starting';
   contacts: ClientContact[];
   payments: ClientPayment[];
   notes: string;
@@ -80,6 +94,13 @@ export interface ClientPublic {
   sshPassword: MaskedSecret;
   sshKey: MaskedSecret;
   superAdminToken: MaskedSecret;
+  // ── Operator fields (public view — operatorToken is masked) ──
+  instanceId?: string;
+  operatorToken: MaskedSecret;
+  operatorUrl?: string;
+  lastSeen?: string;
+  lastSeenUptime?: number;
+  heartbeatStatus?: 'ok' | 'degraded' | 'starting';
   contacts: ClientContact[];
   payments: ClientPayment[];
   notes: string;
@@ -91,8 +112,8 @@ export interface ClientPublic {
 export const VALID_STATUSES: ClientStatus[] = ['lead', 'paid', 'installing', 'installed', 'failed', 'churned'];
 export const VALID_KINDS: ClientKind[] = ['real', 'test'];
 export const VALID_CONTACT_TYPES: ContactType[] = ['email', 'telegram', 'whatsapp', 'phone', 'other'];
-export const REVEALABLE_FIELDS = new Set(['sshPassword', 'sshKey', 'superAdminToken']);
-export const ENCRYPTED_FIELDS: (keyof ClientRecord)[] = ['sshPassword', 'sshKey', 'superAdminToken'];
+export const REVEALABLE_FIELDS = new Set(['sshPassword', 'sshKey', 'superAdminToken', 'operatorToken']);
+export const ENCRYPTED_FIELDS: (keyof ClientRecord)[] = ['sshPassword', 'sshKey', 'superAdminToken', 'operatorToken'];
 
 // ── File I/O ───────────────────────────────────────────────────────────────
 
@@ -143,6 +164,12 @@ export function publicView(c: ClientRecord): ClientPublic {
     serverIp: c.serverIp, sshUser: c.sshUser, sshPort: c.sshPort,
     sshPassword: masked.sshPassword, sshKey: masked.sshKey,
     superAdminToken: masked.superAdminToken,
+    instanceId: c.instanceId,
+    operatorToken: masked.operatorToken,
+    operatorUrl: c.operatorUrl,
+    lastSeen: c.lastSeen,
+    lastSeenUptime: c.lastSeenUptime,
+    heartbeatStatus: c.heartbeatStatus,
     contacts: c.contacts || [], payments: c.payments || [],
     notes: c.notes || '', tags: c.tags || [],
     createdAt: c.createdAt, updatedAt: c.updatedAt,
@@ -193,6 +220,20 @@ export function sanitizePayload(input: unknown): Partial<ClientRecord> {
   }
   if (typeof i.superAdminToken === 'string') {
     out.superAdminToken = i.superAdminToken ? encryptString(i.superAdminToken) : '';
+  }
+  if (typeof i.operatorToken === 'string') {
+    out.operatorToken = i.operatorToken ? encryptString(i.operatorToken) : '';
+  }
+
+  // Operator plain-text fields (not encrypted — these are identifiers / metrics)
+  if (typeof i.instanceId === 'string') out.instanceId = i.instanceId.trim();
+  if (typeof i.operatorUrl === 'string') out.operatorUrl = i.operatorUrl.trim();
+  if (typeof i.lastSeen === 'string') out.lastSeen = i.lastSeen.trim();
+  if (typeof i.lastSeenUptime === 'number' && Number.isFinite(i.lastSeenUptime)) {
+    out.lastSeenUptime = Math.max(0, Math.floor(i.lastSeenUptime));
+  }
+  if (i.heartbeatStatus === 'ok' || i.heartbeatStatus === 'degraded' || i.heartbeatStatus === 'starting') {
+    out.heartbeatStatus = i.heartbeatStatus;
   }
 
   if (Array.isArray(i.contacts)) {
@@ -382,4 +423,200 @@ export function revealField(idOrDomain: string, field: string, source: string = 
     field,
     plaintext: encrypted ? decryptString(encrypted) : '',
   };
+}
+
+// ── Operator heartbeat support ─────────────────────────────────────────────
+//
+// findClientByOperatorToken — authorizes inbound heartbeat / activity
+// requests without requiring a separate MONITOR_SECRET. The client sends
+// its `OPERATOR_TOKEN` (generated at install) as Bearer auth; we iterate
+// the registry, decrypt each stored operatorToken, and return the match.
+//
+// Performance is O(N) but N is small (SMB client count). If we ever have
+// hundreds of clients, we switch to a token_hash index. Not a concern now.
+
+export function findClientByOperatorToken(token: string): ClientRecord | null {
+  if (!token || typeof token !== 'string') return null;
+  const reg = readRegistry();
+  for (const c of reg.clients) {
+    if (!c.operatorToken) continue;
+    try {
+      if (decryptString(c.operatorToken) === token) return c;
+    } catch {
+      // skip malformed entries — don't fail the whole lookup
+    }
+  }
+  return null;
+}
+
+// upsertByHeartbeat — called by POST /api/monitor/heartbeat after auth.
+//
+// The caller has already proven it owns `operatorToken` (by matching the
+// Bearer header via findClientByOperatorToken, OR on the FIRST heartbeat
+// from a never-seen install — in which case `clientId` is null and we
+// create the record using the body's declared identity).
+//
+// On first call from a new install:
+//   - caller is null (no operator_token match in registry yet)
+//   - body must carry operator_token (we trust it because this is the very
+//     first contact — the token becomes the credential from then on)
+//   - we create the record with status=installed, record the token encrypted
+//
+// On subsequent calls:
+//   - caller is the matched ClientRecord
+//   - body.operator_token is ignored (already stored)
+//   - we update lastSeen, lastSeenUptime, heartbeatStatus, version
+//
+// This is the single write path for heartbeat. All auth logic stays in the
+// route handler; this function assumes it's been called legitimately.
+
+export interface HeartbeatBody {
+  instance_id?: string;
+  domain?: string;
+  client_name?: string;
+  operator_url?: string;
+  operator_token?: string;        // only honored on FIRST heartbeat
+  version?: string;
+  uptime_sec?: number;
+  status?: 'ok' | 'degraded' | 'starting';
+}
+
+export interface HeartbeatResult {
+  ok: true;
+  client_id: string;
+  server_ts: string;
+  created: boolean;               // true on first heartbeat, false thereafter
+}
+
+export function upsertByHeartbeat(
+  caller: ClientRecord | null,
+  body: HeartbeatBody,
+  source: string = 'http'
+): HeartbeatResult | ErrorResult {
+  const now = new Date().toISOString();
+  const reg = readRegistry();
+
+  // ── Path 1: matched caller — update in place ──────────────────────────
+  if (caller) {
+    // Sanity-check: the body's identifiers should match the caller. If the
+    // client sent their operatorToken but a DIFFERENT instance_id/domain,
+    // something is wrong (token reuse? server clone?). Warn but accept —
+    // the token is authoritative.
+    if (body.instance_id && caller.instanceId && body.instance_id !== caller.instanceId) {
+      audit(`HEARTBEAT_WARN client=${caller.id} body.instance_id=${body.instance_id} stored.instanceId=${caller.instanceId}`, source);
+    }
+    if (body.domain && caller.domain && body.domain.toLowerCase() !== caller.domain) {
+      audit(`HEARTBEAT_WARN client=${caller.id} body.domain=${body.domain} stored.domain=${caller.domain}`, source);
+    }
+
+    const idx = reg.clients.findIndex(c => c.id === caller.id);
+    if (idx === -1) return { ok: false, error: 'Client disappeared between lookup and write', status: 500 };
+
+    reg.clients[idx] = {
+      ...reg.clients[idx],
+      instanceId: body.instance_id || reg.clients[idx].instanceId,
+      operatorUrl: body.operator_url || reg.clients[idx].operatorUrl,
+      productVersion: body.version || reg.clients[idx].productVersion,
+      lastSeen: now,
+      lastSeenUptime: typeof body.uptime_sec === 'number' && Number.isFinite(body.uptime_sec)
+        ? Math.max(0, Math.floor(body.uptime_sec))
+        : reg.clients[idx].lastSeenUptime,
+      heartbeatStatus: body.status || reg.clients[idx].heartbeatStatus,
+      updatedAt: now,
+    };
+
+    // Only flip to 'installed' if it's the first real heartbeat on this record
+    // (previous state likely 'installing' or 'lead'). Don't downgrade from
+    // 'paid' or 'churned' — those are billing states set elsewhere.
+    if (reg.clients[idx].status === 'lead' || reg.clients[idx].status === 'installing') {
+      reg.clients[idx].status = 'installed';
+      reg.clients[idx].installDate = reg.clients[idx].installDate || now.slice(0, 10);
+    }
+
+    writeRegistry(reg);
+    audit(`HEARTBEAT client=${caller.id} domain=${caller.domain} version=${body.version || '?'} uptime=${body.uptime_sec || 0}`, source);
+    return { ok: true, client_id: caller.id, server_ts: now, created: false };
+  }
+
+  // ── Path 2: no caller match — this is a first-contact registration ────
+  //
+  // Requirements for creating a new record from heartbeat:
+  //   - body.operator_token must be provided (this becomes THE credential)
+  //   - body.domain must be valid
+  //   - body.instance_id should be present (tracking)
+  //   - either domain is new, OR domain matches a pre-existing record that
+  //     lacks an operatorToken (Web Installer created the shell record, now
+  //     the install completed and is registering itself)
+
+  if (!body.operator_token) {
+    return { ok: false, error: 'operator_token required for first heartbeat', status: 401 };
+  }
+  if (!body.domain) {
+    return { ok: false, error: 'domain required for first heartbeat', status: 400 };
+  }
+
+  const domainLower = body.domain.toLowerCase();
+  const existingIdx = reg.clients.findIndex(c => c.domain === domainLower);
+
+  if (existingIdx !== -1) {
+    // Attach token to existing shell record (created via Web Installer)
+    const existing = reg.clients[existingIdx];
+    if (existing.operatorToken) {
+      // Record exists AND has a token — but caller lookup failed, so the
+      // caller's token doesn't match. Reject.
+      return { ok: false, error: 'Client record for this domain already has a different operator_token', status: 403 };
+    }
+
+    reg.clients[existingIdx] = {
+      ...existing,
+      instanceId: body.instance_id || existing.instanceId,
+      operatorToken: encryptString(body.operator_token),
+      operatorUrl: body.operator_url || existing.operatorUrl,
+      productVersion: body.version || existing.productVersion,
+      lastSeen: now,
+      lastSeenUptime: typeof body.uptime_sec === 'number' && Number.isFinite(body.uptime_sec)
+        ? Math.max(0, Math.floor(body.uptime_sec))
+        : undefined,
+      heartbeatStatus: body.status || 'ok',
+      status: existing.status === 'lead' || existing.status === 'installing' ? 'installed' : existing.status,
+      installDate: existing.installDate || now.slice(0, 10),
+      updatedAt: now,
+    };
+    writeRegistry(reg);
+    audit(`HEARTBEAT_ATTACH client=${existing.id} domain=${existing.domain} instance=${body.instance_id || '?'}`, source);
+    return { ok: true, client_id: existing.id, server_ts: now, created: false };
+  }
+
+  // Brand-new record — install happened without prior Web Installer creation
+  const id = crypto.randomBytes(8).toString('hex');
+  const created: ClientRecord = {
+    id,
+    name: body.client_name || body.domain,
+    domain: domainLower,
+    kind: 'real',
+    status: 'installed',
+    mode: 'team',
+    port: 0,
+    installPath: '',
+    productVersion: body.version || '',
+    installDate: now.slice(0, 10),
+    instanceId: body.instance_id,
+    operatorToken: encryptString(body.operator_token),
+    operatorUrl: body.operator_url,
+    lastSeen: now,
+    lastSeenUptime: typeof body.uptime_sec === 'number' && Number.isFinite(body.uptime_sec)
+      ? Math.max(0, Math.floor(body.uptime_sec))
+      : undefined,
+    heartbeatStatus: body.status || 'ok',
+    contacts: [],
+    payments: [],
+    notes: `Auto-registered via heartbeat on ${now.slice(0, 10)}.`,
+    tags: ['auto-registered'],
+    createdAt: now,
+    updatedAt: now,
+  };
+  reg.clients.push(created);
+  writeRegistry(reg);
+  audit(`HEARTBEAT_CREATE client=${id} domain=${created.domain} instance=${body.instance_id || '?'}`, source);
+  return { ok: true, client_id: id, server_ts: now, created: true };
 }
